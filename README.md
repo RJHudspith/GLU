@@ -1,7 +1,7 @@
 GLU
 ===
 
-Gauge Link Utility (GLU) is a free, number of dimensions (ND) and number of colors (NC) lattice field theory library for various gluonic observables.
+Gauge Link Utility (GLU) is a free, number of dimensions (ND) and number of colors (NC) lattice field theory library for various gluonic observables. It is written in the c programming language.
 
 The library can be used for:
 
