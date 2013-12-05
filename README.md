@@ -1,13 +1,13 @@
 GLU
 ===
 
-Gauge Link Utility (GLU) is a free, number of dimensions (ND) and number of colors (NC) lattice field theory library for various gluonic observables. It is written in the c programming language.
+Gauge Link Utility (GLU) is a free, thread-parallel, number of dimensions (ND) and number of colors (NC) lattice field theory library for various gluonic observables. It is written in the c programming language.
 
 The library can be used for:
 
 File conversion : Support for ILDG, Scidac, NERSC, HiRep and MILC configuration files. Both reading and writing.
 
-Gauge fixing : Landau and Coulomb gauge fixing is possible. With binding to the FFTW library, Fourier Accelerated routines                for very fast gauge fixing can be performed.
+Gauge fixing : Landau and Coulomb gauge fixing is possible. With binding to the FFTW library, Fourier Accelerated routines                for very fast gauge fixing have been implemented.
 
 Smearing : APE, STOUT and LOG with their hypercubically blocked variants HYP, HEX and HYL smearing routines are available.            So is the computation of the STOUT and LOG Wilson flow. Inclusion of various rectangle coefficients is
            available for the APE, STOUT and LOG and the Wilson flow routines.
