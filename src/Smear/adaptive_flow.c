@@ -21,8 +21,7 @@
    @brief the (two step) adaptive rk4 wilson flow routine
 
    Slows down, performing fine measurements at ~t_0 and ~w_0
-   these are T0_STOP and WFLOW_STOP and are defined in
-   wflowfuncs.h
+   WFLOW_STOP and TMEAS_STOP are defined in wflowfuncs.h
  */
 
 #include "Mainfile.h"
@@ -230,7 +229,9 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
     t += delta_t ; // add one time step to the overall time 
 
 #ifndef TIME_ONLY
-    // derivative bit
+    // derivative bit, should be used as a guide for when to stop
+    // measureing for W_0 but not used to measure it, 
+    // use ttGG and take the derivative!
     double deriv = 0. ;
     #ifndef verbose
     if( t > MEAS_START ) {
