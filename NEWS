@@ -16,3 +16,9 @@ Still not quite ready for the public. Many new additions, much wow.
 For one thing, I removed all the swearing, I have some error-checking for
 the gauge fixing routine and have got the Log smearing to work in single
 precision using the series expressions.
+
+Thurs 15/05/14
+
+I had to remove some more swearing in my comments. We now default to my
+CG codes for the gauge fixing. Checked and sped up the NC-generic codes.
+I have now put this online for the world to see.

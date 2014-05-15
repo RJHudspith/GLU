@@ -142,7 +142,7 @@ cuts_struct( struct site *__restrict A ,
 {
   // performs LOG and FFT , rewrites "A"
   if( mom_gauge( A , CUTINFO.definition ) == GLU_FAILURE ) {
-    printf( "[CUTS] Fucked up the FFT of the fields \n" ) ;
+    printf( "[CUTS] FFT of the fields failed\n" ) ;
     return GLU_FAILURE ;
   }
 

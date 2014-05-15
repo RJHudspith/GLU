@@ -1,46 +1,17 @@
 Overview and dependencies
 -------------------------
 
-Jamie's GF is a simple, single node code designed for Fourier-Accelerated
-Landau/Coulomb gauge fixing for the Lattice gauge theories of gauge groups
-SU(2) and SU(3) and beyond and semi-arbitrary dimension.
+GLU is a thread-parallel NC and ND generic gluonic observable code
+for lattice field theory calculations. 
 
-As a slight by-product the code also implements several smearing techniques
-such as APE , STOUT , LOG , HYP , HEX and HYL. There also exists the opportunity
- to use this code to Maximal Axial gauge fix configurations.
+It does not generate configurations or compute Fermionic quantities. 
 
-The configurations it has been designed to read are of the NERSC QCD archive
-header format. This format is an industry standard being used by the USQCD,
-UKQCD , MILC and other collaborations. The code has also been extended to
-include HIREP configurations of gauge group SU(2). As such, necessary checksums
-are computed to ensure accuracy.
-
-The code performs all of its calculations in double precision as it is seen to
-be comparable to floating point precision speeds for many of the operations
-required, and I figure accuracy is paramount in the functioning of this code.
-
-The code requires to be linked to fftw3.h for the Fourier-Accelerated gauge
-fixing and gsl/gsl_rng.h for random number generation and what-not. These
-are included with the configure by:
-
-FFTW is totally necessary
---with-fftw='Path to fftw install'
-
-GSL is not at all necessary but can be used to speed up STOUTING
---with-gsl='path to gsl install' 
-
-If you do not include these, the configure will look in either /usr/ for the headers or the specified directory if it finds nothing then errors.
-
-The standard place for an install is /usr/ unless --prefix= is set. I recommend
-you do this otherwise the binary SkyNet will not be made but the library will
-try and install itself in /usr/ as per usual.
-
-I found that because I wish to create a shared object library using the
---enable-shared flag in fftw3's configuration is required. I also recommend
-using either --enable-sse2 in configuring this library.
+It does do gauge fixing, smearing, gluon propagators ...
 
 More on my --enable flags
 -------------------------
+
+./configure --help is probably your friend here
 
 I have a handful of flags that one can enable at configure time.
 
@@ -50,36 +21,25 @@ This throws caution to the wind, and for STOUT and LOG dramatically speeds
 up the time taken to smear gauge fields. For the STOUT case and approximate
 set of Taylor expansions to the smooth functions in Morningside and Peardon's
 paper are used. For the LOG a general Vandermonde solver is used to calculate
-the f-constants used. Both of these work OK, the STOUT one is numerically stable
- the LOG case is not as it doesn't deal with degenerate eigenvalues and so
-blows up after O(100) iterations.
-
-2) --enable-slowgf
-
-This enable is simple, it allows for the reusing of FFTW plans and some arrays
-to limit the RAM footprint of the FA gauge-fixing code, it is not even really
-that slow, around five to ten percent of the default guy, but nearly 2/3 the
-cost or so in RAM. Worth considering if you have a lot of low memory PC's
-available.
-
-The above two only matter for SU(3), SU(2) is cheap and fast enough as it is.
+the f-constants used. Both of these work OK.
 
 3) --enable-notcondor
 
 This enable turns on the saving of FFTW's planned DFTs giving decent speed-up, 
-this can be quite useful but is heavily architecture dependent. Do not turn this on and then try and run the binary on different machines as it is detrimental.
+this can be quite useful but is heavily architecture dependent. Do not turn this 
+on and then try and run the binary on different machines as it is detrimental.
 I think this also turns on the saving of (p,-p) doublets for the generation of 
 the A_{\mu}(p) (Gluonic fields in momentum space), in cuts.c.
 
 Some little extras
 ------------------
 
-The makefile compiles the shared library, and then creates the binary "SkyNet"
+The makefile compiles the shared library, and then creates the binary "GLU"
 from this in the ${Path to installation}/bin/ directory.
 
 This needs to be run with
 
-./SkyNet -i input_file -c NERSC_config_file *{-o NERSC_output_file}
+./GLU -i input_file -c NERSC_config_file *{-o NERSC_output_file}
 
 *is optional
 
@@ -91,80 +51,32 @@ to some of the library UKhadron. If you are linking this then good luck, I have
 written around bits to accomadate this library but who knows what creative 
 ways people will find to crush my spirits.
 
-SkyNet's input file
--------------------
+GLU help
+--------
 
-This is the form of the input file that the binary requires.
+You can access help on the iput file for the binary GLU with the command,
 
-NC = 3 //at the mo we support SU(2) and SU(3)
-MODE = ANALYSIS  // can have CUT, ANALYSIS , GF or WRSMEAR (write smeared links)
-HEADER = NERSC // either NERSC or HiRep or RANDOM
-TYPE = LANDAU	//DEFAULT, LANDAU or COULOMB
-         GF_TUNE = 0.08 // I would leave this as is	
-	 IMPROVEMENTS = DEFAULT 	 //NONE , MAG SMEAR
-	 ACCURACY = 14  	// will be 10^-14
-	 MAX_ITERS = 10000  	// MAX Iterations to convergence
-CUT_MODE = SMEARED_GLUONS // can be SMEARED_GLUONS
-	 CUT_TYPE = CYLINDER // NORMAL JCUT ANGULAR , JCUT==cylinder cut
-	 DEF = LINEAR // LINEAR or LOG definition only as of writing
-	 MINMOM = 0	//Minimum Momentum
-	 MAXMOM = 16	//Maximum Momentum
-	 ANGLE = 20	// Angle if ANGULAR
-	 OUTPUT = ./ //where we would like our cut files to be output to
-FILESTEM = /phys/linux/s0968574/Desktop/CutBot/FTAP/SU3_16x16x16x32_16_cutPSQ.bin
-//this is where the FT'd gauge fields are
-	 X_DIM = 16 	//give us an x-dim
-	 Y_DIM = 16	//
-	 Z_DIM = 16	//
-	 T_DIM = 32	//
-	 START = 1000	// where do we start?
-	 END = 2000	// where do we end?
-	 INCREMENT = 10	// increment
-	 DIMENSIONS = 4 // 3D prop measure or 4D alpha?
-	 INVERSE_SPACING = 1.73 // Inverse lattice spacing of our simulation
-SMEAR = LOG	//type of smearing STOUT APE and LOG , HYP HEX and HYL
-	 DIRECTION = ALL //dimesions of links to include
-	 SMITERS = 10 // number of smearing iterations
-	 ALPHA1 = 0.8 // the first alpha also APE,STOUT and LOG's only one
-	 ALPHA2 = 0.6 // etc
-	 ALPHA3 = 0.3 // etc
-U1_MEAS = U1_RECTANGLE // DEFAULT or TOPOLOGICAL or RECTANGLE
-	U1_ALPHA = 0.075 // the QED coupling ...
-	CHARGE = -1 // charge on the U(1) fields
-INFO = 2+1DWF_B2.25_IWASAKI_M0.006 //details of the config
-	 STORAGE = 4D_SU3_GAUGE_SMALL //output types in README
-CONFNO = 1000 // if we can't regurgitate the confno or want to rewrite it 
-RANDOM_TRANSFORM = NO // want a random transform ?
+./GLU --help
 
-OUTPUT FORMATS
---------------
+Will bring up the possible options
 
-I have included this to perhaps avoid confusion later on, my code supports these
-formats:
+./GLU --help={options}
 
-GAUGE_SMALL ->  Smallest in memory (8 parameter rep of SU(3) matrix or 3 parameter rep of SU(2) ) , not NERSC standard , only usable by this code at the moment. No higher NC variants exist and never will.
+Then provides some information on what the options in the input file do
 
-GAUGE -> Storage of the top two rows of SU(NC) matrix original NERSC
-standard, nice.
+GLU's input file
+-----------------
 
-GAUGE_3x3 -> Expensive, whole matrix stored in double prec.
+If you run
 
-HIREP -> HiRep's format for saving configs, also saves whole NCxNC matrix. 
-For the masochists.
+./GLU --autoin={options}
 
-A.O.B
------
+It will print to stdout a readable version of the input file. Again,
 
-There is a small 4x4x4x8 config called lat..400 in ./CONF/ , which is a DWF
-configuration that can be used to test the operation of the binary SkyNet for
-SU(3). For su(2) there is a config called HILAT.nersc which is also 4x4x4x8.
+./GLU --help
 
-READMES
--------
+will provide a list of the available options for the code.
 
-You learn best by doing. If that fails to help, I think there is some more in
-depth stuff in the UKhadron readme about what this code actually does and maybe
-even some Physics.
 
 CONTACTS
 --------

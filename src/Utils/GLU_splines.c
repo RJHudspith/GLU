@@ -236,7 +236,7 @@ cubic_eval( const double *__restrict x ,
   return d + t * ( c + t * ( b + t * a ) ) ;
 }
 
-// be careful, shit
+// be careful, finds the minimum from the spline
 double
 cubic_min( const double *__restrict x ,
 	   const double *__restrict y ,
