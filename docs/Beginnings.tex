@@ -1,0 +1,125 @@
+\documentclass[12pt]{article} 
+
+\usepackage[english]{babel}
+\usepackage{times}
+\usepackage[T1]{fontenc}
+\usepackage{blindtext}
+\usepackage{mathptmx}
+\usepackage{amsmath,mathtools,amsfonts}
+
+% the following commands control the margins:
+\topmargin=-1in    % Make letterhead start about 1 inch from top of page 
+\textheight=20cm  % text height can be bigger for a longer letter
+\oddsidemargin=0pt % leftmargin is 1 inch
+\textwidth=6.5in   % textwidth of 6.5in leaves 1 inch for right margin
+\usepackage{hyperref}
+
+\begin{document}
+
+This document exists to inform you about how to use the code and the conventions I use. As of writing, the code supports NERSC, SCIDAC, MILC, \verb|ILDG_SCIDAC|, \verb|ILDG_BQCD|, HiRep and generic LIME configuration files. You have already (even if you didn't realise) compiled-in the gauge group to SU(NC) and the number of dimensions ND, and the floating point precision (default is double).
+
+First things first, you have a compiled binary called ``GLU''. The code expects input of the form,
+\begin{verbatim}
+ ./GLU -i {input_file} -c {configuration} -o {outputfile}
+\end{verbatim}
+The code works on a per-configuration basis.
+
+The input file works by dumping the strings in memory and simply fscanf-ing for tags of the form,
+\begin{verbatim}
+ {TAG} = {VALUE}
+\end{verbatim}
+hence the spaces before and after the equals are important the terms \verb|{TAG} = {VALUE}| have to appear in the input file as they are checked for in the code even if they are not used.
+
+The code must have at least the input file and the configuration as arguments. The output file is optional, and only corresponds to writing out a configuration.
+
+\section{Modes}
+
+The first line of the input file is quite an important one, it specifies the mode of operations for the code with options (options are always bracketed with curly braces \{ \} )
+\begin{verbatim}
+ MODE = {CUTTING,GAUGE_FIXING,SMEARING,SUNxU1,...}
+\end{verbatim}
+anything else (denoted by the ...) switches to the default behaviour which measures some gauge invariant loops and the gauge fixing accuracy for both Landau and Coulomb gauges.
+
+The specific modes and what they can do for you are discussed in the other documentation files. If you are really impatient though, you can access the in-built help via the command,
+\begin{verbatim}
+./GLU --help
+\end{verbatim}
+Which will tell you about the possible options available for use in the input file and can be used to automatically generate input file examples.
+
+\section{Field conventions}
+
+We store our gauge fields in full $NC\times NC$ format as a 1-dimensional complex array (using complex arithmetic from <complex.h>).  There are ND polarisations of this matrices per site. I store these fields in a lattice-wide 1-D array, whose geometry is encoded lexicographically.
+
+Within the lattice field struct, I include information on the nearest neighbours of the site. The links flowing away from the site to the next in the direction mu are found in the neighbor[mu] array. And the ones flowing to the site are in the back[mu] array.
+
+As my lattice conventions, I have the x direction running fastest, then the y ... And so on. With the final index being the temporal. For a 4D field with lattice lengths $L_x,L_y,L_z,L_t$, the site index (i) of the position (x,y,z,t) can be taken from,
+\begin{equation}
+ i = x + L_x( y + L_y( z + L_z * t ) ).
+\end{equation}
+I have defined in macros (most macro definitions are in \verb|``GLU_definitions.h''|), using the example for 4D,
+\begin{equation}
+ \begin{gathered}
+  \text{LSQ} = L_x L_y,\\
+  \text{LCU} = L_x L_y L_z,\\
+  \text{LVOLUME} = L_x L_y L_z L_t.
+ \end{gathered}
+\end{equation}
+For $ND\neq 4$ these definitions are still valid, with \verb|LVOLUME| being the total number of lattice sites and \verb|LCU| being the spatial hypercube size.
+
+\section{Random numbers}
+
+The code uses as a default the Well (P)RNG of Matsumoto, L'ecuyer et al. This RNG, like the Mersenne Twister uses a table of ~600 numbers. We ask for a single SEED value, and use a Lagged Fibonacci generator to fill the table. If everyone is OK with GSL doing this, why the hell can't I? There are also versions of the \verb|KISS, MWC_1038, MWC_4096| RNGs available. The RNG also burns the first 2000 or so numbers in a warm up phase.
+
+If the seed is 0, the code looks in \verb|/dev/urandom/| for a seed out of the Linux entropy pool. If urandom doesn't exist, the code will complain and exit.
+
+If you want to randomly gauge transform your initial gauge fields (as a check for gauge invariance of measures, or for looking for a more convergent local minimum for the gauge fixing) the option in the input file,
+\begin{verbatim}
+ RANDOM_TRANSFORM = {YES}
+\end{verbatim}
+ssuffices, all other options will be considered as not wanting to randomly transform the configuration.
+
+\section{Support}
+
+he geometry of the lattice is taken from the header of these files, or if not reading a configuration it is specified in the input file.
+
+To specify what type of file you are attempting to read the option,
+\begin{verbatim}
+ HEADER = {NERSC,HIREP,MILC,SCIDAC,ILDG,INSTANTON,RANDOM,UNIT}
+\end{verbatim}
+is your friend.
+
+If you are reading a HIREP, MILC, SCIDAC, ILDG configuration and writing out to a NERSC header, or something weird like that. These formats (worryingly) do not put the configuration number in the header, and so you should specify it in the input file,
+\begin{verbatim}
+ CONFNO = {}
+\end{verbatim}
+does the trick.
+
+The final three options require some explanation. \verb|INSTANTON|  generates a BPST instanton configuration with a single instanton. \verb|RANDOM| creates a random configuration. And unit creates a gauge configuration which is made entirely of identity matrices.
+
+If using \verb|{INSTANTON,RANDOM,UNIT}| you must specify the dimensions of the problem. These are set in the input file as
+\begin{verbatim}
+ DIM_0 = {}
+ DIM_1 = {}
+ ....
+\end{verbatim}
+The code will attempt to read ND of these. Any more dimensions specified will be ignored.
+
+\section{Output}
+
+The output file's type can be specified with,
+\begin{verbatim}
+ OUTPUT = {NERSC_SMALL,NERSC_GAUGE,NERSC_NCxNC,HIREP,MILC,ILDG_SCIDAC,ILDG_BQCD,SCIDAC}
+\end{verbatim}
+With the default being \verb|NERSC_GAUGE|. The first three are NERSC-like files. \verb|NERSC_GAUGE,NERSC_NCxNC| satisfy the NERSC conventions (and obvious NC and ND generic extensions), whereas \verb|NERSC_SMALL| is technically not a NERSC compliant configuration. It shares the header but is only available for SU(2) and SU(3). It uses relations of the matrix to store the configurations in only 3 real constants for SU(2) and 8 real constants for SU(3)\footnote{The minimal number of parameters needed to represent a matrix is the number of generators of the group, this could allow for an exact exponentiation routine for larger NC matrices, which would be a large saving}, it is \textit{perhaps} a little unstable (never really seen this myself) but I was told it was.
+
+\verb|NERSC_GAUGE| stores the top $NC-1$ rows and fills in the final one using the signed minors. \verb|NERSC_NCxNC| writes the whole matrix. \verb|HIREP| is the same as \verb|NERSC_NCxNC| but with a different, less detailed header and with a different geometry (theirs is (t,x,y,z) for some reason, is this a european convention? It just seems wrong). All of the others write out the field as binary data in Big-Endian format the same as \verb|NERSC_NCxNC|.
+
+The input file option,
+\begin{verbatim}
+ INFO = {}
+\end{verbatim}
+Is the information about the configuration that appears in the NERSC header.
+
+The default behaviour of the writers is to write out configurations in Big Endian format in the working precision of the code.
+
+\end{document}

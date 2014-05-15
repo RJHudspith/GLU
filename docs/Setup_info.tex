@@ -1,0 +1,147 @@
+\documentclass[12pt]{article} 
+
+\usepackage[english]{babel}
+\usepackage{times}
+\usepackage[T1]{fontenc}
+\usepackage{blindtext}
+\usepackage{mathptmx}
+
+% the following commands control the margins:
+\topmargin=-1in    % Make letterhead start about 1 inch from top of page 
+\textheight=20cm  % text height can be bigger for a longer letter
+\oddsidemargin=0pt % leftmargin is 1 inch
+\textwidth=6.5in   % textwidth of 6.5in leaves 1 inch for right margin
+\usepackage{hyperref}
+
+\begin{document}
+
+\section{Introduction}
+
+Hi, I am producing this document to ease you in to using my code/library, which I have called ``GLU'' (Gauge Link Utility). The code is intended for very fast Landau and Coulomb gauge fixing using Fourier
+Acceleration \cite{PhysRevD.37.1581}. It also supports a bunch of other operations which I will not describe here.
+
+My code is written for \href{http://en.wikipedia.org/wiki/Openmp}{openmp shared-memory parallelism}. And can read
+\href{http://lattices.qcdoc.bnl.gov/formatDescription/index.html}{NERSC}, HiRep, MILC, SCIDAC, \verb|ILDG_BQCD|, \verb|ILDG_SCIDAC| or general LIME configuration files.
+
+I have included the most recent \href{http://www.fftw.org/}{fftw} library, this is the only external library needed. I
+will now describe the fairly painless installation procedure, which should take five minutes or so.
+
+\section{Installation}
+
+Ok, so I will discuss the two choices in the utilisation of FFTW, they are the ``Small scale'' and ``Large scale''
+usage. ``Small scale'' is for targets of less than 6 processors and ``Large scale'' is for more. My code can be set to
+generic NC (number of color charges) and generic ND (dimensions of lattice), but defaults to NC=3, ND=4 which is what I
+imagine you require.
+
+\subsection{FFTW and flags}
+
+In fftw-3.3.3 the general flags I used are (assuming gcc and \verb| $FFTW_INSTALL | is some meaningful directory),
+\small{
+\begin{verbatim}
+./configure CC=gcc CFLAGS="-O3 -ffast-math" --prefix=$FFTW_INSTALL 
+\end{verbatim}
+}
+
+And if available, I would recommend using the \verb| -mfpmath=sse | and the \verb| --enable-sse2 | flags as well (if
+available). And then it is just the usual \verb| make && make all install | 
+
+\subsubsection{Large scale}
+
+For large scale builds I utilise the OpenMP'd FFTW routines, called using
+
+\begin{verbatim}
+ --enable-openmp
+\end{verbatim}
+
+and \verb| -fopenmp | in the CFLAGS. 
+
+\subsection{GLU and flags}
+
+Awesome, you have compiled FFTW! Don't worry, that was the hard part. Now in ./GLU/, type something like
+
+\small{
+\begin{verbatim}
+./configure CC=gcc CFLAGS="-O3 -ffast-math -fopenmp" --prefix=$GLU_INSTALL \\
+--enable-timegf --with-fftw=$FFTW_INSTALL
+\end{verbatim}
+}
+
+Where the \verb|\\| implies I have not gone to a newline, this was just for formatting in Latex.
+
+And then just \verb| make && make install |.
+
+A note of caution, please make sure \verb| $GLU_INSTALL | is the full path, because we have the option to save some
+time and this option will be discussed in ``Erroneous''.
+
+\subsubsection{Large scale}
+ 
+As with the fftw, we need to state we are using the openMP'd fftw routines to my code. The configure flag
+\begin{verbatim}
+ --enable-OMP_FFTW
+\end{verbatim}
+does the trick.
+
+\section{Running tests}
+
+Fantastic. So you should notice there is now something in the \verb| $GLU_INSTALL  | directory. Should be ``bin, lib,
+share and Local''. In the bin directory you will find the binary
+GLU. A flat input file and a config (NERSC QCD
+configuration ``lat..400''). You run my code by typing ( the terms in {} are optional as to whether you want an output
+file).
+
+\begin{verbatim}
+ ./GLU -i input_file -c lat..400 {-o $outfile}
+\end{verbatim}
+
+The input file given is set-up for Coulomb gauge fixing, the accuracy is some integer in the file which is converted to
+$10^{-\textrm{ACCURACY}}$ in the code, due to historical reasons. The rest of the stuff in there is for the
+most part unimportant. If you are not converging set ``\verb|GF_TUNE|'' to be lower, say ``0.09''.
+
+The accuracy is defined by the measure,
+\begin{equation}
+\theta=\frac{1}{V N_C}\sum_{\mu,x} Tr\left(\left[ A_\mu(x+a\hat{\mu}/2) -
+A_\mu(x-a\hat{\mu}/2)
+\right]\right)^2 < 10^{-ACCURACY}. \nonumber
+\end{equation}
+
+\textbf{I strongly recommend an ACCURACY greater than or equal to 14!}
+
+GLU can also be used to automatically generate example input files for Landau and Coulomb gauge fixing by typing the command,
+\begin{verbatim}
+./GLU --autoin={LANDAU,COULOMB}
+\end{verbatim}
+This will print out an input file to stdout. If you wish to query the various options of the input file, the command,
+\begin{verbatim}
+./GLU --help={options}
+\end{verbatim}
+Can be used.
+
+\section{Erroneous}
+
+If we are not submitting to a cluster and working locally, we can save the FFTW plan to the ./Local/Moments folder in
+the installation directory. For large transforms this is a good initial time saver. It is enabled with the configure
+flag,
+\begin{verbatim}
+--enable-notcondor
+\end{verbatim}
+
+For the moment that is about it.
+
+\begin{thebibliography}{9}
+  
+\bibitem{PhysRevD.37.1581}
+  \emph{Fourier acceleration in lattice gauge theories. I. Landau gauge fixing},
+  Davies, C. T. H. and Batrouni, G. G. and Katz, G. R. and Kronfeld, A. S. and Lepage, G. P. and Wilson, K. G. and Rossi, P.  and Svetitsky, B.,
+  Phys. Rev. D,
+  37,
+  6,
+  1581--1588,
+  7,
+  1988,
+  Mar,
+  10.1103/PhysRevD.37.1581,
+  American Physical Society.
+
+\end{thebibliography}
+
+\end{document}

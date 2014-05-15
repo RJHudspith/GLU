@@ -1,0 +1,18 @@
+Wed 11/01/12
+
+Configure script bludgeoned into working in a satisfactory way.
+Should allow this code to be used by the unscrupulous masses I guess.
+Updated version number in my excitement.
+
+Tue 12/02/13
+
+Still not available to the masses.
+As a birthday treat to myself I am incorporating the automaking bit into the
+SVN. Will again update the version number in gross over-excitement.
+
+Mon 24/02/14
+
+Still not quite ready for the public. Many new additions, much wow.
+For one thing, I removed all the swearing, I have some error-checking for
+the gauge fixing routine and have got the Log smearing to work in single
+precision using the series expressions.

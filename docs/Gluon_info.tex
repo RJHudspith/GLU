@@ -1,0 +1,352 @@
+\documentclass[12pt]{article} 
+
+\usepackage[english]{babel}
+\usepackage{times}
+\usepackage[T1]{fontenc}
+\usepackage{blindtext}
+\usepackage{mathptmx}
+\usepackage{amsmath,mathtools,amsfonts}
+
+% the following commands control the margins:
+\topmargin=-1in    % Make letterhead start about 1 inch from top of page 
+\textheight=20cm  % text height can be bigger for a longer letter
+\oddsidemargin=0pt % leftmargin is 1 inch
+\textwidth=6.5in   % textwidth of 6.5in leaves 1 inch for right margin
+\usepackage{hyperref}
+
+\newcommand{\UMP}{\mbox{$U_\mu\left(x+a\frac{\hat\mu}{2}\right)$}}
+\newcommand{\AMP}{\mbox{$A_\mu\left(x+a\frac{\hat\mu}{2}\right)$}}
+
+\begin{document}
+
+Hi, if you are reading this you probably have at least a passing interest in using my code to compute some gluonic observables. 
+
+Assuming you are compiled to an NC gauge theory, with $ND$ dimensions, running 
+\begin{verbatim}
+./GLU -i {input file} -c {configuration file}
+\end{verbatim}
+the choice in the input file,
+\begin{verbatim}
+ MODE = CUTTING
+\end{verbatim}
+Is the one you want.
+
+Most of the routines assume you have fix the gauge, and I split the routines into those requiring Coulomb gauge fixed links and Landau gauge fixed links. Also, for all of the measurements in momentum space require the binding to FFTW.
+
+All of these routines write out big-endian format binary file of the data, to whereever OUTFILE is specified. Be warned, the code will segfault if the path doesn't exist.
+\begin{verbatim}
+ OUTFILE = {}
+\end{verbatim}
+The file format was chosen so that it is compatible with QDP's IO, in particular its BinaryFileWriter type.
+
+\section{Momentum cuts}
+
+You have several choices for momentum cuts, where specific momenta are selected. These are selected using the input file with,
+\begin{verbatim}
+ MOM_CUT = {PSQ_CUT,HYPERCUBIC_CUT,CYLINDER_CUT,ANGULAR_CUT}
+\end{verbatim}
+\verb NORMAL_PSQ is a maximum $p^2$ cut on the Fourier modes, i.e. if we define $p_\mu=\frac{2\pi n_\mu}{L_\mu}$ then,
+\begin{verbatim}
+ MAXMOM = {}
+\end{verbatim}
+Excludes $0 \leq n_\mu n_\mu \leq \text{MAXMOM}$. \verb HYPERCUBIC_CUT is similar, and chooses
+\begin{equation}
+\sqrt{0} \leq |n_\mu| \leq \sqrt{\text{MAXMOM}}. 
+\end{equation}
+Such that hard, on-axis momenta (which are the most unphysical) are not included but momenta that are along the body diagonals are.
+
+A method envisaged to include contributions only along body diagonals, by including only momenta that lie within a cylinder of some width along the main diagonals, this is the \verb|CYLINDER_CUT| cut. The cylinder width is set in the input file (2.0 is common),
+\begin{verbatim}
+ CYL_WIDTH = {}
+\end{verbatim}
+The width is $\text{CYL WIDTH} \frac{2\pi}{L}$ where L is the smallest lattice dimension length.
+
+The final available cut is the angular, this is like a cylinder cut but instead of cylinders along the body diagonals there are cones. The cones have apex at the (0,0,...,0) position and the angle of the apex is set in the input file by,
+\begin{verbatim}
+ ANGLE = {}
+\end{verbatim}
+
+\textbf{For all cuts we keep the 0 momentum mode}. 
+
+As an aside, the momentum list has p, -p symmetry.
+
+\section{Field definitions}
+
+We define the gluon fields via,
+\begin{equation}
+ \AMP = -i\log\left( \UMP \right).
+\end{equation}
+And their momentum-space counterparts,
+\begin{equation}
+ A_\mu(p) = e^{ip_\mu/2} \sum_{x} e^{ip_\mu x_\mu} \AMP.
+\end{equation}
+The factor $e^{ip_\mu/2}$ is necessary to ensure the momentum space gauge fixing condition is satisfied. This is due to the fields being defined halfway between the sites.
+
+The field definition is selected by the option,
+\begin{verbatim}
+ FIELD_DEFINITION = {LOG}
+\end{verbatim}
+Anything else defaults to the Hermitian projection definition of the fields.
+
+The logarithm definition can either be taken approximately (the Hermitian projection) or exactly. It is important that the field definition here corresponds to the field definition used in the gauge fixing definition of $\partial_\mu A_\mu=0$. As such, we do a check of the momentum-space gauge fixing condition,
+\begin{equation}
+ \tilde{p}_\mu A_\mu(p) = 0
+\end{equation}
+Where, for Coulomb gauge $\mu$ runs over the spatial indices only.
+
+The momentum definition defaults to $\tilde{p}_\mu=2\sin\left(\frac{p_\mu}{2}\right)$, where $p_\mu$ is the usual Fourier mode definition. The sin definition of momentum is the one that provides a direct map to the configuration space definition of the gauge condition.
+
+\section{Topological suscebtibility}
+
+The selection,
+\begin{verbatim}
+ CUTTYPE = TOPOLOGICAL_SUSCEPTIBILITY
+\end{verbatim}
+Allows for the computation of the topological correlator.
+
+The topological charge density is defined by,
+\begin{equation}
+ q(x) = \epsilon_{\mu\nu\rho\sigma} F_{\mu\nu}(x) F^{\rho\sigma}(x).
+\end{equation}
+With the field strength tensor defined using the symmetric clover definition, or can be the highly improved tensor if
+\begin{verbatim}
+ --enable-CLOVER_IMPROVE
+\end{verbatim}
+Has been defined. The free parameter $k_5$ is the free parameter multiplying the $3\times3$ Wilson loop, and is naturally set to 0, it can be changed with,
+\begin{verbatim}
+ --with-CLOVER_K5={}
+\end{verbatim}
+
+The topological correlator is defined by,
+\begin{equation}
+ C(r) = \frac{}{(32\pi^2)^2}\text{Tr}\left[ q(x) q(y)^{\dagger} \right]\qquad r=|x-y|.
+\end{equation}
+
+The code allows for link smearing to improve the evaluation, as it appears that a few levels of HYP smearing really helps. The large $r^2$ behaviour can be used to define the topological susceptibility.
+
+The output file produced has the form (in big endian, binary format)
+\begin{verbatim}
+ "N r^2"
+ r^2 (integer)
+ ......
+ "N r^2"
+ C(r^2) (double)
+\end{verbatim}
+Where \verb| N r^2| is the length of the allowed $r^2$ list, which uses the momentum cuts for vectors defined in configuration space. This code does not need binding to FFTW.
+
+\section{Coulomb measurements}
+
+These measurements require the gauge field being read to be gauge fixed to Coulomb gauge.
+
+\subsection{Static potential}
+
+We provide a measurement of the static potential via polyakov loops, the option in the input file,
+\begin{verbatim}
+ CUTTYPE = STATIC_POTENTIAL
+\end{verbatim}
+Is the one you want.
+
+The static potential in Coulomb gauge can be defined by,
+\begin{equation}
+\begin{gathered}
+ W(r,\tau) = Ae^{-V(r''-r')\tau} = \langle \text{Tr}\left[L(r'',\tau) L(r',\tau)^{\dagger}\right] \rangle, \\
+ L(r,\tau) = \prod_{t}^{t+\tau} U_t\left(r+a\frac{\hat{t}}{2}\right).
+ \end{gathered}
+\end{equation}
+We use translational invariance to greatly boost statistics by varying the $r''$ and the $r'$ positions over the whole lattice. The r's are defined on the timeslice t and are spatially separated. Compared to standard Wilson loops, this method is efficient as it does not require the spatial product of links only Polyakov loop correlators.
+
+The value $\tau$ is selected by the option,
+\begin{verbatim}
+ MINMOM = {}
+\end{verbatim}
+
+The maximum allowed $r^2$ is set with the parameter,
+\begin{verbatim}
+ MAXMOM = {}
+\end{verbatim}
+
+The singlet ($V_1$) and qq ($V_{qq}$) potentials from,
+\begin{equation}
+\begin{aligned}
+ C_1(r,\tau) = e^{-V_{1}(r)\tau} = \text{Tr}\left[ L(0,\tau) L(r,\tau)^{\dagger} \right],\nonumber \\
+C_{qq}(r,\tau) = e^{-V_{qq}(r)\tau} = \text{Tr}\left[ L(0,\tau)\right]\text{Tr}\left[ L(r,\tau)^{\dagger} \right].
+\end{aligned}
+\end{equation}
+Some care should be taken in deciding $\tau$, as the signal is exponentially supressed but yet should be well enough separated to avoid temporal correlations between slices. We recommend fitting an expoenential in $\tau$ to the $C$'s and extracting each $V(r)$ from the exponent.
+
+The output is similar to the topological susceptibility with the $r^2$ list first (again selected by using the momentum-space cut procedures), and then the number of temporal correlators, and then the correlator measurement $C_1(r,t)$ and $C_{qq}(r,t)$ for each t specified. Again, this code does not need linking to FFTW.
+
+\subsection{Instantaneous propagators}
+
+The instantaneous Coulomb gauge propagator measurement requires time-slice wide FFTs and uses the linking to the FFTW library I have written. It then performs an average over the timeslices.
+
+This option is turned on by the option,
+\begin{verbatim}
+ CUTTYPE = INSTANTANEOUS_GLUONS
+\end{verbatim}
+
+The gluon propagator in Coulomb gauge can be separated into the temporal (T) and spatial (S) transverse components,
+\begin{equation}
+ \begin{gathered}
+  T(p^2) = \frac{2}{V_{xyz}(NC^2-1)}\langle \text{Tr}\left[A_t(p) A_t(-p)\right] \rangle, \\
+  S(p^2) = \frac{2}{V_{xyz}(ND-1)(NC^2-1)}\langle \text{Tr}\left[A_i(p) A_i(-p)\right] \rangle, \\
+ \end{gathered}
+\end{equation}
+``i'' is a spatial index. $V_{xyz}$ is the spatial volume.
+
+The output data is of the form (\verb num_mom  is the number of momenta after cutting, n() is an integer-valued spatial Fourier mode)
+\begin{verbatim}
+ num_mom
+ ND n(x) n(y) n(z) ... n(ND-1)
+ .....
+ .....
+ num_mom
+ S(p^2)
+ .....
+ num_mom
+ T(p^2)
+ .....
+\end{verbatim}
+This format was chosen for its consistency with Chroma's output, and again is big endian binary data and hence readable using QDP.
+
+\section{Landau measurements}
+
+All of these codes expect the configuration to be fixed to Landau gauge, and that FFTW binding has been made in compiling the code.
+
+\subsection{Gluon fields}
+
+After cutting and correction to ensure the momentum space gauge fixing condition the setting,
+\begin{verbatim}
+ CUTTYPE = FIELDS
+\end{verbatim}
+Writes the full $NC\times NC$ traceless Hermitian gauge fields. This is performed in the usual way, writing out the Fourier modes and then each polarisation matrix $\mu=x,y,z,..,t$ for each momenta in the list.
+
+\subsection{\texorpdfstring{$\widetilde{\text{MOMgg}}$}{MOMgg} three point function}
+
+The exceptional scheme has two momenta at p and -p and one at 0 momentum. The projector required to compute the scalar three point funtion is,
+\begin{equation}
+ G^{(3) \;\widetilde{MOMgg}}(p^2) = \frac{1}{V} \frac{4}{2(N_d-1)N_c(N_c^2-1)}
+\delta_{\mu\nu}
+\frac{p_{\rho}}{p^2}
+\langle{\Re\left(\textrm{Tr}\left[A_\mu(p)A_\nu(-p)A_\rho(0)\right]\right)\rangle}.
+\end{equation}
+
+The gluon propagator is the scalar two point function and is computed (at non zero momentum) by,
+\begin{equation}
+ G^{(2)}(p^2) = \frac{2}{V(ND-1)(NC^2-1)}\langle\text{Tr}\left[ A_\mu(p) A_\mu(-p) \right]\rangle.
+\end{equation}
+At zero momentum it is argued that the $ND-1$ should become an $ND$, we do this but without proviso.
+
+The file written out is again a list of Fourier modes, then the list of gluon propagators and finally the list of scalar three point functions for each p.
+
+\subsection{MOMggg three point function}
+
+The three point function in a non-exceptional scheme (the MOMggg) is a tricky beast. The main cost of calling this is finding momentum-conserving triplets of external momenta. The momentum condition that is needed to be satisfied is,
+\begin{equation}
+ \begin{gathered}
+  p + q + r = 0, \\
+  p^2 = q^2 = (p+q)^2 = \mu^2.
+ \end{gathered}
+\end{equation}
+Where $\mu^2$ is the renormalisation scale.
+
+The projector is tricky,
+\begin{equation}\label{chap2:eq:nonexprojectors}
+\begin{aligned}
+\tilde{P}_{\mu\nu\rho}(p,q) = \frac{1}{18(N_d-2)p^2}\bigg(
+& \left(2\delta_{\mu\nu}(q_\rho - p_\rho) - \delta_{\nu\rho}(4q_\mu + 5p_\mu) + \delta_{\rho\mu}(5q_\nu +
+4p_\nu)\right)   \\
+& +\frac{2}{p^2}\left( p_\mu q_\rho (q_\nu - p_\nu)  + q_\nu p_\rho (q_\mu - p_\mu)  \right)   \\
+& +\frac{4}{p^2}\left( p_\nu p_\rho(q_\mu - p_\mu) - q_\mu q_\rho (q_\nu + p_\nu) \right)
+\bigg).
+\end{aligned}\end{equation}
+This defines the scalar three point function, via;
+\begin{equation}
+G^{(3) \;MOMggg}(p^2) = \frac{1}{V} \frac{4}{N_c(N_c^2-1)}
+\langle \tilde{P}_{\mu\nu\rho}(p,q)\Re\left(\text{Tr}\left[A_\mu(p)A_\nu(q)A_\rho(-(p+q))\right]\right)\rangle
+\end{equation}
+No matter what momentum cut you chose. The cut used \textbf{will be} the \verb|NORMAL_PSQ| because otherwise we would lose momenta to satisfy the kinematic.
+
+The file is written as the exceptional kinematic. With the Fourier modes, the gluon propagator and then the three point function.
+
+I \textbf{strongly recommend} performing either three point function measurements on a single machine, and having compiled with,
+\begin{verbatim}
+ --enable-NOT_CONDOR
+\end{verbatim}
+in the configure. This turns on many file-caching techniques. Including saving the full triplet momentum list and list of projections per momenta (these mean massive savings). This also allows for the saving of the FFTW Wisdom to file, which dictates what the fastest Fourier transform routine is.
+
+\subsubsection{Very nice, but what is the point?}
+
+You can compute the renrmalised strong coupling constant $\alpha = \frac{g^2(\mu)}{4\pi}$ using,
+\begin{equation}
+g^{\widetilde{\text{MOMgg}}}(\mu^2) = \left(Z_{A_\mu}(\mu^2)\right)^{3/2} \frac{G^{(3)}(\mu^2)}{\left(G^{(2)}(\mu^2)\right)^2 G^{(2)}(0)}. 
+\end{equation}
+
+\begin{equation}
+g^{\text{MOMggg}}(\mu^2) = \left(Z_{A_\mu}(\mu^2)\right)^{3/2} \frac{G^{(3)}(\mu^2)}{\left(G^{(2)}(\mu^2)\right)^3}. 
+\end{equation}
+
+Where $Z_{A_\mu}(\mu^2)$ is the gluon field renormalisation,
+\begin{equation}
+ Z_{A_\mu}(\mu^2) = \mu^2 G^{(2)}(\mu^2).
+\end{equation}
+
+\subsection{Configuration space gluons}
+
+We also provide a measurement for the configuration space gluon propagators, these are defined by,
+\begin{equation}
+ G^{(2)}(\tau) = \frac{2}{V(ND-1)(NC^2-1)}\langle \sum_t \sum_x \sum_y \text{Tr}\left[A_\mu(x,t) A_\mu(y,t+\tau)\right]\rangle.
+\end{equation}
+
+The mode to select for this is,
+\begin{verbatim}
+ CUTTYPE = CONFIGSPACE_GLUONS
+\end{verbatim}
+
+This routine also calls the smearing options. Allowing for possible ground-state improvement overlap. The available smearing options can be found in the \verb|Smearing_info| documentation.
+
+We write out the list of integers for the temporal length $\tau$. And then two versions of the configuration space propagators. This allows for a computation of the mass of the gluon propagator.
+
+\subsection{Smearing f(q)}
+
+We define the smearing structure function $f(q)$ by the ratio of smeared to unsmeared gluon propagators,
+\begin{equation}
+ f(q) = \frac{G^{(2,SM)}(p^2)}{G^{(2)}(p^2)}.
+\end{equation}
+To compute the smeared propagator, we use the same gauge fixed gluon field and smear it using the smearing arguments. The mode to select for this is,
+\begin{verbatim}
+ CUTTYPE = SMEARING_FQ
+\end{verbatim}
+We can then perform the usual cuts and what have you.
+
+The output file written is the usual Fourier modes, the unsmeared propagator and then the smeared.
+
+\section{Gluon propagator}
+
+This option is selected by,
+\begin{verbatim}
+CUTTYPE = GLUON_PROPS
+\end{verbatim}
+
+The general gluon correlator is,
+\begin{equation}
+ G_{\mu\nu}^{ab}(p^2) = \langle A_{\mu}^a(p) A_{\nu}^b(-p)\rangle.
+\end{equation}
+
+The gluon propagator has generic Lorentz structure,
+\begin{equation}
+ G_{\mu\nu}^{ab}(p^2) = \delta^{ab}\left(\delta_{\mu\nu} - \frac{p_\mu p_\nu}{p^2}\right)G(p^2) + \frac{p_\mu p_\nu}{p^2}F(p^2).
+\end{equation}
+With transverse scalar function $G(p^2)$ and longitudinal $F(p^2)$.
+
+I use the following projectors to extract the two scalars,
+\begin{equation}
+\begin{gathered}
+ F(p^2) = \frac{1}{V\left( NC^2-1\right) }\delta^{ab}\frac{p_\mu p_\nu}{p^2} G_{\mu\nu}^{ab}(p^2), \\
+ G(p^2) = \frac{1}{V \left( NC^2-1\right) \left( ND-1\right)} \delta^{ab} \left( \delta_{\mu\nu} - \frac{ p_\mu p_\nu }{ p^2 } \right)G_{\mu\nu}^{ab}(p^2).
+\end{gathered}
+\end{equation}
+
+I then write out the momentum list as usual, and the transverse scalar and the longitudinal. Again in big-endian format.
+
+\end{document}

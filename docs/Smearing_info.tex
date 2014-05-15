@@ -1,0 +1,245 @@
+\documentclass[12pt]{article} 
+
+\usepackage[english]{babel}
+\usepackage{times}
+\usepackage[T1]{fontenc}
+\usepackage{blindtext}
+\usepackage{amsmath,mathtools,amsfonts}
+\usepackage{mathptmx}
+
+% the following commands control the margins:
+\topmargin=-1in    % Make letterhead start about 1 inch from top of page 
+\textheight=20cm  % text height can be bigger for a longer letter
+\oddsidemargin=0pt % leftmargin is 1 inch
+\textwidth=6.5in   % textwidth of 6.5in leaves 1 inch for right margin
+\usepackage{hyperref}
+
+\newcommand{\UMP}{\mbox{$U_\mu\left(x+a\frac{\hat\mu}{2}\right)$}}
+\newcommand{\AMP}{\mbox{$A_\mu\left(x+a\frac{\hat\mu}{2}\right)$}}
+
+\begin{document}
+
+The following assumes that you have installed GLU, for SU(NC), $N_d$ gauge theory. The smearing transformation routines are called by the input file option,
+\begin{verbatim}
+ MODE = SMEARING
+\end{verbatim}
+
+\section{Wilsonian smearing}
+
+Hi, if you are reading this you are probably interested in the wealth of smearing transformations that the library provides. In general, a smearing transformation is (where the prime indicates a replacement of the link $\UMP$),
+\begin{equation}\label{eq:smtrans}
+\UMP' =
+\exp{\left[\frac{\alpha}{2(N_d-1)}\sum_{\nu\neq\mu}Q_{\mu\nu}(x)\right]} \UMP.
+\end{equation}
+With $Q_{\mu\nu}(x)$ defined as the log of the surrounding $\mu-\nu$ $1\times1$ Wilson loops that end with $\UMP^{\dagger}$,
+\begin{equation}\begin{gathered}
+P_{\mu\nu}(x)=\left(U_\nu(x+a\hat{\nu}/2)U_\mu(x+a\hat{\nu}+a\hat{\mu}
+/2)U_\nu(x+a\hat{\mu}+a\hat{\nu}/2)^\dagger U_\mu(x+a\hat{\mu}/2)^\dagger\right) , \\
+O_{\mu\nu}(x)=\left(U_\nu(x-a\hat{\nu}/2)^{\dagger}U_\mu(x-a\hat{\nu}+a\hat{\mu}
+/2)U_\nu(x+a\hat{\mu}-a\hat{\nu}/2)U_\mu(x+a\hat{\mu}/2)^\dagger\right), \\
+Q_{\mu\nu}(x) = \log(O_{\mu\nu}(x)) + \log(P_{\mu\nu}(x)).
+\end{gathered}\end{equation}
+
+Various (Wilsonian) smearing procedures are based upon approximations of the smaring transformation in Eq.\ref{eq:smtrans}. They are usually called APE, STOUT and LOG.
+
+The smearing routines are called by the following input file options (anything within \{\} are the available options),
+\begin{verbatim}
+SMEARTYPE = {APE,STOUT,LOG}
+\end{verbatim}
+
+If we wish to perform the smearing for all polarisations of links we specify \verb|ALL| in the input file,
+\begin{verbatim}
+DIRECTION = {ALL,SPATIAL}
+\end{verbatim}
+ANd \verb|SPATIAL| if we want to smear only the ($N_d-1$) spatial directions.
+
+If we wish to perform iterated smearing, we simply specify the maximum number of iterations in the input file,
+\begin{verbatim}
+SMITERS = {}
+\end{verbatim}
+Why this is the maximum will be covered in section \ref{sec:topological}.
+
+The smearing parameter $\alpha$ should be less than $0.75$ for convergence of the routine. For the improved and overimproved smearing (\ref{sec:rec}), a different value for convergence should be used. This is set (no matter what dimension $>2!$ that we use) by,
+\begin{verbatim}
+ ALPHA1 = {}
+\end{verbatim}
+The other ALPHA's are related to hypercubically blocked smearing (\ref{sec:hyp}).
+
+\section{Projections}
+
+For the APE projection, we use the determinant-rescaled nAPE projection. The projection by SU(2) subgroup trace maximisation is also available, with the toggling of
+\begin{verbatim}
+ --enable-GIVENS_APE
+\end{verbatim}
+in the configure.
+
+The APE projection is of the form,
+\begin{equation}
+\UMP' = P_{SU(N)}\left((1-\alpha)\UMP + \frac{\alpha}{2(N_d-1)} \sum_{\nu\neq\mu}N_{\mu\nu}(x)\right).
+\end{equation}
+Where the variable $N_{\mu\nu}$ is the open ``staple'',
+\begin{equation}\begin{gathered}
+L_{\mu\nu}(x) =
+\left(U_\nu(x+a\hat{\nu}/2)U_\mu(x+a\hat{\nu}+a\hat{\mu}/2)U_\nu(x+a\hat{\mu}+a\hat{\nu}/2)^\dagger\right), \\
+M_{\mu\nu}(x) =
+\left(U_\nu(x-a\hat{\nu}/2)^{\dagger}U_\mu(x-a\hat{\nu}+a\hat{\mu}/2)U_\nu(x+a\hat{\mu}-a\hat{\nu}/2)\right), \\
+N_{\mu\nu}(x) = L_{\mu\nu}(x) + M_{\mu\nu}(x).
+\end{gathered}\end{equation}
+
+Considering the exponentiation of the Hermitian matrix A to the special Unitary U, $U=e^{iA},A=-i\log(U)$. The STOUT projection approximates the Logarithm of the link by using the Hermitian projection,
+\begin{equation}\label{eq:hermitian_approx}
+A = \frac{1}{2i} (U-U^{\dagger} )- \frac{1}{NC}\text{Tr}[U-U^ { \dagger}]I_{NC\times NC})+O(A^3).
+\end{equation}
+
+The LOG projection takes the exact log of the link matrix. For SU(3) we define the LOG by,
+\begin{equation}\label{chap5:eq:exactlog}
+A=\frac{f_2^*U-f_2U^{\dagger}-\Im{\left(f_0 f_2^*\right)}}{\Im{\left(f_1 f_2^*\right)}}.
+\end{equation}
+And for SU(2) we define it by,
+\begin{equation}
+A=\frac{U - f_0 I_{2\times2}}{f_1}.
+\end{equation}
+Where the f's are defined by the $NC$ long series,
+\begin{equation}
+ U = f_0 I_{NC\times NC} + f_1 A + f_2 A^2 \dots f_{NC-1} A^{NC-1}.
+\end{equation}
+Where the f's can be obtained from the Eigenvalues of the matrix U or A.
+
+For $N_C > 3$ we use series expansions for the logarithm and exponential.
+
+\section{Rectangles}\label{sec:rec}
+
+The transformation incorporating rectangle terms is,
+\begin{equation}
+\UMP'=\exp\left\{\frac{\alpha}{2(N_d-1)}\sum_{\nu\neq\mu}\left(c_0 Q_{\mu\nu}(x)
++c_1\sum_{i=1}^{6} R^{(i)}_{\mu\nu}\right) \right\}\UMP.
+\end{equation}
+
+\begin{table}[h]
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+Improved smearing & $c_1$ \\
+\hline
+\rule{0pt}{2.6ex}
+Symanzik & -$\frac{1}{12}$ \\
+Iwasaki & -0.331 \\
+DBW2 & -1.4069 \\
+\hline
+\end{tabular}
+\caption{Table of the parameters $c_0=1-8c_1$ and $c_1$ used for different
+improved smearing techniques.}\label{chap3:tab:smearing_params}
+\end{center}
+\end{table}
+
+These are turned on in the configure with,
+\begin{verbatim}
+ --with-IMPROVED_STAPLE={IWASAKI,DBW2,SYMANZIK}
+\end{verbatim}
+
+Or, one could specify the terms $C_0$ and $C_1$ themselves by the following configure script command
+\begin{verbatim}
+--with-IMPROVED_C0={} --with-IMPROVED_C1={}
+\end{verbatim}
+
+There are six $2\times1$ rectangular terms $R^{(i)}$ that contribute to the smearing, 3 different rectangles and contributions from $\pm\nu$ I have written the
+positive $\nu$ terms below in Eq.\ref{chap3:eq:Rpnus},
+\begin{equation}\label{chap3:eq:Rpnus}
+\begin{aligned}
+%% 1x2 in the \mu \nu plane
+R^{(1)}_{\mu\nu} = \;
+\log\bigg(&U_\nu\left(x+a\frac{\hat{\nu}}{2}\right)U_\nu\left(x+a\frac{3\hat{\nu}}{2}\right)
+U_\mu\left(x+2a\hat{\nu} +
+a\frac{\hat{\mu}}{2}\right)U_\nu\left(x+a\hat\mu+a\frac{\hat{3\nu}}{2}\right)^{\dagger} \\
+&U_\nu\left(x+a\hat\mu+a\frac{\hat{\nu}}{2}\right)^{\dagger}U_\mu\left(x+a\frac{\hat\mu}{2}\right)^{
+\dagger}\bigg).  \\
+%% 2x1 leftward
+R^{(2)}_{\mu\nu} =\; \log\bigg(&U_\mu\left(x-a\frac{\hat\mu}{2}\right)^{\dagger}
+U_\nu\left(x-a\hat\mu + a\frac{\hat\nu}{2}\right) U_\mu\left(x +
+a\hat\nu - a\frac{\hat\mu}{2}\right)U_\mu\left(x+a\hat\nu + a\frac{\hat\mu}{2}\right) \\
+&U_\nu\left(x+a\hat\mu + a\frac{\hat\nu}{2}\right)^{\dagger}U_\mu\left(x+a\frac{\hat\mu}{2}\right)^{
+\dagger}\bigg).  \\
+%% 2x1 rightward
+R^{(3)}_{\mu\nu} =\;
+\log\bigg(&U_{\nu}\left(x+a\frac{\hat\nu}{2}\right)U_{\mu}\left(x+a\hat\nu+a\frac{\hat\mu}{2}\right)
+U_{\mu}\left(x+a\hat\nu+a\frac{3\hat\nu}{2}\right)U_{\nu}\left(x+2a\hat\mu+
+a\frac{\hat\nu}{2}\right)^{\dagger} \\
+&U_{\mu}\left(x+a\frac{3\hat\mu}{2}\right)^{\dagger}U_{\mu}
+\left(x+a\frac{\hat\nu}{2}\right)^{\dagger}\bigg).
+\end{aligned}\end{equation}
+
+One can incorporate a term $\epsilon$ that interpolates between the full rectangle term and the standard, Wilsonian smearing transformation. This is called ``over-improved'' smearing, and is set by the configure command,
+\begin{verbatim}
+ --with-OVERIMPROVED_EPSILON={}
+\end{verbatim}
+And some number.
+
+The coefficients for the over-improved smearing are.
+\begin{table}[h!]
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+Improved smearing & $c_0$ & $c_1$ \\
+\hline
+\rule{0pt}{2.6ex}
+Symanzik & $1+\frac{2}{3}(1-\epsilon)$ & -$\frac{1}{12}(1-\epsilon)$ \\
+Iwasaki & $1+2.648(1-\epsilon)$ & $-0.331(1-\epsilon)$ \\
+DBW2 & $1+11.2536(1-\epsilon)$ & $-1.4069(1-\epsilon)$ \\
+\hline
+\end{tabular}
+\caption{Table of the
+over improved smearing parameters used in this study.}\label{chap3:tab:oversmearing_params}
+\end{center}
+\end{table}
+
+\section{Hypercubic blocking}\label{sec:hyp}
+
+The 4 dimensional general, hypercubic transformation is,
+\begin{equation}\label{chap3:eq:hyps}\begin{aligned}
+V_{\mu,\nu \rho}(x) &= \exp\left\{ \frac{\alpha_3}{2(N_d-3)}\sum_{\sigma\neq
+\mu\nu\rho}Q_{\mu\sigma}(U(x)) \right\}\UMP,  \\
+W_{\mu,\nu}(x) &= \exp\left\{ \frac{\alpha_2}{2(N_d-2)}\sum_{\rho\neq
+\mu\nu} Q_{\mu\rho}(V(x)) \right\}\UMP,  \\
+\UMP' &= \exp\left\{ \frac{\alpha_1}{2(N_d-1)}\sum_{\nu\neq \mu}Q_{\mu\nu}(W(x)) \right\}\UMP.
+\end{aligned}\end{equation}
+
+We use precomputed forms for the top two levels if possible. Otherwise these are (slowly) computed in-step. For the $N_d$-generic hypercubic smearing routine one notes that the blocking is $N_D-1$ recursions down (and hence $N_d-1$ coefficients $\alpha_i$) from the link level. This is the form we use. The usual projections APE, STOUT and LOG are available for these routines and have the special monikers HYP, HEX and HYL respectively. The rectangle terms are not included.
+
+The Hypercubically-blocked smearing routines are called by the following input file commands,
+\begin{verbatim}
+SMTYPE = {HYP,HEX,HYL}
+\end{verbatim}
+The input file options for $N_d$ larger than 4 dimensional smearing is,
+\begin{verbatim}
+ ALPHA1 = {}
+ ALPHA2 = {}
+ ......
+ ALPHA{ND-1} = {} 
+\end{verbatim}
+Where ALPHA1 is one level of the blocking down, ALPHA2 is two and so on.
+
+\section{Topological measurements}\label{sec:topological}
+
+If we configure the code with the argument,
+\begin{verbatim}
+ --with-TOP_VALUE={}
+\end{verbatim}
+some number. This will tell the code to begin topological measurements from \verb TOP_VALUE 's numerical value. The code uses the naive gauge field strength tensor definition for the topological charge,
+\begin{equation}
+Q^{\text{Latt}}_{\text{top}} = \frac{1}{32\pi^2}\sum_x
+\epsilon_{\mu\nu\rho\sigma}\text{Tr}\left[F^{\text{Latt}}_{\mu\nu}(x)F^{\text{Latt}}_{\rho\sigma}(x)\right
+].
+\end{equation}
+If the topological charge is \textit{close enough} to an integer, the routine breaks and quotes an integer for the topological charge. 
+
+I would suggest also using the highly improved field strength tensor the configure command should be called,
+\begin{verbatim}
+ --enable-CLOVER_IMPROVE
+\end{verbatim}
+and if a value for $k_5$ is to be used (apart from 0), the command in the configure,
+\begin{verbatim}
+ --with-CLOVER_K5={}
+\end{verbatim}
+should be used.
+
+\end{document}
