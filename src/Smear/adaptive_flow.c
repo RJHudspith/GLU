@@ -19,14 +19,17 @@
 /**
    @file adaptive_flow.c
    @brief the (two step) adaptive rk4 wilson flow routine
+
+   Slows down, performing fine measurements at ~t_0 and ~w_0
+   these are T0_STOP and WFLOW_STOP and are defined in
+   wflowfuncs.h
  */
 
 #include "Mainfile.h"
 
-// Need this as we are calling the init_navig( lat ) routine for our temporaries
-#include "geometry.h"
-#include "plaqs_links.h"
-#include "wflowfuncs.h"
+#include "geometry.h"     // init_navig is called for the temporary
+#include "plaqs_links.h"  // clover and plaquette measurements
+#include "wflowfuncs.h"   // wilson flow general routines
 
 // enable this if we are doing a straight shot for a specific time
 // to avoid measuring the topological charge and clover and all that,
@@ -36,28 +39,28 @@
 static const double mnineOseventeen = -0.52941176470588235294 ; // -9.0/17.0
 
 /**
-   @fn static inline GLU_real adaptfmax( const GLU_real a , const GLU_real b )
+   @fn static inline double adaptfmax( const double a , const double b )
    @brief the maximum of two numbers
    Is probably unsafe because Infs and Nans are not considered, although
    what would you do with them?
  */
-static inline GLU_real
+static inline double
 adaptfmax( a , b )
-     const GLU_real a ;
-     const GLU_real b ;
+     const double a ;
+     const double b ;
 {
   return ( b < a ? a : b ) ;
 }
 
 /**
-   @fn static inline GLU_real adaptfmin( const GLU_real a , const GLU_real b )
+   @fn static inline double adaptfmin( const double a , const double b )
    @brief the minimum of two numbers
    Again probably unsafe
  */
-static inline GLU_real
+static inline double
 adaptfmin( a , b )
-     const GLU_real a ;
-     const GLU_real b ;
+     const double a ;
+     const double b ;
 {
   return ( a < b ? a : b ) ;
 }
