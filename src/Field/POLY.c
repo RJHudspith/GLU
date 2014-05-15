@@ -72,73 +72,6 @@ poly( const struct site *__restrict lat ,
   return sum ;
 }
 
-
-
-// check if i and j form a triplet
-#ifdef THREE_QUARK_CORRELATOR
-
-static const double r3 = 1.7320508075688772 ;
-static const double TWOPI_3 = TWOPI / 3. ;
-
-static double
-get_ang( const int V1[ ND-1 ] , const double V1_len , 
-	 const int V2[ ND-1 ] , const double V2_len )
-{
-  if( V1_len == 0. || V2_len == 0. ) return M_PI ;
-  int mu , scalar_prod = 0 ;
-  for( mu = 0 ; mu < ND-1 ; mu++ ) {
-    scalar_prod = V1[ mu ] * V2[ mu ] ;
-  }
-  return acos( scalar_prod / ( V1_len*V2_len ) ) ;
-}
-
-// compute LMINSQ
-static double
-compute_LMINSQ( const double a ,
-		const double b ,
-		const double c )
-{
-  return 0.5 * ( ( a*a + b*b + c*c ) +
-		 r3 * sqrt( ( a+b+c ) * ( b-a+c ) *
-			    ( a-b+c ) * ( a+b-c ) ) ) ;
-}
-
-static GLU_bool
-is_a_triplet( const int i , 
-	      const int j , 
-	      double *rsq )
-{
-  // compute the vectors
-  int VA[ ND-1 ] , VB[ ND-1 ] , VC[ ND-1 ] ; 
-  get_mom_2piBZ( VA , i , ND-1 ) ;
-  get_mom_2piBZ( VC , j , ND-1 ) ;
-  int mu ;
-  for( mu = 0 ; mu < ND-1 ; mu++ ) {
-    VC[ mu ] = -VC[ mu ] ;
-    VB[ mu ] = VA[ mu ] + VC[ mu ] ;
-  }
-
-  // compute their lengths
-  double a = 0. , b = 0. , c = 0. ;
-  for( mu = 0 ; mu < ND-1 ; mu++ ) {
-    a += VA[ mu ] * VA[ mu ] ;
-    b += VB[ mu ] * VB[ mu ] ;
-    c += VC[ mu ] * VC[ mu ] ;
-  }
-  a = sqrt( a ) ; b = sqrt( b ) ; c = sqrt( c ) ; 
-
-  // compute the angle between these ...
-  if( get_ang( VA , a , VB , b ) < TWOPI_3 ) return GLU_FALSE ;
-  else if( get_ang( VA , a , VC , c ) < TWOPI_3 ) return GLU_FALSE ;
-  else if( get_ang( VB , b , VC , c ) < TWOPI_3 ) return GLU_FALSE ;
-
-  // compute the LSQ and return TRUE
-  *rsq = compute_LMINSQ( a , b , c ) ;
-
-  return GLU_TRUE ;
-}
-#endif
-
 /// correlator
 static void
 static_quark_correlator( double *__restrict result ,
@@ -166,59 +99,6 @@ static_quark_correlator( double *__restrict result ,
 	const int idx1 = ( k + LCU * t ) ;
 	const int idx2 = ( k + ref_idx ) < LCU ? ( ref_idx + idx1 ) : ( ref_idx + idx1 - LCU ) ;
 
-	// really need to think hard about this one
-	#ifdef THREE_QUARK_CORRELATOR
-	const int idx3 = ( i + list[k].idx_2 )%LCU + LCU * t ;
-
-	// extract the singlet
-	double complex trtrtr = (double complex)( trace( poly[idx1] ) * 
-						  trace( poly[idx2] ) * 
-						  trace( poly[idx3] ) ) ;
-
-	// double trace terms
-	trace_ab( &res , poly[idx2] , poly[idx3] ) ;
-	double complex TrPxTrPyPz = -9.0 * trace( poly[idx1] ) * res ;
-	trace_ab( &res , poly[idx1] , poly[idx3] ) ;
-	double complex TrPyTrPxPz = -9.0 * trace( poly[idx2] ) * res ;
-	trace_ab( &res , poly[idx1] , poly[idx2] ) ;
-	double complex TrPzTrPxPy = -9.0 * trace( poly[idx3] ) * res ;
-
-	// and the triple trace terms
-	double complex TrPxPyPz ;
-	trace_abc( &TrPxPyPz , poly[idx1] , poly[idx2] , poly[idx3] ) ;
-	double complex TrPxPzPy ;
-	trace_abc( &TrPxPzPy , poly[idx1] , poly[idx3] , poly[idx2] ) ;
-
-	// this is the singlet
-	tr += creal( +27. * ( trtrtr )
-		     -9.0 * ( TrPxTrPyPz + TrPyTrPxPz + TrPzTrPxPy )
-		     +3.0 * ( TrPxPyPz + TrPxPzPy ) ) / 6.0 ;
-
-	// the decuplet
-	tracetrace += creal( +27. * trtrtr 
-			     +9.0 * ( TrPxTrPyPz + TrPyTrPxPz + TrPzTrPxPy )
-			     +3.0 * ( TrPxPyPz + TrPxPzPy ) ) ) / 6.0 ;
-	  #if 0
-	  //Here I list the other possible terms
-	  
-	  // the decuplet
-	  result[i] += ( +27. * trtrtr 
-	  +9.0 * ( TrPxTrPyPz + TrPyTrPxPz + TrPzTrPxPy )
-	  +3.0 * ( TrPxPyPz + TrPxPzPy ) ) / 6.0 ;
-
-	  // the octet
-	  result[i] += ( +27. * trtrtr 
-	  +9.0 * ( TrPxTrPyPz - TrPzTrPxPy )
-	  +3.0 * ( TrPxPyPz ) ) / 6.0 ;
-
-	  // the octet'
-	  result[i] += ( +27. * trtrtr 
-	  -9.0 * ( TrPxTrPyPz - TrPzTrPxPy )
-	  +3.0 * ( TrPxPzPy ) ) / 6.0 ;
-	  #endif
-
-	#else
-
 	// trace of the product
 	trace_ab_dag( &res , poly[idx1] , poly[idx2] ) ;
 	tr += (double)creal( res ) ;
@@ -227,8 +107,6 @@ static_quark_correlator( double *__restrict result ,
 	const GLU_complex tr1 = trace( poly[idx1] ) ;
 	const GLU_complex tr2 = trace( poly[idx2] ) ;
 	tracetrace += creal( tr1 ) * creal( tr2 ) + cimag( tr1 ) * cimag( tr2 ) ;
-
-	#endif
       }
      }
     result[i] = tr ;
@@ -250,9 +128,6 @@ Coul_staticpot( struct site *__restrict lat ,
   const int T = CUTINFO.max_t ;
 
   printf( "\n[STATIC-POTENTIAL] measurements at T = %d\n" , T ) ;
-#ifndef THREE_QUARK_CORRELATOR
-  printf( "[STATIC-POTENTIAL] cut off at r^2 = %d\n" , CUTINFO.max_mom ) ;
-#endif
 
   // compute the ratios of the dimensions in terms of the smallest
   simorb_ratios( ND ) ;
