@@ -591,13 +591,14 @@ sum_PR_numerator( const GLU_complex *__restrict *__restrict in ,
     temp = in[1][i] - in_old[1][i] ;
     loc_sum += 2.0 * ( creal( in[1][i] ) * creal( temp ) + cimag( in[1][i] ) * cimag( temp ) ) ;
 #else
-    GLU_complex temp[ HERMSIZE ] ;
+    GLU_complex temp[ HERMSIZE ] , temp2[ NCNC ] ;
     int mu ;
     for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
       temp[mu] = in[mu][i] - in_old[mu][i] ;
+      temp2[ mu ] = in[ mu ][ i ] ;
     }
     GLU_real tr ;
-    trace_ab_herm_short( &tr , temp , temp ) ;
+    trace_ab_herm_short( &tr , temp2 , temp ) ;
     loc_sum = (double)tr ;
 #endif
     traces[i] = loc_sum ;

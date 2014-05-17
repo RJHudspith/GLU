@@ -35,6 +35,7 @@
 //#define GLU_LOG_SPEED
 //#define GLU_PRINT_LOOPS
 //#define GLU_TEST_MULS
+//#define GLU_TEST_PRODS
 
 // log types we are looking at
 typedef enum { EXACT_FAST , EXACT_SLOW ,
@@ -224,6 +225,64 @@ test_muls( const GLU_complex a[ NCNC ] ,
 }
 #endif
 
+#ifdef GLU_TEST_PRODS
+static void
+test_trace_prods( const struct site *__restrict lat )
+{
+  printf( "[OBS] Trace products A.B \n" ) ;
+  GLU_complex A[ NCNC ] , B[ NCNC ] ;
+  Hermitian_proj( A , lat[1].O[0] ) ;
+  Hermitian_proj( B , lat[1].O[1] ) ;
+
+  GLU_complex temp[ NCNC ] ;
+  multab( temp , A , B ) ;
+  printcomplex( trace( temp ) ) ;
+  
+  double tr ;
+  trace_ab_herm( &tr , A , B ) ;
+  printf( " ( %1.7e  ,  %1.7e )\n" , tr , 0.0 ) ;
+
+  GLU_complex Ctr ;
+  trace_ab( &Ctr , A , B ) ;
+  printcomplex( Ctr ) ;
+
+  trace_ab_dag( &Ctr , A , B ) ;
+  printcomplex( Ctr ) ;
+
+  GLU_complex a[ HERMSIZE ] , b[ HERMSIZE ] ;
+  Hermitian_proj_short( a , lat[1].O[0] ) ;
+  Hermitian_proj_short( b , lat[1].O[1] ) ;
+
+  trace_ab_herm_short( &tr , a , b ) ;
+  printf( " ( %1.7e  ,  %1.7e )\n" , tr , 0.0 ) ;
+
+  printf( "\n[OBS] Trace products A.A \n" ) ;
+  
+  trace_ab_herm_short( &tr , a , a ) ;
+  printf( " ( %1.7e  ,  %1.7e )\n" , tr , 0.0 ) ;
+
+  trace_prod_herm( &tr , A ) ;
+  printf( " ( %1.7e  ,  %1.7e )\n" , tr , 0.0 ) ;
+
+  printf( "\n[OBS] Trace products B.A.B \n" ) ;
+
+  // product of three matrices can use the dag here
+  // as it is the same through hermiticity
+  multab_atomic_left( temp , B ) ;
+  printcomplex( trace(temp) ) ;
+
+  trace_abc( &Ctr , B , A , B ) ;
+  printcomplex( Ctr ) ;
+
+  trace_abc_dag( &Ctr , B , A , B ) ;
+  printcomplex( Ctr ) ;
+
+  trace_abc_dag_Re( &tr , B , A , B ) ;
+  printf( " ( %1.7e  ,  %1.7e )\n" , tr , 0.0 ) ;
+  return ;
+}
+#endif
+
 // wrapper for the default behaviour
 void
 gauge( const struct site *__restrict lat )
@@ -267,6 +326,8 @@ gauge( const struct site *__restrict lat )
   #elif defined GLU_TEST_MULS
     // check this against previous codes
     test_muls( lat[0].O[0] , lat[0].O[1] ) ;
+  #elif defined GLU_TEST_PRODS
+    test_trace_prods( lat ) ;
   #endif
 
   return ;
@@ -281,5 +342,9 @@ gauge( const struct site *__restrict lat )
 #endif
 
 #ifdef GLU_TEST_MULS
+  #undef GLU_TEST_MULS
+#endif
+
+#ifdef GLU_TEST_PRODS
   #undef GLU_TEST_MULS
 #endif

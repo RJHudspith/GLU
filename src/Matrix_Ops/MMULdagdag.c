@@ -47,17 +47,23 @@ multab_dagdag( GLU_complex a[ NCNC ] ,
   a[3] = conj( b[1] ) * conj( c[2] ) + conj( b[3] ) * conj( c[3] )  ; 
 #else
   int i , j , m ;
-  register GLU_complex sum ;
+  register GLU_complex sumr = 0.0 , sumi = 0.0 ;
   register GLU_real REB , IMB , REC , IMC ;
+  const GLU_complex *pC , *pB ;
   for( i = 0 ; i < NC ; i++ ) {
+    pC = c ;
     for( j = 0 ; j < NC ; j++ ) {
-      sum = 0.0 ;
+      pB = b ;
+      sumr = sumi = 0.0 ;
       for( m = 0 ; m < NC ; m++ ) {
-	REB = creal( b[ i + NC * m ] ) ; IMB = cimag( b[ i + NC * m ] ) ;
-	REC = creal( c[ m + NC * j ] ) ; IMC = cimag( c[ m + NC * j ] ) ;
-	sum += REB * REC - IMB * IMC - I * ( REB * IMC + IMB * REC ) ;
+	REB = creal( pB[i] ) ; IMB = cimag( pB[i] ) ;
+	REC = creal( pC[m] ) ; IMC = cimag( pC[m] ) ;
+	sumr += REB * REC - IMB * IMC ;
+	sumi += REB * IMC + IMB * REC ;
+	pB += NC ;
       }
-      a[ j + NC*i ] = sum ;
+      a[ j + NC*i ] = sumr + I * sumi ;
+      pC += NC ;
     }
   }
 #endif

@@ -735,15 +735,11 @@ speed_trace( GLU_complex *res ,
 #elif NC == 2
   *res = ( U[0] + U[3] )  ;
 #else
+  *res = creal( U[ 0 ] ) ;
   int i ;
-  const GLU_real *pU = (const GLU_real*)U ;
-  register GLU_real sumr = 0.0 , sumi = 0.0 ;
-  for( i = 0 ; i < NC ; i++ ) { 
-    sumr += ( *(pU++) ) ;
-    sumi += ( *(pU++) ) ;
-    pU += 2*NC ;
+  for( i = 1 ; i < NC ; i++ ) {
+    *res += U[ i*(NC+1) ] ;
   }
-  *res = sumr + I * sumi ;
 #endif
   return ;
 }
@@ -758,14 +754,11 @@ speed_trace_Re( double *__restrict res ,
 #elif NC == 2
   *res = (double)creal( U[0] ) + (double)creal( U[3] ) ;
 #else
+  *res = (double)creal( U[ 0 ] ) ;
   int i ;
-  const GLU_real *pU = (const GLU_real*)U ;
-  register GLU_real sumr = 0.0 ;
-  for( i = 0 ; i < NC ; i++ ) { 
-    sumr += ( *pU ) ;
-    pU += 2*NC+2 ;
+  for( i = 1 ; i < NC ; i++ ) {
+    *res += (double)creal( U[ i*(NC+1) ] ) ;
   }
-  *res = sumr ;
 #endif
   return ;
 }
@@ -779,13 +772,13 @@ trace( const GLU_complex U[ NCNC ] )
 #elif NC == 2
   return U[0] + U[3] ;
 #else
-  int i ;
+
   const GLU_real *pU = (const GLU_real*)U ;
-  register GLU_real sumr = 0.0 , sumi = 0.0 ;
-  for( i = 0 ; i < NC ; i++ ) { 
-    sumr += ( *(pU++) ) ;
-    sumi += ( *(pU++) ) ;
-    pU += 2*NC ;
+  register GLU_real sumr = *pU , sumi = *( pU + 1 ) ;
+  int i ;
+  for( i = 0 ; i < NC-1 ; i++ ) { 
+    sumr += *( pU += 2*(NC+1) ) ;
+    sumi += *( pU + 1 ) ;
   }
   return sumr + I * sumi ;
 #endif
@@ -809,10 +802,10 @@ trace_ab( GLU_complex *__restrict tr ,
   int i, j ;
   for( i = 0 ; i < NC ; i++ ) {
     for( j = 0 ; j < NC ; j++ ) {
-      sumr += creal( a[ j + NC * i ] ) * creal( a[ i + NC * j ] ) -
-	cimag( a[ j + NC * i ] ) * cimag( a[ i + NC * j ] ) ;
-      sumi += creal( a[ j + NC * i ] ) * cimag( a[ i + NC * j ] ) +
-	cimag( a[ j + NC * i ] ) * creal( a[ i + NC * j ] ) ;
+      sumr += creal( a[ j + NC * i ] ) * creal( b[ i + NC * j ] ) -
+	cimag( a[ j + NC * i ] ) * cimag( b[ i + NC * j ] ) ;
+      sumi += creal( a[ j + NC * i ] ) * cimag( b[ i + NC * j ] ) +
+	cimag( a[ j + NC * i ] ) * creal( b[ i + NC * j ] ) ;
     }
   }
   *tr = sumr + I * sumi ;
@@ -920,6 +913,55 @@ trace_abc_dag( GLU_complex *__restrict tr ,
   return ;
 }
 
+// this is trace( a . b . c^{\dagger} )
+INLINE_VOID
+trace_abc_dag_Re( GLU_real *__restrict tr , 
+		  const GLU_complex a[ NCNC ] , 
+		  const GLU_complex b[ NCNC ] , 
+		  const GLU_complex c[ NCNC ] )
+{
+#if NC == 3
+  *tr = creal( ( a[0] * b[0] + a[1] * b[3] + a[2] * b[6] ) * conj( c[0] ) + \
+	       ( a[3] * b[0] + a[4] * b[3] + a[5] * b[6] ) * conj( c[3] ) + \
+	       ( a[6] * b[0] + a[7] * b[3] + a[8] * b[6] ) * conj( c[6] ) + \
+	       ( a[0] * b[1] + a[1] * b[4] + a[2] * b[7] ) * conj( c[1] ) + \
+	       ( a[3] * b[1] + a[4] * b[4] + a[5] * b[7] ) * conj( c[4] ) + \
+	       ( a[6] * b[1] + a[7] * b[4] + a[8] * b[7] ) * conj( c[7] ) + \
+	       ( a[0] * b[2] + a[1] * b[5] + a[2] * b[8] ) * conj( c[2] ) + \
+	       ( a[3] * b[2] + a[4] * b[5] + a[5] * b[8] ) * conj( c[5] ) + \
+	       ( a[6] * b[2] + a[7] * b[5] + a[8] * b[8] ) * conj( c[8] ) ) ;
+#elif NC == 2
+  *tr = creal( ( a[0] * b[0] + a[1] * b[2] ) * conj( c[0] ) +	\
+	       ( a[2] * b[0] + a[3] * b[2] ) * conj( c[2] ) +	\
+	       ( a[0] * b[1] + a[1] * b[3] ) * conj( c[1] ) +	\
+	       ( a[2] * b[1] + a[3] * b[3] ) * conj( c[3] ) ) ;
+#else
+  const GLU_complex *pB , *pA ;
+  register GLU_real sumr = 0.0 ;
+  GLU_real insumr = 0.0 , insumi = 0.0 ;
+  int i , j , k ;
+  for( i = 0 ; i < NC ; i++ ) {
+    pA = a ;
+    for( j = 0 ; j < NC ; j++ ) {
+      pB = b ;
+      insumr = insumi = 0.0 ;
+      for( k = 0 ; k < NC ; k++ ) {
+	// unroll the mul
+	insumr += ( creal( pA[k] ) * creal( pB[i] ) -
+		    cimag( pA[k] ) * cimag( pB[i] ) ) ; 
+	insumi += ( creal( pA[k] ) * cimag( pB[i] ) + 
+		    cimag( pA[k] ) * creal( pB[i] ) ) ;
+	pB += NC ;
+      }
+      sumr +=  insumr * creal( c[i+j*NC] ) + insumi * cimag( c[i+j*NC] ) ;
+      pA += NC ;
+    }
+  }
+  *tr = sumr ;
+#endif
+  return ;
+}
+
 // Trace of the product of two matrices ( b being daggered ) //
 INLINE_VOID
 trace_ab_dag( GLU_complex *__restrict tr , 
@@ -972,15 +1014,16 @@ trace_ab_herm( GLU_real *__restrict tr ,
 #else
   // loop over upper triangular taking the product
   *tr = 0.0 ;
-  register GLU_real sum = 0.0 ;
+  register double sum = 0.0 ;
   int i , j ;
   for( i = 0 ; i < NC ; i++ ) {
-    for( j = i ; j < NC ; j++ ) {
-      sum += creal( a[ j + NC *i ] ) * creal( b[ j + NC *i ] ) +
-	     cimag( a[ j + NC *i ] ) * cimag( b[ j + NC *i ] ) ;
+    sum += creal( a[ i + NC *i ] ) * creal( b[ i + NC *i ] ) ;
+    for( j = i + 1 ; j < NC ; j++ ) {
+      sum += 2.0 * ( creal( a[ j + NC *i ] ) * creal( b[ j + NC *i ] ) +
+		     cimag( a[ j + NC *i ] ) * cimag( b[ j + NC *i ] ) ) ;
     }
   }
-  *tr = 2.0 * sum ;
+  *tr = (GLU_real)sum ;
 #endif
   return ;
 }
@@ -1003,22 +1046,20 @@ trace_ab_herm_short( GLU_real *__restrict tr ,
 #else
   // loop over upper triangular taking the product
   *tr = 0.0 ;
-  register GLU_real suma = 0.0 , sumb = 0.0 ;
+  register double suma = 0.0 , sumb = 0.0 , sum = 0.0 ;
   int i , j , idx = 0 ;
   for( i = 0 ; i < NC-1 ; i++ ) {
-    for( j = i ; j < NC ; j++ ) {
-      if( i != j ) {
-	*tr += 2.0 * ( creal( a[idx] ) * creal( b[idx] )
-		       + cimag( a[idx] ) * cimag( b[idx] ) ) ;
-      } else {
-	*tr += creal( a[idx] ) * creal( b[idx] ) ;
-	suma += creal( a[idx] ) ;
-	sumb += creal( b[idx] ) ;
-      }
+    sum += creal( a[idx] ) * creal( b[idx] ) ;
+    suma += creal( a[idx] ) ;
+    sumb += creal( b[idx] ) ;
+    idx++ ;
+    for( j = i + 1 ; j < NC ; j++ ) {
+      sum += 2.0 * ( creal( a[idx] ) * creal( b[idx] )
+		     + cimag( a[idx] ) * cimag( b[idx] ) ) ;
       idx++ ;
     }
   }
-  *tr += ( suma * sumb ) ;
+  *tr = (GLU_real)( sum + suma * sumb ) ;
 #endif
 }
 
@@ -1041,14 +1082,16 @@ trace_prod_herm( GLU_real *__restrict tr ,
   // remove the modulus, and pointer-ise gave me 2x maybe a little compiler
   // dependent
   const GLU_complex *pA = a ;
-  register GLU_real res , sum = 0.0 ;
+  register double sum = 0.0 ;
   int i , j ;
   for( i = 0 ; i < NC ; i++ ) {
-    for( j = 0 ; j < NC ; j++ ) {
-      res = creal( *pA ) * creal( *pA ) + cimag( *pA ) * cimag( *pA ) ;
-      sum += ( i!=j )?  2.0 * res : res ;
+    sum += creal( *pA ) * creal( *pA ) ;
+    pA++ ;
+    for( j = i + 1 ; j < NC ; j++ ) {
+      sum += 2.0 * ( creal( *pA ) * creal( *pA ) + cimag( *pA ) * cimag( *pA ) ) ;
       pA++ ;
     }
+    pA += i+1 ;
   }
   *tr = sum ;
 #endif 
