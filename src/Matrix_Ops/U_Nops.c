@@ -536,7 +536,8 @@ pack_hermitian( GLU_complex a[ HERMSIZE ] ,
   int i , j , idx = 0 ;
   for( i = 0 ; i < NC-1 ; i++ ) {
     for( j = i ; j < NC ; j++ ) {
-      a[ idx++ ] = b[ j + i*NC ] ;
+      a[ idx ] = b[ j + i*NC ] ;
+      idx++ ;
     }
   }
   return ;
@@ -735,11 +736,15 @@ speed_trace( GLU_complex *res ,
 #elif NC == 2
   *res = ( U[0] + U[3] )  ;
 #else
-  *res = creal( U[ 0 ] ) ;
   int i ;
-  for( i = 1 ; i < NC ; i++ ) {
-    *res += U[ i*(NC+1) ] ;
+  const GLU_real *pA = (const GLU_real*)A ;
+  register GLU_real sumr = 0.0 , sumi = 0.0 ;
+  for( i = 0 ; i < NC ; i++ ) { 
+    sumr += ( *(pA++) ) ;
+    sumi += ( *(pA++) ) ;
+    pA += 2*NC ;
   }
+  *res = sumr + I * sumi ;
 #endif
   return ;
 }
@@ -754,11 +759,14 @@ speed_trace_Re( double *__restrict res ,
 #elif NC == 2
   *res = (double)creal( U[0] ) + (double)creal( U[3] ) ;
 #else
-  *res = (double)creal( U[ 0 ] ) ;
   int i ;
-  for( i = 1 ; i < NC ; i++ ) {
-    *res += (double)creal( U[ i*(NC+1) ] ) ;
+  const GLU_real *pA = (const GLU_real*)A ;
+  register double sumr = 0.0 ;
+  for( i = 0 ; i < NC ; i++ ) { 
+    sumr += (double)( *(pA) ) ;
+    pA += 2*( NC + 1 ) ;
   }
+  *res = sumr ;
 #endif
   return ;
 }
@@ -772,13 +780,13 @@ trace( const GLU_complex U[ NCNC ] )
 #elif NC == 2
   return U[0] + U[3] ;
 #else
-
-  const GLU_real *pU = (const GLU_real*)U ;
-  register GLU_real sumr = *pU , sumi = *( pU + 1 ) ;
   int i ;
-  for( i = 0 ; i < NC-1 ; i++ ) { 
-    sumr += *( pU += 2*(NC+1) ) ;
-    sumi += *( pU + 1 ) ;
+  const GLU_real *pA = (const GLU_real*)A ;
+  register GLU_real sumr = 0.0 , sumi = 0.0 ;
+  for( i = 0 ; i < NC ; i++ ) { 
+    sumr += ( *(pA++) ) ;
+    sumi += ( *(pA++) ) ;
+    pA += 2*NC ; 
   }
   return sumr + I * sumi ;
 #endif
@@ -1088,7 +1096,8 @@ trace_prod_herm( GLU_real *__restrict tr ,
     sum += creal( *pA ) * creal( *pA ) ;
     pA++ ;
     for( j = i + 1 ; j < NC ; j++ ) {
-      sum += 2.0 * ( creal( *pA ) * creal( *pA ) + cimag( *pA ) * cimag( *pA ) ) ;
+      sum += 2.0 * ( creal( *pA ) * creal( *pA ) 
+		     + cimag( *pA ) * cimag( *pA ) ) ;
       pA++ ;
     }
     pA += i+1 ;
@@ -1175,6 +1184,7 @@ write_matrix_mathematica( const GLU_complex U[ NCNC ] )
 INLINE_VOID
 zero_mat( GLU_complex a[ NCNC ] ) 
 {
+  // should probably just be a call to memset
 #if NC == 3
   a[0] = 0. ;  a[1] = 0. ;  a[2] = 0. ; 
   a[3] = 0. ;  a[4] = 0. ;  a[5] = 0. ; 
