@@ -257,6 +257,9 @@ test_trace_prods( const struct site *__restrict lat )
   printf( " ( %1.7e  ,  %1.7e )\n" , tr , 0.0 ) ;
 
   printf( "\n[OBS] Trace products A.A \n" ) ;
+
+  multab( temp , A , A ) ;
+  printcomplex( trace( temp ) ) ;
   
   trace_ab_herm_short( &tr , a , a ) ;
   printf( " ( %1.7e  ,  %1.7e )\n" , tr , 0.0 ) ;

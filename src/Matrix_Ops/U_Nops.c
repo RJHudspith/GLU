@@ -1010,7 +1010,7 @@ trace_ab_herm( GLU_real *__restrict tr ,
 	    creal( a[5] ) * creal( b[5] ) + cimag( a[5] ) * cimag( b[5] ) ) ;
 #elif NC == 2
   *tr = 2.0 * ( creal( a[0] ) * creal( b[0] ) +
-		creal( a[1] ) * creal( b[1] ) + cimag( a[1] ) * cimag( a[1] ) ) ;
+		creal( a[1] ) * creal( b[1] ) + cimag( a[1] ) * cimag( b[1] ) ) ;
 #else
   // loop over upper triangular taking the product
   *tr = 0.0 ;
@@ -1042,7 +1042,7 @@ trace_ab_herm_short( GLU_real *__restrict tr ,
 	    creal( a[4] ) * creal( b[4] ) + cimag( a[4] ) * cimag( b[4] ) ) ;
 #elif NC == 2
   *tr = 2.0 * ( creal( a[0] ) * creal( b[0] ) +
-		creal( a[1] ) * creal( b[1] ) + cimag( a[1] ) * cimag( a[1] ) ) ;
+		creal( a[1] ) * creal( b[1] ) + cimag( a[1] ) * cimag( b[1] ) ) ;
 #else
   // loop over upper triangular taking the product
   *tr = 0.0 ;
@@ -1076,8 +1076,8 @@ trace_prod_herm( GLU_real *__restrict tr ,
 	      + creal( a[2] ) * creal( a[2] ) + cimag( a[2] ) * cimag( a[2] ) \
 	      + creal( a[5] ) * creal( a[5] ) + cimag( a[5] ) * cimag( a[5] ) ) ;
 #elif NC == 2
-  *tr = creal( a[0] ) * creal( a[0] )					\
-    + 2.0 * ( creal( a[1] ) * creal( a[1] ) + cimag( a[1] ) * cimag( a[1] ) ) ;
+  *tr = 2.0 * ( creal( a[0] ) * creal( a[0] ) +				\
+		creal( a[1] ) * creal( a[1] ) + cimag( a[1] ) * cimag( a[1] ) ) ;
 #else
   // remove the modulus, and pointer-ise gave me 2x maybe a little compiler
   // dependent
