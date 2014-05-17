@@ -401,7 +401,7 @@ double complex
 LU_det( const int N , const GLU_complex U[ N*N ] )
 {
   int i , j , l , piv , perms = 0 ;
-  double complex a[ N*N ] , dt ;
+  double complex a[ N*N ] , dt , determinant = 1. ;
 
   // workspace is double precision
   for( i = 0 ; i < N*N ; i++ ) {
@@ -411,45 +411,50 @@ LU_det( const int N , const GLU_complex U[ N*N ] )
   double attempt , best ; 
   for( i = 0 ; i < N-1 ; i++ ) {
     // swap rows s.t a[i] has largest pivot number first
-    best = cabs( a[i*(N+1)] ) ;
+    best = creal( a[i*(N+1)] ) * creal( a[i*(N+1)] ) 
+         + cimag( a[i*(N+1)] ) * cimag( a[i*(N+1)] ) ;
     piv = i ;
-    for( l = i+1 ; l < N ; l++ ) {
-      attempt = cabs( a[i+l*N] ) ;
+    // again only care about the pivots below i
+    for( j = i+1 ; j < N ; j++ ) {
+      attempt = creal( a[i+j*N] ) * creal( a[i+j*N] ) 
+	      + cimag( a[i+j*N] ) * cimag( a[i+j*N] ) ;
       if( attempt > best ) { 
-	piv = l ; 
+	piv = j ; 
 	best = attempt ; 
       }
     }
     if( a[i+piv*N] == 0.0 ) { 
       printf( "[DETERMINANT] LU  Singular Matrix!!!\n" ) ;
-      write_matrix( U ) ;
-      exit(1) ;
       return 0.0 ;
     }
     if( piv != i ) {
       // unlike what I am told, I physically swap rows
+      // this is measured to be faster than saving the permutations
+      // which I find quite weird, must be a caching thing
       for( l = 0 ; l < N ; l++ ) {
-	dt = a[l+i*N] ;
-	a[l+i*N] = a[l+piv*N] ;
+	dt         = a[l+i*N] ;
+	a[l+i*N]   = a[l+piv*N] ;
 	a[l+piv*N] = dt ;
       }
       perms++ ;
     }
     // perform gaussian elimination
     dt = 1.0 / a[ i*(N+1) ] ;
+    double complex *pA = a + i*N ;
     for( j = N-1 ; j > i ; j-- ) { // go up in other column
-      register double complex fac1 = a[ i + j*N ] * dt ;      
-      for( l = 0 ; l < N ; l++ ) {
-	a[ l + j*N ] -= fac1 * a[ l + i*N ] ;
+      register double complex fac1 = a[ i + j*N ] * dt ; 
+      // go along the row performing the subtraction, there is no point in
+      // subtracting elements where we have determined the best pivot, just the
+      // columns to the right of the pivot
+      for( l = i + 1 ; l < N ; l++ ) {
+	a[ l + j*N ] -= creal( fac1 ) * creal( pA[l] ) - cimag( fac1 ) * cimag( pA[l] ) 
+	        + I * ( creal( fac1 ) * cimag( pA[l] ) + cimag( fac1 ) * creal( pA[l] ) ) ;
       }
-    }  
+    }
+    determinant *= a[ i*(N+1) ] ;
   }
-  dt = perms%2 ? -1.0 : 1.0 ;
-  for( i = 0 ; i < N ; i++ ) {
-    // prod along the diagonal is the determinant
-    dt *= a[ i*( N + 1 ) ] ;
-  }
-  return dt ;
+  determinant *= a[ N*N-1 ] ;
+  return perms&1 ? -determinant : determinant ;
 }
 
 // matrix times a vector ( vector )vect=( matrix )S.( vector )v //
@@ -730,11 +735,15 @@ speed_trace( GLU_complex *res ,
 #elif NC == 2
   *res = ( U[0] + U[3] )  ;
 #else
-  *res = creal( U[ 0 ] ) ;
   int i ;
-  for( i = 1 ; i < NC ; i++ ) {
-    *res += U[ i*(NC+1) ] ;
+  const GLU_real *pU = (const GLU_real*)U ;
+  register GLU_real sumr = 0.0 , sumi = 0.0 ;
+  for( i = 0 ; i < NC ; i++ ) { 
+    sumr += ( *(pU++) ) ;
+    sumi += ( *(pU++) ) ;
+    pU += 2*NC ;
   }
+  *res = sumr + I * sumi ;
 #endif
   return ;
 }
@@ -749,11 +758,14 @@ speed_trace_Re( double *__restrict res ,
 #elif NC == 2
   *res = (double)creal( U[0] ) + (double)creal( U[3] ) ;
 #else
-  *res = (double)creal( U[ 0 ] ) ;
   int i ;
-  for( i = 1 ; i < NC ; i++ ) {
-    *res += (double)creal( U[ i*(NC+1) ] ) ;
+  const GLU_real *pU = (const GLU_real*)U ;
+  register GLU_real sumr = 0.0 ;
+  for( i = 0 ; i < NC ; i++ ) { 
+    sumr += ( *pU ) ;
+    pU += 2*NC+2 ;
   }
+  *res = sumr ;
 #endif
   return ;
 }
@@ -767,13 +779,13 @@ trace( const GLU_complex U[ NCNC ] )
 #elif NC == 2
   return U[0] + U[3] ;
 #else
-
-  const GLU_real *pU = (const GLU_real*)U ;
-  register GLU_real sumr = *pU , sumi = *( pU + 1 ) ;
   int i ;
-  for( i = 0 ; i < NC-1 ; i++ ) { 
-    sumr += *( pU += 2*(NC+1) ) ;
-    sumi += *( pU + 1 ) ;
+  const GLU_real *pU = (const GLU_real*)U ;
+  register GLU_real sumr = 0.0 , sumi = 0.0 ;
+  for( i = 0 ; i < NC ; i++ ) { 
+    sumr += ( *(pU++) ) ;
+    sumi += ( *(pU++) ) ;
+    pU += 2*NC ;
   }
   return sumr + I * sumi ;
 #endif

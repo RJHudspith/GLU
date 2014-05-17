@@ -54,7 +54,7 @@ multab_dagdag( GLU_complex a[ NCNC ] ,
       sum = 0.0 ;
       for( m = 0 ; m < NC ; m++ ) {
 	REB = creal( b[ i + NC * m ] ) ; IMB = cimag( b[ i + NC * m ] ) ;
-	REC = creal( c[ m*( NC + 1 ) ] ) ; IMC = cimag( c[ m*( NC + 1 ) ] ) ;
+	REC = creal( c[ m + NC * j ] ) ; IMC = cimag( c[ m + NC * j ] ) ;
 	sum += REB * REC - IMB * IMC - I * ( REB * IMC + IMB * REC ) ;
       }
       a[ j + NC*i ] = sum ;

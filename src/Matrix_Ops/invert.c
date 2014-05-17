@@ -40,11 +40,18 @@ eliminate_column( double complex *__restrict a ,
 		  const int i , const int j )
 {
   const double complex fac1 = a[ i + j*NC ] / a[ i*(NC+1) ] ;  
+  double complex *pA = a + i*NC ;
   int k ;
+  // such a pattern elimintates cancelling zeros
+  for( k = i + 1 ; k < NC ; k++ ) {
+    a[ k + j*NC ] -= creal( fac1 ) * creal( pA[k] ) - cimag( fac1 ) * cimag( pA[k] ) 
+      + I * ( creal( fac1 ) * cimag( pA[k] ) + cimag( fac1 ) * creal( pA[k] ) ) ;
+  }
+  pA = inverse + i*NC ;
   for( k = 0 ; k < NC ; k++ ) {
-    a[ k + j*NC ]  = a[ k + j*NC ]  - fac1 * a[ k + i*NC ] ;
     // whatever we do to a, we do to the identity
-    inverse[ k + j*NC ] = inverse[ k + j*NC ] - fac1 * inverse[ k + i*NC ] ;
+    inverse[ k + j*NC ] -= creal( fac1 ) * creal( pA[k] ) - cimag( fac1 ) * cimag( pA[k] ) 
+    + I * ( creal( fac1 ) * cimag( pA[k] ) + cimag( fac1 ) * creal( pA[k] ) ) ;
   }
   return ;
 }
@@ -86,7 +93,6 @@ swap_rows( double complex *__restrict a ,
   return ;
 }
 
-// gauss-jordan elimination using pivoting to obtain the upper triangular
 static int
 gauss_jordan( GLU_complex M_1[ NCNC ] , 
 	      const GLU_complex M[ NCNC ] )
@@ -99,12 +105,11 @@ gauss_jordan( GLU_complex M_1[ NCNC ] ,
   // equate the necessary parts into double complex precision
   for( i = 0 ; i < NCNC ; i++ ) {
     a[ i ] = (double complex)M[ i ] ;
-    ainv[ i ] = 0.0 ; 
-    if( i%(NC+1) == 0 ) { 
-      ainv[i] = 1.0 ;
-    }
+    ainv[ i ] = 0.0 ;
   }
-
+  for( i = 0 ; i < NC ; i++ ) {
+    ainv[ i*(NC+1) ] = 1.0 ;
+  }
 
 #ifdef FULL_PIVOT
   int col_idx[ NC ] = {} , row_piv ;
@@ -114,7 +119,8 @@ gauss_jordan( GLU_complex M_1[ NCNC ] ,
 
     const int piv_idx = i*(NC+1) ;
 
-    const double pivot = cabs( a[piv_idx] ) ;
+    const double pivot = creal( a[piv_idx] ) * creal ( a[piv_idx] ) 
+      +  cimag( a[piv_idx] ) * cimag( a[piv_idx] ) ;
     row_best = col_best = pivot ;
     col_piv = piv_idx ;
 
@@ -126,13 +132,16 @@ gauss_jordan( GLU_complex M_1[ NCNC ] ,
     int j ;
     for( j = i+1 ; j < NC ; j++ ) {
       #ifdef FULL_PIVOT
-      const double row_attempt = cabs( a[j+i*NC] ) ;
+      const double row_attempt = creal( a[j+i*NC] ) * creal ( a[j+i*NC] ) 
+	+  cimag( a[j+i*NC] ) * cimag( a[j+i*NC] ) ;
+      //cabs( a[j+i*NC] ) ;
       if( row_attempt > row_best ) {
 	row_best =  row_attempt ;
 	row_piv = j ;
       }
       #endif
-      const double col_attempt = cabs( a[i+j*NC] ) ;
+      const double col_attempt = creal( a[i+j*NC] ) * creal ( a[i+j*NC] ) 
+	+  cimag( a[i+j*NC] ) * cimag( a[i+j*NC] ) ;
       if( col_attempt > col_best ) {
 	col_best = col_attempt ;
 	col_piv = j ;
@@ -155,7 +164,9 @@ gauss_jordan( GLU_complex M_1[ NCNC ] ,
       eliminate_column( a , ainv , i , j ) ;
     }
   }
+
   // a is upper triangular, do the same for the upper half
+  // no pivoting to be done here
   for( i = NC-1 ; i > 0 ; i-- ) {
     for( j = 0 ; j < i ; j++ ) {
       eliminate_column( a , ainv , i , j ) ;
@@ -165,16 +176,16 @@ gauss_jordan( GLU_complex M_1[ NCNC ] ,
   // multiply each row by its M_1 diagonal
   double complex am1 ;
   for( j = 0 ; j < NC ; j++ ) {
-    if( cabs( a[ j*( NC+1 ) ] ) == 0.0 ) { 
+    if( creal( a[ j*( NC+1 ) ] ) == 0.0 && 
+	cimag( a[ j*( NC+1 ) ] ) == 0.0 ) { 
       printf( "[INVERSE] Matrix is singular!!\n" ) ; 
-      //write_matrix( a ) ;
       write_matrix( M ) ;
       return GLU_FAILURE ; 
     }
     am1 = 1.0 / a[ j*( NC+1 ) ] ;
     for( i = 0 ; i < NC ; i++ ) {
-      ainv[ i + j*NC ] *= am1 ;
-      a[ i + j*NC ] *= am1 ;
+      ainv[ i + j*NC ] = creal( ainv[ i + j*NC ] ) * creal( am1 ) - cimag( ainv[ i + j*NC ] ) * cimag( am1 ) 
+	+ I * ( creal( ainv[ i + j*NC ] ) * cimag( am1 ) + cimag( ainv[ i + j*NC ] ) * creal( am1 )  ) ;
     }
   }
 
@@ -187,13 +198,14 @@ gauss_jordan( GLU_complex M_1[ NCNC ] ,
   }
   #endif
 
-  // push the double complex precision matrix back into single precision
+  // push the double complex precision matrix back into whatever precision
   for( i = 0 ; i < NCNC ; i++ ) {
     M_1[i] = (GLU_complex)ainv[i] ;
   }
 
   return GLU_SUCCESS ;
 }
+
 #endif
 
 // calculates the inverse of the matrix M outputs to M_1 //
