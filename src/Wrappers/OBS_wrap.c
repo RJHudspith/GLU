@@ -229,20 +229,30 @@ test_muls( const GLU_complex a[ NCNC ] ,
 static void
 test_trace_prods( const struct site *__restrict lat )
 {
-  printf( "[OBS] Trace products A.B \n" ) ;
+  printf( "[OBS] Trace tests \n" ) ;
+
+  printcomplex( trace( lat[1].O[0] ) ) ;
+
+  GLU_complex Ctr ;
+  speed_trace( &Ctr , lat[1].O[0] ) ;
+  printcomplex( Ctr ) ;
+
+  GLU_real tr ;
+  speed_trace_Re( &tr , lat[1].O[0] ) ;
+  printf( " ( %1.7e  ,  %1.7e )\n\n" , tr , 0.0 ) ;
+
   GLU_complex A[ NCNC ] , B[ NCNC ] ;
   Hermitian_proj( A , lat[1].O[0] ) ;
-  Hermitian_proj( B , lat[1].O[1] ) ;
+  Hermitian_proj( B , lat[1].O[1] ) ;  
 
-  GLU_complex temp[ NCNC ] ;
-  multab( temp , A , B ) ;
-  printcomplex( trace( temp ) ) ;
+  printf( "[OBS] Trace products A.B \n" ) ;
+  GLU_complex AB[ NCNC ] ;
+  multab( AB , A , B ) ;
+  printcomplex( trace( AB ) ) ;
   
-  double tr ;
   trace_ab_herm( &tr , A , B ) ;
   printf( " ( %1.7e  ,  %1.7e )\n" , tr , 0.0 ) ;
 
-  GLU_complex Ctr ;
   trace_ab( &Ctr , A , B ) ;
   printcomplex( Ctr ) ;
 
@@ -258,8 +268,9 @@ test_trace_prods( const struct site *__restrict lat )
 
   printf( "\n[OBS] Trace products A.A \n" ) ;
 
-  multab( temp , A , A ) ;
-  printcomplex( trace( temp ) ) ;
+  GLU_complex AA[ NCNC ] ;
+  multab( AA , A , A ) ;
+  printcomplex( trace( AA ) ) ;
   
   trace_ab_herm_short( &tr , a , a ) ;
   printf( " ( %1.7e  ,  %1.7e )\n" , tr , 0.0 ) ;
@@ -267,12 +278,13 @@ test_trace_prods( const struct site *__restrict lat )
   trace_prod_herm( &tr , A ) ;
   printf( " ( %1.7e  ,  %1.7e )\n" , tr , 0.0 ) ;
 
-  printf( "\n[OBS] Trace products B.A.B \n" ) ;
+  printf( "\n[OBS] Trace products B.A.B^{dagger} \n" ) ;
 
   // product of three matrices can use the dag here
   // as it is the same through hermiticity
-  multab_atomic_left( temp , B ) ;
-  printcomplex( trace(temp) ) ;
+  GLU_complex temp2[ NCNC ] ;
+  multab( temp2 , B , AB ) ;
+  printcomplex( trace(temp2) ) ;
 
   trace_abc( &Ctr , B , A , B ) ;
   printcomplex( Ctr ) ;

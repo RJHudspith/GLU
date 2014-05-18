@@ -39,7 +39,7 @@ static double *traces , *divs ;
 #ifdef exp_a2_approx
 // expansion :: 1 + i du Au - 0.5 * ( du Au ) ^ 2, must have A2_APPROX_EXPAND defined
 static void
-a2_approx_expand(  GLU_complex dA[ NCNC ] )
+a2_approx_expand( GLU_complex dA[ NCNC ] )
 {
 #if NC==3
   const double QQ0 = 1.0 - 0.5 * ( cimag( dA[0] ) * cimag( dA[0] ) +		\
@@ -69,7 +69,7 @@ a2_approx_expand(  GLU_complex dA[ NCNC ] )
   multab( dAdA , dA , dA ) ;
   int mu ;
   for( mu = 0 ; mu < NCNC ; mu++ ) {
-    cache = dA[mu] + 0.5*dAdA[mu] ;
+    cache = dA[mu] - 0.5*dAdA[mu] ;
     dA[mu] = ( mu%( NC+1 ) == 0 ) ? 1.0 + cache : cache ;
   }
 #endif
@@ -182,9 +182,9 @@ Re_trace_abc_dag_suNC( const GLU_complex a[ NCNC ] ,
   sum -= creal( a1 ) * creal( c[2] ) - cimag( a1 ) * cimag( c[2] ) ;
   sum += creal( a0 ) * creal( c[3] ) - cimag( a0 ) * cimag( c[3] ) ;
 #else
-  GLU_complex trABCdag ;
-  trace_abc_dag( &trABCdag , a , b , c ) ;
-  sum = (double)creal( trABCdag ) ;
+  GLU_real trABCdag ;
+  trace_abc_dag_Re( &trABCdag , a , b , c ) ;
+  sum = (double)trABCdag ;
 #endif
   return sum ;
 }
@@ -259,6 +259,7 @@ void allocate_traces( const int LENGTH )
   for( i = 0 ; i < LENGTH ; i++ ) {
     divs[i] = 1.0 / (double)( i + 1. ) ;
   }
+  return ;
 }
 
 // Coulomb derivative term
@@ -558,7 +559,7 @@ sum_deriv( const GLU_complex *__restrict *__restrict in , const int LENGTH )
     }
     GLU_real tr ;
     trace_ab_herm_short( &tr , temp , temp ) ;
-    loc_sum = (double)tr ;
+    loc_sum = 0.5 * (double)tr ;
     #endif
     traces[i] = loc_sum ;
   }

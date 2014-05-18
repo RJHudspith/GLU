@@ -737,12 +737,12 @@ speed_trace( GLU_complex *res ,
   *res = ( U[0] + U[3] )  ;
 #else
   int i ;
-  const GLU_real *pA = (const GLU_real*)A ;
-  register GLU_real sumr = 0.0 , sumi = 0.0 ;
+  const GLU_real *pU = (const GLU_real*)U ;
+  register double sumr = 0.0 , sumi = 0.0 ;
   for( i = 0 ; i < NC ; i++ ) { 
-    sumr += ( *(pA++) ) ;
-    sumi += ( *(pA++) ) ;
-    pA += 2*NC ;
+    sumr += ( *(pU++) ) ;
+    sumi += ( *(pU++) ) ;
+    pU += 2*NC ;
   }
   *res = sumr + I * sumi ;
 #endif
@@ -755,16 +755,17 @@ speed_trace_Re( double *__restrict res ,
 		const GLU_complex U[ NCNC ] ) 
 {
 #if NC == 3
-  *res = (double)creal( U[0] ) + (double)creal( U[4] ) + (double)creal( U[8] ) ; 
+  *res = (double)creal( U[0] ) + (double)creal( U[4] ) + 
+         (double)creal( U[8] ) ; 
 #elif NC == 2
   *res = (double)creal( U[0] ) + (double)creal( U[3] ) ;
 #else
   int i ;
-  const GLU_real *pA = (const GLU_real*)A ;
+  const GLU_real *pU = (const GLU_real*)U ;
   register double sumr = 0.0 ;
   for( i = 0 ; i < NC ; i++ ) { 
-    sumr += (double)( *(pA) ) ;
-    pA += 2*( NC + 1 ) ;
+    sumr += (double)( *(pU) ) ;
+    pU += 2*( NC + 1 ) ;
   }
   *res = sumr ;
 #endif
@@ -781,12 +782,12 @@ trace( const GLU_complex U[ NCNC ] )
   return U[0] + U[3] ;
 #else
   int i ;
-  const GLU_real *pA = (const GLU_real*)A ;
-  register GLU_real sumr = 0.0 , sumi = 0.0 ;
+  const GLU_real *pU = (const GLU_real*)U ;
+  register double sumr = 0.0 , sumi = 0.0 ;
   for( i = 0 ; i < NC ; i++ ) { 
-    sumr += ( *(pA++) ) ;
-    sumi += ( *(pA++) ) ;
-    pA += 2*NC ; 
+    sumr += ( *(pU++) ) ;
+    sumi += ( *(pU++) ) ;
+    pU += 2*NC ; 
   }
   return sumr + I * sumi ;
 #endif
@@ -945,8 +946,8 @@ trace_abc_dag_Re( GLU_real *__restrict tr ,
 	       ( a[2] * b[1] + a[3] * b[3] ) * conj( c[3] ) ) ;
 #else
   const GLU_complex *pB , *pA ;
-  register GLU_real sumr = 0.0 ;
-  GLU_real insumr = 0.0 , insumi = 0.0 ;
+  register double sumr = 0.0 ;
+  double insumr = 0.0 , insumi = 0.0 ;
   int i , j , k ;
   for( i = 0 ; i < NC ; i++ ) {
     pA = a ;
