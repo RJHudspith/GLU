@@ -22,3 +22,48 @@ Gauge correlators : Static potential computations, topological charge correlatio
                     calculations are also possible.
                     
 Plus plenty more to be found in the documentation.
+
+Compilation
+===========
+
+The usual,
+
+./configure --prefix={}
+
+If using the Fourier acceleration then
+
+--with-fftw={}
+
+should be called.
+
+If compiling for a different number of colors (NC) or dimensions (ND) the options
+
+--with-NC={} --with-ND={}
+
+are your friends.
+
+There a bunch of other options that are briefly synopsised at the top of configure.ac.
+
+After that,
+
+make && make all install
+
+will create the binary GLU in $prefix/bin/ and the library libGLU.a in $prefix/lib/ .
+
+Usage
+=====
+
+Standard usage is
+
+./GLU -i {input_file} -c {configuration file} -o {output file}
+
+The output file is not necessary, the other two are. An example input file should be in $prefix/bin/
+a couple of example input files can be printed to stdout by the command,
+
+./GLU --autoin={COULOMB,LANDAU,STATIC_POTENTIAL,SUNCxU1,WFLOW}
+
+If you would like more information about some option in the input file,
+
+./GLU --help={option}
+
+Should provide you with some information.
