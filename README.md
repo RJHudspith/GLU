@@ -42,6 +42,13 @@ If compiling for a different number of colors (NC) or dimensions (ND) the option
 
 are your friends.
 
+If you want to include the thread-parallel FFTW routines then
+
+CFLAGS="-fopenmp" --enable-OMP_FFTW
+
+Should be used, this then looks in the FFTW directory that you have compiled for
+libfftw3_omp.a
+
 There a bunch of other options that are briefly synopsised at the top of configure.ac.
 
 After that,
@@ -49,6 +56,14 @@ After that,
 make && make all install
 
 will create the binary GLU in $prefix/bin/ and the library libGLU.a in $prefix/lib/ .
+
+make documentation
+
+will create pdfs of the documentation in the $prefix/docs/ directory
+
+make doxygen
+
+will create the doxygen with perhaps the callgraphs if dot is available.
 
 Usage
 =====
