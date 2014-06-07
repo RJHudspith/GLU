@@ -15,7 +15,7 @@
 #                  deriv_linn , deriv_full , deriv_fulln (last two are
 #  		   exact logarithm variations)
 # --enable-exp_exact :: exact exponentiation into the group being used for the
-#                       gauge transformation matrices in the gauge fixing  		        
+#                       gauge transformation matrices in the gauge fixing
 # --enable-fastsmear :: dangerous, inaccurate but quick smearing
 # --enable-notcondor :: enable the single-machine cache-ing and architecture
 #                       dependent optimisations
@@ -41,7 +41,6 @@
 # --with-LUXURY_GAUGE= :: choose the "best" (one that minimises the
 # 		       	  functional) from specified number of random
 #                         initial transformations, default is 20
-# --enable-GLU_GFIX_SD :: use the SD routines rather than the default CG ones
 
 AC_INIT([GLU], [1.1], [renwick.james.hudspith@gmail.com])
 AM_INIT_AUTOMAKE([-Wall])
