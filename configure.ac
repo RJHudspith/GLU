@@ -14,6 +14,8 @@
 # --with-deriv= :: derivative type in gauge fixing options are :
 #                  deriv_linn , deriv_full , deriv_fulln (last two are
 #  		   exact logarithm variations)
+# --enable-exp_exact :: exact exponentiation into the group being used for the
+#                       gauge transformation matrices in the gauge fixing  		        
 # --enable-fastsmear :: dangerous, inaccurate but quick smearing
 # --enable-notcondor :: enable the single-machine cache-ing and architecture
 #                       dependent optimisations
@@ -53,7 +55,7 @@ AC_C_BIGENDIAN
 AC_CONFIG_MACRO_DIR([m4])
 
 ## I strongly recommend these flags for compiling with gcc
-#CFLAGS="$CFLAGS -O3 -ffast-math -mfpmath=sse -march=native"
+#CFLAGS="-O3 -mfpmath=sse -march=native -fopenmp"
 
 ## prefix!!
 AC_DEFINE_UNQUOTED([HAVE_PREFIX],["$prefix"],[Look for where we prefix to])
@@ -117,20 +119,23 @@ AC_CHECK_HEADERS([time.h],
 	[AC_MSG_NOTICE([We are providing an accurate date.])],[])
 
 ## I doubt we will not have these as they are all c-standard, check anyway
-AC_CHECK_HEADERS([complex.h strings.h stdio.h stdlib.h limits.h], [],[
+AC_CHECK_HEADERS([complex.h strings.h stdio.h stdlib.h limits.h],[],[
 AC_MSG_ERROR([Sorry, but we need these headers (complex.h , strings.h , stdlib.h , stdio.h and limits.h) somewhere in the code])])
 
 ## And we can now run in single precision
+single=false
 AC_ARG_ENABLE([single],
 	[ --enable-single Have our links in single or double precision],
-	[case "${enableval}" in
-	yes) single=true ;;
-	no) single=false ;;
+	[
+	case "${enableval}" in
+	yes) single=true ## needed for fftw
+	     AC_MSG_NOTICE([Using single precision storage for gauge fields]) 
+	     AC_DEFINE([SINGLE_PREC],[],[Storage of single precision fields and utilisation of fftwf routines.]) 
+	     ;;
+	no) AC_MSG_NOTICE([Using double precision storage for gauge fields (default)]) ;;
 	*) AC_MSG_ERROR([bad value ${enableval} for --enable-single]) ;;
-	esac],[single=false])
-if test x$single = xtrue ; then
-   AC_DEFINE([SINGLE_PREC],[],[Storage of single precision routines and utilisation of fftwf routines.])
-fi
+	esac
+	],[])
 
 ######################################### FFTW3 ###############################################
 #                                                                                             #
@@ -153,15 +158,15 @@ AC_ARG_ENABLE([OMP_FFTW],
 ## Look for openmp, cannot turn on the omp fftw routines without it!
 AC_CHECK_HEADERS([omp.h],[],[OMP_FFTW=false])
 
+## see if we already have it
+AC_CHECK_HEADERS([fftw3.h],[local_fftw=true],[local_fftw=false])
+
 ## Look for fftw in the useer specified place
 fftw=false 
 AC_ARG_WITH([fftw],
 	AC_HELP_STRING([--with-fftw=<name>],
 		       [Specify FFTW location for the GF]),
             [FFTW=${with_fftw}
-
-	    AC_CHECK_HEADERS([${FFTW}include/fftw3.h],[
-	    AC_MSG_NOTICE([User defined fftw library @ $FFTW])
 
 	    ## are we compiling for single precision or not?
 	    if test x$single = xtrue ; then
@@ -170,57 +175,50 @@ AC_ARG_WITH([fftw],
 	       float_version=""
 	    fi
 
-	    AC_MSG_NOTICE([Attempting static linking to the user's FFTW lib])
+	    AC_CHECK_HEADERS([${FFTW}include/fftw3.h],[
+	    AC_MSG_NOTICE([User defined fftw library @ $FFTW])
+	    AC_MSG_NOTICE([Attempting linking to the user's FFTW lib ${FFTW}lib/libfftw3${float_version}])
 	
 	    ## if we use the user one, only link to the static lib
 	    if [ test -a ${FFTW}lib/libfftw3${float_version}.a ]; then
 		AC_MSG_NOTICE([Statically linking to the user's FFTW lib])
 	    	CFLAGS="$CFLAGS -I${FFTW}include"
-	    	LDFLAGS="$LDFLAGS ${FFTW}lib/libfftw3$float_version.a"
-		#include OMP fftw routines
+	    	LDFLAGS="$LDFLAGS ${FFTW}lib/libfftw3${float_version}.a"
 		if test x$OMP_FFTW = xtrue ; then
-		     if [ test -a ${FFTW}lib/libfftw3${float_verion}_omp.a ]; then
-		     LDFLAGS="$LDFLAGS ${FFTW}lib/libfftw3${float_version}_omp.a"
-		     AC_DEFINE([OMP_FFTW],[],[OpenMP-parallel FFT routines.])
-		     AC_MSG_NOTICE([Using FFTW's OpenMP parallel routines.])
-		     else
-		     AC_MSG_NOTICE([OMP_FFTW Library ${FFTW}lib/libfftw3_omp.a not found! Cannot use parallel fft's.])
-		     fi
+		   if test -a ${FFTW}lib/libfftw3${float_version}_omp.a ; then
+		      LDFLAGS="$LDFLAGS ${FFTW}lib/libfftw3${float_version}_omp.a"
+		      AC_DEFINE([OMP_FFTW],[],[OpenMP-parallel FFT routines.])
+		   fi
 		fi
-	    AC_DEFINE([HAVE_FFTW3_H],[],[FFTW library.])
+	        AC_DEFINE([HAVE_FFTW3_H],[],[FFTW library.])
 	    ## Have a look for the shared object library ...
             elif [ test -a ${FFTW}lib/libfftw3${float_version}.so ]; then
 		AC_MSG_NOTICE([Static link not found !! Shared object (.so) linking to the user's FFTW lib])
 	    	CFLAGS="$CFLAGS -I${FFTW}include -L${FFTW}lib/"
 	    	LDFLAGS="$LDFLAGS -lfftw3${float_version}"
-		## If you have compiled it in then it magically appears in the .so library, make sure it is compiled
-		## or it will throw errors like crazy..
-		   if test x$OMP_FFTW = xtrue ; then
+		if test x$OMP_FFTW = xtrue ; then
+		   ## check to see if it is there otherwise don't include it
+		   if test -a ${FFTW}lib/libfftw3${float_version}_omp.so ; then
+		      LDFLAGS="$LDFLAGS -lfftw3${float_version}_omp"
 		      AC_DEFINE([OMP_FFTW],[],[OpenMP-parallel FFT routines.])
-		      AC_MSG_NOTICE([Using FFTW's OpenMP parallel routines.])
 		   fi
-	    AC_DEFINE([HAVE_FFTW3_H],[],[FFTW library.])
+		fi
+	        AC_DEFINE([HAVE_FFTW3_H],[],[FFTW library.])
             else
 	    	AC_MSG_ERROR([fftw3.h found, but cannot find the shared or static libraries!])
 	    fi
 	    ]	    
 	    , [
-	    # get desperate here and check for the header in the usual places		
-	    FFTW= 
-	    ## Need fftw3, for our gauge fixing code
-	    AC_CHECK_HEADERS([fftw3.h], [	
-	    if test x$single = xtrue ; then
-	       LDFLAGS="$LDFLAGS -lfftw3f"	
+	    # get desperate here and check for the header in the usual places
+	    # as omp routines are special I doubt they will be installed, maybe should do a special check
+	    if test x$local_fftw = "xtrue" ; then
+	       LDFLAGS="$LDFLAGS -lfftw3${float_version}"
+	       AC_MSG_NOTICE([Using the system's fftw])	       
+	       AC_DEFINE([HAVE_FFTW3_H],[],[FFTW library.])
 	    else
-		LDFLAGS="$LDFLAGS -lfftw3"	
+	       AC_MSG_NOTICE([No local fftw3.h found either!])
 	    fi
-	    AC_DEFINE([HAVE_FFTW3_H],[],[FFTW library.])
-	    ],[	 
-	    AC_MSG_ERROR([fftw3 not found anywhere, it is integral to fourier acceleration. Make a cup of tea or something whilst you install it])
-	    ],[
-	    ## reduce this to a warning
-	    AC_MSG_NOTICE([WARNING! Fourier acceleration is not enabled])
-	   ])]) ## closes the check headers ...
+     ]) ## closes the check headers ...
 # closes AC_HELP_STRING
 ]
 # closes with-FFTW
@@ -265,12 +263,12 @@ AM_CONDITIONAL([DEFGSL],[$gsl])
 ## Include where it is just in case people want to do something in Makefile.am
 AC_SUBST(GSL)
 
-######################################### LAPACKE############################################
-#                                                                                           #
-#    Binding to the lapacke library (lapack for c), not really used too much but can be     #
-#    very beneficial for large NC eigenvalues. Not a necessity.                             #
-#                                                                                           #
-#############################################################################################
+######################################### LAPACKE ############################################
+#                                                                                            #
+#    Binding to the lapacke library (lapack for c), not really used too much but can be      #
+#    very beneficial for large NC eigenvalues. Not a necessity.                              #
+#                                                                                            #
+##############################################################################################
 lapacke=false 
 AC_ARG_WITH([lapacke],
 	AC_HELP_STRING([--with-lapacke=<name>],
@@ -301,70 +299,58 @@ AC_ARG_WITH([deriv],
 	AC_HELP_STRING([--with-deriv=],
 		       [Compile in the gauge group number NC]),
             [
-		AC_MSG_NOTICE([User specified deriv, type given as ${with_deriv}])
-	    	if [ test "${with_deriv}" == "deriv_linn" ] ;
-	    	then
-		     AC_DEFINE([deriv_linn],[],[Stencil derivative, linear gluon fields])
-	    	elif [ test "${with_deriv}" == "deriv_full" ] ;
-	    	then	  
-	             AC_DEFINE([deriv_full],[],[Normal derivative, log def gluon fields])
-	    	elif [ "${with_deriv}" == "deriv_fulln" ] ;
-	        then 
-    	    	     AC_DEFINE([deriv_fulln],[],[Stencil derivative, log def gluon fields])
-	        else
-	    	     AC_MSG_NOTICE([Default deriv : Linear deriv with O(a) approx exponentiation (Fastest).])
-	        fi
-	    ],[
-		AC_MSG_NOTICE([Default deriv : Linear deriv with O(a) approx exponentiation (Fastest).])	
-	    ])
+	    AC_MSG_NOTICE([User specified deriv, type given as ${with_deriv}])	
+	    case "${with_deriv}" in
+	      deriv_full) AC_DEFINE([deriv_full],[],[Normal derivative, log def gluon fields]) ;;
+	      ## JAMIE :: TODO, work out the functionals being minimised in the CG for these!
+	      #deriv_fulln) AC_DEFINE([deriv_fulln],[],[Stencil derivative, log def gluon fields]) ;;
+	      #deriv_linn) AC_DEFINE([deriv_linn],[],[Stencil derivative, linear gluon fields]) ;;
+	      *) AC_MSG_NOTICE([Default deriv : Linear deriv with O(a) approx exponentiation (Fastest).]);;
+	    esac
+	    ],[ AC_MSG_NOTICE([Default deriv : Linear deriv with O(a) approx exponentiation (Fastest).]) ])
+
+## Definitions for the fastsmearing default is the slow(stable) one
+AC_ARG_ENABLE([exp_exact],
+	[ --enable-exp_exact Exact exponentiation into the group for the gauge fixing],
+	[case "${enableval}" in
+	yes) AC_MSG_NOTICE([Exact exponentiation for the gauge transformation matrices])
+       	     AC_DEFINE([exp_exact],,[Exact exponentiation for the gauge transformation matrices])   
+	     ;;
+	*) AC_MSG_ERROR([bad value ${enableval} for --enable-exp_exact]) ;;
+	esac],[])
 
 ## Definitions for the fastsmearing default is the slow(stable) one
 AC_ARG_ENABLE([fastsmear],
 	[ --enable-fastsmear Turn on numerically unstable fast smearing routines],
 	[case "${enableval}" in
-	yes) fastsmear=true ;;
-	no) fastsmear=false ;;
+	yes) AC_MSG_NOTICE([fast and unstable routines enabled])
+             AC_DEFINE([FAST_SMEAR],,[Enables faster and innaccurate smearing routines])   
+	     ;;
+	no) AC_MSG_NOTICE([default stable smearing routines used]) ;;
 	*) AC_MSG_ERROR([bad value ${enableval} for --enable-fastsmear]) ;;
-	esac],[fastsmear=false])
-AM_CONDITIONAL([FASTSMEAR], [test x$fastsmear = xtrue])
-
-## test whether fastsmear has been set
-if test x$fastsmear = xtrue ;
-then 
-        AC_MSG_NOTICE([fast and unstable routines enabled])
-        AC_DEFINE([FAST_SMEAR],,[Enables faster and innaccurate smearing routines])   
-else
-        AC_MSG_NOTICE([default stable smearing routines used]) 
-fi
+	esac],[])
 
 ## Finally we have routines for this node or many machines
 ## historically targeted at "CONDOR", default is CONDOR_MODE
 AC_ARG_ENABLE([notcondor],
 	[ --enable-notcondor Allows for the saving of FFT plans and some simple hashing and whatever],
 	[case "${enableval}" in
-	yes) notcondor=true ;;
-	no) notcondor=false ;;
+	yes) ## Check the condor enable creates the dirs $prefix/Local/(Wisdom && Moments)
+	     ## used for some light caching of previous results
+             if [ test "$prefix" == "NONE" ] ;then
+             	AC_MSG_NOTICE([Cannot save wisdom as we are not prefixed, defining CONDOR_MODE by default])
+             else
+		AC_MSG_NOTICE([FFTW's WISDOM routines being used, targeted specifically for this node])
+		AC_DEFINE([NOT_CONDOR_MODE],,[targeted, has been seen to be quicker but do not distribute the binaries!])
+		mkdir $prefix/Local/	
+		mkdir $prefix/Local/Wisdom
+		mkdir $prefix/Local/Moments 
+             fi
+	     AC_MSG_NOTICE([FFTW plans created ONCE. Subsequent transforms are read from Local/Wisdom/])
+	     ;;
+	no) AC_MSG_NOTICE([default condor routines called, i.e. FFTW plans created here and now]) ;;
 	*) AC_MSG_ERROR([bad value ${enableval} for --enable-notcondor]) ;;
-	esac],[notcondor=false])
-AM_CONDITIONAL([NCONDOR], [test x$notcondor = xtrue])
-
-## Check the condor enable creates the dirs $prefix/Local/(Wisdom && Moments)
-## used for some light caching of previous results
-if [ test x$notcondor == xtrue ] ;then
-   ## We have to be prefixed for this
-   if [ test "$prefix" == "NONE" ] ;then
-        AC_MSG_NOTICE([Cannot save wisdom as we are not prefixed, defining CONDOR_MODE by default])
-   else
-	AC_MSG_NOTICE([FFTW's WISDOM routines being used, targeted specifically for this node])
-	AC_DEFINE([NOT_CONDOR_MODE],,[targeted, has been seen to be quicker but do not distribute the binaries!])
-	mkdir $prefix/Local/	
-	mkdir $prefix/Local/Wisdom
-	mkdir $prefix/Local/Moments 
-   fi
-   AC_MSG_NOTICE([FFTW plans created ONCE. Subsequent transforms are read from Local/Wisdom/])
-else
-   AC_MSG_NOTICE([default condor routines called, i.e. FFTW plans created here and now])
-fi
+	esac],[])
 
 ## Include the other stuff we could possibly use
 ## with proj gracey
@@ -373,15 +359,14 @@ AC_ARG_WITH([GRACEY_PROJ],
 		       [Compile in the specific nonexceptional projector of interest]),
             [
 	    if test "x$with_GRACEY_PROJ" != "xyes" ; then	 
-	    AC_MSG_NOTICE([User specified nonexceptional projector ${with_GRACEY_PROJ}.])
-	    AC_DEFINE_UNQUOTED([PROJ_GRACEY], [$with_GRACEY_PROJ] , [Nonexceptional projection index.] )	
+	       AC_MSG_NOTICE([User specified nonexceptional projector ${with_GRACEY_PROJ}.])
+	       AC_DEFINE_UNQUOTED([PROJ_GRACEY], [$with_GRACEY_PROJ] , [Nonexceptional projection index.] )	
 	    else
-	    AC_DEFINE([PROJ_GRACEY],[0],[Nonexceptional projection index.] )	
+	       AC_DEFINE([PROJ_GRACEY],[0],[Nonexceptional projection index.] )	
 	    fi
 	    ],[ 
-	    AC_MSG_NOTICE([Default nonexceptional projector (1).])
-	    AC_DEFINE([PROJ_GRACEY],[0],[Nonexceptional projection index.] )	
-])
+	    	AC_MSG_NOTICE([Default nonexceptional projector (1).])
+	    	AC_DEFINE([PROJ_GRACEY],[0],[Nonexceptional projection index.] ) ] )
 
 ## Staple improvements options are IWASAKI, DBW2 , SYMANZIK and SYMANZIK_ONE_LOOP 
 AC_ARG_WITH([IMPROVED_C0],
@@ -391,7 +376,7 @@ AC_ARG_WITH([IMPROVED_C0],
 	if test x$with_IMPROVED_C0 != "xyes" ; then
 	   AC_DEFINE([IWA_WEIGHT1],[$with_IMPROVED_C0],[Leading term])
 	fi
-	], [])
+	],[])
 
 ## and the rectangle terms
 AC_ARG_WITH([IMPROVED_C1],
@@ -401,28 +386,22 @@ AC_ARG_WITH([IMPROVED_C1],
 	if test x$with_IMPROVED_C1 != "xyes" ; then
 	   AC_DEFINE([IWA_WEIGHT1],[$with_IMPROVED_C1],[Sub-leading rectangle term])
 	fi
-	], [])
+	],[])
 
 ## if we have not specified c0 and c1
 if [ test x$with_IMPROVED_C0 != "xyes" -a x$with_IMPROVED_C1 != "xyes" ] ; then
 AC_ARG_WITH([IMPROVED_STAPLE],
 	AC_HELP_STRING([--with-IMPROVED_STAPLE=],
 		       [Compile in the type of improved staple we wish to use.]),
-            [ 
-	    if test x$with_IMPROVED_STAPLE = xIWASAKI ; then
-	        AC_MSG_NOTICE([Iwasaki improved staple.])
-	        AC_DEFINE([IWASAKI],[],[Iwasaki improved staple.])
-	    elif test x$with_IMPROVED_STAPLE = xDBW2 ; then
-	        AC_MSG_NOTICE([DBW2 improved staple.])
-	        AC_DEFINE([DBW2],[],[DBW2 improved staple.])
-	    elif test x$with_IMPROVED_STAPLE = xSYMANZIK ; then
-	        AC_MSG_NOTICE([Symanzik improved staple.])
-	        AC_DEFINE([SYMANZIK],[],[Symanzik improved staple.])
-	    elif test x$with_IMPROVED_STAPLE = xSYMANZIK_ONE_LOOP ; then
-	        AC_MSG_NOTICE([One loop symanzik improved staple.])
-	        AC_DEFINE([SYMANZIK_ONE_LOOP],[],[One loop symanzik improved staple.])
-	    fi 
-	    ], [])
+            [
+	    AC_MSG_NOTICE([user defined ${with_IMPROVED_STAPLE} improved staple.])
+	    case ${with_IMPROVED_STAPLE} in
+	    DBW2) AC_DEFINE([DBW2],[],[DBW2 improved staple.]) ;;
+	    IWASAKI) AC_DEFINE([IWASAKI],[],[Iwasaki improved staple.])	;;
+            SYMANZIK) AC_DEFINE([SYMANZIK],[],[Symanzik improved staple.]) ;;
+            *) AC_MSG_NOTICE([Unrecognised, not using rectangle staples]) ;;
+	    esac
+	    ],[])
 fi
 
 ## are we doing overimproved smearing 
@@ -441,60 +420,55 @@ AC_ARG_WITH([OVERIMPROVED_EPSILON],
 AC_ARG_ENABLE([verbiage],
 	[ --enable-verbiage ],
 	[case "${enableval}" in
-	yes) verbiage=true ;;
-	no) verbiage=false ;;
+	yes) AC_MSG_NOTICE([Verbose output, mostly to look at the plaquettes at each iteration of smearing.])	
+	     AC_DEFINE([verbose],[],[Verbose output printed to stdout.])
+	     ;;
 	*) AC_MSG_ERROR([bad value ${enableval} for --enable-verbiage]) ;;
 	esac
-	AC_MSG_NOTICE([Verbose output, mostly to look at the plaquettes at each iteration of smearing.])	
-	AC_DEFINE([verbose],[],[Verbose output printed to stdout.])
 	],[])
 
 ## ASCII check 
 AC_ARG_ENABLE([ascii_check],
 	[ --enable-ascii_check ],
 	[case "${enableval}" in
-	yes) ascii_check=true ;;
-	no) ascii_check=false ;;
+	yes) AC_MSG_NOTICE([If we write out an output file, this prints the output the stdout as well.])	
+	     AC_DEFINE([ASCII_CHECK],[],[Ascii output to stdout.])
+	     ;;
 	*) AC_MSG_ERROR([bad value ${enableval} for --enable-ascii_check]) ;;
 	esac
-	AC_MSG_NOTICE([If we write out an output file, this prints the output the stdout as well.])	
-	AC_DEFINE([ASCII_CHECK],[],[Ascii output to stdout.])
 	],[])
 
 ## BlueGene inlined matrix multiplies
 AC_ARG_ENABLE([GLU_bgq],
 	[ --enable-GLU_bgq ],
 	[case "${enableval}" in
-	yes) GLU_bgq=true ;;
-	no) GLU_bgq=false ;;
+	yes) AC_MSG_NOTICE([Preparing for a BGQ build...])	
+	     AC_DEFINE([GLU_BGQ],[],[Bluegene specific hacks.])
+	     ;;
 	*) AC_MSG_ERROR([bad value ${enableval} for --enable-GLU_bgq]) ;;
 	esac
-	AC_MSG_NOTICE([Preparing for a BGQ build...])	
-	AC_DEFINE([GLU_BGQ],[],[Bluegene specific hacks.])
 	],[])
 
 ## GIVENS APE projection
 AC_ARG_ENABLE([GIVENS_APE],
 	[ --enable-GIVENS_APE ],
 	[case "${enableval}" in
-	yes) GIVENS_APE=true ;;
-	no) GIVENS_APE=false ;;
+	yes) AC_MSG_NOTICE([Using the trace maximisation APE projection ...])	
+	     AC_DEFINE([GIVENS_APE],[],[Trace maximisation routine for APE projection.])
+	     ;;
 	*) AC_MSG_ERROR([bad value ${enableval} for --enable-GIVENS_APE]) ;;
 	esac
-	AC_MSG_NOTICE([Using the trace maximisation APE projection ...])	
-	AC_DEFINE([GIVENS_APE],[],[Trace maximisation routine for APE projection.])
 	],[])
 
 ## Clover improvements
 AC_ARG_ENABLE([CLOVER_IMPROVE],
 	[ --enable-CLOVER_IMPROVE ],
 	[case "${enableval}" in
-	yes) CLOVER_IMPROVE=true ;;
-	no) CLOVER_IMPROVE=false ;;
+	yes) AC_MSG_NOTICE([Highly improved clover term specified for topological charge measurement.])	
+	     AC_DEFINE([CLOVER_IMPROVE],[],[Use the highly improved clover term.])
+	     ;;
 	*) AC_MSG_ERROR([bad value ${enableval} for --enable-CLOVER_IMPROVE]) ;;
 	esac
-	AC_MSG_NOTICE([Highly improved clover term specified for topological charge measurement.])	
-	AC_DEFINE([CLOVER_IMPROVE],[],[Use the highly improved clover term.])
 	],[])
 
 ## and k5 to boot otherwise we default to k5 == 0.0 !!
@@ -529,30 +503,14 @@ AC_ARG_WITH([RNG],
 	AC_HELP_STRING([--with-RNG=],
 		       [Specify which (p)RNG you wish to use, default is the Well.]),
             [
-	    ## KISS RNG
-	    if [ test "x$with_RNG" == "xKISS" ] ; then	
-	    AC_MSG_NOTICE([KISS RNG selected])
-	    AC_DEFINE([KISS_RNG],[],[Keep It Simple Stupid RNG])
-	    ## MWC RNG
-	    elif [ test "x$with_RNG" == "xMWC_1038" ] ; then
-	    AC_MSG_NOTICE([MWC_1038 RNG selected])
-	    AC_DEFINE([MWC_1038_RNG],[],[Multiply With Carry (1038) selection])
-	    ## MWC RNG
-	    elif [ test "x$with_RNG" == "xMWC_4096" ] ; then
-	    AC_MSG_NOTICE([MWC_1038 RNG selected])
-	    AC_DEFINE([MWC_1038_RNG],[],[Multiply With Carry (4096) selection])
-	    ## GSL RNG
-	    elif [ test "x$with_RNG" == "xGSL" ] ; then
-	    AC_MSG_NOTICE([Attempting to use the GSL default RNG])
-	    AC_DEFINE([GSL_RNG],[],[GSL default (Mersenne Twister) selection])  
-	    else
-	    ## DEAFULT to the WELL
-	    AC_MSG_NOTICE([Defaulting to the Well19937a RNG])
-	    fi
-	    ],[
-## DEAFULT to the WELL
-AC_MSG_NOTICE([Defaulting to the Well19937a RNG])
-])
+	    case ${with_RNG} in
+	    KISS_RNG) AC_DEFINE([KISS_RNG],[],[Keep It Simple Stupid RNG (JKISS32)]) ;;
+	    MWC_1038_RNG) AC_DEFINE([MWC_1038_RNG],[],[Multiply With Carry (1038) selection]) ;;
+	    MWC_4096_RNG) AC_DEFINE([MWC_1038_RNG],[],[Multiply With Carry (4096) selection]) ;;
+	    GSL) AC_DEFINE([GSL_RNG],[],[GSL default (Mersenne Twister) selection]) ;;
+	    *) AC_MSG_NOTICE([Defaulting to the Well19937a RNG]) ;;
+	    esac
+	    ],[ AC_MSG_NOTICE([Defaulting to the Well19937a RNG]) ])
 
 ## enable the searching for the best gribov copies
 AC_ARG_WITH([LUXURY_GAUGE],
@@ -567,18 +525,6 @@ AC_ARG_WITH([LUXURY_GAUGE],
 	    AC_DEFINE([LUXURY_GAUGE],[20],[Generated Gribov copies.]) 
 	    fi
 	    ],[])
-
-## steepest descents routines
-AC_ARG_ENABLE([GLU_GFIX_SD],
-	[ --enable-GLU_GFIX_SD ],
-	[case "${enableval}" in
-	yes) steepestdescents=true ;;
-	no) steepestdescents=false ;;
-	*) AC_MSG_ERROR([bad value ${enableval} for --enable-GLU_GFIX_SD]) ;;
-	esac
-	AC_MSG_NOTICE([Using the SD gauge fixing routines])	
-	AC_DEFINE([GLU_GFIX_SD],[],[Use the steepest descent gauge fixing.])
-	],[])
 
 ## Some compiler checks
 ## My code is littered with consts
