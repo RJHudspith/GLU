@@ -41,6 +41,7 @@
 # --with-LUXURY_GAUGE= :: choose the "best" (one that minimises the
 # 		       	  functional) from specified number of random
 #                         initial transformations, default is 20
+# --enable-GLU_GFIX_SD :: turn on the steepest descent codes
 
 AC_INIT([GLU], [1.1], [renwick.james.hudspith@gmail.com])
 AM_INIT_AUTOMAKE([-Wall])
@@ -524,6 +525,17 @@ AC_ARG_WITH([LUXURY_GAUGE],
 	    AC_DEFINE([LUXURY_GAUGE],[20],[Generated Gribov copies.]) 
 	    fi
 	    ],[])
+
+## steepest descents routines
+AC_ARG_ENABLE([GLU_GFIX_SD],
+	[ --enable-GLU_GFIX_SD ],
+	[case "${enableval}" in
+	yes) AC_MSG_NOTICE([Using the SLOWER Steepest Descent gauge fixing routines])	
+	     AC_DEFINE([GLU_GFIX_SD],[],[SD gauge fixing routines])
+	     ;;
+	*) AC_MSG_ERROR([bad value ${enableval} for --enable-GLU_GFIX_SD]) ;;
+	esac
+	],[])
 
 ## Some compiler checks
 ## My code is littered with consts
