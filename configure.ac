@@ -158,15 +158,16 @@ AC_ARG_ENABLE([OMP_FFTW],
 ## Look for openmp, cannot turn on the omp fftw routines without it!
 AC_CHECK_HEADERS([omp.h],[],[OMP_FFTW=false])
 
-## see if we already have it
-AC_CHECK_HEADERS([fftw3.h],[local_fftw=true],[local_fftw=false])
-
 ## Look for fftw in the useer specified place
 fftw=false 
 AC_ARG_WITH([fftw],
 	AC_HELP_STRING([--with-fftw=<name>],
 		       [Specify FFTW location for the GF]),
-            [FFTW=${with_fftw}
+            [
+	    ## see if we already have it	
+	    AC_CHECK_HEADERS([fftw3.h],[local_fftw=true],[local_fftw=false])
+	    
+	    FFTW=${with_fftw}
 
 	    ## are we compiling for single precision or not?
 	    if test x$single = xtrue ; then
@@ -209,6 +210,9 @@ AC_ARG_WITH([fftw],
 	    fi
 	    ]	    
 	    , [
+	    ## see if we already have it	
+	    AC_CHECK_HEADERS([fftw3.h],[local_fftw=true],[local_fftw=false])
+
 	    # get desperate here and check for the header in the usual places
 	    # as omp routines are special I doubt they will be installed, maybe should do a special check
 	    if test x$local_fftw = "xtrue" ; then
@@ -219,7 +223,6 @@ AC_ARG_WITH([fftw],
 	       AC_MSG_NOTICE([No local fftw3.h found either!])
 	    fi
      ]) ## closes the check headers ...
-# closes AC_HELP_STRING
 ]
 # closes with-FFTW
 )

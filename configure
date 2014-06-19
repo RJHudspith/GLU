@@ -4805,8 +4805,14 @@ fi
 done
 
 
-## see if we already have it
-for ac_header in fftw3.h
+## Look for fftw in the useer specified place
+fftw=false
+
+# Check whether --with-fftw was given.
+if test "${with_fftw+set}" = set; then :
+  withval=$with_fftw;
+	    ## see if we already have it
+	    for ac_header in fftw3.h
 do :
   ac_fn_c_check_header_mongrel "$LINENO" "fftw3.h" "ac_cv_header_fftw3_h" "$ac_includes_default"
 if test "x$ac_cv_header_fftw3_h" = xyes; then :
@@ -4821,12 +4827,7 @@ fi
 done
 
 
-## Look for fftw in the useer specified place
-fftw=false
-
-# Check whether --with-fftw was given.
-if test "${with_fftw+set}" = set; then :
-  withval=$with_fftw; FFTW=${with_fftw}
+	    FFTW=${with_fftw}
 
 	    ## are we compiling for single precision or not?
 	    if test x$single = xtrue ; then
@@ -4891,6 +4892,22 @@ $as_echo "#define HAVE_FFTW3_H /**/" >>confdefs.h
 
 else
 
+	    ## see if we already have it
+	    for ac_header in fftw3.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "fftw3.h" "ac_cv_header_fftw3_h" "$ac_includes_default"
+if test "x$ac_cv_header_fftw3_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_FFTW3_H 1
+_ACEOF
+ local_fftw=true
+else
+  local_fftw=false
+fi
+
+done
+
+
 	    # get desperate here and check for the header in the usual places
 	    # as omp routines are special I doubt they will be installed, maybe should do a special check
 	    if test x$local_fftw = "xtrue" ; then
@@ -4909,7 +4926,6 @@ fi
 
 done
  ## closes the check headers ...
-# closes AC_HELP_STRING
 
 # closes with-FFTW
 
