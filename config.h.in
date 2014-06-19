@@ -21,7 +21,7 @@
 /* Bluegene specific hacks. */
 #undef GLU_BGQ
 
-/* Use the steepest descent gauge fixing. */
+/* SD gauge fixing routines */
 #undef GLU_GFIX_SD
 
 /* GSL default (Mersenne Twister) selection */
@@ -96,7 +96,7 @@
 /* Sub-leading rectangle term */
 #undef IWA_WEIGHT1
 
-/* Keep It Simple Stupid RNG */
+/* Keep It Simple Stupid RNG (JKISS32) */
 #undef KISS_RNG
 
 /* Generated Gribov copies. */
@@ -142,7 +142,7 @@
 /* Nonexceptional projection index. */
 #undef PROJ_GRACEY
 
-/* Storage of single precision routines and utilisation of fftwf routines. */
+/* Storage of single precision fields and utilisation of fftwf routines. */
 #undef SINGLE_PREC
 
 /* Define to 1 if you have the ANSI C header files. */
@@ -150,9 +150,6 @@
 
 /* Symanzik improved staple. */
 #undef SYMANZIK
-
-/* One loop symanzik improved staple. */
-#undef SYMANZIK_ONE_LOOP
 
 /* Topological charge measurement start. */
 #undef TOP_VALUE
@@ -178,14 +175,11 @@
 /* Normal derivative, log def gluon fields */
 #undef deriv_full
 
-/* Stencil derivative, log def gluon fields */
-#undef deriv_fulln
-
-/* Stencil derivative, linear gluon fields */
-#undef deriv_linn
-
 /* Defined the overimproved smearing parameter epsilon. */
 #undef epsilon
+
+/* Exact exponentiation for the gauge transformation matrices */
+#undef exp_exact
 
 /* Define to `__inline__' or `__inline' if that's what the C compiler
    calls it, or to nothing if 'inline' is not supported under any name.  */

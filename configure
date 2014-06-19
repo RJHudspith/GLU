@@ -625,10 +625,6 @@ ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
-NCONDOR_FALSE
-NCONDOR_TRUE
-FASTSMEAR_FALSE
-FASTSMEAR_TRUE
 LAPACKE
 DEFLAPACKE_FALSE
 DEFLAPACKE_TRUE
@@ -743,6 +739,7 @@ with_fftw
 with_gsl
 with_lapacke
 with_deriv
+enable_exp_exact
 enable_fastsmear
 enable_notcondor
 with_GRACEY_PROJ
@@ -1388,6 +1385,7 @@ Optional Features:
   --enable-dependency-tracking   do not reject slow dependency extractors
  --enable-single Have our links in single or double precision
  --enable-OMP_FFTW Utilise FFTW's OpenMP parallel FFTs
+ --enable-exp_exact Exact exponentiation into the group for the gauge fixing
  --enable-fastsmear Turn on numerically unstable fast smearing routines
  --enable-notcondor Allows for the saving of FFT plans and some simple hashing and whatever
  --enable-verbiage
@@ -4456,7 +4454,7 @@ $as_echo "#define AC_APPLE_UNIVERSAL_BUILD 1" >>confdefs.h
 
 
 ## I strongly recommend these flags for compiling with gcc
-#CFLAGS="$CFLAGS -O3 -ffast-math -mfpmath=sse -march=native"
+#CFLAGS="-O3 -mfpmath=sse -march=native -fopenmp"
 
 ## prefix!!
 
@@ -4749,22 +4747,25 @@ done
 
 
 ## And we can now run in single precision
+single=false
 # Check whether --enable-single was given.
 if test "${enable_single+set}" = set; then :
-  enableval=$enable_single; case "${enableval}" in
-	yes) single=true ;;
-	no) single=false ;;
-	*) as_fn_error $? "bad value ${enableval} for --enable-single" "$LINENO" 5 ;;
-	esac
-else
-  single=false
-fi
-
-if test x$single = xtrue ; then
+  enableval=$enable_single;
+	case "${enableval}" in
+	yes) single=true ## needed for fftw
+	     { $as_echo "$as_me:${as_lineno-$LINENO}: Using single precision storage for gauge fields" >&5
+$as_echo "$as_me: Using single precision storage for gauge fields" >&6;}
 
 $as_echo "#define SINGLE_PREC /**/" >>confdefs.h
 
+	     ;;
+	no) { $as_echo "$as_me:${as_lineno-$LINENO}: Using double precision storage for gauge fields (default)" >&5
+$as_echo "$as_me: Using double precision storage for gauge fields (default)" >&6;} ;;
+	*) as_fn_error $? "bad value ${enableval} for --enable-single" "$LINENO" 5 ;;
+	esac
+
 fi
+
 
 ######################################### FFTW3 ###############################################
 #                                                                                             #
@@ -4804,12 +4805,35 @@ fi
 done
 
 
+## see if we already have it
+for ac_header in fftw3.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "fftw3.h" "ac_cv_header_fftw3_h" "$ac_includes_default"
+if test "x$ac_cv_header_fftw3_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_FFTW3_H 1
+_ACEOF
+ local_fftw=true
+else
+  local_fftw=false
+fi
+
+done
+
+
 ## Look for fftw in the useer specified place
 fftw=false
 
 # Check whether --with-fftw was given.
 if test "${with_fftw+set}" = set; then :
   withval=$with_fftw; FFTW=${with_fftw}
+
+	    ## are we compiling for single precision or not?
+	    if test x$single = xtrue ; then
+	       float_version=f
+	    else
+	       float_version=""
+	    fi
 
 	    for ac_header in ${FFTW}include/fftw3.h
 do :
@@ -4822,36 +4846,22 @@ _ACEOF
 
 	    { $as_echo "$as_me:${as_lineno-$LINENO}: User defined fftw library @ $FFTW" >&5
 $as_echo "$as_me: User defined fftw library @ $FFTW" >&6;}
-
-	    ## are we compiling for single precision or not?
-	    if test x$single = xtrue ; then
-	       float_version=f
-	    else
-	       float_version=""
-	    fi
-
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: Attempting static linking to the user's FFTW lib" >&5
-$as_echo "$as_me: Attempting static linking to the user's FFTW lib" >&6;}
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: Attempting linking to the user's FFTW lib ${FFTW}lib/libfftw3${float_version}" >&5
+$as_echo "$as_me: Attempting linking to the user's FFTW lib ${FFTW}lib/libfftw3${float_version}" >&6;}
 
 	    ## if we use the user one, only link to the static lib
 	    if  test -a ${FFTW}lib/libfftw3${float_version}.a ; then
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: Statically linking to the user's FFTW lib" >&5
 $as_echo "$as_me: Statically linking to the user's FFTW lib" >&6;}
 	    	CFLAGS="$CFLAGS -I${FFTW}include"
-	    	LDFLAGS="$LDFLAGS ${FFTW}lib/libfftw3$float_version.a"
-		#include OMP fftw routines
+	    	LDFLAGS="$LDFLAGS ${FFTW}lib/libfftw3${float_version}.a"
 		if test x$OMP_FFTW = xtrue ; then
-		     if  test -a ${FFTW}lib/libfftw3${float_verion}_omp.a ; then
-		     LDFLAGS="$LDFLAGS ${FFTW}lib/libfftw3${float_version}_omp.a"
+		   if test -a ${FFTW}lib/libfftw3${float_version}_omp.a ; then
+		      LDFLAGS="$LDFLAGS ${FFTW}lib/libfftw3${float_version}_omp.a"
 
 $as_echo "#define OMP_FFTW /**/" >>confdefs.h
 
-		     { $as_echo "$as_me:${as_lineno-$LINENO}: Using FFTW's OpenMP parallel routines." >&5
-$as_echo "$as_me: Using FFTW's OpenMP parallel routines." >&6;}
-		     else
-		     { $as_echo "$as_me:${as_lineno-$LINENO}: OMP_FFTW Library ${FFTW}lib/libfftw3_omp.a not found! Cannot use parallel fft's." >&5
-$as_echo "$as_me: OMP_FFTW Library ${FFTW}lib/libfftw3_omp.a not found! Cannot use parallel fft's." >&6;}
-		     fi
+		   fi
 		fi
 
 $as_echo "#define HAVE_FFTW3_H /**/" >>confdefs.h
@@ -4862,15 +4872,15 @@ $as_echo "#define HAVE_FFTW3_H /**/" >>confdefs.h
 $as_echo "$as_me: Static link not found !! Shared object (.so) linking to the user's FFTW lib" >&6;}
 	    	CFLAGS="$CFLAGS -I${FFTW}include -L${FFTW}lib/"
 	    	LDFLAGS="$LDFLAGS -lfftw3${float_version}"
-		## If you have compiled it in then it magically appears in the .so library, make sure it is compiled
-		## or it will throw errors like crazy..
-		   if test x$OMP_FFTW = xtrue ; then
+		if test x$OMP_FFTW = xtrue ; then
+		   ## check to see if it is there otherwise don't include it
+		   if test -a ${FFTW}lib/libfftw3${float_version}_omp.so ; then
+		      LDFLAGS="$LDFLAGS -lfftw3${float_version}_omp"
 
 $as_echo "#define OMP_FFTW /**/" >>confdefs.h
 
-		      { $as_echo "$as_me:${as_lineno-$LINENO}: Using FFTW's OpenMP parallel routines." >&5
-$as_echo "$as_me: Using FFTW's OpenMP parallel routines." >&6;}
 		   fi
+		fi
 
 $as_echo "#define HAVE_FFTW3_H /**/" >>confdefs.h
 
@@ -4882,37 +4892,18 @@ $as_echo "#define HAVE_FFTW3_H /**/" >>confdefs.h
 else
 
 	    # get desperate here and check for the header in the usual places
-	    FFTW=
-	    ## Need fftw3, for our gauge fixing code
-	    for ac_header in fftw3.h
-do :
-  ac_fn_c_check_header_compile "$LINENO" "fftw3.h" "ac_cv_header_fftw3_h" "
-	    ## reduce this to a warning
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING! Fourier acceleration is not enabled" >&5
-$as_echo "$as_me: WARNING! Fourier acceleration is not enabled" >&6;}
-
-"
-if test "x$ac_cv_header_fftw3_h" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_FFTW3_H 1
-_ACEOF
-
-	    if test x$single = xtrue ; then
-	       LDFLAGS="$LDFLAGS -lfftw3f"
-	    else
-		LDFLAGS="$LDFLAGS -lfftw3"
-	    fi
+	    # as omp routines are special I doubt they will be installed, maybe should do a special check
+	    if test x$local_fftw = "xtrue" ; then
+	       LDFLAGS="$LDFLAGS -lfftw3${float_version}"
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: Using the system's fftw" >&5
+$as_echo "$as_me: Using the system's fftw" >&6;}
 
 $as_echo "#define HAVE_FFTW3_H /**/" >>confdefs.h
 
-
-else
-
-	    as_fn_error $? "fftw3 not found anywhere, it is integral to fourier acceleration. Make a cup of tea or something whilst you install it" "$LINENO" 5
-
-fi
-
-done
+	    else
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: No local fftw3.h found either!" >&5
+$as_echo "$as_me: No local fftw3.h found either!" >&6;}
+	    fi
 
 fi
 
@@ -5001,12 +4992,12 @@ fi
 ## Include where it is just in case people want to do something in Makefile.am
 
 
-######################################### LAPACKE############################################
-#                                                                                           #
-#    Binding to the lapacke library (lapack for c), not really used too much but can be     #
-#    very beneficial for large NC eigenvalues. Not a necessity.                             #
-#                                                                                           #
-#############################################################################################
+######################################### LAPACKE ############################################
+#                                                                                            #
+#    Binding to the lapacke library (lapack for c), not really used too much but can be      #
+#    very beneficial for large NC eigenvalues. Not a necessity.                              #
+#                                                                                            #
+##############################################################################################
 lapacke=false
 
 # Check whether --with-lapacke was given.
@@ -5064,33 +5055,37 @@ fi
 # Check whether --with-deriv was given.
 if test "${with_deriv+set}" = set; then :
   withval=$with_deriv;
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: User specified deriv, type given as ${with_deriv}" >&5
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: User specified deriv, type given as ${with_deriv}" >&5
 $as_echo "$as_me: User specified deriv, type given as ${with_deriv}" >&6;}
-	    	if  test "${with_deriv}" == "deriv_linn"  ;
-	    	then
-
-$as_echo "#define deriv_linn /**/" >>confdefs.h
-
-	    	elif  test "${with_deriv}" == "deriv_full"  ;
-	    	then
-
+	    case "${with_deriv}" in
+	      deriv_full)
 $as_echo "#define deriv_full /**/" >>confdefs.h
-
-	    	elif  "${with_deriv}" == "deriv_fulln"  ;
-	        then
-
-$as_echo "#define deriv_fulln /**/" >>confdefs.h
-
-	        else
-	    	     { $as_echo "$as_me:${as_lineno-$LINENO}: Default deriv : Linear deriv with O(a) approx exponentiation (Fastest)." >&5
-$as_echo "$as_me: Default deriv : Linear deriv with O(a) approx exponentiation (Fastest)." >&6;}
-	        fi
+ ;;
+	      ## JAMIE :: TODO, work out the functionals being minimised in the CG for these!
+	      #deriv_fulln) AC_DEFINE([deriv_fulln],[],[Stencil derivative, log def gluon fields]) ;;
+	      #deriv_linn) AC_DEFINE([deriv_linn],[],[Stencil derivative, linear gluon fields]) ;;
+	      *) { $as_echo "$as_me:${as_lineno-$LINENO}: Default deriv : Linear deriv with O(a) approx exponentiation (Fastest)." >&5
+$as_echo "$as_me: Default deriv : Linear deriv with O(a) approx exponentiation (Fastest)." >&6;};;
+	    esac
 
 else
-
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: Default deriv : Linear deriv with O(a) approx exponentiation (Fastest)." >&5
+   { $as_echo "$as_me:${as_lineno-$LINENO}: Default deriv : Linear deriv with O(a) approx exponentiation (Fastest)." >&5
 $as_echo "$as_me: Default deriv : Linear deriv with O(a) approx exponentiation (Fastest)." >&6;}
+fi
 
+
+## Definitions for the fastsmearing default is the slow(stable) one
+# Check whether --enable-exp_exact was given.
+if test "${enable_exp_exact+set}" = set; then :
+  enableval=$enable_exp_exact; case "${enableval}" in
+	yes) { $as_echo "$as_me:${as_lineno-$LINENO}: Exact exponentiation for the gauge transformation matrices" >&5
+$as_echo "$as_me: Exact exponentiation for the gauge transformation matrices" >&6;}
+
+$as_echo "#define exp_exact /**/" >>confdefs.h
+
+	     ;;
+	*) as_fn_error $? "bad value ${enableval} for --enable-exp_exact" "$LINENO" 5 ;;
+	esac
 fi
 
 
@@ -5098,81 +5093,48 @@ fi
 # Check whether --enable-fastsmear was given.
 if test "${enable_fastsmear+set}" = set; then :
   enableval=$enable_fastsmear; case "${enableval}" in
-	yes) fastsmear=true ;;
-	no) fastsmear=false ;;
-	*) as_fn_error $? "bad value ${enableval} for --enable-fastsmear" "$LINENO" 5 ;;
-	esac
-else
-  fastsmear=false
-fi
-
- if test x$fastsmear = xtrue; then
-  FASTSMEAR_TRUE=
-  FASTSMEAR_FALSE='#'
-else
-  FASTSMEAR_TRUE='#'
-  FASTSMEAR_FALSE=
-fi
-
-
-## test whether fastsmear has been set
-if test x$fastsmear = xtrue ;
-then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: fast and unstable routines enabled" >&5
+	yes) { $as_echo "$as_me:${as_lineno-$LINENO}: fast and unstable routines enabled" >&5
 $as_echo "$as_me: fast and unstable routines enabled" >&6;}
 
 $as_echo "#define FAST_SMEAR /**/" >>confdefs.h
 
-else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: default stable smearing routines used" >&5
-$as_echo "$as_me: default stable smearing routines used" >&6;}
+	     ;;
+	no) { $as_echo "$as_me:${as_lineno-$LINENO}: default stable smearing routines used" >&5
+$as_echo "$as_me: default stable smearing routines used" >&6;} ;;
+	*) as_fn_error $? "bad value ${enableval} for --enable-fastsmear" "$LINENO" 5 ;;
+	esac
 fi
+
 
 ## Finally we have routines for this node or many machines
 ## historically targeted at "CONDOR", default is CONDOR_MODE
 # Check whether --enable-notcondor was given.
 if test "${enable_notcondor+set}" = set; then :
   enableval=$enable_notcondor; case "${enableval}" in
-	yes) notcondor=true ;;
-	no) notcondor=false ;;
-	*) as_fn_error $? "bad value ${enableval} for --enable-notcondor" "$LINENO" 5 ;;
-	esac
-else
-  notcondor=false
-fi
-
- if test x$notcondor = xtrue; then
-  NCONDOR_TRUE=
-  NCONDOR_FALSE='#'
-else
-  NCONDOR_TRUE='#'
-  NCONDOR_FALSE=
-fi
-
-
-## Check the condor enable creates the dirs $prefix/Local/(Wisdom && Moments)
-## used for some light caching of previous results
-if  test x$notcondor == xtrue  ;then
-   ## We have to be prefixed for this
-   if  test "$prefix" == "NONE"  ;then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: Cannot save wisdom as we are not prefixed, defining CONDOR_MODE by default" >&5
+	yes) ## Check the condor enable creates the dirs $prefix/Local/(Wisdom && Moments)
+	     ## used for some light caching of previous results
+             if  test "$prefix" == "NONE"  ;then
+             	{ $as_echo "$as_me:${as_lineno-$LINENO}: Cannot save wisdom as we are not prefixed, defining CONDOR_MODE by default" >&5
 $as_echo "$as_me: Cannot save wisdom as we are not prefixed, defining CONDOR_MODE by default" >&6;}
-   else
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: FFTW's WISDOM routines being used, targeted specifically for this node" >&5
+             else
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: FFTW's WISDOM routines being used, targeted specifically for this node" >&5
 $as_echo "$as_me: FFTW's WISDOM routines being used, targeted specifically for this node" >&6;}
 
 $as_echo "#define NOT_CONDOR_MODE /**/" >>confdefs.h
 
-	mkdir $prefix/Local/
-	mkdir $prefix/Local/Wisdom
-	mkdir $prefix/Local/Moments
-   fi
-   { $as_echo "$as_me:${as_lineno-$LINENO}: FFTW plans created ONCE. Subsequent transforms are read from Local/Wisdom/" >&5
+		mkdir $prefix/Local/
+		mkdir $prefix/Local/Wisdom
+		mkdir $prefix/Local/Moments
+             fi
+	     { $as_echo "$as_me:${as_lineno-$LINENO}: FFTW plans created ONCE. Subsequent transforms are read from Local/Wisdom/" >&5
 $as_echo "$as_me: FFTW plans created ONCE. Subsequent transforms are read from Local/Wisdom/" >&6;}
-else
-   { $as_echo "$as_me:${as_lineno-$LINENO}: default condor routines called, i.e. FFTW plans created here and now" >&5
-$as_echo "$as_me: default condor routines called, i.e. FFTW plans created here and now" >&6;}
+	     ;;
+	no) { $as_echo "$as_me:${as_lineno-$LINENO}: default condor routines called, i.e. FFTW plans created here and now" >&5
+$as_echo "$as_me: default condor routines called, i.e. FFTW plans created here and now" >&6;} ;;
+	*) as_fn_error $? "bad value ${enableval} for --enable-notcondor" "$LINENO" 5 ;;
+	esac
 fi
+
 
 ## Include the other stuff we could possibly use
 ## with proj gracey
@@ -5181,7 +5143,7 @@ fi
 if test "${with_GRACEY_PROJ+set}" = set; then :
   withval=$with_GRACEY_PROJ;
 	    if test "x$with_GRACEY_PROJ" != "xyes" ; then
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: User specified nonexceptional projector ${with_GRACEY_PROJ}." >&5
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: User specified nonexceptional projector ${with_GRACEY_PROJ}." >&5
 $as_echo "$as_me: User specified nonexceptional projector ${with_GRACEY_PROJ}." >&6;}
 
 cat >>confdefs.h <<_ACEOF
@@ -5196,11 +5158,10 @@ $as_echo "#define PROJ_GRACEY 0" >>confdefs.h
 
 else
 
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: Default nonexceptional projector (1)." >&5
+	    	{ $as_echo "$as_me:${as_lineno-$LINENO}: Default nonexceptional projector (1)." >&5
 $as_echo "$as_me: Default nonexceptional projector (1)." >&6;}
 
 $as_echo "#define PROJ_GRACEY 0" >>confdefs.h
-
 
 fi
 
@@ -5227,31 +5188,21 @@ if  test x$with_IMPROVED_C0 != "xyes" -a x$with_IMPROVED_C1 != "xyes"  ; then
 # Check whether --with-IMPROVED_STAPLE was given.
 if test "${with_IMPROVED_STAPLE+set}" = set; then :
   withval=$with_IMPROVED_STAPLE;
-	    if test x$with_IMPROVED_STAPLE = xIWASAKI ; then
-	        { $as_echo "$as_me:${as_lineno-$LINENO}: Iwasaki improved staple." >&5
-$as_echo "$as_me: Iwasaki improved staple." >&6;}
-
-$as_echo "#define IWASAKI /**/" >>confdefs.h
-
-	    elif test x$with_IMPROVED_STAPLE = xDBW2 ; then
-	        { $as_echo "$as_me:${as_lineno-$LINENO}: DBW2 improved staple." >&5
-$as_echo "$as_me: DBW2 improved staple." >&6;}
-
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: user defined ${with_IMPROVED_STAPLE} improved staple." >&5
+$as_echo "$as_me: user defined ${with_IMPROVED_STAPLE} improved staple." >&6;}
+	    case ${with_IMPROVED_STAPLE} in
+	    DBW2)
 $as_echo "#define DBW2 /**/" >>confdefs.h
-
-	    elif test x$with_IMPROVED_STAPLE = xSYMANZIK ; then
-	        { $as_echo "$as_me:${as_lineno-$LINENO}: Symanzik improved staple." >&5
-$as_echo "$as_me: Symanzik improved staple." >&6;}
-
+ ;;
+	    IWASAKI)
+$as_echo "#define IWASAKI /**/" >>confdefs.h
+	;;
+            SYMANZIK)
 $as_echo "#define SYMANZIK /**/" >>confdefs.h
-
-	    elif test x$with_IMPROVED_STAPLE = xSYMANZIK_ONE_LOOP ; then
-	        { $as_echo "$as_me:${as_lineno-$LINENO}: One loop symanzik improved staple." >&5
-$as_echo "$as_me: One loop symanzik improved staple." >&6;}
-
-$as_echo "#define SYMANZIK_ONE_LOOP /**/" >>confdefs.h
-
-	    fi
+ ;;
+            *) { $as_echo "$as_me:${as_lineno-$LINENO}: Unrecognised, not using rectangle staples" >&5
+$as_echo "$as_me: Unrecognised, not using rectangle staples" >&6;} ;;
+	    esac
 
 fi
 
@@ -5280,15 +5231,14 @@ fi
 # Check whether --enable-verbiage was given.
 if test "${enable_verbiage+set}" = set; then :
   enableval=$enable_verbiage; case "${enableval}" in
-	yes) verbiage=true ;;
-	no) verbiage=false ;;
-	*) as_fn_error $? "bad value ${enableval} for --enable-verbiage" "$LINENO" 5 ;;
-	esac
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: Verbose output, mostly to look at the plaquettes at each iteration of smearing." >&5
+	yes) { $as_echo "$as_me:${as_lineno-$LINENO}: Verbose output, mostly to look at the plaquettes at each iteration of smearing." >&5
 $as_echo "$as_me: Verbose output, mostly to look at the plaquettes at each iteration of smearing." >&6;}
 
 $as_echo "#define verbose /**/" >>confdefs.h
 
+	     ;;
+	*) as_fn_error $? "bad value ${enableval} for --enable-verbiage" "$LINENO" 5 ;;
+	esac
 
 fi
 
@@ -5297,15 +5247,14 @@ fi
 # Check whether --enable-ascii_check was given.
 if test "${enable_ascii_check+set}" = set; then :
   enableval=$enable_ascii_check; case "${enableval}" in
-	yes) ascii_check=true ;;
-	no) ascii_check=false ;;
-	*) as_fn_error $? "bad value ${enableval} for --enable-ascii_check" "$LINENO" 5 ;;
-	esac
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: If we write out an output file, this prints the output the stdout as well." >&5
+	yes) { $as_echo "$as_me:${as_lineno-$LINENO}: If we write out an output file, this prints the output the stdout as well." >&5
 $as_echo "$as_me: If we write out an output file, this prints the output the stdout as well." >&6;}
 
 $as_echo "#define ASCII_CHECK /**/" >>confdefs.h
 
+	     ;;
+	*) as_fn_error $? "bad value ${enableval} for --enable-ascii_check" "$LINENO" 5 ;;
+	esac
 
 fi
 
@@ -5314,15 +5263,14 @@ fi
 # Check whether --enable-GLU_bgq was given.
 if test "${enable_GLU_bgq+set}" = set; then :
   enableval=$enable_GLU_bgq; case "${enableval}" in
-	yes) GLU_bgq=true ;;
-	no) GLU_bgq=false ;;
-	*) as_fn_error $? "bad value ${enableval} for --enable-GLU_bgq" "$LINENO" 5 ;;
-	esac
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: Preparing for a BGQ build..." >&5
+	yes) { $as_echo "$as_me:${as_lineno-$LINENO}: Preparing for a BGQ build..." >&5
 $as_echo "$as_me: Preparing for a BGQ build..." >&6;}
 
 $as_echo "#define GLU_BGQ /**/" >>confdefs.h
 
+	     ;;
+	*) as_fn_error $? "bad value ${enableval} for --enable-GLU_bgq" "$LINENO" 5 ;;
+	esac
 
 fi
 
@@ -5331,15 +5279,14 @@ fi
 # Check whether --enable-GIVENS_APE was given.
 if test "${enable_GIVENS_APE+set}" = set; then :
   enableval=$enable_GIVENS_APE; case "${enableval}" in
-	yes) GIVENS_APE=true ;;
-	no) GIVENS_APE=false ;;
-	*) as_fn_error $? "bad value ${enableval} for --enable-GIVENS_APE" "$LINENO" 5 ;;
-	esac
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: Using the trace maximisation APE projection ..." >&5
+	yes) { $as_echo "$as_me:${as_lineno-$LINENO}: Using the trace maximisation APE projection ..." >&5
 $as_echo "$as_me: Using the trace maximisation APE projection ..." >&6;}
 
 $as_echo "#define GIVENS_APE /**/" >>confdefs.h
 
+	     ;;
+	*) as_fn_error $? "bad value ${enableval} for --enable-GIVENS_APE" "$LINENO" 5 ;;
+	esac
 
 fi
 
@@ -5348,15 +5295,14 @@ fi
 # Check whether --enable-CLOVER_IMPROVE was given.
 if test "${enable_CLOVER_IMPROVE+set}" = set; then :
   enableval=$enable_CLOVER_IMPROVE; case "${enableval}" in
-	yes) CLOVER_IMPROVE=true ;;
-	no) CLOVER_IMPROVE=false ;;
-	*) as_fn_error $? "bad value ${enableval} for --enable-CLOVER_IMPROVE" "$LINENO" 5 ;;
-	esac
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: Highly improved clover term specified for topological charge measurement." >&5
+	yes) { $as_echo "$as_me:${as_lineno-$LINENO}: Highly improved clover term specified for topological charge measurement." >&5
 $as_echo "$as_me: Highly improved clover term specified for topological charge measurement." >&6;}
 
 $as_echo "#define CLOVER_IMPROVE /**/" >>confdefs.h
 
+	     ;;
+	*) as_fn_error $? "bad value ${enableval} for --enable-CLOVER_IMPROVE" "$LINENO" 5 ;;
+	esac
 
 fi
 
@@ -5409,46 +5355,26 @@ fi
 # Check whether --with-RNG was given.
 if test "${with_RNG+set}" = set; then :
   withval=$with_RNG;
-	    ## KISS RNG
-	    if  test "x$with_RNG" == "xKISS"  ; then
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: KISS RNG selected" >&5
-$as_echo "$as_me: KISS RNG selected" >&6;}
-
+	    case ${with_RNG} in
+	    KISS_RNG)
 $as_echo "#define KISS_RNG /**/" >>confdefs.h
-
-	    ## MWC RNG
-	    elif  test "x$with_RNG" == "xMWC_1038"  ; then
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: MWC_1038 RNG selected" >&5
-$as_echo "$as_me: MWC_1038 RNG selected" >&6;}
-
+ ;;
+	    MWC_1038_RNG)
 $as_echo "#define MWC_1038_RNG /**/" >>confdefs.h
-
-	    ## MWC RNG
-	    elif  test "x$with_RNG" == "xMWC_4096"  ; then
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: MWC_1038 RNG selected" >&5
-$as_echo "$as_me: MWC_1038 RNG selected" >&6;}
-
+ ;;
+	    MWC_4096_RNG)
 $as_echo "#define MWC_1038_RNG /**/" >>confdefs.h
-
-	    ## GSL RNG
-	    elif  test "x$with_RNG" == "xGSL"  ; then
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: Attempting to use the GSL default RNG" >&5
-$as_echo "$as_me: Attempting to use the GSL default RNG" >&6;}
-
+ ;;
+	    GSL)
 $as_echo "#define GSL_RNG /**/" >>confdefs.h
-
-	    else
-	    ## DEAFULT to the WELL
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: Defaulting to the Well19937a RNG" >&5
-$as_echo "$as_me: Defaulting to the Well19937a RNG" >&6;}
-	    fi
+ ;;
+	    *) { $as_echo "$as_me:${as_lineno-$LINENO}: Defaulting to the Well19937a RNG" >&5
+$as_echo "$as_me: Defaulting to the Well19937a RNG" >&6;} ;;
+	    esac
 
 else
-
-## DEAFULT to the WELL
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Defaulting to the Well19937a RNG" >&5
+   { $as_echo "$as_me:${as_lineno-$LINENO}: Defaulting to the Well19937a RNG" >&5
 $as_echo "$as_me: Defaulting to the Well19937a RNG" >&6;}
-
 fi
 
 
@@ -5479,15 +5405,14 @@ fi
 # Check whether --enable-GLU_GFIX_SD was given.
 if test "${enable_GLU_GFIX_SD+set}" = set; then :
   enableval=$enable_GLU_GFIX_SD; case "${enableval}" in
-	yes) steepestdescents=true ;;
-	no) steepestdescents=false ;;
-	*) as_fn_error $? "bad value ${enableval} for --enable-GLU_GFIX_SD" "$LINENO" 5 ;;
-	esac
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: Using the SD gauge fixing routines" >&5
-$as_echo "$as_me: Using the SD gauge fixing routines" >&6;}
+	yes) { $as_echo "$as_me:${as_lineno-$LINENO}: Using the SLOWER Steepest Descent gauge fixing routines" >&5
+$as_echo "$as_me: Using the SLOWER Steepest Descent gauge fixing routines" >&6;}
 
 $as_echo "#define GLU_GFIX_SD /**/" >>confdefs.h
 
+	     ;;
+	*) as_fn_error $? "bad value ${enableval} for --enable-GLU_GFIX_SD" "$LINENO" 5 ;;
+	esac
 
 fi
 
@@ -5833,14 +5758,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${DEFLAPACKE_TRUE}" && test -z "${DEFLAPACKE_FALSE}"; then
   as_fn_error $? "conditional \"DEFLAPACKE\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${FASTSMEAR_TRUE}" && test -z "${FASTSMEAR_FALSE}"; then
-  as_fn_error $? "conditional \"FASTSMEAR\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${NCONDOR_TRUE}" && test -z "${NCONDOR_FALSE}"; then
-  as_fn_error $? "conditional \"NCONDOR\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
