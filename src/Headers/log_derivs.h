@@ -90,6 +90,7 @@ approx_log_deriv_nnn( GLU_complex sum[ HERMSIZE ] ,
    @fn double log_deriv( GLU_complex sum[ HERMSIZE ] , const struct site *__restrict lat , const int i , const int MAX_DIR )
    @brief The logarithmic lattice derivative
    @param sum :: The sum of the derivative \f$ \partial_\mu A_\mu(x) \f$
+   @param functional :: evaluation of the log-functional
    @param lat :: The lattice field \f$ U_\mu(x) = e^{iaA_\mu(x)} \f$
    @param i :: The site index.
    @param MAX_DIR :: The number of directions we take the derivative of. 
@@ -99,6 +100,7 @@ approx_log_deriv_nnn( GLU_complex sum[ HERMSIZE ] ,
  **/
 double
 log_deriv( GLU_complex sum[ HERMSIZE ] , 
+	   double *functional ,
 	   const struct site *__restrict lat , 
 	   const int i , 
 	   const int MAX_DIR ) ;

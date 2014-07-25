@@ -78,6 +78,7 @@ latt_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
  **/
 double
 fast_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] , 
+			       double *functional ,
 			       const struct site *__restrict lat , 
 			       const int i ) ;
 

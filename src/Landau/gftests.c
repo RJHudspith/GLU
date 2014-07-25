@@ -277,7 +277,8 @@ theta_test_log( const struct site *__restrict lat ,
   #pragma omp parallel for private(i) reduction(+:tr) 
   for( i = 0 ; i < LVOLUME ; i++ ) {
     GLU_complex temp[ HERMSIZE ] = { } ; 
-    register const double res = log_deriv( temp , lat , 
+    double functional ;
+    register const double res = log_deriv( temp , &functional , lat ,
 					   i , MAX_DIR ) ; 
     tr = tr + (double)res ; 
     #ifdef GLU_OMP_MEAS

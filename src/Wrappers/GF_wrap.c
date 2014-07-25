@@ -198,7 +198,7 @@ print_fixing_info( GFINFO , SMINFO )
   #endif
 // tell us which log-method we are using
 #if ( defined deriv_full ) || ( defined deriv_fulln )
-  printf( "[GF] Using Vandermonde logarithmic def warm-up \n" ) ;
+  printf( "[GF] Using linear def warm-up \n" ) ; // VDM had some problems?
 #endif
 #ifdef LUXURY_GAUGE
   printf( "[GF] " ) ;

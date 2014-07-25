@@ -34,9 +34,18 @@
 
 // these are the steps I choose, I need 5 points for the high-order cubic spline
 // they DO NOT have to be evenly spaced, but DO have to be sorted
-#define LINE_NSTEPS 3
+#if (NC > 3) && (defined deriv_full)
+  #define LINE_NSTEPS 4
+#else 
+  #define LINE_NSTEPS 3
+#endif
+
 #ifdef HAVE_FFTW3_H
-static const double al[LINE_NSTEPS] = { 0.0 , 0.15 , 0.3 } ;
+  #if (NC > 3) && (defined deriv_full)
+  static const double al[LINE_NSTEPS] = { 0.0 , 0.1 , 0.2 , 0.3 } ;
+  #else
+  static const double al[LINE_NSTEPS] = { 0.0 , 0.15 , 0.3 } ;
+  #endif
 #else
 static const double al[LINE_NSTEPS] = { 0.0 , 0.2 , 0.4 } ;
 #endif
@@ -48,6 +57,9 @@ static const double al[LINE_NSTEPS] = { 0.0 , 0.2 , 0.4 } ;
 
 // allocate in_old
 static GLU_complex **in_old ; 
+
+// zero alpha can be roughly computed in step
+static double zero_alpha ;
 
 // if we want to look at the fixing information
 #ifdef CAREFUL
@@ -99,8 +111,9 @@ FA_deriv(  GLU_complex *__restrict *__restrict in ,
 	   double *tr )
 {
   int i ; 
-  double trAA = 0. ;
-  #pragma omp parallel for private(i) reduction(+:trAA)
+  const double fact = 1.0 / (double)( NC * ND ) ;
+  double trAA = 0. , alpha = 0.0 ;
+#pragma omp parallel for private(i) reduction(+:trAA) reduction(+:alpha)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
 
     #if ( defined deriv_lin || defined deriv_linn )
@@ -109,30 +122,42 @@ FA_deriv(  GLU_complex *__restrict *__restrict in ,
     GLU_complex sum[ HERMSIZE ] = { } ;
     #endif
 
+    double functional = 0.0 ;
     #ifdef deriv_lin
-    const double deriv = fast_deriv_AntiHermitian_proj( sum , lat , i ) ; 
+    const double deriv = fast_deriv_AntiHermitian_proj( sum , &functional , lat , i ) ; 
     #elif defined deriv_linn
     const double deriv = fast_derivnn_AntiHermitian_proj( sum , lat , i ) ; 
     #elif defined deriv_full
     // OK, so if we do not use the approx log in the derivative we need to get the convergence going with the 
     // vandermonde definition, this idea was taken from arXiv:1010.5120v1
       #ifdef SINGLE_PREC
-      const double deriv = *tr > 0.1 ? fast_deriv_AntiHermitian_proj( sum , lat , i ) \
-        : log_deriv( sum , lat , i , ND ) ; 
+      const double deriv = *tr > 0.1 ?					\
+	fast_deriv_AntiHermitian_proj( sum , &functional , lat , i )	\
+        : log_deriv( sum , lat , i , ND ) ;
       #else
-      const double deriv = *tr > 0.1 ? approx_log_deriv( sum , lat , i , ND ) \
-	: log_deriv( sum , lat , i , ND ) ; 
+        #if NC < 4
+        const double deriv = *tr > 0.1 ?				\
+	  fast_deriv_AntiHermitian_proj( sum , &functional , lat , i )	\
+	  : log_deriv( sum , &functional , lat , i , ND ) ; 
+	#else
+        const double deriv = log_deriv( sum , &functional , lat , i , ND ) ; 
+        #endif
       #endif
     // nearest neighbour version
     #elif defined deriv_fulln    
-    const double deriv = *tr > 0.1 ? approx_log_deriv_nn( sum , lat , i , ND ) \
+    const double deriv = *tr > 0.1 ? \
+      approx_log_deriv_nn( sum , lat , i , ND ) \
       : log_deriv_nn( sum , lat , i , ND ) ; 
     // next nearest neighbour version
     #elif defined deriv_fullnn
-    const double deriv = *tr > 0.1 ? approx_log_deriv_nnn( sum , lat , i , ND ) \
+    const double deriv = *tr > 0.1 ? \
+      approx_log_deriv_nnn( sum , lat , i , ND )\
       : log_deriv_nnn( sum , lat , i , ND ) ;
     #endif
+
+    // reductions
     trAA = trAA + (double)deriv ;
+    alpha = alpha + (double)functional * fact ;
 
     // make in anti-hermitian here!
     #if NC == 3
@@ -149,8 +174,17 @@ FA_deriv(  GLU_complex *__restrict *__restrict in ,
     }
     #endif
   }
+#if ( defined deriv_lin ) || (defined deriv_linn )
+  zero_alpha = 1.0 - alpha / (double)LVOLUME ;
+#else
+  #if NC < 4
+  zero_alpha = *tr > 0.1 ? gauge_functional_fast( lat ) :\
+    0.5 * alpha / (double)LVOLUME ;
+  #else
+  zero_alpha = 0.5 * alpha / (double)LVOLUME ;
+  #endif
+#endif
   *tr = trAA * ( GFNORM_LANDAU ) ; 
-
   return ;
 }
 
@@ -175,6 +209,7 @@ exponentiate_gauge( GLU_complex *__restrict *__restrict gauge ,
   return ;
 }
 
+#define V_FOR_VERBOSE
 /**
    @fn static double line_search( GLU_complex *__restrict *__restrict gauge , const struct site *__restrict lat , const GLU_complex *__restrict *__restrict in )
    @brief line search for the minimum of the gauge functional
@@ -186,9 +221,9 @@ line_search( GLU_complex *__restrict *__restrict gauge ,
 {
   int counter = 0 ;
   double val[LINE_NSTEPS] ;
-  val[0] = gauge_functional_fast( lat ) ; // 0 is a freebie
+  val[0] = zero_alpha ; // 0 is a freebie
 #ifdef V_FOR_VERBOSE
-  printf( "%f %f \n" , al[0] , val[0] ) ;
+  printf( "[GF] Landau CG probe :: %f %f \n" , al[0] , val[0] ) ;
 #endif
   for( counter = 1 ; counter < LINE_NSTEPS ; counter++ ) {
     exponentiate_gauge( gauge , (const GLU_complex**)in , al[counter] ) ;
@@ -196,7 +231,7 @@ line_search( GLU_complex *__restrict *__restrict gauge ,
 				   lat , ND , LVOLUME , 0 ) ;
     // the last argument of this has to be 0 !!! 
 #ifdef V_FOR_VERBOSE
-    printf( "%f %f \n" , al[counter] , val[counter] ) ;
+    printf( "[GF] Landau CG probe :: %f %f \n" , al[counter] , val[counter] ) ;
 #endif
   }
 
@@ -226,10 +261,11 @@ steep_Landau_FA( GLU_complex *__restrict *__restrict gauge ,
 		      psq , LVOLUME ) ;
 
   // and step length gf_alpha provided from the input file
-#if (defined GLU_GFIX_SD) || (defined GLU_FR_CG)
+#if (defined GLU_FR_CG) || (defined GLU_GFIX_SD)
   const double spline_min = Latt.gf_alpha ;
 #else
   const double spline_min = line_search( gauge , lat , (const GLU_complex**)in ) ;
+  printf( "[GF] SPLINE %f \n" , spline_min ) ;
 #endif
 
   // exponentiate
@@ -424,7 +460,7 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
 
     #ifdef verbose
     printf( "[GF] %d BETA %f " , k , beta ) ;
-    printf( "[GF] %d SPLINE2 :: %f " , k , spline_min ) ;
+    printf( "[GF] SPLINE :: %f " , spline_min ) ;
     printf( "[GF] cgacc %e \n" , *tr ) ;
     #endif
 
@@ -571,6 +607,9 @@ FASD( struct site *__restrict lat ,
   // have a reference for the plaquette to check convergence
   const double ref_plaquette = av_plaquette( lat ) ;
 
+  // allocate the "traces" array
+  allocate_traces( LVOLUME ) ;
+
   #ifdef CAREFUL
   double newlink = 0. , link = 0. ; 
   #endif
@@ -607,7 +646,11 @@ FASD( struct site *__restrict lat ,
     } else {
       return GLU_FAILURE ;
     }
-  }	   
+  }
+
+  //
+  free_traces( ) ;
+
   //////////////////////////////////
   return iters ; 
 }

@@ -96,32 +96,53 @@ latt_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
 // will return the local tr( || dA || ) here ! 
 #define VAL 0.4444444444444444
 double
-fast_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] , 
+fast_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
+			       double *functional ,
 			       const struct site *__restrict lat , 
 			       const int i )
 {
-  #if NC == 3 
+  // init to zero just to be safe
+  *functional = 0.0 ;
+#if NC == 3 
   double REsum0 = 0. , REsum1 = 0. , IMsum1 = 0. , REsum2 = 0. , IMsum2 = 0. ;
   double REsum3 = 0. , REsum4 = 0. , IMsum4 = 0. ;
   double Ai0 , Ar1 , Ai1 , Ar2 , Ai2 , Ar3 , Ai3 , Ai4 , Ar5 , Ai5 ;
   double Ar6 , Ai6 , Ar7 , Ai7 , Ai8 ;
   double shAi0 , shAr1 , shAi1 , shAr2 , shAi2 , shAr3 , shAi3 , shAi4 , shAr5 , shAi5 ;
   double shAr6 , shAi6 , shAr7 , shAi7 , shAi8 ;
-  #elif NC == 2
+#elif NC == 2
   double REsum0 = 0. , REsum1 = 0. , IMsum1 = 0. ;
   double Ai0 , Ar1 , Ai1 ;
   double shAi0 , shAr1 , shAi1 ;
-  #else
+#else
   int nu ;
   for( nu = 0 ; nu < HERMSIZE ; nu++ ) {
     sum[ nu ] = 0. ;
   }
+  for( nu = 0 ; nu < ND ; nu++ ) {
+    *functional += creal( trace( lat[i].O[nu] ) ) ;
+  }
   return latt_deriv_AntiHermitian_proj( sum , lat , i , ND ) ;
-  #endif
+#endif
+
+  // local functional sum accumulator
+  register double loc_sum = 0.0 ;
 
   //calculate the top diagonal for both shift A and A
   int mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
+    // compute the functional
+    #if NC == 3
+    loc_sum += creal( lat[i].O[mu][0] ) ;
+    loc_sum += creal( lat[i].O[mu][4] ) ;
+    loc_sum += creal( lat[i].O[mu][8] ) ;
+    #elif NC == 2
+    loc_sum += creal( lat[i].O[mu][0] ) ;
+    loc_sum += creal( lat[i].O[mu][3] ) ;
+    #else
+    loc_sum += creal( trace( lat[i].O[mu] ) ) ;
+    #endif
+
 #if NC == 3 
     // cache some stuff in ....
     GLU_real *qq = ( GLU_real* )lat[i].O[mu] ;
@@ -191,6 +212,9 @@ fast_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
 
 #endif
     }
+  
+  // set the functional
+  *functional = loc_sum ;
 
 #if NC == 3
 

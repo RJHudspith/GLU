@@ -92,15 +92,15 @@ average_traces( const int LENGTH )
 // gauge transformation and a log
 #if (defined deriv_full) || (defined deriv_fulln)
 static void
-gtrans_log( GLU_complex A[NCNC] ,
-	    const GLU_complex a[NCNC] ,
-	    const GLU_complex b[NCNC] ,
-	    const GLU_complex c[NCNC] )
+gtrans_log( GLU_complex A[ HERMSIZE ] ,
+	    const GLU_complex a[ NCNC ] ,
+	    const GLU_complex b[ NCNC ] ,
+	    const GLU_complex c[ NCNC ] )
 {
   GLU_complex temp[ NCNC ] ;
   equiv( temp , b ) ;
   gtransform_local( a , temp , c ) ;
-  exact_log_slow( A , temp ) ;
+  exact_log_slow_short( A , temp ) ;
   return ;
 }
 #endif
@@ -240,6 +240,7 @@ approx_minimum( const int nmeas ,
   } else {
     const double result = cubic_min( alphas , functional , 
 				     derivative , sumneg ) ;
+
     if( isnan( result ) ) { 
       return 0.0 ;
     } else {
@@ -344,7 +345,7 @@ evaluate_alpha( const GLU_complex *__restrict *__restrict gauge ,
   for( i = 0 ; i < LENGTH ; i++ ) {
     // some stacked allocations
     #if (defined deriv_full) || (defined deriv_fulln) || (defined deriv_fullnn)
-    GLU_complex A[ NCNC ] ;
+    GLU_complex A[ HERMSIZE ] ;
     GLU_real trAA ;
     #endif
 
@@ -371,7 +372,7 @@ evaluate_alpha( const GLU_complex *__restrict *__restrict gauge ,
       // gauge transform of U_\mu(x+\mu/2)
       gtrans_log( A , gauge[i] , lat[j].O[mu] , 
 		  gauge[lat[i].neighbor[mu]] ) ;
-      trace_ab_herm( &trAA , A , A ) ;
+      trace_ab_herm_short( &trAA , A , A ) ;
       loc_sum += 0.5 * (double)trAA ;
       #endif
     }
@@ -441,7 +442,7 @@ gauge_functional_fast( const struct site *__restrict lat )
 #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     #if (defined deriv_full) || (defined deriv_fulln) || (defined deriv_fullnn)
-    GLU_complex A[ NCNC ] ;
+    GLU_complex A[ HERMSIZE ] ;
     GLU_real trAA ;
     #endif
     register double loc_sum = 0.0 ;
@@ -463,8 +464,9 @@ gauge_functional_fast( const struct site *__restrict lat )
 	multab_suNC( temp , lat[i].O[mu] , lat[lat[i].neighbor[mu]].O[mu] ) ;
 	loc_sum += creal( trace( temp ) ) ;
       #else
-      exact_log_slow( A , lat[i].O[mu] ) ;
-      trace_ab_herm( &trAA , A , A ) ;
+	// still need to think about these
+      exact_log_slow_short( A , lat[i].O[mu] ) ;
+      trace_ab_herm_short( &trAA , A , A ) ;
       loc_sum += 0.5 * (double)trAA ;
       #endif
     }
@@ -536,7 +538,8 @@ set_gauge_matrix( GLU_complex *__restrict gx ,
 
 // derivative
 double
-sum_deriv( const GLU_complex *__restrict *__restrict in , const int LENGTH )
+sum_deriv( const GLU_complex *__restrict *__restrict in , 
+	   const int LENGTH )
 {
   int i ;
   #pragma omp parallel for private(i)

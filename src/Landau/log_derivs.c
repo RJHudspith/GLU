@@ -96,16 +96,22 @@ approx_log_deriv_nnn( GLU_complex sum[ HERMSIZE ] ,
 // log definition of the gauge matrices at the point i
 double
 log_deriv( GLU_complex sum[ HERMSIZE ] , 
+	   double *functional ,
 	   const struct site *__restrict lat , 
 	   const int i , 
 	   const int MAX_DIR )
 {
   GLU_complex A[ HERMSIZE ] , shiftA[ HERMSIZE ] ;
+  GLU_real trAA ;
+  *functional = 0.0 ;
   int mu ; 
   for( mu = 0 ; mu < MAX_DIR ; mu++ ) {
     exact_log_slow_short( A , lat[i].O[mu] ) ; 
     exact_log_slow_short( shiftA , lat[lat[i].back[mu]].O[mu] ) ; 
     a_plus_Sxbminc_short( sum , 1.0 , shiftA , A ) ;
+
+    trace_ab_herm_short( &trAA , A , A ) ;
+    *functional += (double)trAA ;
   }
   return trace_deriv( sum ) ; 
 }

@@ -36,6 +36,7 @@
 //#define GLU_PRINT_LOOPS
 //#define GLU_TEST_MULS
 //#define GLU_TEST_PRODS
+#define GLU_TEST_LOGEXP
 
 // log types we are looking at
 typedef enum { EXACT_FAST , EXACT_SLOW ,
@@ -213,14 +214,30 @@ test_muls( const GLU_complex a[ NCNC ] ,
   printf( "multab \n" ) ;
   multab_suNC( res , a , b ) ;
   write_matrix( res ) ;
+  multab( res , a , b ) ;
+  write_matrix( res ) ;
+  printf( "multab_atomic_right a.b\n" ) ;
+  equiv( res , a ) ;
+  multab_atomic_right( res , b ) ;
+  write_matrix( res ) ;
+  printf( "multab_atomic_left a.b\n" ) ;
+  equiv( res , b ) ;
+  multab_atomic_left( res , a ) ;
+  write_matrix( res ) ;
   printf( "multabdag \n" ) ;
   multabdag_suNC( res , a , b ) ;
+  write_matrix( res ) ;
+  multabdag( res , a , b ) ;
   write_matrix( res ) ;
   printf( "multabdagdag \n" ) ;
   multab_dagdag_suNC( res , a , b ) ;
   write_matrix( res ) ;
+  multab_dagdag( res , a , b ) ;
+  write_matrix( res ) ;
   printf( "multab_dag \n" ) ;
   multab_dag_suNC( res , a , b ) ;
+  write_matrix( res ) ;
+  multab_dag( res , a , b ) ;
   write_matrix( res ) ;
 }
 #endif
@@ -298,6 +315,30 @@ test_trace_prods( const struct site *__restrict lat )
 }
 #endif
 
+#ifdef GLU_TEST_LOGEXP
+static void
+test_logsexp( const GLU_complex U[ NCNC ] )
+{
+  GLU_complex A[ NCNC ] , Uprime[ NCNC ] , res[ NCNC ] ;
+
+  printf( "[OBS] Original link\n" ) ;
+  write_matrix( U ) ;
+
+  exact_log_slow( A , U ) ;
+
+  printf( "[OBS] Logarithm\n" ) ; 
+  write_matrix( A ) ;
+
+  printf( "[OBS] Exponential\n" ) ;
+  exponentiate( Uprime , A ) ;
+  write_matrix( Uprime ) ;
+
+  printf( "[OBS] Subtraction (should be zero)\n" ) ;
+  b_min_c( res , Uprime , U ) ;
+  write_matrix( res ) ;
+}
+#endif
+
 // wrapper for the default behaviour
 void
 gauge( const struct site *__restrict lat )
@@ -343,6 +384,8 @@ gauge( const struct site *__restrict lat )
     test_muls( lat[0].O[0] , lat[0].O[1] ) ;
   #elif defined GLU_TEST_PRODS
     test_trace_prods( lat ) ;
+  #elif defined GLU_TEST_LOGEXP
+    test_logsexp( lat[0].O[1] ) ;
   #endif
 
   return ;
@@ -361,5 +404,9 @@ gauge( const struct site *__restrict lat )
 #endif
 
 #ifdef GLU_TEST_PRODS
-  #undef GLU_TEST_MULS
+  #undef GLU_TEST_PRODS
+#endif
+
+#ifdef GLU_TEST_LOGEXP
+  #undef GLU_TEST_LOGEXP
 #endif

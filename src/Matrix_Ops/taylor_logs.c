@@ -232,13 +232,14 @@ brute_force_log( GLU_complex *__restrict Q ,
   int roots , i ;
   // do some rootings ... bit
 #if NC < 10
-  for( roots = 1 ; roots < NROOTS ; roots++ ) {
+  for( roots = 0 ; roots < NROOTS ; roots++ ) {
 #else
-  for( roots = 1 ; roots < 10 ; roots++ ) {
+  for( roots = 0 ; roots < 10 ; roots++ ) {
 #endif
-    denman_rootY( y ) ;
+    denman_rootY( y ) ;    
 
-    // durr says that all the eigenvalues should be real, don't have an NC-generic eigensolver yet
+    // durr says that all the eigenvalues should be real, 
+    // don't have an NC-generic eigensolver yet
     #ifdef CHECK_ROOTS
     GLU_complex Z[ NCNC ] ;
     Eigenvalues( Z , y ) ;
@@ -311,8 +312,9 @@ brute_force_log( GLU_complex *__restrict Q ,
     // compute the error between the two series evaluations
     err = 0.0 ;
     for( j = 0 ; j < NCNC ; j++ ) { 
-      err += cabs( Q[j] - QP[j] ) * SCALING ; 
+      err += cabs( Q[j] - QP[j] ) ; 
     }
+    err *= SCALING ;
 
     // this whole code should probably return failure
     if( n >= NMAX ) {
@@ -326,10 +328,14 @@ brute_force_log( GLU_complex *__restrict Q ,
 
   // rescale 2^{NROOTS} outside of the subtraction and ensure tracelessness
   // by enforcing traclessness we break the exponential map slightly
+  #ifdef ADHOC_PRINCIPAL
   register const GLU_complex tr = trace ( Q ) / ( NC ) ;
+  #endif
   register const GLU_complex f = -I*SCALING ;
   for( i = 0 ; i < NCNC ; i++ ) { 
+    #ifdef ADHOC_PRINCIPAL
     if( i%(NC+1)==0 ) { Q[i] -= tr ; }
+    #endif
     Q[i] *= f ; 
   }
 
