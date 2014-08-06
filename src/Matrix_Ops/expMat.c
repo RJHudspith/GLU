@@ -100,79 +100,22 @@ horners_exp( a , b , n )
 {
   // I use max iterations 13 for double prec and 8 for single it was before
   // this selection was borne out of heavy testing I would urge you to keep it
-#ifndef SINGLE_PREC
+  #ifndef SINGLE_PREC
   int i ;
   for( i = 0 ; i < NCNC ; i++ ) { a[i] = b[i] * factorial[13] ; } 
   for( i = 12 ; i > 0 ; i-- ) {
     add_constant( a , factorial[i] ) ; 
     multab_atomic_left( a , b ) ;    
   }
-#else
+  #else
   int i ;
   for( i = 0 ; i < NCNC ; i++ ) { a[i] = b[i] * factorial[9] ; } 
   for( i = 8 ; i > 0 ; i-- ) {    
     add_constant( a , factorial[i] ) ; 
     multab_atomic_left( a , b ) ;    
   }
-#endif
+  #endif
   for( i = 0 ; i < NC ; i++ ) { a[ i*(NC+1) ] += 1.0 ; }
-  return ;
-}
-
-// nodes for AntiHermitian_proj linked lists
-struct node
-{
-  GLU_bool squareable ;
-  struct node *next ;
-} ;
-
-// new matrix power routine using a simple linked list structure
-static void
-matrix_power( a , b , n )
-     GLU_complex *__restrict a ;
-     const GLU_complex *__restrict b ;
-     const int n ;
-{
-  if( unlikely( n == 0 ) ) { return identity( a ) ; } 
-  else if( unlikely( n == 1 ) ) { return equiv( a , b ) ; } 
-  else if( unlikely( n == 2 ) ) { return multab( a , b , b ) ; } 
-  else {
-    // generate our linked list
-    struct node *head = NULL , *curr ;
-    int nn = n , length = 0 , i ;
-    // compute the list, and its length
-    while( nn > 2 ) {
-      curr = (struct node*)malloc( sizeof( struct node ) ) ;
-      if( nn%2 == 0 ) {
-	nn = nn >> 1 ;
-	curr -> squareable = GLU_TRUE ;
-      } else {
-	nn -- ;
-	curr -> squareable = GLU_FALSE ;
-      }
-      length ++ ;
-      curr -> next = head ;
-      head = curr ;
-    }
-    curr = head ;
-    // go back through the list performing squarings if possible
-    GLU_complex tmp[ NCNC ] ;
-    multab( a , b , b ) ; 
-    for( i = 0 ; i < length ; i++ ) {
-      if( curr -> squareable != GLU_FALSE ) {
-	multab( tmp , a , a ) ; 
-      } else {
-	multab( tmp , a , b ) ;
-      }
-      equiv( a , tmp ) ;
-      curr = curr -> next ;
-    }
-    // clean up the list, removing all the allocs
-    while( head != NULL ) {
-      free( head ) ;
-      head = head -> next ;
-    }
-  }
   return ;
 }
 

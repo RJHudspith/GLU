@@ -93,11 +93,12 @@ get_psq( p )
      const int *p ;
 { 
   int nu ;
-  register double temp = 0.0 ;
+  register double psq = 0.0 ;
   for( nu = 0 ; nu < ND ; nu++ ) {
-    temp += ( p[nu] * p[nu] ) / (double)( Latt.dims[nu] * Latt.dims[nu] ) ; 
+    const double cache = p[ nu ] * Latt.twiddles[ nu ] ;
+    psq += cache * cache ;
   }
-  return TWOPI * TWOPI * temp ;
+  return psq ;
 }
 
 // generic delta function
@@ -509,17 +510,6 @@ compute_projector( int *__restrict *__restrict triplet ,
 		   int *__restrict *__restrict momentum , 
 		   const int count )
 {
-  double cache[ ND ] ;
-  int mu ;
-  for( mu = 0 ; mu < ND ; mu ++ ) {
-    #ifdef PSQ_MOM
-    cache[ mu ] = TWOPI / Latt.dims[ mu ] ;  
-    #else
-    // cache for the sin mom definition, note the single PI absorbing the factor of 1/2 in the def ...
-    cache[ mu ] = MPI / Latt.dims[ mu ] ; 
-    #endif
-  }
-
   // precompute the projector
   int i ;
   #pragma omp parallel for private(i)
@@ -530,14 +520,14 @@ compute_projector( int *__restrict *__restrict triplet ,
     for( mu = 0 ; mu < ND ; mu ++ ) {
       #ifdef PSQ_MOM
       // PSQ variant
-      mom[ 0 ][ mu ] = momentum[ triplet[ i ][ 0 ] ][ mu ] * cache[ mu ] ;
-      mom[ 1 ][ mu ] = momentum[ triplet[ i ][ 1 ] ][ mu ] * cache[ mu ] ;
-      mom[ 2 ][ mu ] = momentum[ triplet[ i ][ 2 ] ][ mu ] * cache[ mu ] ;
+      mom[ 0 ][ mu ] = momentum[ triplet[ i ][ 0 ] ][ mu ] * Latt.twiddles[ mu ] ;
+      mom[ 1 ][ mu ] = momentum[ triplet[ i ][ 1 ] ][ mu ] * Latt.twiddles[ mu ] ;
+      mom[ 2 ][ mu ] = momentum[ triplet[ i ][ 2 ] ][ mu ] * Latt.twiddles[ mu ] ;
       #else
       // SIN variant
-      mom[ 0 ][ mu ] = 2.0 * sin( momentum[ triplet[ i ][ 0 ] ][ mu ] * cache[ mu ] ) ;
-      mom[ 1 ][ mu ] = 2.0 * sin( momentum[ triplet[ i ][ 1 ] ][ mu ] * cache[ mu ] ) ;
-      mom[ 2 ][ mu ] = 2.0 * sin( momentum[ triplet[ i ][ 2 ] ][ mu ] * cache[ mu ] ) ;
+      mom[ 0 ][ mu ] = 2.0 * sin( momentum[ triplet[ i ][ 0 ] ][ mu ] * Latt.twiddles[ mu ] ) ;
+      mom[ 1 ][ mu ] = 2.0 * sin( momentum[ triplet[ i ][ 1 ] ][ mu ] * Latt.twiddles[ mu ] ) ;
+      mom[ 2 ][ mu ] = 2.0 * sin( momentum[ triplet[ i ][ 2 ] ][ mu ] * Latt.twiddles[ mu ] ) ;
       #endif
     }
 

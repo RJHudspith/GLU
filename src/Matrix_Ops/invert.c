@@ -31,7 +31,7 @@
 //#define CLASSICAL_ADJOINT_INV  -> slow cofactor matrix version
 //#define FULL_PIVOT             -> column and row pivoting
 
-#ifndef CLASSICAL_ADJOINT_INV
+#if !(defined CLASSICAL_ADJOINT_INV) && ( NC > 2 ) 
 
 // column elimination
 static void
@@ -237,7 +237,17 @@ inverse( GLU_complex M_1[ NCNC ] ,
   for( i = 0 ; i < NCNC ; i++ ) { M_1[i] = adjunct[i] * deter ; }
   return GLU_SUCCESS ;
   #else
-  return gauss_jordan( M_1 , M ) ;
+    #if NC == 2 
+    // use the identity, should warn for singular matrices
+    const double complex INV_detM = 1.0 / ( det( M ) ) ;
+    M_1[ 0 ] = M[ 3 ] * INV_detM ;
+    M_1[ 1 ] = -M[ 1 ] * INV_detM ;
+    M_1[ 2 ] = -M[ 2 ] * INV_detM ;
+    M_1[ 3 ] = M[ 0 ] * INV_detM ;
+    return GLU_SUCCESS ;
+    #else 
+    return gauss_jordan( M_1 , M ) ;
+    #endif
   #endif
 #endif 
 }

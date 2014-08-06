@@ -148,7 +148,7 @@ compute_p( GLU_real p[ ND ] ,
 {
   int mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    p[ mu ] = TWOPI * (GLU_real)n[ mu ] / ( GLU_real )Latt.dims[ mu ] ; 
+    p[ mu ] = (GLU_real)( n[ mu ] * Latt.twiddles[ mu ] ) ;
     #ifdef SIN_MOM
     p[ mu ] = 2. * sin ( p[mu] * 0.5 ) ; 
     #endif
@@ -161,13 +161,13 @@ GLU_real
 gen_p_sq( const int i , 
 	  const int DIMS )
 {
-  int k[ ND ] ;
   GLU_real kcos = 0. ; 
+  int n[ ND ] ;
   int mu ;
   //mapped between 0 to 2Pi -> Quicker and for cos does not matter p^2 symmetric
-  get_mom_2piBZ( k , i , DIMS ) ; 
+  get_mom_2piBZ( n , i , DIMS ) ; 
   for( mu = 0 ; mu < DIMS ; mu++ ) {
-    kcos += cos( TWOPI * ( GLU_real )k[ mu ] / ( GLU_real )Latt.dims[ mu ] ) ; 
+    kcos += cos( n[ mu ] * Latt.twiddles[ mu ] ) ; 
   }
   if( unlikely( kcos == (GLU_real)DIMS ) ) {
     return 1.0 ; 
@@ -183,14 +183,14 @@ GLU_real
 gen_p_sq_imp( const int i , 
 	      const int DIMS )
 {
-  int k[ ND ] ;
+  int n[ ND ] ;
   //mapped between 0 to 2Pi
-  get_mom_2piBZ( k , i , DIMS ) ; 
+  get_mom_2piBZ( n , i , DIMS ) ; 
   GLU_real psq = 0.0 ;
   register GLU_real twiddle ;
   int mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    twiddle = MPI * (GLU_real)k[ mu ] / (GLU_real)Latt.dims[ mu ] ; 
+    twiddle = (GLU_real)( n[mu] * Latt.twiddles[mu] ) ;
     #ifdef deriv_fullnn
     const GLU_real sin_mu = 2.0 * ( nnn1 * sin( twiddle ) + nnn2 * sin( 3.0 * twiddle ) + nnn3 * sin( 5.0 * twiddle ) ) ;
     #else
@@ -213,7 +213,7 @@ gen_p_sq_feyn( const int i ,
   GLU_real kcos = 0. ;
   int mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    kcos += cos( TWOPI * (GLU_real)k[ mu ] / (GLU_real)Latt.dims[ mu ] ) ; 
+    kcos += cos( k[mu] * Latt.twiddles[mu] ) ; 
     // if all the spatial terms are zero set the flag to zero
     if( ( *flag != 0 ) && ( mu < ( ND-1 ) ) ) { *flag = ( abs( k[mu] ) > 0 ) ? 0 : 1 ; }
   }
@@ -230,11 +230,11 @@ gen_get_p( GLU_real p[ ND ] ,
 	   const int i , 
 	   const int DIMS )
 {
-  int k[ ND ] , mu ;
+  int n[ ND ] , mu ;
   //mapped between 0 to 2Pi
-  get_mom_pipi( k , i , DIMS ) ; 
+  get_mom_pipi( n , i , DIMS ) ; 
   for( mu = 0 ; mu < ND ; mu++ ) {
-    p[ mu ] = TWOPI * (GLU_real)k[ mu ] / ( GLU_real )Latt.dims[ mu ] ; 
+    p[ mu ] = n[ mu ] * Latt.dims[ mu ] ;
     #ifdef SIN_MOM
     p[ mu ] = 2. * sin ( p[mu] * 0.5 ) ; 
     #endif
@@ -309,15 +309,14 @@ init_navig( struct site *__restrict lat )
 void
 init_geom( void )
 {
+  int mu ;
   // these are neccessary for geometry and stuff ::  x,y,z,t geometry
   printf( "\n[DIMENSIONS] ( %d x" , Latt.dims[0] ) ;
 #if ND == 2
   Latt.Lcu = Latt.dims[0] ;
   Latt.Volume = Latt.Lcu * Latt.dims[1] ;
   printf( " %d )\n\n" , Latt.dims[1] ) ; 
-  return ;
 #else
-  int mu ;
   Latt.Lsq = Latt.dims[0] ; // defined :: LSQ
   for( mu = 1 ; mu < ND-2 ; mu++ ) {
     printf( " %d x" , Latt.dims[ mu ] ) ;
@@ -327,5 +326,9 @@ init_geom( void )
   Latt.Volume = Latt.Lcu * Latt.dims[ ND - 1 ] ;  // defined :: LVOLUME
   printf( " %d x %d )\n\n" , Latt.dims[mu] , Latt.dims[ mu+1 ] ) ; 
 #endif
+  // precompute the twiddle factors
+  for( mu = 0 ; mu < ND ; mu++ ) {
+    Latt.twiddles[ mu ] = TWOPI / (double)Latt.dims[ mu ] ; 
+  }
   return ;
 }

@@ -126,18 +126,17 @@ contraction_traces( A , posit , conj , lzero_mat , mom , spsq )
 // compute psq
 static double
 psq_calc( double mom[ ND ] ,
-	  const double twiddle[ ND ] , 
 	  const int posit )
 {
-  int k[ ND ] , mu ;
-  TwoPI_mpipi_momconv( k , posit , ND ) ;
+  int n[ ND ] , mu ;
+  TwoPI_mpipi_momconv( n , posit , ND ) ;
   
   register double tspsq = 0. ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     #ifdef SIN_MOM
-    mom[ mu ] = 2.0 * sin( k[ mu ] * twiddle[ mu ] * 0.5 ) ;
+    mom[ mu ] = 2.0 * sin( n[ mu ] * Latt.twiddles[ mu ] * 0.5 ) ;
     #else
-    mom[ mu ] = k[ mu ] * twiddle[ mu ] ;
+    mom[ mu ] = k[ mu ] * Latt.twiddles[ mu ] ;
     #endif
     tspsq += mom[ mu ] * mom[ mu ] ;
   }
@@ -161,13 +160,6 @@ write_exceptional_g2g3_MOMgg( FILE *__restrict Ap ,
   const double g0_norm = 2.0 / ( ( NCNC - 1 ) * ( ND ) * LVOLUME ) ;
   const double g3_norm = 4.0 / ( 2.0 * NC * ( NCNC - 1 ) * ( ND - 1 ) *	\
 				 LVOLUME ) ;
-
-  // precompute the lattice twiddles
-  double twiddle[ ND ] ;
-  int mu ;
-  for( mu = 0 ; mu < ND ; mu++ ) {
-    twiddle[ mu ] = TWOPI / Latt.dims[ mu ] ;
-  }
 
   const int posit_zero_mat = ( num_mom[0] - 1 ) / 2 ;
   const int lzero_mat = list [ posit_zero_mat ].idx ;
@@ -199,7 +191,7 @@ write_exceptional_g2g3_MOMgg( FILE *__restrict Ap ,
     // Three point function calc
     double mom[ ND ] ;
     // make this a constant
-    const double spsq = psq_calc( mom , twiddle , posit ) ;
+    const double spsq = psq_calc( mom , posit ) ;
 
     // helpful little enum
     enum { MATRIX_CONTRACTION , TRACE_CONTRACTION , LIE_CONTRACTION } ; 

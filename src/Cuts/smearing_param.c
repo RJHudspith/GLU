@@ -37,9 +37,6 @@
 //#define WEAK_FIELD
 //#define TADPOLE_IMPROVE
 
-// momentum twiddles
-static double twiddle[ ND ] ;
-
 #ifdef HAVE_FFTW3_H
 
 //def = 0 "lin" def = 1 "log"
@@ -143,14 +140,14 @@ static inline double
 psq_calc( double mom[ ND ] ,
 	  const int posit )
 {
-  int k[ ND ] , mu ;
-  TwoPI_mpipi_momconv( k , posit , ND ) ;
+  int n[ ND ] , mu ;
+  TwoPI_mpipi_momconv( n , posit , ND ) ;
   register double tspsq = 0. ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     #ifdef SIN_MOM
-    mom[ mu ] = 2.0 * sin( k[ mu ] * twiddle[ mu ] * 0.5 ) ;
+    mom[ mu ] = 2.0 * sin( n[ mu ] * Latt.twiddles[ mu ] * 0.5 ) ;
     #else
-    mom[ mu ] = k[ mu ] * twiddle[ mu ] ;
+    mom[ mu ] = n[ mu ] * Latt.twiddles[ mu ] ;
     #endif
     tspsq += mom[ mu ] * mom[ mu ] ;
   }
@@ -280,12 +277,6 @@ cuts_struct_smeared( struct site *__restrict A ,
 
   double *g2 = malloc( in[0] * sizeof( double ) ) ;
   double *g2_SM = malloc( in[0] * sizeof( double ) ) ;
-
-  // precompute twiddles
-  int mu ;
-  for( mu = 0 ; mu < ND ; mu++ ) {
-    twiddle[ mu ] = TWOPI / Latt.dims[ mu ] ;
-  }
 
   int i ;
 #pragma omp parallel for private(i)

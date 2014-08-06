@@ -30,7 +30,7 @@
 /**
    @struct latt_info
    @brief (useful?) lattice information
-   @param dims[mu] :: lattice dimensions in c-order, x moves quickest
+   @param dims :: lattice dimensions in c-order, x moves quickest
    @param Volume :: lattice volume
    @param Lcu :: volume with one (slowest moving) dimension removed
    @param Lsq :: volume with two (slowest moving) dimensions removed
@@ -38,7 +38,8 @@
    @param gf_alpha :: the tuning parameter of our gauge fixer. 1.0/12.0 is good.
    @param sm_alpha :: the smearing parameters from the input file
    @param head :: what header type we use
-   @param Seed :: the seed we use for our RNG 
+   @param Seed :: the seed we use for our RNG
+   @param twiddles :: Fourier transform twiddle factors
  */
 struct latt_info{
   int dims[ ND ] ; // dimensions in x,y,z,t order opposite to FFTW
@@ -50,6 +51,7 @@ struct latt_info{
   double sm_alpha[ ND -1 ] ; // smearing alphas
   header_mode head ;// Which header type are we using
   uint32_t Seed[ 1 ] ; // rng seed, inbuilt KISS uses four of these
+  double twiddles[ ND ] ;
 } ;
 
 /**

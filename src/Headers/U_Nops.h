@@ -222,6 +222,19 @@ M_times_c( GLU_complex M[ NCNC ] ,
 	   const GLU_complex c ) ;
 
 /**
+   @fn void matrix_power( GLU_complex a[ NCNC ] , const GLU_complex b[ NCNC ] , const int n )
+   @brief fastpower-like matrix multiply routine
+   @param a :: the result a = b^n
+   @param b :: the matrix being raised to a power n
+   @param n :: the integer power
+   @warnng only works for non-negative integer powers
+ */
+void
+matrix_power( GLU_complex a[ NCNC ] , 
+	      const GLU_complex b[ NCNC ] , 
+	      const int n ) ;
+
+/**
    @fn void outerproduct( GLU_complex Q[ NCNC ] , const GLU_complex a[ NC ] , const GLU_complex b[ NC ] )
    @brief computes the outerproduct of two vectors \f$ Q = a \otimes b \f$
    @param Q :: the outerproduct of a and b

@@ -127,10 +127,6 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
 
   /// NOW that we have the triplets we can compute the symmetric
   /// three point function ....
-  double LDIV[ ND ] ;
-  for( i = 0 ; i < ND ; i++ ) {
-    LDIV[ i ] = TWOPI / (double)Latt.dims[ i ] ;
-  }
 
   // malloc these as they are pretty big ...
   double *g2 = ( double* )malloc( count * sizeof( double ) ) ;
@@ -147,10 +143,10 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
       int mu ;
       for( mu = 0 ; mu < ND ; mu++ ) {
         #ifdef PSQ_MOM
-	const double temp =  momentum[ triplet[ checker ][ 0 ] ][ mu ] * LDIV[ mu ] ; 
+	const double temp =  momentum[ triplet[ checker ][ 0 ] ][ mu ] * Latt.twiddles[ mu ] ; 
         #else 
 	// Sin variant hmmm, psq's may (will) be different in this case
-	const double temp =  2. * sin( 0.5 * momentum[ triplet[ checker ][ 0 ] ][ mu ] * LDIV[ mu ] );
+	const double temp =  2. * sin( 0.5 * momentum[ triplet[ checker ][ 0 ] ][ mu ] * Latt.twiddles[ mu ] );
         #endif
 	psq += temp * temp ;
       }

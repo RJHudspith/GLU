@@ -314,7 +314,10 @@ read_cuts_struct( struct cut_info *CUTINFO )
   // field definition
   const int field_idx = tag_search( "FIELD_DEFINITION" ) ;
   if( field_idx == GLU_FAILURE ) { return tag_failure( "FIELD_DEFINITION" ) ; }
-  CUTINFO -> definition = atoi( INPUT[field_idx].VALUE ) ;
+  CUTINFO -> definition = LINEAR_DEF ;
+  if( are_equal( INPUT[field_idx].VALUE , "LOGARITHMIC" ) ) {
+    CUTINFO -> definition = LOG_DEF ;
+  } 
 
   // minmom, maxmom angle and cylinder width
   const int max_t_idx = tag_search( "MAX_T" ) ;

@@ -32,13 +32,6 @@ correct_pspace_landau( struct site *__restrict A ,
 		       const int *__restrict in ,
 		       const int DIMS )
 {
-    // precompute the necessary twiddles
-  double twiddles [ ND ] ;
-  int mu ;
-  for( mu = 0 ; mu < DIMS ; mu++ ) {
-    twiddles[ mu ] = MPI / (double)Latt.dims[ mu ] ; // implicit factor of 2 included
-  }
-
   double ave_err = 0. ;
   int i ;
   #pragma omp parallel for private(i) reduction(+:ave_err)
@@ -52,7 +45,7 @@ correct_pspace_landau( struct site *__restrict A ,
     int mu ;
     for( mu = 0 ; mu < DIMS ; mu++ ) {
 
-      const double cache = list[i].MOM[ mu ] * twiddles[ mu ] ;
+      const double cache = list[i].MOM[ mu ] * Latt.twiddles[ mu ] ;
       const double p_mu = 2.0 * sin( cache ) ;
  
       #if ( defined deriv_linn ) || ( defined deriv_fulln )

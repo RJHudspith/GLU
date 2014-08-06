@@ -26,8 +26,24 @@
 #include "Mainfile.h"
 #include "invert.h"
 
-static const int NMAX = 100 ; // set this quite high to give it a chance
+#define ADHOC_PRINCIPAL
+
+/**
+   @param NMAX
+   @brief maximum number of log iterations
+ */
+static const int NMAX = 25 ; // set this quite high to give it a chance
+
+/**
+   @param TAYLOR_SET
+   @brief have we set the Taylor expansion coefficients?
+ */
 static int TAYLOR_SET ;
+
+/**
+   @param fact
+   @breif Taylor expansion coefficients precomputes
+ */
 static double *fact ;
 
 // Computes the square-root of the matrix A
@@ -42,23 +58,30 @@ denman_rootY( GLU_complex Y[ NCNC ] )
   // lets see if the other one makes more sense
   GLU_real tol = 1.0 ;
   int iters = 0 ;
-  while( tol > 0.01 * PREC_TOL ) { // aggressive
-    tol = 0. ;
+  while( tol > PREC_TOL && iters < 25 ) { // aggressive
 
+    // invert M into INVM
     inverse( INVM , M ) ;
-    add_constant( INVM , 1.0 ) ; // M^-1 -> ( 1 + M^-1 )
+
+    // M^-1 -> ( 1 + M^-1 )
+    int i ;
+    for( i = 0 ; i < NC ; i++ ) {
+      INVM[ i*(NC+1) ] += 1.0 ;
+    }
     multab_atomic_right( Y , INVM ) ;
 
     // Y <- 0.5 Y ( 1 + M^-1 )
     // M <- 0.25 ( M + 2I + M^-1 )
+    tol = 0. ;
     for( i = 0 ; i < NCNC ; i++ ) {
       Y[i] *= 0.5 ;
       M[i] = 0.25 * ( M[i] + INVM[i] ) ;
       if( i%(NC+1) == 0 ) { 
 	M[i] += 0.25 ; 
-	tol += cabs( M[i] - 1.0 ) ;
+	tol += creal( M[i] ) * creal( M[i] ) + cimag( M[i] ) * cimag( M[i] ) - 1.0 ;
       }
     }
+    tol = fabs( tol ) ;
 
     // should complain here
     if( iters > 25 ) {
@@ -89,9 +112,13 @@ denman_rootZ( GLU_complex *__restrict Z )
   // computes the inverse square root of A (Z), and the square root Y.
   GLU_real tol = 1.0 ;
   int iters = 0 ;
-  while( tol > 0.01*PREC_TOL && iters < 25 ) {
-    tol = 0. ;
+  while( tol > PREC_TOL && iters < 25 ) {
+
+    // invert M into INVM
     inverse( INVM , M ) ;
+
+    // add the identity
+    int i ;
     for( i = 0 ; i < NC ; i++ ) {
       INVM[ i*(NC+1) ] += 1.0 ;
     }
@@ -99,6 +126,7 @@ denman_rootZ( GLU_complex *__restrict Z )
 
     // Z <- 0.5 ( 1 + M^-1 ) Z
     // M <- 0.25 ( M + 2I + M^-1 )
+    tol = 0. ;
     for( i = 0 ; i < NCNC ; i++ ) {
       Z[i] *= 0.5 ; 
       M[i] = 0.25 * ( M[i] + INVM[i] ) ;
@@ -108,62 +136,13 @@ denman_rootZ( GLU_complex *__restrict Z )
 	tol += creal( M[i] ) * creal( M[i] ) + cimag( M[i] ) * cimag( M[i] ) - 1.0 ;
       }
     }
+    // make sure it is positive definite
+    tol = fabs( tol ) ;
     iters++ ;
   }
   // that works!
   return ;
 }
-
-#if 0
-// Computes the inverse square-root of the matrix A
-// using a denman-beavers iteration routine.
-// Again, A must be invertible. Passes by reference both
-// the inverse square root "Z" and the square root "Y"
-static void
-denman_rootZY( GLU_complex Z[ NCNC ] ,
-	       GLU_complex Y[ NCNC ] , 
-	       const GLU_complex A[ NCNC ] )
-{
-  GLU_complex M[ NCNC ] , INVM[ NCNC ] ; //, temp[ NCNC ] , temp2[ NCNC ] ;
-  int i ;
-  for( i = 0 ; i < NCNC ; i++ ) {
-    Y[i] = M[i] = A[i] ;
-    Z[i] = ( i%(NC+1)==0 ) ? 1.0 : 0.0 ;
-  }
-  // computes the inverse square root of A (Z), and the square root Y.
-  GLU_real tol = 1.0 ;
-  int iters = 0 ;
-  while( tol > 0.01*PREC_TOL && iters < 25 ) {
-    tol = 0. ;
-    inverse( INVM , M ) ;
-    for( i = 0 ; i < NC ; i++ ) {
-      INVM[i*(NC+1)] += 1.0 ;
-    }
-    //multab( temp , INVM , Z ) ;
-    //multab( temp2 , Y , INVM ) ;
-    multab_atomic_left( Z , INVM ) ;
-    multab_atomic_right( Y , INVM ) ;
-
-    // Z <- 0.5 ( 1 + M^-1 ) Z
-    // Y <- 0.5 Y ( 1 + M^-1 )
-    // M <- 0.25 ( M + 2I + M^-1 )
-    for( i = 0 ; i < NCNC ; i++ ) {
-      //Z[i] = 0.5 * temp[i] ;
-      //Y[i] = 0.5 * temp2[i] ;
-      Z[i] *= 0.5 ;
-      Y[i] *= 0.5 ;
-      M[i] = 0.25 * ( M[i] + INVM[i] ) ;
-      if( i%(NC+1) == 0 ) { 
-	M[i] += 0.25 ; 
-	tol += 1.0 - cabs( M[i] ) ;
-      }
-    }
-    iters++ ;
-  }
-  // that works!
-  return ;
-}
-#endif
 
 // precomputation, this should be put in Mainfile.c
 static void
@@ -182,34 +161,32 @@ precompute_taylor_factors( void )
   return ;
 }
 
-/*
-  Analytic brute force Logarithm, it is v. expensive!
-
-  It computes 
-
-  log( U^{1/2^nroots} ) 2^{nroots} = Q
-
-  The matrix square roots are taken by successive Denman-Beavers iterations. It looks
-  like three of these is the sweet spot so I just keep it there.
-
-  Ok, then we do the usually log-chicanery
-
-  log( U ) = y = log( U - 1 ) / log( U + 1 ) series expansion, which is
-
-                            n
-                           ---
-                           \
-  log( U ) =  y * ( 1.0  +  -  y^(2i-1) * 1/( 2 * i - 1 ) )
-                           /
-                           ---
-                           i=2
-
-
-   Again, the matrix U must be invertible for this to make sense as we use the
-   inverse to accelerate the series. As a note, I do the horner's rule correctly
-   i.e. backwards, with the smallest terms added first to account for roundoff
-   in the matrix power series.
- */
+//  Analytic brute force Logarithm, it is v. expensive!
+//
+//  It computes 
+//
+//  log( U^{1/2^nroots} ) 2^{nroots} = Q
+//
+//  The matrix square roots are taken by successive Denman-Beavers iterations. It looks
+//  like three of these is the sweet spot so I just keep it there.
+//
+//  Ok, then we do the usually log-chicanery
+//
+//  log( U ) = y = log( U - 1 ) / log( U + 1 ) series expansion, which is
+//
+//                            n
+//                           ---
+//								
+//  log( U ) =  y * ( 1.0  +  -  y^(2i-1) * 1/( 2 * i - 1 ) )
+//                           /
+//                           ---
+//                           i=2
+//
+//
+//   Again, the matrix U must be invertible for this to make sense as we use the
+//   inverse to accelerate the series. As a note, I do the horner's rule correctly
+//   i.e. backwards, with the smallest terms added first to account for roundoff
+//   in the matrix power series.
 void
 brute_force_log( GLU_complex *__restrict Q , 
 		 const GLU_complex *__restrict U ,
@@ -226,7 +203,7 @@ brute_force_log( GLU_complex *__restrict Q ,
 
   // takes nested square roots and puts in the variable "y"
   // should I allocate these?, possibly
-  GLU_complex y[ NCNC ] , yy[ NCNC ] , QP[ NCNC ] ;
+  GLU_complex y[ NCNC ] , yy[ NCNC ] , pert[ NCNC ] ;
   equiv( y , U ) ;
 
   int roots , i ;
@@ -261,70 +238,70 @@ brute_force_log( GLU_complex *__restrict Q ,
     }
   }
   // invert x + 1
-  inverse( QP , y ) ;
+  inverse( Q , y ) ;
 
-  /*
-    recall :: y is the n^th square root of U + I
-           :: yy is the n^th square root of U - I
-	   :: QP is the inverse of y
-
-    y becomes the matrix form of (1-x)/(1+x) where x is the n^th square root
-    yy is the square of this
-    we then multiply by 2 to absorb the leading factor in the series expansion
-  */
-  multab( y , yy , QP ) ;  // compute y
+  // recall :: y is the n^th square root of U + I
+  //        :: yy is the n^th square root of U - I
+  //	    :: QP is the inverse of y
+  //
+  //  y becomes the matrix form of (1-x)/(1+x) where x is the n^th square root
+  //  yy is the square of this
+  //  we then multiply by 2 to absorb the leading factor in the series expansion
+  multab( y , yy , Q ) ;  // compute y
   multab( yy , y , y ) ;  // compute y^2
   for( i = 0 ; i < NCNC ; i++ ) { y[i] *= 2.0 ; }
 
-  // start from n = 6
-  int n = 6 , j ;
-  GLU_real err = 1.0 ;
-  // horner's series again
-  while( err > 0.01*PREC_TOL ) {
-
-    // compute the next order term in the series in step Q is the n+1 series approx
-    //double fact = 1.0 / ( 2. * (n+1) - 1.0 ) ;
+  double err = 1.0 ;
+  int n = 4 , j ;
+  // use an estimate for the convergence as the last term in the series
+  while( n <= NMAX ) {
+    // power of the yy matrix
+    matrix_power( pert , yy , n + 1 ) ;
     for( j = 0 ; j < NCNC ; j++ ) { 
-      QP[j] = 0.0 ;
-      Q[j] = yy[j] * fact[ n+1 ] ;
-    }
-
-    // usual horner's rule
-    for ( i = n ; i > 1 ; i-- ) {
-      //fact = 1.0 / ( 2. * i - 1.0 ) ;
-      for( j = 0 ; j < NC ; j++ ) { 
-	QP[j*(NC+1)] += fact[ i ] ; 
-	Q[j*(NC+1)]  += fact[ i ] ; 
-      }
-      //xx = yy * ( fact + xx ) ;
-      multab_atomic_left( QP , yy ) ;
-      multab_atomic_left( Q , yy ) ;
-    }
-    // xx = y * ( 1.0 + xx ) is the matrix iQ / ( 2^nroots )
-    for( j = 0 ; j < NC ; j++ ) { 
-      QP[j*(NC+1)] += 1.0 ; 
-      Q[j*(NC+1)] += 1.0 ; 
+      pert[ j ] *= fact[ n + 1 ] ;
     }
     // multiply finally by the parameter "y"
-    multab_atomic_left( QP , y ) ;
-    multab_atomic_left( Q , y ) ;
-    
+    multab_atomic_left( pert , y ) ;
     // compute the error between the two series evaluations
     err = 0.0 ;
     for( j = 0 ; j < NCNC ; j++ ) { 
-      err += cabs( Q[j] - QP[j] ) ; 
+      err += cabs( pert[j] ) ; 
     }
     err *= SCALING ;
-
     // this whole code should probably return failure
     if( n >= NMAX ) {
       printf( "[TAYLOR LOG] Not converging :: %e \n" , err ) ;
       break ;
     }
-
     // increment the series by two to avoid doing too many matrix multiplies. Tune?
-    n += 2 ;
+    if( err < 0.001*PREC_TOL ) break ;
+    n ++ ;
   }
+
+  // compute the next order term in the series in step Q is the n+1 series approx
+  //double fact = 1.0 / ( 2. * (n+1) - 1.0 ) ;
+  for( j = 0 ; j < NCNC ; j++ ) { 
+    Q[j] = yy[j] * fact[ n+1 ] ;
+  }
+
+  // Now we have an estimate for when the last term in the series is negligible
+  
+  // usual horner's rule
+  for ( i = n ; i > 1 ; i-- ) {
+    //fact = 1.0 / ( 2. * i - 1.0 ) ;
+    for( j = 0 ; j < NC ; j++ ) { 
+      Q[j*(NC+1)]  += fact[ i ] ; 
+    }
+    //xx = yy * ( fact + xx ) ;
+    multab_atomic_left( Q , yy ) ;
+  }
+  // xx = y * ( 1.0 + xx ) is the matrix iQ / ( 2^nroots )
+  for( j = 0 ; j < NC ; j++ ) { 
+    Q[j*(NC+1)] += 1.0 ; 
+  }
+  
+  // multiply finally by the parameter "y"
+  multab_atomic_left( Q , y ) ;
 
   // rescale 2^{NROOTS} outside of the subtraction and ensure tracelessness
   // by enforcing traclessness we break the exponential map slightly
@@ -338,14 +315,6 @@ brute_force_log( GLU_complex *__restrict Q ,
     #endif
     Q[i] *= f ; 
   }
-
-  /*
-  if( isnan( creal( tr ) ) ) {
-    printf( "[LOG] brute force log is NaN %f \n" , creal( tr ) ) ;
-    write_matrix( Q ) ;
-    exit(1) ;
-  }
-  */
 
   // enforce hermiticity to clean up the procedure
   for( i = 0 ; i < NC-1 ; i++ ) { 
@@ -387,5 +356,6 @@ nape_reunit( GLU_complex *__restrict U )
   denman_rootZ( Z ) ; // can do this, does not need Z in iteration
   // atomically does U -> U Z
   multab_atomic_right( U , Z ) ;
+
   return ;
 }

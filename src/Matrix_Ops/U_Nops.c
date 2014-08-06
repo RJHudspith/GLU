@@ -285,8 +285,8 @@ diag_vect( GLU_complex M[ NCNC ] ,
   for( i = 0 ; i < NC ; i++ ) {
     for( j = 0 ; j < NC ; j++ ) {
       M[ j + NC * i ] = ( i != j ) ? 0.0 : c[idx] ;
+      idx++ ;
     }
-    idx++ ;
   }
 #endif
   return ;
@@ -500,6 +500,62 @@ M_times_c( GLU_complex M[ NCNC ] ,
     M[ i ] *= c ;
   }
 #endif
+  return ;
+}
+
+// nodes for AntiHermitian_proj linked lists
+struct node
+{
+  GLU_bool squareable ;
+  struct node *next ;
+} ;
+
+// matrix power routine using a simple linked list structure
+void
+matrix_power( GLU_complex a[ NCNC ] , 
+	      const GLU_complex b[ NCNC ] , 
+	      const int n )
+{
+  if( unlikely( n == 0 ) ) { return identity( a ) ; } 
+  else if( unlikely( n == 1 ) ) { return equiv( a , b ) ; } 
+  else if( unlikely( n == 2 ) ) { return multab( a , b , b ) ; } 
+  else {
+    // generate our linked list
+    struct node *head = NULL , *curr ;
+    int nn = n , length = 0 , i ;
+    // compute the list, and its length
+    while( nn > 2 ) {
+      curr = (struct node*)malloc( sizeof( struct node ) ) ;
+      if( nn%2 == 0 ) {
+	nn = nn >> 1 ;
+	curr -> squareable = GLU_TRUE ;
+      } else {
+	nn -- ;
+	curr -> squareable = GLU_FALSE ;
+      }
+      length ++ ;
+      curr -> next = head ;
+      head = curr ;
+    }
+    curr = head ;
+    // go back through the list performing squarings if possible
+    GLU_complex tmp[ NCNC ] ;
+    multab( a , b , b ) ; 
+    for( i = 0 ; i < length ; i++ ) {
+      if( curr -> squareable != GLU_FALSE ) {
+	multab( tmp , a , a ) ; 
+      } else {
+	multab( tmp , a , b ) ;
+      }
+      equiv( a , tmp ) ;
+      curr = curr -> next ;
+    }
+    // clean up the list, removing all the allocs
+    while( head != NULL ) {
+      free( head ) ;
+      head = head -> next ;
+    }
+  }
   return ;
 }
 
