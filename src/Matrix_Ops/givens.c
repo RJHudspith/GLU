@@ -325,7 +325,7 @@ compute_pertinent_indices( void )
     su2_data[ su2_index ].idx_b = i2 + NC * i1 ;
     su2_data[ su2_index ].idx_c = i1 + NC * i2 ;
     su2_data[ su2_index ].idx_d = i2 + NC * i2 ;
-  }  
+  }
   return ;
 }
 
@@ -452,4 +452,3 @@ OrRotation( const GLU_complex U[ NCNC ] ,
   #undef GIVE_PRECOND
 #endif
 
-#undef NSU2SUBGROUPS

@@ -48,7 +48,11 @@ init_cb( const int LENGTH )
   int i , n[ ND ] ;
   for( i = 0 ; i < LENGTH ; i++ ) {
     get_mom_2piBZ( n , i , ND ) ;
-    if( ( n[0] + n[1] + n[2] + n[3] )%2 == 0 ) {
+    int mu , mode_sum = 0 ;
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      mode_sum += n[ mu ] ;
+    }
+    if( mode_sum%2 == 0 ) {
       NRED++ ;
     } else {
       NBLACK++ ;
@@ -61,7 +65,11 @@ init_cb( const int LENGTH )
   NRED = NBLACK = 0 ;
   for( i = 0 ; i < LENGTH ; i++ ) {
     get_mom_2piBZ( n , i , ND ) ;
-    if( ( n[0] + n[1] + n[2] + n[3] )%2 == 0 ) {
+    int mu , mode_sum = 0 ;
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      mode_sum += n[ mu ] ;
+    }
+    if( mode_sum%2 == 0 ) {
       redsites[NRED] = i ;
       NRED++ ;
     } else {
@@ -170,7 +178,7 @@ OrLandau( struct site *__restrict lat ,
   double newlink = links( lat ) , oldlink , max ;
   *theta = theta_test_lin( lat , &max , ND ) ; 
 
-  compute_pertinent_indices( ) ;
+  // initialise the draughtboard
   init_cb( LVOLUME ) ;
 
   printf( "[GF] Over-Relaxation parameter %f \n" , OrParam ) ;
@@ -197,24 +205,28 @@ OrLandau( struct site *__restrict lat ,
 
   // and print it out
   output_fixing_info( lat , *theta , iters ) ;
-  
-  free_su2_data( ) ;
+
   free_cb( ) ;
 
   return iters ;
 }
 
+// little function for computing the spatial links for the Coulomb
+// gauge fixing code
 static double
-slice_spatial_links( const struct site *lat ,
+slice_spatial_links( const struct site *__restrict lat ,
 		     const int t )
 {
   double sum = 0.0 ;
   int i ;
+  //#pragma omp parallel for private(i) reduction(+:sum)
   for( i = LCU*t ; i < LCU*(t+1) ; i++ ) {
+    register double loc_sum = 0.0 ;
     int mu ;
     for( mu = 0 ; mu < ND-1 ; mu++ ) {
-      sum += creal( trace( lat[i].O[mu] ) ) ;
+      loc_sum += creal( trace( lat[i].O[mu] ) ) ;
     }
+    sum = sum + (double)loc_sum ;
   }
   return sum / ( LCU * (ND-1) * NC ) ;
 }
@@ -227,9 +239,7 @@ OrCoulomb( struct site *__restrict lat ,
 	   const double ACC ,
 	   const double OrParam )
 {
-  struct site *slice_links = malloc( LCU * sizeof( struct site ) ) ;
-
-  compute_pertinent_indices( ) ;
+  // initialise the draughtboarding
   init_cb( LCU ) ;
 
   printf( "[GF] Over-Relaxation parameter %f \n\n" , OrParam ) ;
@@ -274,8 +284,6 @@ OrCoulomb( struct site *__restrict lat ,
 	  Latt.gf_alpha , iters , tlink , splink , av_plaquette( lat ) ) ; 
   
   // memory frees
-  free( slice_links ) ;
-  free_su2_data( ) ;
   free_cb( ) ;
 
   return iters ;

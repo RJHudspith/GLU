@@ -37,8 +37,7 @@
 #include "SUNCxU1_config.h" // compute SU(NC)xU(1) link matrices
 #include "taylor_logs.h"    // Taylor series brute force logarithm
 #include "writers.h"        // write out a configuration
-
-#include "givens.h"
+#include "givens.h"         // allocating the su2 submatrices
 
 // allow for some very necessary precomputations ...
 #if NC > 3 
@@ -50,10 +49,10 @@
 void
 attach_GLU( void )
 {  
-  // NC-generic precomputations
-#if NC > 3
   // create an array of the su2 subgroups
   compute_pertinent_indices( ) ;
+  // NC-generic precomputations
+#if NC > 3
   // factorial computation for the exponentiation routines
   #if !( defined HAVE_LAPACKE_H || defined HAVE_GSL )
   init_factorial( ) ;
@@ -288,9 +287,9 @@ unstick_GLU( void )
 {
   // free the rng if it has been set
   rng_free( ) ; 
+  free_su2_data( ) ; // frees the information about SU(2) subgroups
 // if we have to precompute the factorial we free the memory here
 #if ( NC > 3 )
-  free_su2_data( ) ; // frees the information about SU(2) subgroups
   #if !( defined HAVE_LAPACKE_H || defined HAVE_GSL )
   free_factorial( ) ;
   #endif
