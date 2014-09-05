@@ -427,20 +427,10 @@ OrRotation( const GLU_complex U[ NCNC ] ,
 	    const double OrParam ,
 	    const int su2_index )
 {
-  const int a = su2_data[ su2_index ].idx_a ;
-  const int b = su2_data[ su2_index ].idx_b ;
-  const int c = su2_data[ su2_index ].idx_c ;
-  const int d = su2_data[ su2_index ].idx_d ;
-
-  *s0 = U[a] + conj( U[d] ) ;
-  *s1 = U[b] - conj( U[c] ) ;
-
-  /*
   *s0 = U[su2_data[ su2_index ].idx_a] 
     + conj( U[su2_data[ su2_index ].idx_d] ) ;
   *s1 = U[su2_data[ su2_index ].idx_b] 
     - conj( U[su2_data[ su2_index ].idx_c] ) ;
-  */
 
   // overrelax
   overrelax( s0 , s1 , OrParam ) ;
