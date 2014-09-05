@@ -152,7 +152,7 @@ residual_fix( struct site *__restrict lat )
     multab_suNC( gauge[t+1] , gauge[t] , sum ) ;
   } 
   // test whether this does actually diagonalise the sum
- #ifdef DEBUG_RESFIX
+  #ifdef DEBUG_RESFIX
   for( t = 0 ; t < Latt.dims[ND-1] ; t++ ) {
     GLU_complex sum[ NCNC ] = {} ;
     for( i = 0 ; i < LCU ; i++ ) {
@@ -173,7 +173,7 @@ residual_fix( struct site *__restrict lat )
     multab_suNC( sum , gauge[t] , temp ) ;
     write_matrix( sum ) ;
   }
-#endif
+  #endif
 #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     GLU_complex temp[ NCNC ] ;

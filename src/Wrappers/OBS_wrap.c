@@ -327,16 +327,17 @@ test_logsexp( const GLU_complex U[ NCNC ] )
   exact_log_slow( A , U ) ;
 
   printf( "[OBS] Logarithm\n" ) ; 
-  write_matrix( A ) ;
+  write_matrix_mathematica( A ) ;
 
   printf( "[OBS] Exponential\n" ) ;
   exponentiate( Uprime , A ) ;
-  write_matrix( Uprime ) ;
+  write_matrix_mathematica( Uprime ) ;
 
   printf( "[OBS] Subtraction (should be zero)\n" ) ;
   b_min_c( res , Uprime , U ) ;
   write_matrix( res ) ;
 }
+
 #endif
 
 // wrapper for the default behaviour
@@ -404,9 +405,5 @@ gauge( const struct site *__restrict lat )
 #endif
 
 #ifdef GLU_TEST_PRODS
-  #undef GLU_TEST_PRODS
-#endif
-
-#ifdef GLU_TEST_LOGEXP
-  #undef GLU_TEST_LOGEXP
+  #undef GLU_TEST_MULS
 #endif

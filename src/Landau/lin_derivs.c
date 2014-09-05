@@ -101,7 +101,6 @@ fast_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
 			       const struct site *__restrict lat , 
 			       const int i )
 {
-  // init to zero just to be safe
   *functional = 0.0 ;
 #if NC == 3 
   double REsum0 = 0. , REsum1 = 0. , IMsum1 = 0. , REsum2 = 0. , IMsum2 = 0. ;

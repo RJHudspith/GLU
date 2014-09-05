@@ -92,7 +92,7 @@ average_traces( const int LENGTH )
 // gauge transformation and a log
 #if (defined deriv_full) || (defined deriv_fulln)
 static void
-gtrans_log( GLU_complex A[ HERMSIZE ] ,
+gtrans_log( GLU_complex A[ NCNC ] ,
 	    const GLU_complex a[ NCNC ] ,
 	    const GLU_complex b[ NCNC ] ,
 	    const GLU_complex c[ NCNC ] )
@@ -100,7 +100,8 @@ gtrans_log( GLU_complex A[ HERMSIZE ] ,
   GLU_complex temp[ NCNC ] ;
   equiv( temp , b ) ;
   gtransform_local( a , temp , c ) ;
-  exact_log_slow_short( A , temp ) ;
+  //exact_log_slow_short( A , temp ) ;
+  exact_log_slow( A , temp ) ;
   return ;
 }
 #endif
@@ -322,7 +323,7 @@ coul_gtrans_fields( struct sp_site_herm *__restrict rotato ,
 }
 
 // for the polyak-ribiere
-inline double
+double
 PRfmax( const double a , const double b )
 {
   return ( b < a ? a : b ) ;
@@ -345,7 +346,8 @@ evaluate_alpha( const GLU_complex *__restrict *__restrict gauge ,
   for( i = 0 ; i < LENGTH ; i++ ) {
     // some stacked allocations
     #if (defined deriv_full) || (defined deriv_fulln) || (defined deriv_fullnn)
-    GLU_complex A[ HERMSIZE ] ;
+    //GLU_complex A[ HERMSIZE ] ;
+    GLU_complex A[ NCNC ] ;
     GLU_real trAA ;
     #endif
 
@@ -372,7 +374,7 @@ evaluate_alpha( const GLU_complex *__restrict *__restrict gauge ,
       // gauge transform of U_\mu(x+\mu/2)
       gtrans_log( A , gauge[i] , lat[j].O[mu] , 
 		  gauge[lat[i].neighbor[mu]] ) ;
-      trace_ab_herm_short( &trAA , A , A ) ;
+      trace_ab_herm( &trAA , A , A ) ;
       loc_sum += 0.5 * (double)trAA ;
       #endif
     }
@@ -442,7 +444,8 @@ gauge_functional_fast( const struct site *__restrict lat )
 #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     #if (defined deriv_full) || (defined deriv_fulln) || (defined deriv_fullnn)
-    GLU_complex A[ HERMSIZE ] ;
+    //GLU_complex A[ HERMSIZE ] ;
+    GLU_complex A[ NCNC ] ;
     GLU_real trAA ;
     #endif
     register double loc_sum = 0.0 ;
@@ -476,12 +479,12 @@ gauge_functional_fast( const struct site *__restrict lat )
 #if ( defined deriv_lin ) || (defined deriv_linn )
   return 1.0 - average_traces( LVOLUME ) ;
 #else
-  return average_traces( LVOLUME ) ;
+  return average_traces( LVOLUME ) ; 
 #endif
 }
 
 // this is the same between Landau and Coulomb so I put it here 
-inline void
+void
 set_gauge_matrix( GLU_complex *__restrict gx ,
 		  const GLU_complex *__restrict *__restrict in ,
 		  const double alpha ,
@@ -538,8 +541,7 @@ set_gauge_matrix( GLU_complex *__restrict gx ,
 
 // derivative
 double
-sum_deriv( const GLU_complex *__restrict *__restrict in , 
-	   const int LENGTH )
+sum_deriv( const GLU_complex *__restrict *__restrict in , const int LENGTH )
 {
   int i ;
   #pragma omp parallel for private(i)

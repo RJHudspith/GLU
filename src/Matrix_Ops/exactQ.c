@@ -477,12 +477,16 @@ Hermitian_proj( GLU_complex Q[ NCNC ] ,
   *( Q + 3 ) = -Q[0] ;  
 #else
   int i , j ;
+  register double tr = 0.0 ;
   for( i = 0 ; i < NC ; i++ ) {
-    for( j = 0 ; j < NC ; j++ ) {
+    Q[ i*(NC+1) ] = cimag( U[ i*(NC+1) ] ) ;
+    tr += creal( Q[ i*(NC+1) ] ) ; 
+    for( j = i+1 ; j < NC ; j++ ) {
       Q[ j+i*NC ] = ( U[ j+i*NC ] - conj( U[ i+j*NC ] ) ) * OneOI2 ;
+      Q[ i+j*NC ] = conj( Q[ j+i*NC ] ) ;
     }
   }
-  GLU_complex tr = trace( Q ) / (GLU_real)NC ;
+  tr /= NC ;
   for( i = 0 ; i < NC ; i++ ) {
     Q[ i*(NC+1) ] -= tr ;
   }
@@ -508,18 +512,20 @@ Hermitian_proj_short( GLU_complex Q[ HERMSIZE ] ,
   *( Q + 0 ) = cimag( U[0] ) ;
   *( Q + 1 ) = -I * U[1] ; //OneOI2 * ( U[1] - conj( U[2] ) ) ;  
 #else
- int i ;
-  GLU_complex tr = 0. ;
+  int i ;
+  register double tr = 0. ;
   // compute the trace first
   for( i = 0 ; i < NC ; i++ ) {
     tr += cimag( U[ i*(NC+1) ] ) ;
   }
-  tr /= (GLU_real)NC ;
+  tr /= (double)NC ;
   // fill up "Q"
   int j , idx = 0 ;
   for( i = 0 ; i < NC-1 ; i++ ) {
-    for( j = i ; j < NC ; j++ ) { 
-      Q[idx] = ( i != j ) ? ( U[ j + NC * i ] - conj( U[ i + NC * j ] ) ) * OneOI2 : cimag( U[ j + NC * i ] ) - tr ;
+    Q[idx] = cimag( U[ i*(NC+1) ] ) - tr ;
+    idx++ ;
+    for( j = i+1 ; j < NC ; j++ ) { 
+      Q[idx] = ( U[ j + NC * i ] - conj( U[ i + NC * j ] ) ) * OneOI2 ;
       idx++ ;
     }
   }

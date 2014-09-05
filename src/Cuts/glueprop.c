@@ -36,14 +36,14 @@ double
 psq_calc( double mom[ ND ] ,
 	  const int posit )
 {
-  int n[ ND ] , mu ;
-  TwoPI_mpipi_momconv( n , posit , ND ) ;
+  int k[ ND ] , mu ;
+  TwoPI_mpipi_momconv( k , posit , ND ) ;
   register double tspsq = 0. ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     #ifdef SIN_MOM
-    mom[ mu ] = 2.0 * sin( n[ mu ] * Latt.twiddles[ mu ] * 0.5 ) ;
+    mom[ mu ] = 2.0 * sin( k[ mu ] * Latt.twiddles[ mu ] * 0.5 ) ;
     #else
-    mom[ mu ] = n[ mu ] * Latt.twiddles[ mu ] ;
+    mom[ mu ] = k[ mu ] * Latt.twiddles[ mu ] ;
     #endif
     tspsq += mom[ mu ] * mom[ mu ] ;
   }

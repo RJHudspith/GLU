@@ -36,6 +36,7 @@ correct_pspace_landau( struct site *__restrict A ,
   int i ;
   #pragma omp parallel for private(i) reduction(+:ave_err)
   PFOR( i = 0 ; i < in[0] ; i++ ) {
+
     const int list_idx = list[ i ].idx ;
 
     // this is for the p-space test

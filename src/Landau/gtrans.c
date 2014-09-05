@@ -30,7 +30,7 @@
    I have seen marginal performance increases from this so I figure I will stick to it if anyone wants to
    optimise the Landau and Coulomb code this is a good place to start
  */
-inline void
+void
 gtransform_local( const GLU_complex *__restrict a ,
 		  GLU_complex *__restrict b ,
 		  const GLU_complex *__restrict c )

@@ -63,47 +63,44 @@ compute_Qsusc( struct site *__restrict lat ,
   write_mom_veclist( Ap , size , list , ND ) ;
 
   // set up the matrix-valued array of the topological charge
-  GLU_complex **qtop = malloc( LVOLUME * sizeof( GLU_complex* ) ) ;
-
+  GLU_complex *qtop = malloc( LVOLUME * sizeof( GLU_complex ) ) ;
   int i ;
-#pragma omp parallel for private(i)
-  for( i = 0 ; i < LVOLUME ; i++ ) {
-    qtop[i] = (GLU_complex*)malloc( NCNC * sizeof( GLU_complex ) ) ;
-  }
 
   // precompute all of charge densities q(x)
   compute_Gmunu_array( qtop , lat ) ;
 
+  // look at qtop_sum
+  register double sum = 0.0 , sumsq = 0.0 ;
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    sum += creal( qtop[i] ) ;
+    sumsq += creal( qtop[i] * qtop[i] ) ;
+  }
+  printf( "QTOP %f %f \n" , sum * NORM , sumsq * NORMSQ ) ;
+
   // allocate the results
   double *qcorr = malloc( size[0] * sizeof( double ) ) ; 
-  double *trtr  = malloc( size[0] * sizeof( double ) ) ; 
 
   // loop the possible rsqs
   #pragma omp parallel for private(i)
   for( i = 0 ; i < size[0] ; i++ ) {
     // some storage for the traces
-    GLU_complex tr , tr1 , tr2 ;
-    register double sum = 0.0 , sumtrtr = 0.0 ;
+    register double sumqq = 0.0 ;
     // loop the volume, performing a translationally invariant sum
+
     int j , sep ;
     for( j = 0 ; j < LVOLUME ; j++ ) {
       const int tmp = list[i].idx + j ;
       sep = tmp < LVOLUME ? tmp : tmp - LVOLUME ;
       //trace of the products
-      trace_ab_dag( &tr , qtop[ sep ] , qtop[ j ] ) ;
-      sum += creal( tr ) ;
-      // compute the trace-trace portion
-      tr1 = trace( qtop[ sep ] ) ;
-      tr2 = trace( qtop[ j ] ) ;
-      sumtrtr += creal( tr1 ) * creal( tr2 ) + 
-	         cimag( tr1 ) * cimag( tr2 ) ;
+      sumqq += creal( qtop[sep] * qtop[j] ) ;
     }
-    qcorr[i] = sum * NORMSQ ;
-    trtr[i]  = sumtrtr * NORMSQ ;
+    qcorr[i] = sumqq * NORMSQ ;
   }
 
+  printf( "SAMESIES :: %f %f \n" , sumsq * NORMSQ , qcorr[0] ) ;
+
   // write out the result of all that work
-  write_g2g3_to_list( Ap , qcorr , trtr , size ) ;
+  write_g2_to_list( Ap , qcorr , size ) ;
 
   // close the file and its name
   fclose( Ap ) ;
@@ -111,11 +108,6 @@ compute_Qsusc( struct site *__restrict lat ,
 
   // free up all of the allocations
   free( qcorr ) ;  
-  free( trtr ) ;
-#pragma omp parallel for private(i)
-  for( i = 0 ; i < LVOLUME ; i++ ) {
-    free( qtop[i] ) ;
-  }
   free( qtop ) ;
 
   // free the list

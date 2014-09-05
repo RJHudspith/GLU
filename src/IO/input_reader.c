@@ -159,6 +159,8 @@ get_mode( GLU_mode *mode )
   printf( "[RNG] MWC_4096 Seed %u \n\n" , Latt.Seed[0] ) ;
 #elif defined GSL_RNG
   printf( "[RNG] GSL (MT) Seed %u \n\n" , Latt.Seed[0] ) ;
+#elif defined XOR1024_RNG
+  printf( "[RNG] XOR1024 Seed %u \n\n" , Latt.Seed[0] ) ;
 #else
   printf( "[RNG] well_19937a Seed %u \n\n" , Latt.Seed[0] ) ;
 #endif

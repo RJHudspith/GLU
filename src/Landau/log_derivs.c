@@ -104,12 +104,14 @@ log_deriv( GLU_complex sum[ HERMSIZE ] ,
   GLU_complex A[ HERMSIZE ] , shiftA[ HERMSIZE ] ;
   GLU_real trAA ;
   *functional = 0.0 ;
+
   int mu ; 
   for( mu = 0 ; mu < MAX_DIR ; mu++ ) {
     exact_log_slow_short( A , lat[i].O[mu] ) ; 
     exact_log_slow_short( shiftA , lat[lat[i].back[mu]].O[mu] ) ; 
     a_plus_Sxbminc_short( sum , 1.0 , shiftA , A ) ;
 
+    // compute the functional in-step to remove a log
     trace_ab_herm_short( &trAA , A , A ) ;
     *functional += (double)trAA ;
   }

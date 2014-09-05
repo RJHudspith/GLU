@@ -28,7 +28,7 @@
   #include <lapacke.h> // we must be careful here
 #endif 
 
-//#define CLASSICAL_ADJOINT_INV  -> slow cofactor matrix version
+//#define CLASSICAL_ADJOINT_INV  -> v. slow cofactor matrix version
 //#define FULL_PIVOT             -> column and row pivoting
 
 #if !(defined CLASSICAL_ADJOINT_INV) && ( NC > 2 ) 
@@ -250,6 +250,31 @@ inverse( GLU_complex M_1[ NCNC ] ,
     #endif
   #endif
 #endif 
+}
+
+// can use the Newton iteration as a cheaper alternative to actually computing the inverse
+void
+newton_approx_inverse( GLU_complex Zinv[ NCNC ] , // is Z_{k-1}^{-1}
+		       const GLU_complex Z[ NCNC ] )
+{
+  GLU_complex BX[ NCNC ] ;
+
+  int iters ;
+  for( iters = 0 ; iters < 10 ; iters++ ) {
+    multab( BX , Z , Zinv ) ;
+
+    // should be the identity
+    if( fabs( creal( trace( BX ) ) - NC ) < PREC_TOL ) {
+      break ;
+    }
+
+    multab_atomic_left( BX , Zinv ) ;
+    int j ;
+    for( j = 0 ; j < NCNC ; j++ ) {
+      Zinv[ j ] = 2.0 * Zinv[ j ] - BX[ j ] ;
+    }
+  }
+  return ;
 }
 
 // clear this one

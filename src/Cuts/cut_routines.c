@@ -82,7 +82,8 @@ simorb_ratios( const int DIMS )
   }
   norm = 0. ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    rats[ mu ] = (GLU_real)small / (GLU_real)Latt.dims[ mu ] ;  
+    rats[ mu ] = (GLU_real)small / (GLU_real)Latt.dims[ mu ] ; 
+    printf( "[CUTS] rats :: %f %f %f\n" , rats[mu] , (GLU_real)small , (GLU_real)Latt.dims[ mu ] ) ;
     norm += ( rats[mu] * rats[mu] ) ;
   }
   norm = sqrt( norm ) ;
@@ -407,6 +408,7 @@ get_mom_veclist( struct veclist *__restrict kept ,
 	  100 * in/( GLU_real )LOOP, 
 	  100 * ( LOOP - in )/( GLU_real )LOOP ) ; 
   
+  /*
   // test the list in the shifted bz .. passes unless too many momenta are used
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < in ; i++ ) {
@@ -432,6 +434,7 @@ get_mom_veclist( struct veclist *__restrict kept ,
       }
     }
   }
+  */
 
 //  This loop takes the momenta defined in the -Pi -> Pi BZ , that have been
 //  accepted by the cut routine.

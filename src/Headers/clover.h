@@ -62,7 +62,7 @@ compute_Gmunu( double *__restrict GG ,
    @param lat :: lattice field
  */
 void
-compute_Gmunu_array( GLU_complex *__restrict *__restrict qtop ,
+compute_Gmunu_array( GLU_complex *__restrict qtop ,
 		     const struct site *__restrict lat ) ;
 
 #endif

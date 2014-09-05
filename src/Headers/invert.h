@@ -37,4 +37,9 @@ int
 inverse( GLU_complex M_1[ NCNC ] , 
 	 const GLU_complex M[ NCNC ] ) ;
 
+/////
+void
+newton_approx_inverse( GLU_complex Zinv[ NCNC ] ,
+		       const GLU_complex Z[ NCNC ] ) ;
+
 #endif

@@ -346,6 +346,12 @@ typedef unsigned long int uint64_t ;
   #define WORDS_BIGENDIAN 0
 #endif
 
+/**
+   @def NSU2SUBGROUPS
+   @brief number of su(2) subgroup embeddings
+ */
+#define NSU2SUBGROUPS (NC*(NC-1))/2
+
 /****************************************
 
    Cut routines and the like (Cuts/{}.c )

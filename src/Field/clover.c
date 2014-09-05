@@ -1062,7 +1062,7 @@ compute_Gmunu( double *__restrict GG ,
 
 // this is the driving code for the computation
 void
-compute_Gmunu_array( GLU_complex *__restrict *__restrict qtop , // an LVOLUME array for the qtop
+compute_Gmunu_array( GLU_complex *__restrict qtop , // an LVOLUME array for the qtop
 		     const struct site *__restrict lat )
 {
   int i ;
@@ -1078,15 +1078,14 @@ compute_Gmunu_array( GLU_complex *__restrict *__restrict qtop , // an LVOLUME ar
 #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     GLU_complex Qmat[ NCNC ] ;
-    zero_mat( qtop[i] ) ;
     compute_q( Qmat , lat , i , 3 , 0 , 1 , 2  ) ;
-    a_plus_b( qtop[i] , Qmat ) ;
+    qtop[i] = trace( Qmat ) ;
     //
     compute_q( Qmat , lat , i , 3 , 1 , 2 , 0  ) ;
-    a_plus_b( qtop[i] , Qmat ) ;
+    qtop[i] += trace( Qmat ) ;
     //
     compute_q( Qmat, lat , i , 3 , 2 , 0 , 1  ) ;
-    a_plus_b( qtop[i] , Qmat ) ;
+    qtop[i] += trace( Qmat ) ;
   }
   return ;
 }

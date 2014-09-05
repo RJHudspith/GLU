@@ -29,8 +29,8 @@
 
 // controls for the wilson flow these get externed!
 const double MEAS_START = 1.0 ; // start measuring from 1 lattice spacing flow
-const double WFLOW_STOP = 0.3 ; // BMW's choice for the W_0 parameter
-const double TMEAS_STOP = 8.0 ; // flow time stopper, be careful after ~10
+const double WFLOW_STOP = 10. ; // BMW's choice for the W_0 parameter
+const double TMEAS_STOP = 12.0 ; // flow time stopper, be careful after ~10
 
 // RK4 parameters
 static const double mthreeOfour = -0.75 ; // 3.0/4.0
@@ -313,8 +313,8 @@ deriv_euler( struct site *__restrict lat ,
   *flow = *flow_next ;
   *flow_next = t * t * plaq ;
   const double deriv = t * ( *flow_next - *flow ) / ( delta_t ) ;
-  printf("{t} %g {dt} %g {p} %1.10f {q} %1.10f {ttGG} %1.10f {W} %1.10f \n" ,
-	 t , delta_t , avplaq , qtop , *flow_next , deriv ) ;
+  printf( "{t} %g {dt} %g {p} %1.10f {q} %1.10f {ttGG} %1.10f {W} %1.10f \n" ,
+	  t , delta_t , avplaq , qtop , *flow_next , deriv ) ;
   return deriv ;
 }
 
@@ -333,8 +333,8 @@ deriv_leapfrog( struct site *__restrict lat ,
   *flow = *flow_next ;
   *flow_next = t * t * plaq ;
   const double deriv = t * ( *flow_next - *flow_prev ) / ( 2.0 * delta_t ) ;
-  printf("[WFLOW] {t} %g {dt} %g {p} %1.10f {q} %1.10f {ttGG} %1.10f {W} %1.10f \n" ,
-	 t , delta_t , avplaq , qtop , *flow_next , deriv ) ;
+  printf( "{t} %g {dt} %g {p} %1.10f {q} %1.10f {ttGG} %1.10f {W} %1.10f \n" ,
+	  t , delta_t , avplaq , qtop , *flow_next , deriv ) ;
   return deriv ;
 }
 

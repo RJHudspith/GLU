@@ -189,6 +189,7 @@ flow4d_RK_fast( struct site *__restrict lat ,
     #ifndef verbose
     if( ( t >= MEAS_START ) ) {
     #endif
+      printf( "[WFLOW] " ) ;
       if( leapfrog == GLU_TRUE ) {
 	if( deriv_leapfrog( lat , &flow_prev , &flow , &flow_next , 
 			    t , delta_t ) > WFLOW_STOP ) {
@@ -213,6 +214,7 @@ flow4d_RK_fast( struct site *__restrict lat ,
       const double rk2 = delta_tcorr ;
       const double rk3 = ( -delta_tcorr ) ;  
       step_distance( lat , lat2 , Z , rk1 , rk2 , rk3 , SM_TYPE ) ;
+      printf( "[WFLOW] " ) ;
       deriv_euler( lat , &flow , &flow_next , t , delta_tcorr ) ;
       break ;
     }
@@ -280,6 +282,7 @@ flow4d_RK_slow( struct site *__restrict lat ,
     #ifndef verbose
     if( ( t >= MEAS_START ) ) {
     #endif
+      printf( "[WFLOW] " ) ;
       if( leapfrog == GLU_TRUE ) {
 	if( deriv_leapfrog( lat , &flow_prev , &flow , &flow_next , 
 			    t , delta_t ) > WFLOW_STOP )
@@ -305,6 +308,7 @@ flow4d_RK_slow( struct site *__restrict lat ,
       const double rk3 = ( -delta_tcorr ) ;  
       step_distance_memcheap( lat , lat2 , lat3 , lat4 , 
 			      Z , rk1 , rk2 , rk3 , SM_TYPE ) ;
+      printf( "[WFLOW] " ) ;
       deriv_euler( lat , &flow , &flow_next , t , delta_tcorr ) ;
       break ;
     }

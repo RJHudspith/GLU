@@ -31,6 +31,7 @@ static GLU_bool INIT_RNG = GLU_FALSE ;
 #include "MWC_1038.h"
 #include "MWC_4096.h"
 #include "well_rng_19937a.h"
+#include "XOR1024.h"
 
 #ifdef GSL_RNG
   // include for the GSL_RNG is in "GLU_definitions.h"
@@ -77,6 +78,8 @@ rng_dbl( void )
   return gsl_rng_uniform( r ) ;
 #elif defined MWC_4096_RNG
   return mwc_4096_dbl( ) ;
+#elif defined XOR1024_RNG
+  return XOR1024_dbl( ) ;
 #else
   return WELLRNG19937a( ) ;
 #endif
@@ -95,6 +98,8 @@ rng_free( void )
     GLU_free_MWC1038_table( ) ;
     #elif defined MWC_4096_RNG
     GLU_free_MWC4096_table( ) ;
+    #elif defined XOR1024_RNG
+    GLU_free_XOR1024_table( ) ;
     #else
     GLU_free_WELL19937_table( ) ;
     #endif
@@ -124,6 +129,8 @@ rng_init( void )
       GLU_set_MWC1038_table( Latt.Seed[0] ) ;
       #elif defined MWC_4096_RNG
       GLU_set_MWC4096_table( Latt.Seed[0] ) ;
+      #elif defined XOR1024_RNG
+      GLU_set_XOR1024_table( Latt.Seed[0] ) ;
       #else
       GLU_set_WELL19937_table( Latt.Seed[0] ) ;
       #endif
@@ -132,7 +139,9 @@ rng_init( void )
 
     // should discard the first 2000 or so (warm up phase)
     int i ;
-    for( i = 0 ; i < 2E3 ; i++ ) { rng_dbl( ) ; }
+    for( i = 0 ; i < 2E3 ; i++ ) { 
+      rng_dbl() ;
+    }
 
     INIT_RNG = GLU_TRUE ;
   }

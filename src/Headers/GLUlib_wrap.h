@@ -57,9 +57,10 @@ write_configuration( struct site *lat ,
 		     const char *output_details ) ;
 
 /**
-   @fn int read_and_check( const char *infile , const char *outfile , const GLU_output storage , const char *output_details )
+   @fn int read_and_check( const char *infile , const GLU_bool rtrans , const char *outfile , const GLU_output storage , const char *output_details )
    @brief read and check unitarity and gauge invariant quantities
    @param infile :: input configuration name
+   @param rtrans :: do we want to randomly transform the initial configuration
    @param outfile :: output file configuration
    @param storage :: storage type (NO_STORAGE means we don't write it out)
    @param output_details :: often a header has a string describing it, this is that
@@ -67,6 +68,7 @@ write_configuration( struct site *lat ,
  */
 int
 read_and_check( const char *infile ,
+		const GLU_bool rtrans ,
 		const char *outfile , 
 		const GLU_output storage , 
 		const char *output_details ) ;

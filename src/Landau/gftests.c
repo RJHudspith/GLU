@@ -137,7 +137,7 @@ gauge_functional( const struct site *__restrict lat )
   // for the log defs the functional is actually Re(Tr(A*A)) so we do this
   int i ;
   double trAA = 0.0 ;
-  //#pragma omp parallel for private(i) reduction(+:trAA)
+  #pragma omp parallel for private(i) reduction(+:trAA)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     // removes unused variable warning ...
     #if ( defined deriv_full ) || ( defined deriv_fulln ) || ( defined deriv_fullnn ) 
@@ -157,7 +157,7 @@ gauge_functional( const struct site *__restrict lat )
       #endif
       loc_tr += (double)tr ;
     }
-    trAA = trAA + loc_tr ;
+    trAA = trAA + (double)loc_tr ;
   }
   return 1.0 - trAA / (double)( ND * NC * LVOLUME ) ;
 }

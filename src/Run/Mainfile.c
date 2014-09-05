@@ -84,7 +84,7 @@ main( const int argc ,
 		 argv[ WRITE ] , INFILE.storage , INFILE.output_details ) ;
     break ;
   default :
-    read_and_check( argv[ READ ] , argv[ WRITE ] , 
+    read_and_check( argv[ READ ] , INFILE.rtrans , argv[ WRITE ] , 
 		    INFILE.storage , INFILE.output_details ) ;
     break ;
   }

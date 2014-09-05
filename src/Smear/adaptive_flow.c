@@ -318,8 +318,8 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
       step_distance_memcheap( lat , lat2 , lat3 , lat4 , 
 			      Z , rk1 , rk2 , rk3 , SM_TYPE ) ;
       // regurgitate the previous error
+      printf( "[WFLOW] {err} %1.3e " , errmax * ADAPTIVE_EPS ) ;
       deriv_euler( lat , &flow , &flow_next , t , delta_tcorr ) ;
-      printf( "{err} %1.3e " , errmax * ADAPTIVE_EPS ) ;
       break ;
     }
    // end of RK step

@@ -193,15 +193,15 @@ steep_deriv_CG( GLU_complex *__restrict *__restrict in ,
     }
     register double der = 0.0 ;
     #if NC == 3
-    der += sum[0] * sum[0] ;
-    der += sum[1] * conj( sum[1] ) ;
-    der += sum[2] * conj( sum[2] ) ;
-    der += sum[3] * sum[3] ;
-    der += sum[4] * conj( sum[4] ) ;
-    der += sum[0] * sum[3] ;
+    der += creal( sum[0] * sum[0] ) ;
+    der += creal( sum[1] * conj( sum[1] ) ) ;
+    der += creal( sum[2] * conj( sum[2] ) ) ;
+    der += creal( sum[3] * sum[3] ) ;
+    der += creal( sum[4] * conj( sum[4] ) ) ;
+    der += creal( sum[0] * sum[3] ) ;
     #elif NC == 2
-    der += sum[0] * sum[0] ;
-    der += sum[1] * conj( sum[1] ) ;
+    der += creal( sum[0] * sum[0] ) ;
+    der += creal( sum[1] * conj( sum[1] ) ) ;
     #else
     GLU_real tr ;
     trace_ab_herm_short( &tr , sum , sum ) ;

@@ -38,6 +38,8 @@
 #include "taylor_logs.h"    // Taylor series brute force logarithm
 #include "writers.h"        // write out a configuration
 
+#include "givens.h"
+
 // allow for some very necessary precomputations ...
 #if NC > 3 
   #include "givens.h"       // precomputes all the SU(2) indices  
@@ -155,6 +157,7 @@ write_configuration( struct site *lat ,
 // checks unitarity and can write out a configuration
 int
 read_and_check( const char *infile ,
+		const GLU_bool rtrans , 
 		const char *outfile , 
 		const GLU_output storage , 
 		const char *output_details )
@@ -164,6 +167,9 @@ read_and_check( const char *infile ,
 
   // should print out a warning
   if( lat == NULL ) return GLU_FAILURE ;
+
+  // if we want a random transform then here is where we do it
+  if( rtrans == GLU_TRUE ) { random_gtrans( lat ) ; }
 
   gauge( lat ) ;
 

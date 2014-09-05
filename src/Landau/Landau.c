@@ -28,15 +28,16 @@
 
 #include "Mainfile.h"
 
+#include "FACG.h"          // Fourier-Accelerated Conjugate Gradient
 #include "geometry.h"      // lattice geometry, used for psq
 #include "gftests.h"       // derivative evaluations
+#include "MAG.h"           // for randomly restarting the MAG
+#include "plan_ffts.h"     // FFTW wrappers
 #include "plaqs_links.h"   // average plaquette and link trace
 #include "read_headers.h"  // understands header formats
 #include "read_config.h"   // configuration reader
 #include "random_config.h" // random config and lattice reunit 
-#include "plan_ffts.h"     // FFTW wrappers
-#include "MAG.h"           // for randomly restarting the MAG
-#include "FACG.h"          // Fourier-Accelerated Conjugate Gradient
+
 
 // output the data, pass lat for the plaquette
 static void

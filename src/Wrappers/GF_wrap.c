@@ -31,10 +31,13 @@
 #include "GLU_memcheck.h" // to tell us if we have the memory
 #include "Landau.h"       // Landau fixing
 #include "MAG.h"          // Maximal Axial Gauge
+#include "Or.h"     // Landau fixing
 #include "plaqs_links.h"  // for the plaquettes and links
 #include "read_config.h"  // read the config back in
 #include "read_headers.h" // for rereading the header
 #include "SM_wrap.h"      // smeared preconditioning
+
+#define OVERRELAXED_GF
 
 // coulomb wrapper
 static int 
@@ -69,8 +72,15 @@ GF_wrap_coulomb( lat , GFINFO )
     #endif
   }
 
+#ifdef OVERRELAXED_GF
+  // we could check iters if we wanted, actually we do want to
+  double acc ;
+  OrCoulomb( lat , &acc , GFINFO.max_iters ,
+	     GFINFO.accuracy , Latt.gf_alpha ) ;
+#else
   // we could check iters if we wanted, actually we do want to
   Coulomb( lat , GFINFO.accuracy , GFINFO.max_iters ) ; 
+#endif
 
   // fixes the average temporal links to 1 as best it can
   // using an analogue of the temporal gauge ...
@@ -93,8 +103,33 @@ GF_wrap_landau( infile , lat , GFINFO , improvement )
      const struct gf_info GFINFO ;
      const GF_improvements improvement ;
 {
+  int iters = 0 ;
+  start_timer( ) ;
+#ifdef OVERRELAXED_GF
+  // have to alloc a temporary gauge field for this
+  if( GFINFO.improve == MAG_IMPROVE ) {
+    GLU_complex **gauge = malloc( LVOLUME * sizeof( GLU_complex* ) ) ;
+    int i ;
+    #pragma omp parallel for private(i)
+    for( i = 0 ; i < LVOLUME ; i++ ) {
+      gauge[i] = ( GLU_complex* )malloc( NCNC * sizeof( GLU_complex ) ) ; 
+      identity( gauge[i] ) ;
+    }
+    mag( lat , gauge ) ;
+    // free the gauge transformation matrices
+    #pragma omp parallel for private(i)
+    for( i = 0 ; i < LVOLUME ; i++ ) {
+      free( gauge[i] ) ;   
+    }
+    free( gauge ) ;
+  }
+  // Overrelaxed gauge fixing routine
+  double acc ;
+  iters = OrLandau( lat , &acc , GFINFO.max_iters ,
+		    GFINFO.accuracy , Latt.gf_alpha ) ;
+#else
   GLU_complex **gauge = malloc( LVOLUME * sizeof( GLU_complex* ) ) ;
-  int i , iters = 0 ;
+  int i ;
   #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     gauge[i] = ( GLU_complex* )malloc( NCNC * sizeof( GLU_complex ) ) ; 
@@ -118,16 +153,14 @@ GF_wrap_landau( infile , lat , GFINFO , improvement )
 		  GFINFO.accuracy , 
 		  GFINFO.max_iters , 
 		  infile , improvement ) ; 
-
-  print_time( ) ;
-
   // free the gauge transformation matrices
 #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     free( gauge[i] ) ;   
   }
   free( gauge ) ;
-
+#endif
+  print_time( ) ;
   return iters ;
 }
 
@@ -137,6 +170,9 @@ print_fixing_info( GFINFO , SMINFO )
      const struct gf_info GFINFO ;
      const struct sm_info SMINFO ;
 {
+#ifdef OVERRELAXED_GF
+  printf( "\n[GF] Using the Over-Relaxation routines\n[GF] " ) ;
+#else
 #ifdef GLU_GFIX_SD
   #ifdef HAVE_FFTW3_H
   printf( "\n[GF] Using the Fourier accelerated steepest descent (FASD)"
@@ -152,6 +188,7 @@ print_fixing_info( GFINFO , SMINFO )
   printf( "\n[GF] Using the non-linear"
 	  " conjugate gradient (CG) routines\n[GF] " ) ;
   #endif
+#endif
 #endif
   switch( GFINFO.type )
     {
@@ -198,7 +235,7 @@ print_fixing_info( GFINFO , SMINFO )
   #endif
 // tell us which log-method we are using
 #if ( defined deriv_full ) || ( defined deriv_fulln )
-  printf( "[GF] Using linear def warm-up \n" ) ; // VDM had some problems?
+  printf( "[GF] Using Vandermonde logarithmic def warm-up \n" ) ;
 #endif
 #ifdef LUXURY_GAUGE
   printf( "[GF] " ) ;
