@@ -37,8 +37,6 @@
 #include "read_headers.h" // for rereading the header
 #include "SM_wrap.h"      // smeared preconditioning
 
-#define OVERRELAXED_GF
-
 // coulomb wrapper
 static int 
 GF_wrap_coulomb( lat , GFINFO )

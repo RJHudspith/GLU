@@ -42,6 +42,7 @@
 # 		       	  functional) from specified number of random
 #                         initial transformations, default is 20
 # --enable-GLU_GFIX_SD :: turn on the steepest descent codes
+# --enable-OVERRELAX_GF :: switch to the overrelaxed codes for gauge fixing
 
 AC_INIT([GLU], [1.1], [renwick.james.hudspith@gmail.com])
 AM_INIT_AUTOMAKE([-Wall])
@@ -537,6 +538,17 @@ AC_ARG_ENABLE([GLU_GFIX_SD],
 	     AC_DEFINE([GLU_GFIX_SD],[],[SD gauge fixing routines])
 	     ;;
 	*) AC_MSG_ERROR([bad value ${enableval} for --enable-GLU_GFIX_SD]) ;;
+	esac
+	],[])
+
+## steepest descents routines
+AC_ARG_ENABLE([OVERRELAX_GF],
+	[ --enable-OVERRELAX_GF ],
+	[case "${enableval}" in
+	yes) AC_MSG_NOTICE([WARNING!! Using the overrelaxed gauge fixing routines])	
+	     AC_DEFINE([OVERRELAX_GF],[],[overrelaxed routines are slow])
+	     ;;
+	*) AC_MSG_ERROR([bad value ${enableval} for --enable-OVERRELAX_GF]) ;;
 	esac
 	],[])
 
