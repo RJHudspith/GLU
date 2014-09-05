@@ -16,6 +16,10 @@
     You should have received a copy of the GNU General Public License
     along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 /**
    @file GLUlib_wrap.h
    @brief prototype wrapper functions for the general library workings
@@ -151,4 +155,8 @@ unstick_GLU( void ) ;
 
 #endif
 
+// c++ guard
+#ifdef __cplusplus
+}
+#endif
 
