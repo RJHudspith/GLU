@@ -241,7 +241,8 @@ reunit( GLU_complex Z[ NCNC ] ,
 	const GLU_complex U[ NCNC ] ) 
 {
   equiv( Z , U ) ;
-  return reunit2( Z ) ;
+  reunit2( Z ) ;
+  return ;
 }
 
 // generate a random SU(N) matrix

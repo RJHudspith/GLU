@@ -124,7 +124,7 @@ mom_gauge( A , def )
 
 #else
 
-static volatile int
+static int
 mom_gauge( A , def )
      struct site *__restrict A ;
      const lie_field_def def ;

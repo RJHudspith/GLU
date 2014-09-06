@@ -29,16 +29,15 @@
 #include "Mainfile.h"
 
 // The smearing headers ...
-#include "4D_fast.h"
-#include "adaptive_flow.h"
-#include "GLU_types.h"
-#include "GLU_memcheck.h"
-#include "GLU_timer.h"
-#include "HYP.h"
-#include "HYP_4D.h"
-#include "ND_generic_HYP.h"
-#include "smear.h"
-#include "wflow.h"
+#include "4D_fast.h"        // excessively uses temporaries for precomuputation
+#include "adaptive_flow.h"  // adaptive wilson flow routine
+#include "GLU_memcheck.h"   // memory checking
+#include "GLU_timer.h"      // timing functions
+#include "HYP.h"            // 3D (spatial) smearing functions
+#include "HYP_4D.h"         // 4D (all directional) smearing functions
+#include "ND_generic_HYP.h" // recursive ND-dimensional blocked smearing
+#include "smear.h"          // standard smearing
+#include "wflow.h"          // fixed-epsilon wilson flow
 
 // Selects the correct code to run ...
 static void
@@ -79,11 +78,13 @@ hyp_chooser( lat , SMINFO , meminfo )
       switch( meminfo )
 	{
 	case FAST :
-	  return flow4d_RK_fast( lat , SMINFO.smiters , ND , 
-				 GLU_FORWARD , GENTYPE ) ;
+	  flow4d_RK_fast( lat , SMINFO.smiters , ND , 
+			  GLU_FORWARD , GENTYPE ) ;
+	  return ;
 	case MODERATE :
-	  return flow4d_RK_slow( lat , SMINFO.smiters , ND , 
-				 GLU_FORWARD , GENTYPE ) ;
+	  flow4d_RK_slow( lat , SMINFO.smiters , ND , 
+			  GLU_FORWARD , GENTYPE ) ;
+	  return ;
 	}
     }
   // The original decision for the smearing methods
@@ -101,16 +102,20 @@ hyp_chooser( lat , SMINFO , meminfo )
     HYsmearND( lat , SMINFO.smiters , GENTYPE , SMINFO.dir ) ;
     #else
     if( SMINFO.dir == SPATIAL_LINKS_ONLY ) {
-      return HYPSLsmear3D( lat , SMINFO.smiters , GENTYPE ) ; 
+      HYPSLsmear3D( lat , SMINFO.smiters , GENTYPE ) ; 
+      return ;
     } else {
       switch( meminfo )
 	{
 	case FAST :
-	  return HYPSLsmear4D_expensive( lat , SMINFO.smiters , GENTYPE ) ;  
+	  HYPSLsmear4D_expensive( lat , SMINFO.smiters , GENTYPE ) ;
+	  return ;
 	case MODERATE :
-	  return HYPSLsmear4D( lat , SMINFO.smiters , GENTYPE ) ;  
+	  HYPSLsmear4D( lat , SMINFO.smiters , GENTYPE ) ;  
+	  return ;
 	case SLOW :
-	  return HYsmearND( lat , SMINFO.smiters , GENTYPE , SMINFO.dir ) ;
+	  HYsmearND( lat , SMINFO.smiters , GENTYPE , SMINFO.dir ) ;
+	  return ;
 	}
     }
     #endif

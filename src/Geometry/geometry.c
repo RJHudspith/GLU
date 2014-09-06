@@ -251,19 +251,8 @@ get_vec_from_origin( int n[ ND ] ,
 		     const int i , 
 		     const int DIMS )
 {
-  /*
-  int mu , subvol = 1 ;
-  for( mu = 0 ; mu < ND ; mu++ ) {
-    if( mu != DIMS ) {
-      n[ mu ] = ( ( i - i % subvol ) / subvol ) % Latt.dims[ mu ] ;
-      subvol *= Latt.dims[ mu ] ;
-      if( n[mu] >= Latt.dims[ mu ]/2 ) n[mu] -= Latt.dims[ mu ] ;
-    } else {// set it to 0?
-      n[ mu ] = 0 ;
-    }
-  }
-  */
-  return get_mom_2piBZ( n , i , DIMS ) ;
+  get_mom_2piBZ( n , i , DIMS ) ;
+  return ;
 }
 
 // compute radial separation squared in configuration space

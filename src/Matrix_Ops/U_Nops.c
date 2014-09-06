@@ -516,9 +516,9 @@ matrix_power( GLU_complex a[ NCNC ] ,
 	      const GLU_complex b[ NCNC ] , 
 	      const int n )
 {
-  if( unlikely( n == 0 ) ) { return identity( a ) ; } 
-  else if( unlikely( n == 1 ) ) { return equiv( a , b ) ; } 
-  else if( unlikely( n == 2 ) ) { return multab( a , b , b ) ; } 
+  if( unlikely( n == 0 ) ) { identity( a ) ; return ; } 
+  else if( unlikely( n == 1 ) ) { equiv( a , b ) ; return ; } 
+  else if( unlikely( n == 2 ) ) { multab( a , b , b ) ; return ; } 
   else {
     // generate our linked list
     struct node *head = NULL , *curr ;

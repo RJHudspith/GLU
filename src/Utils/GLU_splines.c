@@ -132,8 +132,8 @@ spline_derivative( double *__restrict der ,
 {
   // for these derivative functions to work, need at least 5 points
   if( N < 5 ) { 
-    if( N == 3 ) return h2_derivative( der , x , y , N ) ;
-    if( N == 4 ) return h3_derivative( der , x , y , N ) ;
+    if( N == 3 ) h2_derivative( der , x , y , N ) ; return ;
+    if( N == 4 ) h3_derivative( der , x , y , N ) ; return ;
     printf( "[SPLINE] Too few points to compute a good cubic spline \n" ) ;
     printf( "[SPLINE] Not doing anything \n" ) ;
     return ;

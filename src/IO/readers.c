@@ -195,13 +195,14 @@ rebuild_lat( link , utemp , type )
     { 
     case OUTPUT_SMALL :
       exhume_O( link , utemp ) ; 
-      break ;
+      return ;
     case OUTPUT_GAUGE :
       complete_top( link , utemp ) ;
-      break ;
+      return ;
     case OUTPUT_NCxNC :
-      return complete_NCxNC( link , utemp ) ;
-    default : break ;
+      complete_NCxNC( link , utemp ) ;
+      return ;
+    default : return ;
     }  
   return ;
 }
