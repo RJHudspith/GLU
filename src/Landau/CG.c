@@ -100,7 +100,6 @@ gtrans_log( GLU_complex A[ NCNC ] ,
   GLU_complex temp[ NCNC ] ;
   equiv( temp , b ) ;
   gtransform_local( a , temp , c ) ;
-  //exact_log_slow_short( A , temp ) ;
   exact_log_slow( A , temp ) ;
   return ;
 }
@@ -346,7 +345,6 @@ evaluate_alpha( const GLU_complex *__restrict *__restrict gauge ,
   for( i = 0 ; i < LENGTH ; i++ ) {
     // some stacked allocations
     #if (defined deriv_full) || (defined deriv_fulln) || (defined deriv_fullnn)
-    //GLU_complex A[ HERMSIZE ] ;
     GLU_complex A[ NCNC ] ;
     GLU_real trAA ;
     #endif
@@ -541,7 +539,8 @@ set_gauge_matrix( GLU_complex *__restrict gx ,
 
 // derivative
 double
-sum_deriv( const GLU_complex *__restrict *__restrict in , const int LENGTH )
+sum_deriv( const GLU_complex *__restrict *__restrict in , 
+	   const int LENGTH )
 {
   int i ;
   #pragma omp parallel for private(i)

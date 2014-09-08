@@ -219,12 +219,12 @@ slice_spatial_links( const struct site *__restrict lat ,
 {
   double sum = 0.0 ;
   int i ;
-  //#pragma omp parallel for private(i) reduction(+:sum)
+  #pragma omp parallel for private(i) reduction(+:sum)
   for( i = LCU*t ; i < LCU*(t+1) ; i++ ) {
     register double loc_sum = 0.0 ;
     int mu ;
     for( mu = 0 ; mu < ND-1 ; mu++ ) {
-      loc_sum += creal( trace( lat[i].O[mu] ) ) ;
+      loc_sum += (double)creal( trace( lat[i].O[mu] ) ) ;
     }
     sum = sum + (double)loc_sum ;
   }

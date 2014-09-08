@@ -29,7 +29,7 @@
 
 // controls for the wilson flow these get externed!
 const double MEAS_START = 1.0 ; // start measuring from 1 lattice spacing flow
-const double WFLOW_STOP = 10. ; // BMW's choice for the W_0 parameter
+const double WFLOW_STOP = 0.3 ; // BMW's choice for the W_0 parameter
 const double TMEAS_STOP = 12.0 ; // flow time stopper, be careful after ~10
 
 // RK4 parameters

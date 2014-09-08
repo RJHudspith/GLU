@@ -148,7 +148,7 @@ compute_p( GLU_real p[ ND ] ,
 {
   int mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    p[ mu ] = TWOPI * (GLU_real)n[ mu ] / ( GLU_real )Latt.dims[ mu ] ; 
+    p[ mu ] = n[mu] * Latt.twiddles[mu] ; 
     #ifdef SIN_MOM
     p[ mu ] = 2. * sin ( p[mu] * 0.5 ) ; 
     #endif
@@ -161,13 +161,13 @@ GLU_real
 gen_p_sq( const int i , 
 	  const int DIMS )
 {
-  int k[ ND ] ;
+  int n[ ND ] ;
   GLU_real kcos = 0. ; 
   int mu ;
   //mapped between 0 to 2Pi -> Quicker and for cos does not matter p^2 symmetric
-  get_mom_2piBZ( k , i , DIMS ) ; 
+  get_mom_2piBZ( n , i , DIMS ) ; 
   for( mu = 0 ; mu < DIMS ; mu++ ) {
-    kcos += cos( TWOPI * ( GLU_real )k[ mu ] / ( GLU_real )Latt.dims[ mu ] ) ; 
+    kcos += cos( n[mu] * Latt.twiddles[mu] ) ; 
   }
   if( unlikely( kcos == (GLU_real)DIMS ) ) {
     return 1.0 ; 
@@ -183,14 +183,14 @@ GLU_real
 gen_p_sq_imp( const int i , 
 	      const int DIMS )
 {
-  int k[ ND ] ;
+  int n[ ND ] ;
   //mapped between 0 to 2Pi
-  get_mom_2piBZ( k , i , DIMS ) ; 
+  get_mom_2piBZ( n , i , DIMS ) ; 
   GLU_real psq = 0.0 ;
   register GLU_real twiddle ;
   int mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    twiddle = MPI * (GLU_real)k[ mu ] / (GLU_real)Latt.dims[ mu ] ; 
+    twiddle = 0.5 * n[mu] * Latt.twiddle[mu] ; 
     #ifdef deriv_fullnn
     const GLU_real sin_mu = 2.0 * ( nnn1 * sin( twiddle ) + nnn2 * sin( 3.0 * twiddle ) + nnn3 * sin( 5.0 * twiddle ) ) ;
     #else
@@ -206,16 +206,16 @@ GLU_real
 gen_p_sq_feyn( const int i , 
 	       int *flag )
 {
-  int k[ ND ] ; 
+  int n[ ND ] ; 
   //mapped between 0 to 2Pi
-  get_mom_2piBZ( k , i , ND ) ; 
+  get_mom_2piBZ( n , i , ND ) ; 
   *flag = 1 ;
   GLU_real kcos = 0. ;
   int mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    kcos += cos( TWOPI * (GLU_real)k[ mu ] / (GLU_real)Latt.dims[ mu ] ) ; 
+    kcos += cos( n[mu] * Latt.twiddle[mu] ) ; 
     // if all the spatial terms are zero set the flag to zero
-    if( ( *flag != 0 ) && ( mu < ( ND-1 ) ) ) { *flag = ( abs( k[mu] ) > 0 ) ? 0 : 1 ; }
+    if( ( *flag != 0 ) && ( mu < ( ND-1 ) ) ) { *flag = ( abs( n[mu] ) > 0 ) ? 0 : 1 ; }
   }
   if( unlikely( kcos == (GLU_real)ND ) ) {
     return 1.0 ;
@@ -230,11 +230,11 @@ gen_get_p( GLU_real p[ ND ] ,
 	   const int i , 
 	   const int DIMS )
 {
-  int k[ ND ] , mu ;
+  int n[ ND ] , mu ;
   //mapped between 0 to 2Pi
-  get_mom_pipi( k , i , DIMS ) ; 
+  get_mom_pipi( n , i , DIMS ) ; 
   for( mu = 0 ; mu < ND ; mu++ ) {
-    p[ mu ] = TWOPI * (GLU_real)k[ mu ] / ( GLU_real )Latt.dims[ mu ] ; 
+    p[ mu ] = n[mu] * Latt.twiddle[mu] ; 
     #ifdef SIN_MOM
     p[ mu ] = 2. * sin ( p[mu] * 0.5 ) ; 
     #endif

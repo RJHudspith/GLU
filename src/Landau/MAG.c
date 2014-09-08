@@ -18,7 +18,7 @@
 */
 /**
    @file MAG.c
-   @brief Maximal Axial Gauge fixing
+   @brief Maximal (temporal) Axial Gauge fixing
 
   Here I have included the Maximal Axial Gauge fixing and
   the \f$ A^{\mu} = 0 \f$ partial axial gauge fixing.
