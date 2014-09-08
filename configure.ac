@@ -1,48 +1,48 @@
 ## GLU Automake instructions outline ##
 
-# --prefix=  :: tell it where to install the binary
-# --with-NC= :: number of colors, if not specified defaults to 3
-# --with-ND= :: number of dimensions, if not specified defaults to 4
-# --enable-single :: working precision is single, default is double
-# --enable-OMP_FFTW :: enable OMP'd fftw routines (FFTW v3.3 and greater)
-# --with-fftw= :: directory for the installed FFTW routines if --with-fftw
-#                 argument is specified without a directory, will look for
-#                 -lfftw3(f) in /usr/lib/ 
-# --with-gsl= :: directory for GSL
-# --with-lapacke= :: directory for lapacke install, used for large-NC eigen
-#                    operations, good binding with complex.h
-# --with-deriv= :: derivative type in gauge fixing options are :
-#                  deriv_linn , deriv_full , deriv_fulln (last two are
-#  		   exact logarithm variations)
-# --enable-exp_exact :: exact exponentiation into the group being used for the
-#                       gauge transformation matrices in the gauge fixing
-# --enable-fastsmear :: dangerous, inaccurate but quick smearing
-# --enable-notcondor :: enable the single-machine cache-ing and architecture
-#                       dependent optimisations
-# --with-GRACEY_PROJ= :: MOMggg scheme projection number, 0 is default
-# --with-TOP_VALUE= :: Specify number of smearing steps before measuring the
-#                      topological charge 
-# --enable-GIVENS_APE :: use the Cabbibo-Marinari trace-maximisation for
-#                        the APE and HYP smearings
-# --enable-GLU_bgq :: inlined matrix multiplies via macros
-# --with-IMPROVED_C0=  :: leading 1x1 term if not using IWASAKI, SYMANZIK or DBW2
-# --with-IMPROVED_C1=  :: subleading 2x1 term only effective if C0 is defined
-# --with-IMPROVED_STAPLE= :: Rectangle coefficients, choices are :
-# 			     IWASAKI, SYMANZIK and DBW2
-# --with-OVERIMPROVED_EPSILON= :: specify a value for the overimprovement
-#                                 factor, default is 0.0
-# --enable-verbiage :: more verbose output than usual
-# --enable-ascii_check :: prints to stdout the data we would write to our
-#                         binary files
-# --enable-CLOVER_IMPROVE :: Are we using the O(a^4) clover def?
-# --with-CLOVER_K5= :: specify the multiplicative term for the 3x3 wilson
-#                      loop for the heavily improved field strength tensor
-# --with-RNG= :: choices are KISS, MWC and GSL. Default is the WELL
-# --with-LUXURY_GAUGE= :: choose the "best" (one that minimises the
-# 		       	  functional) from specified number of random
-#                         initial transformations, default is 20
-# --enable-GLU_GFIX_SD :: turn on the steepest descent codes
-# --enable-OVERRELAX_GF :: switch to the overrelaxed codes for gauge fixing
+## --prefix=  :: tell it where to install the binary
+## --with-NC= :: number of colors, if not specified defaults to 3
+## --with-ND= :: number of dimensions, if not specified defaults to 4
+## --enable-single :: working precision is single, default is double
+## --enable-OMP_FFTW :: enable OMP'd fftw routines (FFTW v3.3 and greater)
+## --with-fftw= :: directory for the installed FFTW routines if --with-fftw
+##                 argument is specified without a directory, will look for
+##                 -lfftw3(f) in /usr/lib/ 
+## --with-gsl= :: directory for GSL
+## --with-lapacke= :: directory for lapacke install, used for large-NC eigen
+##                    operations, good binding with complex.h
+## --with-deriv= :: derivative type in gauge fixing options are :
+##                  deriv_linn , deriv_full , deriv_fulln (last two are
+##  		   exact logarithm variations)
+## --enable-exp_exact :: exact exponentiation into the group being used for the
+##                       gauge transformation matrices in the gauge fixing
+## --enable-fastsmear :: dangerous, inaccurate but quick smearing
+## --enable-notcondor :: enable the single-machine cache-ing and architecture
+##                       dependent optimisations
+## --with-GRACEY_PROJ= :: MOMggg scheme projection number, 0 is default
+## --with-TOP_VALUE= :: Specify number of smearing steps before measuring the
+##                      topological charge 
+## --enable-GIVENS_APE :: use the Cabbibo-Marinari trace-maximisation for
+##                        the APE and HYP smearings
+## --enable-GLU_bgq :: inlined matrix multiplies via macros
+## --with-IMPROVED_C0=  :: leading 1x1 term if not using IWASAKI, SYMANZIK or DBW2
+## --with-IMPROVED_C1=  :: subleading 2x1 term only effective if C0 is defined
+## --with-IMPROVED_STAPLE= :: Rectangle coefficients, choices are :
+## 			     IWASAKI, SYMANZIK and DBW2
+## --with-OVERIMPROVED_EPSILON= :: specify a value for the overimprovement
+##                                 factor, default is 0.0
+## --enable-verbiage :: more verbose output than usual
+## --enable-ascii_check :: prints to stdout the data we would write to our
+##                         binary files
+## --enable-CLOVER_IMPROVE :: Are we using the O(a^4) clover def?
+## --with-CLOVER_K5= :: specify the multiplicative term for the 3x3 wilson
+##                      loop for the heavily improved field strength tensor
+## --with-RNG= :: choices are KISS, MWC and GSL. Default is the WELL
+## --with-LUXURY_GAUGE= :: choose the "best" (one that minimises the
+## 		       	  functional) from specified number of random
+##                         initial transformations, default is 20
+## --enable-GLU_GFIX_SD :: turn on the steepest descent codes
+## --enable-OVERRELAXED_GF :: switch to the overrelaxed codes for gauge fixing
 
 AC_INIT([GLU], [1.1], [renwick.james.hudspith@gmail.com])
 AM_INIT_AUTOMAKE([-Wall])
@@ -54,9 +54,6 @@ AC_C_BIGENDIAN
 
 ## SET up the m4
 AC_CONFIG_MACRO_DIR([m4])
-
-## I strongly recommend these flags for compiling with gcc
-#CFLAGS="-O3 -mfpmath=sse -march=native -fopenmp"
 
 ## prefix!!
 AC_DEFINE_UNQUOTED([HAVE_PREFIX],["$prefix"],[Look for where we prefix to])
@@ -139,12 +136,12 @@ AC_ARG_ENABLE([single],
 	],[])
 
 ######################################### FFTW3 ###############################################
-#                                                                                             #
-#    This one is tricky, looks first for the static link to FFTW library, if not found        #
-#    then the shared. If --with-fftw= then it looks in /usr/lib for the shared                #
-#    otherwise we miss out on all of the Fourier transform stuff like Fourier acceleration,   #
-#    Momentum space gluons and quenched U(1). Not a necessity.                                #
-#                                                                                             #
+##                                                                                           ##
+##    This one is tricky, looks first for the static link to FFTW library, if not found      ##
+##    then the shared. If --with-fftw= then it looks in /usr/lib for the shared              ##
+##    otherwise we miss out on all of the Fourier transform stuff like Fourier acceleration, ##
+##    Momentum space gluons and quenched U(1). Not a necessity.                              ##
+##                                                                                           ##
 ###############################################################################################
 
 ## I have now written the code to utilise OpenMP parallel FFT routines
@@ -214,8 +211,8 @@ AC_ARG_WITH([fftw],
 	    ## see if we already have it	
 	    AC_CHECK_HEADERS([fftw3.h],[local_fftw=true],[local_fftw=false])
 
-	    # get desperate here and check for the header in the usual places
-	    # as omp routines are special I doubt they will be installed, maybe should do a special check
+	    ## get desperate here and check for the header in the usual places
+	    ## as omp routines are special I doubt they will be installed, maybe should do a special check
 	    if test x$local_fftw = "xtrue" ; then
 	       LDFLAGS="$LDFLAGS -lfftw3${float_version}"
 	       AC_MSG_NOTICE([Using the system's fftw])	       
@@ -225,17 +222,17 @@ AC_ARG_WITH([fftw],
 	    fi
      ]) ## closes the check headers ...
 ]
-# closes with-FFTW
+## closes with-FFTW
 )
 AM_CONDITIONAL([DEFFFTW],[$fftw])
 AC_SUBST(FFTW)
 
-######################################### GSL ###############################################
-#                                                                                           #
-#    GSL (GNU scientific library) can be used, link to allow for the mersenne twister RNG   #
-#    and its eigenvalue stuff for large NC. Not a necessity.                                #
-#                                                                                           #
-#############################################################################################
+######################################### GSL ################################################
+##                                                                                          ##
+##    GSL (GNU scientific library) can be used, link to allow for the mersenne twister RNG  ##
+##    and its eigenvalue stuff for large NC. Not a necessity.                               ##
+##                                                                                          ##
+##############################################################################################
 gsl=false 
 AC_ARG_WITH([gsl],
 	AC_HELP_STRING([--with-gsl=<name>],
@@ -268,10 +265,10 @@ AM_CONDITIONAL([DEFGSL],[$gsl])
 AC_SUBST(GSL)
 
 ######################################### LAPACKE ############################################
-#                                                                                            #
-#    Binding to the lapacke library (lapack for c), not really used too much but can be      #
-#    very beneficial for large NC eigenvalues. Not a necessity.                              #
-#                                                                                            #
+##                                                                                          ##
+##    Binding to the lapacke library (lapack for c), not really used too much but can be    ##
+##    very beneficial for large NC eigenvalues. Not a necessity.                            ##
+##                                                                                          ##
 ##############################################################################################
 lapacke=false 
 AC_ARG_WITH([lapacke],
@@ -307,8 +304,8 @@ AC_ARG_WITH([deriv],
 	    case "${with_deriv}" in
 	      deriv_full) AC_DEFINE([deriv_full],[],[Normal derivative, log def gluon fields]) ;;
 	      ## JAMIE :: TODO, work out the functionals being minimised in the CG for these!
-	      #deriv_fulln) AC_DEFINE([deriv_fulln],[],[Stencil derivative, log def gluon fields]) ;;
-	      #deriv_linn) AC_DEFINE([deriv_linn],[],[Stencil derivative, linear gluon fields]) ;;
+	      ##deriv_fulln) AC_DEFINE([deriv_fulln],[],[Stencil derivative, log def gluon fields]) ;;
+	      ##deriv_linn) AC_DEFINE([deriv_linn],[],[Stencil derivative, linear gluon fields]) ;;
 	      *) AC_MSG_NOTICE([Default deriv : Linear deriv with O(a) approx exponentiation (Fastest).]);;
 	    esac
 	    ],[ AC_MSG_NOTICE([Default deriv : Linear deriv with O(a) approx exponentiation (Fastest).]) ])
@@ -541,14 +538,14 @@ AC_ARG_ENABLE([GLU_GFIX_SD],
 	esac
 	],[])
 
-## steepest descents routines
-AC_ARG_ENABLE([OVERRELAX_GF],
-	[ --enable-OVERRELAX_GF ],
+## steepest descents OverRelaxed routines
+AC_ARG_ENABLE([OVERRELAXED_GF],
+	[ --enable-OVERRELAXED_GF ],
 	[case "${enableval}" in
 	yes) AC_MSG_NOTICE([WARNING!! Using the overrelaxed gauge fixing routines])	
-	     AC_DEFINE([OVERRELAX_GF],[],[overrelaxed routines are slow])
+	     AC_DEFINE([OVERRELAXED_GF],[],[overrelaxed routines are slow])
 	     ;;
-	*) AC_MSG_ERROR([bad value ${enableval} for --enable-OVERRELAX_GF]) ;;
+	*) AC_MSG_ERROR([bad value ${enableval} for --enable-OVERRELAXED_GF]) ;;
 	esac
 	],[])
 

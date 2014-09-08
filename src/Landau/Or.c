@@ -18,7 +18,7 @@
 */
 /**
    @file OrLandau.c
-   @brief Over relaxed Landau gauge fixing code
+   @brief Over relaxed Landau and Coulomb gauge fixing codes
  */
 
 #include "Mainfile.h"       // general includes
@@ -128,12 +128,12 @@ OR_iteration( struct site *__restrict lat ,
   // perform an overrelaxation step
   int i ;
 #pragma omp parallel for private(i)
-  for( i = 0 ; i < NRED ; i++ ) {
+  PFOR( i = 0 ; i < NRED ; i++ ) {
     OR_single( lat , su2_index  , OrParam , 
 	       redsites[i] + LCU * t , DIMS ) ;
   }
 #pragma omp parallel for private(i)
-  for( i = 0 ; i < NBLACK ; i++ ) {
+  PFOR( i = 0 ; i < NBLACK ; i++ ) {
     OR_single( lat , su2_index , OrParam , 
 	       blacksites[i] + LCU * t , DIMS ) ;
   }
