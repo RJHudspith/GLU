@@ -93,11 +93,12 @@ get_psq( p )
      const int *p ;
 { 
   int nu ;
-  register double temp = 0.0 ;
+  register double psq = 0.0 ;
   for( nu = 0 ; nu < ND ; nu++ ) {
-    temp += ( p[nu] * p[nu] ) / (double)( Latt.dims[nu] * Latt.dims[nu] ) ; 
+    const double cache = p[ nu ] * Latt.twiddles[ nu ] ;
+    psq += cache * cache ; 
   }
-  return TWOPI * TWOPI * temp ;
+  return psq ;
 }
 
 // generic delta function

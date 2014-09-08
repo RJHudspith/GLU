@@ -128,8 +128,7 @@ recurse_sum( const struct site *__restrict A ,
   if( mu > ND-2 ) { 
     const int xidx = idx1 + gen_site( vec ) ;
     *norm = *norm + 1 ;
-    contract_slices( A , xidx , idx2 ) ;
-    return ;
+    return contract_slices( A , xidx , idx2 ) ;
   }
 
   double sum = 0.0 ;

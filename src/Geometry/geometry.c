@@ -190,7 +190,7 @@ gen_p_sq_imp( const int i ,
   register GLU_real twiddle ;
   int mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    twiddle = 0.5 * n[mu] * Latt.twiddle[mu] ; 
+    twiddle = 0.5 * n[mu] * Latt.twiddles[mu] ; 
     #ifdef deriv_fullnn
     const GLU_real sin_mu = 2.0 * ( nnn1 * sin( twiddle ) + nnn2 * sin( 3.0 * twiddle ) + nnn3 * sin( 5.0 * twiddle ) ) ;
     #else
@@ -213,7 +213,7 @@ gen_p_sq_feyn( const int i ,
   GLU_real kcos = 0. ;
   int mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    kcos += cos( n[mu] * Latt.twiddle[mu] ) ; 
+    kcos += cos( n[mu] * Latt.twiddles[mu] ) ; 
     // if all the spatial terms are zero set the flag to zero
     if( ( *flag != 0 ) && ( mu < ( ND-1 ) ) ) { *flag = ( abs( n[mu] ) > 0 ) ? 0 : 1 ; }
   }
@@ -234,7 +234,7 @@ gen_get_p( GLU_real p[ ND ] ,
   //mapped between 0 to 2Pi
   get_mom_pipi( n , i , DIMS ) ; 
   for( mu = 0 ; mu < ND ; mu++ ) {
-    p[ mu ] = n[mu] * Latt.twiddle[mu] ; 
+    p[ mu ] = n[mu] * Latt.twiddles[mu] ; 
     #ifdef SIN_MOM
     p[ mu ] = 2. * sin ( p[mu] * 0.5 ) ; 
     #endif

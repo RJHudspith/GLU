@@ -263,7 +263,7 @@ rotation3( U , w )
   return ;
 }
 
-#else
+#elif NC > 3
 
 // NC generic givens rotations
 static void
