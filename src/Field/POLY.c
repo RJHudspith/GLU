@@ -83,32 +83,42 @@ static_quark_correlator( double *__restrict result ,
 {
   int i ;
   // now we can loop the triplet computing the correlators ...
-#pragma omp parallel for private(i)
-  for( i = 0 ; i < rsq_count ; i++ ) {
+  #pragma omp parallel for private(i)
+  PFOR( i = 0 ; i < rsq_count ; i++ ) {
 
     // COOL, can now contract these over the volume
     GLU_complex res ;
     register double tr = 0.0 ;
     register double tracetrace = 0.0 ;
-    const int ref_idx = list[i].idx ;
 
-    int t ;
-    for( t = 0 ; t < Latt.dims[ ND-1 ] ; t++ ) {
-      int k ;
-      for( k = 0 ; k < LCU ; k++ ) {
-	const int idx1 = ( k + LCU * t ) ;
-	const int idx2 = ( k + ref_idx ) < LCU ? ( ref_idx + idx1 ) : ( ref_idx + idx1 - LCU ) ;
+    // the (positive) lattice vector for the separation
+    int separation[ ND ] ;
+    get_mom_2piBZ( separation , list[i].idx , ND-1 ) ;
 
+    // loop the lattice varying source and sink with the correct separation
+    int k = 0 ;
+    for( k = 0 ; k < LCU ; k++ ) {
+      
+      // translate the source from k by a vector separation
+      const int translate = compute_spacing( separation , k , ND - 1 ) ;
+      
+      int t = 0 ;
+      for( t = 0 ; t < Latt.dims[ ND-1 ] ; t++ ) {
+	
+	// compute the source and sink for this time separation
+	const int source = k + LCU * t ;
+	const int sink   = translate + LCU * t ;
+	
 	// trace of the product
-	trace_ab_dag( &res , poly[idx1] , poly[idx2] ) ;
+	trace_ab_dag( &res , poly[source] , poly[sink] ) ;
 	tr += (double)creal( res ) ;
-
+	
 	// and the trace-trace
-	const GLU_complex tr1 = trace( poly[idx1] ) ;
-	const GLU_complex tr2 = trace( poly[idx2] ) ;
+	const GLU_complex tr1 = trace( poly[source] ) ;
+	const GLU_complex tr2 = trace( poly[sink] ) ;
 	tracetrace += creal( tr1 ) * creal( tr2 ) + cimag( tr1 ) * cimag( tr2 ) ;
       }
-     }
+    }
     result[i] = tr ;
     trtr[i]   = tracetrace ;
   }
@@ -183,13 +193,10 @@ Coul_staticpot( struct site *__restrict lat ,
     // into the array of matrices poly
     #pragma omp parallel for private(i)
     PFOR( i = 0 ; i < LVOLUME ; i++ ) { 
-      GLU_complex temp[ NCNC ] ;
-      equiv( temp , poly[i] ) ;
-      const int tpos = ( i + t * LCU ) % LVOLUME ;
-      multab_suNC( poly[i] , temp , lat[tpos].O[ND-1] ) ;
+      multab_atomic_right( poly[i] , lat[( i + t * LCU ) % LVOLUME].O[ND-1] ) ;
     }
     
-    // compute the three quark correlator
+    // compute the three quark correlator?
     static_quark_correlator( result , trtr , (const GLU_complex**)poly , 
 			     list , size[0] ) ;
 

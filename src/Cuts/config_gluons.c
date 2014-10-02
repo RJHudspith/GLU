@@ -119,6 +119,7 @@ contract_slices( A , x , t_ref )
   return loc_tr / (double)( LCU ) ;
 }
 
+// recursion for the sum on a sparse wall type thing
 static double
 recurse_sum( const struct site *__restrict A ,
 	     const int idx1 , const int idx2 ,

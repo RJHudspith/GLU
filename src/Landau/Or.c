@@ -26,6 +26,7 @@
 #include "geometry.h"       // geom for the draughtboarding
 #include "givens.h"         // su(2) rotations
 #include "gftests.h"        // theta test
+#include "gtrans.h"
 #include "plaqs_links.h"    // plaquettes
 #include "random_config.h"  // latt reunitisation
 
@@ -114,6 +115,7 @@ OR_single( struct site *__restrict lat ,
     shortened_su2_multiply_dag( lat[back].O[mu] , s0 , s1 , 
 				-conj(s1) , conj(s0) , su2_index ) ;
   }
+
   return ;
 }
 
@@ -128,12 +130,12 @@ OR_iteration( struct site *__restrict lat ,
   // perform an overrelaxation step
   int i ;
 #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < NRED ; i++ ) {
+  PFOR( i = 0 ; i < NRED ; i++ ) {  
     OR_single( lat , su2_index  , OrParam , 
 	       redsites[i] + LCU * t , DIMS ) ;
   }
 #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < NBLACK ; i++ ) {
+  PFOR( i = 0 ; i < NBLACK ; i++ ) {    
     OR_single( lat , su2_index , OrParam , 
 	       blacksites[i] + LCU * t , DIMS ) ;
   }
@@ -182,7 +184,7 @@ OrLandau( struct site *__restrict lat ,
   init_cb( LVOLUME ) ;
 
   printf( "[GF] Over-Relaxation parameter %f \n" , OrParam ) ;
-  
+
   // iterations
   int iters = 0 ;
   while( iters < MAX_ITERS && fabs( *theta ) > ACC ) {
@@ -197,11 +199,15 @@ OrLandau( struct site *__restrict lat ,
 
     newlink = links( lat ) ;
 
+    printf( "%1.12f \n" , newlink ) ;
+
     // chroma condition is pretty shitty
     *theta = ( newlink - oldlink ) / newlink ;
 
     iters++ ;
   }
+
+  // if not completed, grab file and redo
 
   // and print it out
   output_fixing_info( lat , *theta , iters ) ;

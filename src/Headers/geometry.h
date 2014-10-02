@@ -182,6 +182,19 @@ compute_rsq( const int site ,
 	     const int dir ) ;
 
 /**
+   @fn int compute_spacing( const int separation[ ND ] , const int k , const int DIMS )
+   @brief computes the index after a shift by the vectory separation
+   @param separation :: shifting vector
+   @param k :: starting index
+   @param DIMS :: maximum number of dimensions, i.e. ND-1 would be in the spatial subcube
+   @return the lattice index of the shift 
+ */
+int
+compute_spacing( const int separation[ ND ] ,
+		 const int k ,
+		 const int DIMS ) ;
+
+/**
    @fn int gen_shift( const int i , const int dir )
    @brief Returns a site index shifted by one in the direction "dir"
    @param i :: lattice index

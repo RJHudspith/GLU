@@ -244,14 +244,23 @@ gen_get_p( GLU_real p[ ND ] ,
 
 //// CONFIG-SPACE routines ////
 
-// gives the lattice vector from the origin in x, 
-// returns the squared distance
+// gives the lattice vector from the origin in x
+// assumes periodicity
 void
 get_vec_from_origin( int n[ ND ] , 
 		     const int i , 
 		     const int DIMS )
 {
   get_mom_2piBZ( n , i , DIMS ) ;
+
+  // periodicity enforcement
+  int mu ;
+  for( mu = 0 ; mu < DIMS ; mu++ ) {
+    if( n[mu] > ( Latt.dims[mu]>>1 ) ) {
+      n[mu] -= ( Latt.dims[mu] ) ;
+    }
+  }
+
   return ;
 }
 
@@ -262,12 +271,31 @@ compute_rsq( const int site ,
 {
   // compute "r^2"
   int r[ ND ] ;
-  get_mom_2piBZ( r , site , DIMS ) ;
-  int sumsq = 0 , mu ;
+  get_vec_from_origin( r , site , DIMS ) ;
+  register int sumsq = 0 , mu ;
   for( mu = 0 ; mu < DIMS ; mu++ ) {
     sumsq += r[mu] * r[mu] ;
   }
   return sumsq ; 
+}
+
+// computes the lattice index of the spatial hypercube of a
+// point that is separation away from k
+int
+compute_spacing( const int separation[ ND ] ,
+		 const int k ,
+		 const int DIMS )
+{
+  int n[ ND ] , mu ;
+  get_mom_2piBZ( n , k , DIMS ) ;
+  for( mu = 0 ; mu < ND ; mu++ ) {
+    if( mu < DIMS ) {
+      n[mu] = ( n[mu] + separation[mu] ) % Latt.dims[mu] ;
+    } else {
+      n[ mu ] = 0 ;
+    }
+  }
+  return gen_site( n ) ;
 }
 
 // This is the new bona-fide generic shifting code

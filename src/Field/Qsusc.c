@@ -27,6 +27,7 @@
 #include "clover.h"       // computation of the topological charge
 #include "cut_output.h"   // automatic formatting of our output file
 #include "cut_routines.h" // momentum cuts for config-space vector
+#include "geometry.h"     // for the spacing computation
 #include "GLU_bswap.h"    // byte swapping
 #include "SM_wrap.h"      // in case we wish to do smearing
 
@@ -70,12 +71,14 @@ compute_Qsusc( struct site *__restrict lat ,
   compute_Gmunu_array( qtop , lat ) ;
 
   // look at qtop_sum
+#if 0
   register double sum = 0.0 , sumsq = 0.0 ;
   for( i = 0 ; i < LVOLUME ; i++ ) {
     sum += creal( qtop[i] ) ;
     sumsq += creal( qtop[i] * qtop[i] ) ;
   }
   printf( "QTOP %f %f \n" , sum * NORM , sumsq * NORMSQ ) ;
+#endif
 
   // allocate the results
   double *qcorr = malloc( size[0] * sizeof( double ) ) ; 
@@ -85,19 +88,20 @@ compute_Qsusc( struct site *__restrict lat ,
   for( i = 0 ; i < size[0] ; i++ ) {
     // some storage for the traces
     register double sumqq = 0.0 ;
-    // loop the volume, performing a translationally invariant sum
 
-    int j , sep ;
-    for( j = 0 ; j < LVOLUME ; j++ ) {
-      const int tmp = list[i].idx + j ;
-      sep = tmp < LVOLUME ? tmp : tmp - LVOLUME ;
+    int separation[ ND ] ;
+    get_mom_2piBZ( separation , list[i].idx , ND ) ;
+
+    // loop the lattice varying source and sink with the correct separation
+    int source = 0 ;
+    for( source = 0 ; source < LVOLUME ; source++ ) {
+      // translate the source from k by a vector separation
+      const int sink = compute_spacing( separation , source , ND ) ;
       //trace of the products
-      sumqq += creal( qtop[sep] * qtop[j] ) ;
+      sumqq += creal( qtop[source] * qtop[sink] ) ;
     }
     qcorr[i] = sumqq * NORMSQ ;
   }
-
-  printf( "SAMESIES :: %f %f \n" , sumsq * NORMSQ , qcorr[0] ) ;
 
   // write out the result of all that work
   write_g2_to_list( Ap , qcorr , size ) ;

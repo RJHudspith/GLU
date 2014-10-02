@@ -36,7 +36,7 @@
 //#define GLU_PRINT_LOOPS
 //#define GLU_TEST_MULS
 //#define GLU_TEST_PRODS
-#define GLU_TEST_LOGEXP
+//#define GLU_TEST_LOGEXP
 
 // log types we are looking at
 typedef enum { EXACT_FAST , EXACT_SLOW ,
@@ -50,7 +50,7 @@ check_links( lat )
   const GLU_bool FUCKED = GLU_TRUE ;
   int i , NBADLINKS = 0 ;
   printf( "\n[UNITARY] Checking for Unitarity of link matrices ...\n" ) ;
-#pragma omp parallel for private(i) reduction(+:NBADLINKS)
+  #pragma omp parallel for private(i) reduction(+:NBADLINKS)
   for( i = 0 ; i < Latt.Volume ; i++ ) {
     int mu ; 
     for( mu = 0 ; mu < ND ; mu++ ) {
