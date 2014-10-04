@@ -87,7 +87,7 @@ static_quark_correlator( double *__restrict result ,
   PFOR( i = 0 ; i < rsq_count ; i++ ) {
 
     // COOL, can now contract these over the volume
-    GLU_complex res ;
+    GLU_real res ;
     register double tr = 0.0 ;
     register double tracetrace = 0.0 ;
 
@@ -110,8 +110,8 @@ static_quark_correlator( double *__restrict result ,
 	const int sink   = translate + LCU * t ;
 	
 	// trace of the product
-	trace_ab_dag( &res , poly[source] , poly[sink] ) ;
-	tr += (double)creal( res ) ;
+	trace_ab_dag_Re( &res , poly[source] , poly[sink] ) ;
+	tr += (double)res ;
 	
 	// and the trace-trace
 	const GLU_complex tr1 = trace( poly[source] ) ;
@@ -131,12 +131,14 @@ Coul_staticpot( struct site *__restrict lat ,
 		const struct cut_info CUTINFO ,
 		const struct sm_info SMINFO )
 {
-  // do some smearing? Overwrites lat
+  // do some smearing? Overwrites lat, should I state that I only think
+  // SPATIAL dimensional smearing is safe ... probably
   SM_wrap_struct( lat , SMINFO ) ;
 
   // important!! T is the length of the polyakov loop in time direction
   const int T = CUTINFO.max_t ;
 
+  //
   printf( "\n[STATIC-POTENTIAL] measurements at T = %d\n" , T ) ;
 
   // compute the ratios of the dimensions in terms of the smallest
@@ -145,8 +147,6 @@ Coul_staticpot( struct site *__restrict lat ,
   // compute the momentum list
   int size[1] = {} ;
   struct veclist *list = compute_veclist( size , CUTINFO , ND-1 , GLU_TRUE ) ;
-
-  printf( "SIZE :: %d \n" , size[0] ) ;
 
   // precompute the correlator
   // compute all of the poly loops, lattice-wide
@@ -203,6 +203,7 @@ Coul_staticpot( struct site *__restrict lat ,
     // write out the result of all that work
     write_g2g3_to_list( Ap , result , trtr , size ) ;
 
+    // and tell us which temporal separation has been done
     printf( "[STATIC-POTENTIAL] T = %d sepation computed and written \n" , t ) ;
   }
 

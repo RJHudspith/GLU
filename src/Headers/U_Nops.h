@@ -435,6 +435,22 @@ trace_ab_dag( GLU_complex *__restrict tr ,
 	      const GLU_complex b[ NCNC] ) ;
 
 /**
+   @fn void trace_ab_dag_Re( GLU_complex *__restrict tr , const GLU_complex a[ NCNC ] , const GLU_complex b[ NCNC] )
+   @brief computes the trace of the product of two matrices \f$ tr\left[ ab^{\dagger} \right] \f$ where b is daggered
+   @param tr :: real part of the result passed by reference
+   @param a :: arbitrary NC x NC matrix
+   @param b :: arbitrary NC x NC matrix
+
+   does not care about the type of matrix
+
+   @warning a and b should be NC-square matrices
+ */
+void
+trace_ab_dag_Re( GLU_real *__restrict tr , 
+		 const GLU_complex a[ NCNC ] , 
+		 const GLU_complex b[ NCNC] ) ;
+
+/**
    @fn void trace_ab_herm( GLU_real *__restrict tr , const GLU_complex a[ NCNC ] , const GLU_complex b[ NCNC] )
    @brief trace of the product of two hermitian matrices, is always real
    @param tr :: the trace, passed by reference

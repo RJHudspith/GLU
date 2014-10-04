@@ -1036,7 +1036,7 @@ trace_ab_dag( GLU_complex *__restrict tr ,
 #if NC == 3
   *tr = a[0] * conj( b[0] ) + a[1] * conj( b[1] ) + a[2] * conj( b[2] ) + \
     a[3] * conj( b[3] ) + a[4] * conj( b[4] ) + a[5] * conj( b[5] ) +	\
-    a[6] * conj( b[6] ) + a[7] * conj( b[7] ) + a[8] * conj( b[8] ) ;
+    a[6] * conj( b[6] ) + a[7] * conj( b[7] ) + a[8] * conj( b[8] ) ;    
 #elif NC == 2
   *tr = a[0] * conj( b[0] ) + a[1] * conj( b[1] ) + a[2] * conj( b[2] ) + \
     a[3] * conj( b[3] ) ;
@@ -1057,6 +1057,45 @@ trace_ab_dag( GLU_complex *__restrict tr ,
   }
   #endif
   *tr = sumr - I * sumi ;
+#endif
+  return ;
+}
+
+// Trace of the product of two matrices ( b being daggered ) //
+INLINE_VOID
+trace_ab_dag_Re( GLU_real*__restrict tr , 
+		 const GLU_complex a[ NCNC ] , 
+		 const GLU_complex b[ NCNC ] )
+{
+#if NC == 3
+  *tr  = creal( a[0] ) * creal( b[0] ) + cimag( a[0] ) * cimag( b[0] ) ;
+  *tr += creal( a[1] ) * creal( b[1] ) + cimag( a[1] ) * cimag( b[1] ) ;
+  *tr += creal( a[2] ) * creal( b[2] ) + cimag( a[2] ) * cimag( b[2] ) ;
+  *tr += creal( a[3] ) * creal( b[3] ) + cimag( a[3] ) * cimag( b[3] ) ;
+  *tr += creal( a[4] ) * creal( b[4] ) + cimag( a[4] ) * cimag( b[4] ) ;
+  *tr += creal( a[5] ) * creal( b[5] ) + cimag( a[5] ) * cimag( b[5] ) ;
+  *tr += creal( a[6] ) * creal( b[6] ) + cimag( a[6] ) * cimag( b[6] ) ;
+  *tr += creal( a[7] ) * creal( b[7] ) + cimag( a[7] ) * cimag( b[7] ) ;
+  *tr += creal( a[8] ) * creal( b[8] ) + cimag( a[8] ) * cimag( b[8] ) ;
+#elif NC == 2
+  *tr = creal( a[0] ) * creal( b[0] ) + cimag( a[0] ) * cimag( b[0] ) ;
+  *tr += creal( a[1] ) * creal( b[1] ) + cimag( a[1] ) * cimag( b[1] ) ;
+  *tr += creal( a[2] ) * creal( b[2] ) + cimag( a[2] ) * cimag( b[2] ) ;
+  *tr += creal( a[3] ) * creal( b[3] ) + cimag( a[3] ) * cimag( b[3] ) ;
+#else
+  int i ;
+  register GLU_real sumr = 0.0 ;
+  #if NC%2==0
+  for( i = 0 ; i < NCNC ; i+=2 ) {
+    sumr += creal( a[i] ) * creal( b[i] ) + cimag( a[i] ) * cimag( b[i] ) ;
+    sumr += creal( a[i+1] ) * creal( b[i+1] ) + cimag( a[i+1] ) * cimag( b[i+1] ) ;
+  }
+  #else
+  for( i = 0 ; i < NCNC ; i++ ) {
+    sumr += creal( a[i] ) * creal( b[i] ) + cimag( a[i] ) * cimag( b[i] ) ;
+  }
+  #endif
+  *tr = sumr ;
 #endif
   return ;
 }
