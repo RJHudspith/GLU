@@ -201,7 +201,7 @@ approx_minimum( const int nmeas ,
 
   // compute the sum of the derivatives, if they are all small my thinking is
   // that we are at the limit of the precision of the functional
-  double sumder = 0.0 ;
+  register double sumder = 0.0 ;
   int sumneg = 0 , i ;
   for( i = 0 ; i < nmeas ; i++ ) {
 
@@ -231,12 +231,12 @@ approx_minimum( const int nmeas ,
   // at the moment this routine assumes a quadratic shape
   // if there are no negative terms in the derivative we return 0
   if( sumneg == 0 ) {
-    return 0.
+    return 0. ;
     // if it is all negative the best alpha is greater than our largest probe
     // we return the largest probe
   } else if( sumneg == nmeas ) {
     return alphas[nmeas-1] ;
-  // otherwise we have bound the minimum and we solve for it 
+    // otherwise we have bound the minimum and we solve for it 
   } else {
     const double result = cubic_min( alphas , functional , 
 				     derivative , sumneg ) ;

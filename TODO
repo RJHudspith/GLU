@@ -3,3 +3,8 @@ Things I would like to do
 
 1) Unit tests ... I started writing a framework, and now this seems like
 the next Most Important Thing
+
+2) Is the configure script a little broken?
+
+3) I want to do a Fourier Space static potential computation for alpha_s.
+I think I have greater than half of the prerequisites for this...

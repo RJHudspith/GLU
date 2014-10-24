@@ -177,7 +177,7 @@ OrLandau( struct site *__restrict lat ,
 	  const double ACC ,
 	  const double OrParam )
 {
-  double newlink = links( lat ) , oldlink , max ;
+  GLU_real newlink = links( lat ) , oldlink , max ;
   *theta = theta_test_lin( lat , &max , ND ) ; 
 
   // initialise the draughtboard
