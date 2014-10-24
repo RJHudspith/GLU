@@ -46,6 +46,10 @@ int tests_fail = 0 ;
 // test the add constant routine
 static char *add_constant_test( ) {
   GLU_bool is_ok = GLU_TRUE ;
+  GLU_complex A[ NCNC ] ;
+  equiv( A , a ) ;
+  add_constant( A , 1.0 ) ;
+  if( cabs( trace( A ) - trace( a ) - NC ) > PREC_TOL ) is_ok = GLU_FALSE ;
   mu_assert("[GLUnit] error : add constant broken", is_ok );
   return 0;
 }
