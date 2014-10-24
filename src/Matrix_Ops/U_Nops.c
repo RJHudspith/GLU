@@ -283,10 +283,10 @@ diag_vect( GLU_complex M[ NCNC ] ,
 #else
   int i , j , idx = 0 ;
   for( i = 0 ; i < NC ; i++ ) {
-    for( j = 0 ; j < NC ; j++ ) {
-      M[ j + NC * i ] = ( i != j ) ? 0.0 : c[idx] ;
-      idx++ ;
+    for( j = i+1 ; j < NC ; j++ ) {
+      M[ j + i * NC ] = M[ i + j * NC ] = 0.0 ;
     }
+    M[ i * ( NC + 1 ) ] = c[ i ] ;
   }
 #endif
   return ;

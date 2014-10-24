@@ -213,12 +213,12 @@ approx_minimum( const int nmeas ,
     // this is a bad idea - what if we had more than one? TODO!
     if( derivative[i] < 0. ) sumneg ++ ;
 
-    #ifdef V_FOR_VERBOSE
+    #ifdef verbose
     printf( "[GF] der[%d] %e \n" , i , derivative[i] ) ;
     #endif
   }
 
-  #ifdef V_FOR_VERBOSE
+  #ifdef verbose
   printf( "[GF] sumneg :: %d \n" , sumneg ) ;
   printf( "[GF] sumder :: %e \n" , sumder ) ;
   #endif
@@ -231,9 +231,9 @@ approx_minimum( const int nmeas ,
   // at the moment this routine assumes a quadratic shape
   // if there are no negative terms in the derivative we return 0
   if( sumneg == 0 ) {
-    return 0.0 ;
-  // if it is all negative the best alpha is greater than our largest probe
-  // we return the largest probe
+    return 0.
+    // if it is all negative the best alpha is greater than our largest probe
+    // we return the largest probe
   } else if( sumneg == nmeas ) {
     return alphas[nmeas-1] ;
   // otherwise we have bound the minimum and we solve for it 

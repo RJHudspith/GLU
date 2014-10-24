@@ -209,7 +209,6 @@ exponentiate_gauge( GLU_complex *__restrict *__restrict gauge ,
   return ;
 }
 
-#define V_FOR_VERBOSE
 /**
    @fn static double line_search( GLU_complex *__restrict *__restrict gauge , const struct site *__restrict lat , const GLU_complex *__restrict *__restrict in )
    @brief line search for the minimum of the gauge functional
@@ -222,7 +221,7 @@ line_search( GLU_complex *__restrict *__restrict gauge ,
   int counter = 0 ;
   double val[LINE_NSTEPS] ;
   val[0] = zero_alpha ; // 0 is a freebie
-#ifdef V_FOR_VERBOSE
+#ifdef verbose
   printf( "[GF] Landau CG probe :: %f %f \n" , al[0] , val[0] ) ;
 #endif
   for( counter = 1 ; counter < LINE_NSTEPS ; counter++ ) {
@@ -230,7 +229,7 @@ line_search( GLU_complex *__restrict *__restrict gauge ,
     val[counter] = evaluate_alpha( (const GLU_complex**) gauge , 
 				   lat , ND , LVOLUME , 0 ) ;
     // the last argument of this has to be 0 !!! 
-#ifdef V_FOR_VERBOSE
+#ifdef verbose
     printf( "[GF] Landau CG probe :: %f %f \n" , al[counter] , val[counter] ) ;
 #endif
   }
@@ -265,7 +264,6 @@ steep_Landau_FA( GLU_complex *__restrict *__restrict gauge ,
   const double spline_min = Latt.gf_alpha ;
 #else
   const double spline_min = line_search( gauge , lat , (const GLU_complex**)in ) ;
-  printf( "[GF] SPLINE %f \n" , spline_min ) ;
 #endif
 
   // exponentiate

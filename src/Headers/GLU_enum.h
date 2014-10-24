@@ -176,17 +176,6 @@ typedef enum
     CYLINDER_AND_CONICAL_CUT } momentum_cut_def ;
 
 /**
-   @enum GLU_analysis
-   @brief enumerate the analysis types
- */
-enum GLU_analysis
-  { AN_NOTHING , 
-    AN_ALPHA ,
-    AN_SPATIAL_GPROP ,
-    AN_SYMM_TEST ,
-    AN_ASYMM } ;
-
-/**
    @enum GLU_output
    @brief enumerate the output types
  */
