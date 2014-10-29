@@ -81,12 +81,19 @@ get_info( const int t , const double tr , const int iters ,
 	  const int control , const double accuracy , 
 	  const GLU_bool switched )
 {
+  // leave a space
   if( t == 0 ) {
     printf( "\n" ) ;
-  } if( tr < accuracy ) {
-    printf( "[GF] Slice :: %d {Stopped by convergence} \n[GF] Accuracy :: %1.5e"
-	    " || Iterations :: %d\n[GF] Failures :: %d\n" , 
+  }
+  // print out some information
+  if( isnan( tr ) ) {
+    printf( "[GF] Slice :: %d {Stopped by NaN, usually a sign alpha is too big} \n"
+	    "[GF] Accuracy :: %1.5e || Iterations :: %d\n[GF] Failures :: %d \n" , 
 	    t , tr , iters , control ) ; 
+  } else if( tr < accuracy ) {
+      printf( "[GF] Slice :: %d {Stopped by convergence} \n[GF] Accuracy :: %1.5e"
+	      " || Iterations :: %d\n[GF] Failures :: %d\n" , 
+	      t , tr , iters , control ) ; 
   } else {
     printf( "[GF] Slice :: %d {Stopped by iterations too high} \n"
 	    "[GF] Accuracy :: %1.5e || Iterations :: %d\n[GF] Failures :: %d \n" , 
@@ -143,7 +150,7 @@ steep_deriv_CG( GLU_complex *__restrict *__restrict in ,
 		double *tr )
 {
   // sets the gtrans'd field into the temporary "rotato"
-  zero_alpha = coul_gtrans_fields( rotato , lat , slice_gauge , t ) ;
+  zero_alpha = coul_gtrans_fields( rotato , lat , slice_gauge , t , *tr ) ;
 
   // gauge transform the whole slice
   double trAA = 0.0 ;
@@ -503,8 +510,16 @@ steep_fix_FACG( const struct site *__restrict lat ,
       consecutive_zeros = 0 ;
     }
 
+    /*
+    int i ;
+    for( i = 0 ; i < LCU ; i++ ) {
+      tr += trace( slice_gauge[i] ) ;
+    }
+    printcomplex( tr ) ;
+    */
+
     // if we have gone over the max number of iters allowed
-    // we randomly transform
+    // or for any other reason we randomly transform
     if( ( iters + loc_iters ) >= ( max_iter - 1 ) ) {
       // if we are close we continue, no use in wasting good work
       if ( tr < ( accuracy * 1E3 ) && continuation == GLU_FALSE ) {
@@ -711,6 +726,14 @@ steep_fix_FA( const struct site *__restrict lat ,
     // perform a Fourier accelerated step, this is where the CG can go ...
     steep_step_SD( lat , slice_gauge , out , in , 
 		   forward , backward , psq , t , &tr ) ;
+
+    // every 128 or so iterations we reunitarise to counteract plaquette drift
+    if( ( iters&127 ) == 0 ) {
+      int i ; 
+      #pragma omp parallel for private(i)
+      for( i = 0 ; i < LCU ; i++ ) { reunit2( slice_gauge[i] ) ; }
+    }
+
     iters ++ ;
   }
   // and tell us about the slice's iteration

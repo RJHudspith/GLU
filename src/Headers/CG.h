@@ -45,18 +45,20 @@ approx_minimum( const int nmeas ,
 		const double functional[ nmeas ] ) ;
 
 /**
-   @fn double coul_gtrans_fields( struct sp_site_herm *__restrict rotato , const struct site *__restrict lat , const GLU_complex *__restrict *__restrict slice_gauge , const int t )
+   @fn double coul_gtrans_fields( struct sp_site_herm *__restrict rotato , const struct site *__restrict lat , const GLU_complex *__restrict *__restrict slice_gauge , const int t , const double acc )
    @brief computes the gauge transformed Lie fields
    @param rotato :: (Coulomb) gauge rotated Lie fields
    @param lat :: link matrices
    @param slice_gauge :: gauge transformation matrices on this time-slice
    @param t :: time-slice index
+   @param acc :: gauge fixing accuracy
  */
 double
 coul_gtrans_fields( struct sp_site_herm *__restrict rotato ,
 		    const struct site *__restrict lat ,
 		    const GLU_complex *__restrict *__restrict slice_gauge ,
-		    const int t ) ;
+		    const int t ,
+		    const double acc ) ;
 
 /**
    @fn double evaluate_alpha( const GLU_complex *__restrict *__restrict gauge ,	const struct site *__restrict lat , const int DIR ,	const int LENGTH , const int t ) 

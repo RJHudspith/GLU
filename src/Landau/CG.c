@@ -268,7 +268,8 @@ double
 coul_gtrans_fields( struct sp_site_herm *__restrict rotato ,
 		    const struct site *__restrict lat ,
 		    const GLU_complex *__restrict *__restrict slice_gauge ,
-		    const int t )
+		    const int t ,
+		    const double acc )
 {
   const double fact = 1.0 / (double)( ( ND - 1 ) * NC ) ;
   int i ;
@@ -287,7 +288,16 @@ coul_gtrans_fields( struct sp_site_herm *__restrict rotato ,
       #if (defined deriv_lin) || (defined deriv_linn) 
       Hermitian_proj_short( rotato[i].O[mu] , temp ) ;
       #else
-      exact_log_slow_short( rotato[i].O[mu] , temp ) ;
+        #ifdef GLU_GFIX_SD
+        if( acc < 0.1 ) {
+          exact_log_slow_short( rotato[i].O[mu] , temp ) ;
+        } else {
+          Hermitian_proj_short( rotato[i].O[mu] , temp ) ;
+        }
+        #else
+        // FACG: doing the above is detrimental?
+        exact_log_slow_short( rotato[i].O[mu] , temp ) ;
+        #endif
       #endif
       // compute val in here?
       #ifdef deriv_lin

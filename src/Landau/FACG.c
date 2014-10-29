@@ -542,6 +542,12 @@ FACG( struct site *__restrict lat ,
     // and increment the iteration counter
     iters += loc_iters ;
 
+    // if in the unlikely case we hit a NaN we restart
+    if( isnan( *th ) ) {
+      printf( "NANANANANANNA BATMAN!\n" ) ;
+      return GLU_FAILURE ;
+    }
+
     #ifdef CAREFUL
     check_info2( lat , ( const GLU_complex **)gauge , link , &newlink , *th , iters ) ;
     #endif
@@ -623,7 +629,7 @@ FASD( struct site *__restrict lat ,
     check_info2( lat , ( const GLU_complex **)gauge , link , &newlink , *th , iters ) ;
     #endif
     /////// have a check for ill-convergence, which is related to plaquette-drift /////
-    if( iters%50 == 0 ) {
+    if( ( iters&127 ) == 0 ) {
       // roughly, I will allow for a deviation around 0.1*PREC_TOL per iteration
       // for the average plaquette
       if( fabs( av_plaquette( lat ) - ref_plaquette ) > (0.1 * PREC_TOL * iters) ) {
