@@ -46,7 +46,7 @@ correct_pspace_landau( struct site *__restrict A ,
     int mu ;
     for( mu = 0 ; mu < DIMS ; mu++ ) {
 
-      const double cache = list[i].MOM[ mu ] * Latt.twiddles[ mu ] ;
+      const double cache = 0.5 * list[i].MOM[ mu ] * Latt.twiddles[ mu ] ;
       const double p_mu = 2.0 * sin( cache ) ;
  
       #if ( defined deriv_linn ) || ( defined deriv_fulln )

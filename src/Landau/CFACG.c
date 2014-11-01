@@ -400,7 +400,7 @@ steep_step_FACG( const struct site *__restrict lat ,
   double spline_min = Latt.gf_alpha ;
 
   // loop a set number of CG-iterations
-  int k = 0 ;
+  int iters = 0 ;
   while( GLU_TRUE ) {
 
     // this ONLY works with in, make sure that is what we use
@@ -410,7 +410,7 @@ steep_step_FACG( const struct site *__restrict lat ,
     FOURIER_ACCELERATE( in , out , forward , backward , psq , LCU ) ;
 
     // if we have reached it already we leave
-    if( *tr < accuracy || k > max_iters ) return k+1 ;
+    if( *tr < accuracy || iters > max_iters ) return iters+1 ;
 
     // summations for computing the scaling parameter
     const double insum = sum_deriv( (const GLU_complex**)in , LCU ) ;
@@ -419,8 +419,6 @@ steep_step_FACG( const struct site *__restrict lat ,
     const double sum_conj = sum_PR_numerator( (const GLU_complex**)in , 
 					      (const GLU_complex**)in_old , 
 					      LCU ) ;
-
-    //printf( "%e %e %e \n" , insum , sum_conj , in_old_sum ) ;
 
     // compute the beta value, who knows what value is best?
     double beta = PRfmax( 0.0 , sum_conj / in_old_sum ) ;
@@ -451,13 +449,13 @@ steep_step_FACG( const struct site *__restrict lat ,
     }
 
     #ifdef verbose
-    printf( "[GF] %d BETA %f \n" , k , beta ) ;
-    printf( "[GF] %d SPLINE2 :: %f \n" , k , spline_min ) ;
+    printf( "[GF] %d BETA %f \n" , iters , beta ) ;
+    printf( "[GF] %d SPLINE2 :: %f \n" , iters , spline_min ) ;
     printf( "[GF] cgacc %e \n" , *tr ) ;
     #endif
 
     // increment
-    k++ ;
+    iters++ ;
 
     // no point in performing this rotation, 0.0 is like a flag for a broken
     // interpolation
@@ -465,6 +463,14 @@ steep_step_FACG( const struct site *__restrict lat ,
 
     // and step the optimal amount multiplying atomically into the gauge matrices
     exponentiate_gauge_CG( gauge , (const GLU_complex**)sn , spline_min ) ;
+
+    // every 128 iterations we reunitarise to counteract plaquette drift
+    if( ( iters&127 ) == 0 ) {
+      int i ; 
+      #pragma omp parallel for private(i)
+      for( i = 0 ; i < LCU ; i++ ) { reunit2( gauge[i] ) ; }
+    }
+    // end of while
   }
 }
 
@@ -509,14 +515,6 @@ steep_fix_FACG( const struct site *__restrict lat ,
     } else {
       consecutive_zeros = 0 ;
     }
-
-    /*
-    int i ;
-    for( i = 0 ; i < LCU ; i++ ) {
-      tr += trace( slice_gauge[i] ) ;
-    }
-    printcomplex( tr ) ;
-    */
 
     // if we have gone over the max number of iters allowed
     // or for any other reason we randomly transform

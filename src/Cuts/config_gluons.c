@@ -25,8 +25,9 @@
 
 #include "cut_output.h"   // output file
 #include "cut_routines.h" // momentum cutting?
-#include "SM_wrap.h"      // do we want some smearing?
 #include "geometry.h"     // general lexi site
+#include "plan_ffts.h"    // config space correlator is convolution
+#include "SM_wrap.h"      // do we want some smearing?
 
 /**
    @param LT
@@ -87,149 +88,101 @@ check_landau_condition( const struct site *__restrict A )
   return ;
 }
 
-// contract = Tr( A_\mu(x) A_\mu(y) ) ( for \mu < ND )
-static double
-contract_slices( A , x , t_ref )
-     const struct site *__restrict A ;
-     const int x ;
-     const int t_ref ;
+// 
+static void
+spatial_corr_convolve( struct site *__restrict A ,
+		       double *gsp ,
+		       const double spat_norm )
 {
-  GLU_real tr ;
-  register double loc_tr = 0.0 ;
-  int j ;
-  for( j = 0 ; j < LCU ; j++ ) {
-    const int y = j + t_ref ;
-    #if ND == 4
-    trace_ab_herm( &tr , A[x].O[0] , A[y].O[0] ) ;
-    loc_tr += (double)tr ;
-    trace_ab_herm( &tr , A[x].O[1] , A[y].O[1] ) ;
-    loc_tr += (double)tr ;
-    trace_ab_herm( &tr , A[x].O[2] , A[y].O[2] ) ;
-    loc_tr += (double)tr ;
-    //trace_ab_herm( &tr , A[x].O[3] , A[y].O[3] ) ;
-    //loc_tr += (double)tr ;
-    #else
-    int mu ;
-    for( mu = 0 ; mu < ND-1 ; mu++ ) {
-      trace_ab_herm( &tr , A[x].O[mu] , A[y].O[mu] ) ;
-      loc_tr += (double)tr ;
+  // FFTW routines
+  GLU_complex *out = fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
+  GLU_complex *in = fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
+
+  // create some plans
+  fftw_plan forward , backward ;
+  small_create_plans_DFT( &forward , &backward , in , out , ND ) ;
+
+  //forward transform
+  int mu , i ;
+  for( mu = 0 ; mu < ND ; mu++ ) {
+    int j ;
+    for( j = 0 ; j < NCNC ; j++ ) {
+      // FORWARD ONE
+      #ifdef CUT_FORWARD
+      #pragma omp parallel for private(i)
+      PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+	in[i] = A[i].O[mu][j] ;
+      }
+      fftw_execute( forward ) ;
+      #pragma omp parallel for private(i)
+      PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+	A[i].O[mu][j] = out[i] ;
+      }
+      #else
+      // BACKWARD TRANSFORM
+      #pragma omp parallel for private(i)
+      PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+	out[i] = A[i].O[mu][j] ;
+      }
+      fftw_execute( backward ) ;
+      #pragma omp parallel for private(i)
+      PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+	A[i].O[mu][j] = in[i] ;
+      }
+      #endif
     }
+  }
+
+  // compute the convolution in momentum space
+#pragma omp parallel for private(i)
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    GLU_complex tr , sum = 0.0 ;
+    out[i] = 0 ;
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      trace_ab_dag( &tr , A[i].O[mu] , A[i].O[mu] ) ;
+      sum += tr ; 
+    }
+    #ifdef CUT_FORWARD
+    out[i] = out[i] + sum ;
+    #else
+    in[i] = in[i] + sum ;
     #endif
   }
-  return loc_tr / (double)( LCU ) ;
-}
 
-// recursion for the sum on a sparse wall type thing
-static double
-recurse_sum( const struct site *__restrict A ,
-	     const int idx1 , const int idx2 ,
-	     const int spacing ,
-	     int vec[ ND ] , int mu , int *norm ) 
-{
-  if( mu > ND-2 ) { 
-    const int xidx = idx1 + gen_site( vec ) ;
-    *norm = *norm + 1 ;
-    return contract_slices( A , xidx , idx2 ) ;
-  }
+  // fft back into config space
+#ifdef CUT_FORWARD
+  fftw_execute( backward ) ;
+#else
+  fftw_execute( forward ) ;
+#endif
 
-  double sum = 0.0 ;
-  int nu ;
-  int loc_vec[ ND ] = {} ; 
-  for( nu = 0 ; nu < ND ; nu++ ) {
-    loc_vec[ nu ] = vec[ nu ] ;
-  }
-  for( nu = 0 ; nu < Latt.dims[mu] ; nu+=spacing ) {
-    loc_vec[ mu ] = nu ;
-    sum += recurse_sum( A , idx1 , idx2 , spacing , 
-			loc_vec , mu + 1 , norm ) ;
-  }
-  return sum ;
-}
-
-/////////// spatial-spatial point sources over the whole lattice  ////////
-static void
-spatial_pointsource( A , gs , gsnorm )
-     const struct site *__restrict A ;
-     double *__restrict gs ;
-     const double gsnorm ;
-{
-  // loop time 
+  // compute the sum
   int t ;
-#pragma omp parallel for private(t)
-  for( t = 0 ; t < LT/2+1 ; t++ ) { // is exactly symmetric around LT/2
-    // local trace
-    register double loc_tr = 0.0 ;
-    // temporary trace
-    GLU_real tr ;
-    // loop separations tau
-    int tau , i , j ;
-    for( tau = 0 ; tau < LT ; tau++ ) {
-      const int idx1 = LCU * tau ;
-      const int idx2 = LCU * ( ( tau + t ) % LT ) ;
-      // loop spatial hypercube index i
-      for( i = 0 ; i < LCU ; i++ ) {
-	const int x = i + idx1 ;
-	for( j = 0 ; j < LCU ; j++ ) {
-	  const int y = j + idx2 ;
-	  #if ND == 4
-	  trace_ab_herm( &tr , A[x].O[0] , A[y].O[0] ) ;
-	  loc_tr += (double)tr ;
-	  trace_ab_herm( &tr , A[x].O[1] , A[y].O[1] ) ;
-	  loc_tr += (double)tr ;
-	  trace_ab_herm( &tr , A[x].O[2] , A[y].O[2] ) ;
-	  loc_tr += (double)tr ;
-	  //trace_ab_herm( &tr , A[x].O[3] , A[y].O[3] ) ;
-	  //loc_tr += (double)tr ;
-	  #else
-	  int mu ;
-	  for( mu = 0 ; mu < ND-1 ; mu++ ) {
-	    trace_ab_herm( &tr , A[x].O[mu] , A[y].O[mu] ) ;
-	    loc_tr += (double)tr ;
-	  }
-	  #endif
-	}
-      }
+#pragma omp parallel for private(i)
+  for( t = 0 ; t < LT ; t++ ) {
+    #ifdef CUT_FORWARD
+    GLU_complex *p = in + LCU * t ;
+    #else
+    GLU_complex *p = out + LCU * t ;
+    #endif
+    register double sum = 0 ;
+    for( i = 0 ; i < LCU ; i++ ) {
+      sum += *p ;
+      p++ ;
     }
-    gs[t] = loc_tr * 2 / ( LCU * LCU * LT ) ;
+    gsp[ t ] = sum * spat_norm ;
+    printf( "%d %f \n" , t , gsp[t] ) ;
   }
-#pragma omp parallel for private(t)
-  for( t = LT/2+1 ; t < LT ; t++ ) {
-    // all to all is symmetric around LT/2
-    gs[ t ] = gs[ (LT)-t ] ;
-  }
-  return ;
-}
 
-// compute the correlator from a specific point "x"
-static void
-spatial_correlator( A , gs , gsnorm , spacing )
-     const struct site *__restrict A ;
-     double *__restrict gs ;
-     const double gsnorm ;
-     const int spacing ;
-{
-  // this one is more effective
-  if( spacing == 1 ) {
-    return spatial_pointsource( A , gs , gsnorm ) ;
-  }
-  // this one is more general
-  int t ;
-#pragma omp parallel for private(t)
-  for( t = 0 ; t < LT ; t++ ) { 
-    // local trace
-    double loc_tr = 0.0 ;
-    int norm = 0 ;
-    // loop separations tau
-    int tau ;
-    for( tau = 0 ; tau < LT ; tau++ ) {
-      const int idx1 = LCU * tau ;
-      const int idx2 = LCU * ( ( tau + t ) % LT ) ;
-      int x[ ND ] = {} ;
-      loc_tr += recurse_sum( A , idx1 , idx2 , spacing , 
-			     x , 0 , &norm ) ;
-    }
-    gs[t] = loc_tr * 2.0 / (double)norm ;
-  }
+  // free the FFTs
+  fftw_destroy_plan( backward ) ;
+  fftw_destroy_plan( forward ) ;
+  fftw_cleanup( ) ;
+#ifdef OMP_FFTW
+  fftw_cleanup_threads( ) ;
+#endif
+  fftw_free( out ) ;  
+  fftw_free( in ) ;
   return ;
 }
 
@@ -260,11 +213,11 @@ cuts_struct_configspace( struct site *__restrict A ,
   // compute the temporal and spatial correlators
   double *gsp = malloc( Latt.dims[ ND-1 ] * sizeof( double ) ) ;
 
-  // normalisations
-  const double spat_norm = 1.0 / ( ( ND-1 ) * LCU ) ;
-
-  // correlator between spacings to all, if CUTINFO.max_t == 1 this is all to all
-  spatial_correlator( A , gsp , spat_norm , CUTINFO.max_t ) ;
+  // normalisations :: LVOLUME is the FFT norm
+  const double spat_norm = 1.0 / ( ( ND-1 ) * LCU * LVOLUME ) ;
+  
+  // spatial correlator from the convolution in momentum space
+  spatial_corr_convolve( A , gsp , spat_norm ) ;
 
   // write out the timeslice list ...
   int lt[ 1 ] = { LT } ;
