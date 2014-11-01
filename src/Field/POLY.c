@@ -27,11 +27,12 @@
 
 #include "Mainfile.h"
 
+#include "cut_output.h"   // to automatically format our output file
+#include "cut_routines.h" // for the mom cuts
 #include "geometry.h"     // general config-space geometry
 #include "GLU_bswap.h"    // byte swaps
-#include "cut_output.h"   // to automatically format our output file
+#include "plan_ffts.h"    // convolution
 #include "SM_wrap.h"      // for the smearing wrapper
-#include "cut_routines.h" // for the mom cuts
 
 // compute a short polyakov line
 static void
@@ -72,6 +73,105 @@ poly( const struct site *__restrict lat ,
   return sum ;
 }
 
+// If we have FFTW we use it for the convolutions instead of our slow
+// method, which is slow but equivalent
+#ifdef HAVE_FFTW3_H
+
+// trace-trace computation is nice and easy
+static void
+compute_trtr( double *__restrict trtr ,      
+	      GLU_complex *__restrict out ,
+	      GLU_complex *__restrict in ,
+	      const GLU_complex *__restrict *__restrict poly ,
+	      const struct veclist *__restrict list ,
+	      const fftw_plan forward ,
+	      const fftw_plan backward ,
+	      const int rsq_count ,
+	      const int t )
+{
+  int i ;
+  // hmmm , trace-trace is simplest
+  #pragma omp parallel for private(i)
+  PFOR( i = 0 ; i < LCU ; i++ ) {
+    in[ i ] = trace( poly[ i + LCU*t ] ) ;
+  }
+  
+  // FFT
+  fftw_execute( forward ) ;
+
+  // convolve
+  #pragma omp parallel for private(i)
+  PFOR( i = 0 ; i < LCU ; i++ ) {
+    out[i] *= conj( out[i] ) ;
+  }
+
+  // FFT
+  fftw_execute( backward ) ;
+
+  // and set the trace-trace
+  #pragma omp parallel for private(i)
+  PFOR( i = 0 ; i < rsq_count ; i++ ) {
+    trtr[ i ] += (double)creal( in[ list[i].idx ] ) ;
+  }
+  return ;
+}
+
+// traced computation is hard, I want to do the computation in momentum space
+// but cannot overwrite poly?
+static void
+compute_tr( double *__restrict tr ,      
+	    GLU_complex *__restrict out ,
+	    GLU_complex *__restrict in ,
+	    GLU_complex *__restrict *__restrict slice_poly ,
+	    const GLU_complex *__restrict *__restrict poly ,
+	    const struct veclist *__restrict list ,
+	    const fftw_plan forward ,
+	    const fftw_plan backward ,
+	    const int rsq_count ,
+	    const int t )
+{
+  // index by index FFTs into a temporary
+  int i ;
+#pragma omp parallel for private(i)
+  for( i = 0 ; i < LCU ; i++ ) {
+    equiv( slice_poly[ i ] , poly[ i + LCU * t ] ) ; 
+  }
+
+  // FFT all indices
+  int j ;
+  for( j = 0 ; j < NCNC ; j++ ) {
+    // set in 
+    #pragma omp parallel for private(i)
+    PFOR( i = 0 ; i < LCU ; i++ ) {
+      in[ i ] = slice_poly[ i ][ j ] ;
+    }
+
+    fftw_execute( forward ) ;
+
+    // store the result in slice_poly again
+    #pragma omp parallel for private(i)
+    PFOR( i = 0 ; i < LCU ; i++ ) {
+      slice_poly[ i ][ j ] = out[ i ] ;
+    }
+  }
+
+  // now we can contract
+  #pragma omp parallel for private(i)
+  PFOR( i = 0 ; i < LCU ; i++ ) {
+    trace_ab_dag( &out[ i ] , slice_poly[ i ] , slice_poly[ i ] ) ;
+  }
+
+  fftw_execute( backward ) ;
+
+  // and set tr
+  #pragma omp parallel for private(i)
+  PFOR( i = 0 ; i < rsq_count ; i++ ) {
+    tr[ i ] += in[ list[ i ].idx ] ;
+  }
+
+  return ;
+}
+
 /// correlator
 static void
 static_quark_correlator( double *__restrict result ,
@@ -81,6 +181,73 @@ static_quark_correlator( double *__restrict result ,
 			 const int rsq_count )
 
 {
+  // FFTW routines
+  GLU_complex *in = fftw_malloc( LCU * sizeof( GLU_complex ) ) ;
+  GLU_complex *out = fftw_malloc( LCU * sizeof( GLU_complex ) ) ;
+  GLU_complex **slice_poly = malloc( LCU * sizeof( GLU_complex ) ) ;
+
+  int i ;
+#pragma omp parallel for private(i)
+  for( i = 0 ; i < LCU ; i++ ) {
+    slice_poly[ i ] = malloc( NCNC * sizeof( GLU_complex ) ) ;
+  }
+
+  // create some plans
+  fftw_plan forward , backward ;
+  small_create_plans_DFT( &forward , &backward , in , out , ND-1 ) ;
+
+  int t ;
+  for( t = 0 ; t < Latt.dims[ ND - 1 ] ; t++ ) {
+    // compute the tr tr combination
+    compute_trtr( trtr , out , in , poly , list , 
+		  forward , backward , rsq_count , t ) ;
+
+    // compute the traced
+    compute_tr( result , out , in , slice_poly , poly , list , 
+		forward , backward , rsq_count , t ) ;
+  }
+
+  // and normalise, LCU is the norm from the FFTs
+  const double NORM = 1.0 / ( (double)LCU * Latt.dims[ ND-1 ] ) ;
+
+  #pragma omp parallel for private(i)
+  PFOR( i = 0 ; i < rsq_count ; i++ ) {
+    result[ i ] *= NORM ;
+    trtr[ i ] *= NORM ;
+  }
+
+  // free the FFTs
+  fftw_destroy_plan( backward ) ;
+  fftw_destroy_plan( forward ) ;
+  fftw_cleanup( ) ;
+#ifdef OMP_FFTW
+  fftw_cleanup_threads( ) ;
+#endif
+  fftw_free( in ) ;
+  fftw_free( out ) ;
+
+  // free the temporary polyakov loops
+  for( i = 0 ; i < LCU ; i++ ) {
+    free( slice_poly[ i ] ) ;
+  }
+  free( slice_poly ) ;
+
+  return ;
+}
+
+// NON-fftw version is pretty slow
+#else
+
+/// correlator
+static void
+static_quark_correlator( double *__restrict result ,
+			 double *__restrict trtr ,
+			 const GLU_complex *__restrict *__restrict poly ,
+			 const struct veclist *__restrict list ,
+			 const int rsq_count )
+
+{
+  const double NORM = 1.0 / (double)Latt.dims[ ND - 1 ] ;
   int i ;
   // now we can loop the triplet computing the correlators ...
   #pragma omp parallel for private(i)
@@ -119,11 +286,12 @@ static_quark_correlator( double *__restrict result ,
 	tracetrace += creal( tr1 ) * creal( tr2 ) + cimag( tr1 ) * cimag( tr2 ) ;
       }
     }
-    result[i] = tr ;
-    trtr[i]   = tracetrace ;
+    result[i] = tr * NORM ;
+    trtr[i]   = tracetrace * NORM ;
   }
   return ;
 }
+#endif
 
 // and so for the correlator measurements
 void

@@ -80,6 +80,12 @@ compute_Qsusc( struct site *__restrict lat ,
   printf( "\nQTOP %f %f \n" , sum * NORM , sumsq * NORMSQ ) ;
 #endif
 
+  // allocate the results
+  double *qcorr = malloc( size[0] * sizeof( double ) ) ; 
+  
+  // if we have fftw, use it for the contractions
+#ifdef HAVE_FFTW3_H
+
   // FFT Gmunu
   GLU_complex *out = fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
 
@@ -89,8 +95,9 @@ compute_Qsusc( struct site *__restrict lat ,
   
   // computes the full correlator in p-space and FFTs back
   // is a convolution, Volume norm is for the FFT
-  for( i = 0 ; i < LVOLUME ; i++ ) {
-    out[ i ] = ( out[ i ] * conj( out[i] ) ) / LVOLUME ;
+  #pragma omp parallel for private(i)
+  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+    out[ i ] *= conj( out[ i ] ) / (double)LVOLUME ;
   }
 
   fftw_execute( backward ) ;
@@ -99,23 +106,46 @@ compute_Qsusc( struct site *__restrict lat ,
   fftw_destroy_plan( backward ) ;
   fftw_destroy_plan( forward ) ;
   fftw_cleanup( ) ;
-#ifdef OMP_FFTW
+  #ifdef OMP_FFTW
   fftw_cleanup_threads( ) ;
-#endif
+  #endif
   free( out ) ;
 
-#ifdef verbose
+  #ifdef verbose
   printf( "\nCheck sumsq :: %f \n" , creal( qtop[0] ) * NORMSQ ) ;
-#endif
-
-  // allocate the results
-  double *qcorr = malloc( size[0] * sizeof( double ) ) ; 
+  #endif
 
   // loop the possible rsqs
   #pragma omp parallel for private(i)
-  for( i = 0 ; i < size[0] ; i++ ) {
-    qcorr[i] = (double)creal( qtop[list[i].idx] ) * NORMSQ ;
+  PFOR( i = 0 ; i < size[0] ; i++ ) {
+    qcorr[i] = (double)creal( qtop[ list[i].idx ] ) * NORMSQ ;
   }
+
+  // warning, this code is super slow compared to the FFT convolution one
+  // above it probably shouldn't be used unless under duress
+#else
+
+  // loop the possible rsqs
+  #pragma omp parallel for private(i)
+  PFOR( i = 0 ; i < size[0] ; i++ ) {
+    // some storage for the traces
+    register double sumqq = 0.0 ;
+
+    int separation[ ND ] ;
+    get_mom_2piBZ( separation , list[i].idx , ND ) ;
+
+    // loop the lattice varying source and sink with the correct separation
+    int source = 0 ;
+    for( source = 0 ; source < LVOLUME ; source++ ) {
+      // translate the source from k by a vector separation
+      const int sink = compute_spacing( separation , source , ND ) ;
+      //trace of the products
+      sumqq += creal( qtop[source] * qtop[sink] ) ;
+    }
+    qcorr[i] = sumqq * NORMSQ ;
+  }
+
+#endif
 
   // tell us where to go
   printf( "[CUTS] Outputting to %s \n" , str ) ;
