@@ -67,6 +67,9 @@ AM_CONDITIONAL([PREF],[ test "$prefix" == "NONE" ])
 if test "$prefix" == "NONE" ; 
 then 
     AC_MSG_NOTICE([Not creating binary "GLU"])
+    AM_CONDITIONAL([DOX],[false])
+    AM_CONDITIONAL([DOT],[false])
+    AM_CONDITIONAL([PDFLTX],[false])
 else
     AC_MSG_NOTICE([Creating binary "GLU" in $prefix/bin])
     ## check for doxygen
