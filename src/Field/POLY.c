@@ -181,6 +181,13 @@ static_quark_correlator( double *__restrict result ,
 			 const int rsq_count )
 
 {
+  // init parallel threads, maybe
+  if( parallel_ffts( ) == GLU_FAILURE ) {
+    printf( "[PAR] Problem with initialising the OpenMP FFTW routines \n" ) ;
+    // should clean up the memory here
+    return GLU_FAILURE ;
+  }
+
   // FFTW routines
   GLU_complex *in = fftw_malloc( LCU * sizeof( GLU_complex ) ) ;
   GLU_complex *out = fftw_malloc( LCU * sizeof( GLU_complex ) ) ;

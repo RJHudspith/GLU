@@ -86,6 +86,13 @@ compute_Qsusc( struct site *__restrict lat ,
   // if we have fftw, use it for the contractions
 #ifdef HAVE_FFTW3_H
 
+  // init parallel threads, maybe
+  if( parallel_ffts( ) == GLU_FAILURE ) {
+    printf( "[PAR] Problem with initialising the OpenMP FFTW routines \n" ) ;
+    // should clean up the memory here
+    return GLU_FAILURE ;
+  }
+
   // FFT Gmunu
   GLU_complex *out = fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
 
