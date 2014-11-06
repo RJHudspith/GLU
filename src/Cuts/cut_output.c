@@ -200,7 +200,7 @@ output_str_struct( const struct cut_info CUTINFO )
       sprintf( str , "%scutPSQ" , str ) ;
       break;
     case CYLINDER_CUT :
-      sprintf( str , "%scutCYL_w%1.2f" , str , CUTINFO.cyl_width ) ;
+      sprintf( str , "%scutCYL_w%g" , str , CUTINFO.cyl_width ) ;
       break ;
     case CYLINDER_AND_CONICAL_CUT :
       sprintf( str , "%scutCON_%d" , str , CUTINFO.angle ) ;

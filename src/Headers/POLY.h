@@ -24,14 +24,15 @@
 #define GLU_POLY_H
 
 /**
-   @fn void Coul_staticpot( struct site *__restrict lat , const struct cut_info CUTINFO , const struct sm_info SMINFO )
+   @fn int Coul_staticpot( struct site *__restrict lat , const struct cut_info CUTINFO , const struct sm_info SMINFO )
    @brief static potential calculator
    @param lat :: lattice gauge fields
    @param CUTINFO :: cutting information such as what type of cut to perform
    @param SMINFO :: do we want to smear this thing?
    @warning gauge configurations must be in Coulomb gauge, calls the smearing routines
+   @return #GLU_SUCCESS or #GLU_FAILURE
  */
-void
+int
 Coul_staticpot( struct site *__restrict lat , 
 		const struct cut_info CUTINFO ,
 		const struct sm_info SMINFO ) ;
