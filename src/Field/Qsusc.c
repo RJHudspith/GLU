@@ -35,7 +35,7 @@
 // computation of the correlator
 // C(r) = < q( x ) q( y ) >  -> r = ( x - y ), r^2 < CUTINFO.max_mom
 // over all indices, q(x) is the topological charge at site x
-void
+int
 compute_Qsusc( struct site *__restrict lat ,
 	       const struct cut_info CUTINFO ,
 	       const struct sm_info SMINFO )
@@ -171,5 +171,5 @@ compute_Qsusc( struct site *__restrict lat ,
   // free the list
   free( list ) ;
 
-  return ;
+  return GLU_SUCCESS ;
 }

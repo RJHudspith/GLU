@@ -173,7 +173,7 @@ compute_tr( double *__restrict tr ,
 }
 
 /// correlator
-static void
+static int
 static_quark_correlator( double *__restrict result ,
 			 double *__restrict trtr ,
 			 const GLU_complex *__restrict *__restrict poly ,
@@ -239,14 +239,14 @@ static_quark_correlator( double *__restrict result ,
   }
   free( slice_poly ) ;
 
-  return ;
+  return GLU_SUCCESS ;
 }
 
 // NON-fftw version is pretty slow
 #else
 
 /// correlator
-static void
+static int
 static_quark_correlator( double *__restrict result ,
 			 double *__restrict trtr ,
 			 const GLU_complex *__restrict *__restrict poly ,
@@ -296,12 +296,13 @@ static_quark_correlator( double *__restrict result ,
     result[i] = tr * NORM ;
     trtr[i]   = tracetrace * NORM ;
   }
-  return ;
+
+  return GLU_SUCCESS ;
 }
 #endif
 
 // and so for the correlator measurements
-void
+int
 Coul_staticpot( struct site *__restrict lat ,
 		const struct cut_info CUTINFO ,
 		const struct sm_info SMINFO )
@@ -398,6 +399,6 @@ Coul_staticpot( struct site *__restrict lat ,
   // free the momentum list
   free( list ) ;
 
-  return ;
+  return GLU_SUCCESS ;
 }
 

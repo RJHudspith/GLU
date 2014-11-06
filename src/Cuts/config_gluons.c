@@ -91,12 +91,19 @@ check_landau_condition( const struct site *__restrict A )
 #ifdef HAVE_FFTW3_H
 
 // 
-static void
+static int
 spatial_correlator( struct site *__restrict A ,
 		    double *gsp ,
 		    const double gsnorm ,
 		    const int spacing )
 {
+  // init parallel threads, maybe
+  if( parallel_ffts( ) == GLU_FAILURE ) {
+    printf( "[PAR] Problem with initialising the OpenMP FFTW routines \n" ) ;
+    // should clean up the memory here
+    return GLU_FAILURE ;
+  }
+
   // FFTW routines
   GLU_complex *out = fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
   GLU_complex *in = fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
@@ -185,7 +192,8 @@ spatial_correlator( struct site *__restrict A ,
 #endif
   fftw_free( out ) ;  
   fftw_free( in ) ;
-  return ;
+
+  return GLU_SUCCESS ;
 }
 
 #else
@@ -250,7 +258,7 @@ recurse_sum( const struct site *__restrict A ,
 }
 
 /////////// spatial-spatial point sources over the whole lattice  ////////
-static void
+static int
 spatial_pointsource( A , gs , gsnorm )
      const struct site *__restrict A ;
      double *__restrict gs ;
@@ -300,11 +308,11 @@ spatial_pointsource( A , gs , gsnorm )
     // all to all is symmetric around LT/2
     gs[ t ] = gs[ (LT)-t ] ;
   }
-  return ;
+  return GLU_SUCCESS ;
 }
 
 // compute the correlator from a specific point "x"
-static void
+static int
 spatial_correlator( A , gs , gsnorm , spacing )
      const struct site *__restrict A ;
      double *__restrict gs ;
@@ -333,7 +341,8 @@ spatial_correlator( A , gs , gsnorm , spacing )
     }
     gs[t] = loc_tr * 2.0 / (double)norm ;
   }
-  return ;
+  // we are so successful
+  return GLU_SUCCESS ;
 }
 
 #endif
@@ -369,7 +378,10 @@ cuts_struct_configspace( struct site *__restrict A ,
   const double spat_norm = 1.0 / ( ( ND-1 ) * LCU * LVOLUME ) ;
   
   // spatial correlator from the convolution in momentum space
-  spatial_correlator( A , gsp , spat_norm , CUTINFO.max_t ) ;
+  if( spatial_correlator( A , gsp , spat_norm , 
+			  CUTINFO.max_t ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
 
   // write out the timeslice list ...
   int lt[ 1 ] = { LT } ;
