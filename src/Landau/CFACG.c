@@ -136,7 +136,7 @@ steep_deriv_CG( GLU_complex *__restrict *__restrict in ,
 		double *tr )
 {
   // sets the gtrans'd field into the temporary "rotato"
-  zero_alpha = coul_gtrans_fields( rotato , lat , slice_gauge , t ) ;
+  zero_alpha = coul_gtrans_fields( rotato , lat , slice_gauge , t , *tr ) ;
 
   // gauge transform the whole slice
   double trAA = 0.0 ;
@@ -333,8 +333,8 @@ steep_step_FACG_FR( const struct site *__restrict lat ,
     }
 
     #ifdef verbose
-    printf( "[GF] %d BETA %f \n" , k , beta ) ;
-    printf( "[GF] %d SPLINE2 :: %f \n" , k , spline_min ) ;
+    printf( "[GF] %d BETA %e \n" , iters , beta ) ;
+    printf( "[GF] %d SPLINE2 :: %e \n" , iters , spline_min ) ;
     printf( "[GF] cgacc %e \n" , *tr ) ;
     #endif
 
@@ -433,8 +433,8 @@ steep_step_FACG( const struct site *__restrict lat ,
     }
 
     #ifdef verbose
-    printf( "[GF] %d BETA %f \n" , k , beta ) ;
-    printf( "[GF] %d SPLINE2 :: %f \n" , k , spline_min ) ;
+    printf( "[GF] %d BETA %e \n" , iters , beta ) ;
+    printf( "[GF] %d SPLINE2 :: %e \n" , iters , spline_min ) ;
     printf( "[GF] cgacc %e \n" , *tr ) ;
     #endif
 

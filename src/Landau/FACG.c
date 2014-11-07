@@ -261,7 +261,6 @@ steep_Landau_FA( GLU_complex *__restrict *__restrict gauge ,
   const double spline_min = Latt.gf_alpha ;
 #else
   const double spline_min = line_search( gauge , lat , (const GLU_complex**)in ) ;
-  printf( "[GF] SPLINE %f \n" , spline_min ) ;
 #endif
 
   // exponentiate
@@ -308,8 +307,8 @@ steep_Landau_FACG_FR( GLU_complex *__restrict *__restrict gauge ,
   double spline_min = Latt.gf_alpha ;
 
   // loop a set number of CG-iterations
-  int k = 0 ;
-  while( *tr > acc ) {
+  int iters = 0 ;
+  while( ( *tr > acc ) && ( iters > CG_MAXITERS ) && ( spline_min > spmin ) ) {
 
     // this ONLY works with out and in, make sure that is what we use
     FA_deriv( in , lat , psq , tr ) ;
@@ -341,16 +340,9 @@ steep_Landau_FACG_FR( GLU_complex *__restrict *__restrict gauge ,
       spline_min = Latt.gf_alpha ;
     }
 
-    // if the proposed alpha is small just have a look at another gradient
-    // by the steepest-descents
-    if( spline_min < spmin || k > CG_MAXITERS ) { 
-      // the total is the steepest-descents and however many CG iterations
-      return k+1 ; 
-    }
-
     #ifdef verbose
-    printf( "[GF] %d BETA %f \n" , k , beta ) ;
-    printf( "[GF] %d SPLINE2 :: %f \n" , k , spline_min ) ;
+    printf( "[GF] %d BETA %f \n" , iters , beta ) ;
+    printf( "[GF] %d SPLINE2 :: %f \n" , iters , spline_min ) ;
     printf( "[GF] cgacc %e \n" , *tr ) ;
     #endif
 
@@ -361,9 +353,9 @@ steep_Landau_FACG_FR( GLU_complex *__restrict *__restrict gauge ,
     gtransform( lat , ( const GLU_complex **)gauge ) ;
 
     // increment
-    k++ ;
+    iters++ ;
   }
-  return k ;
+  return iters ;
 }
 #endif
 
@@ -405,15 +397,14 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
   double spline_min = Latt.gf_alpha ;
 
   // loop a set number of CG-iterations
-  int k = 0 ;
-  while( ( *tr > acc ) && ( k < max_iters ) ) {
+  int iters = 0 ;
+  while( ( *tr > acc ) && ( iters < max_iters ) ) {
 
     // this ONLY works with out and in, make sure that is what we use
     FA_deriv( in , lat , psq , tr ) ;
 
     // and FA
-    FOURIER_ACCELERATE( in , out , forward , backward ,
-			psq , LVOLUME ) ;
+    FOURIER_ACCELERATE( in , out , forward , backward , psq , LVOLUME ) ;
 
     // summation of in * in, gets put in in_old_sum
     const double insum = sum_deriv( (const GLU_complex**)in , LVOLUME ) ;
@@ -450,8 +441,8 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
     }
 
     #ifdef verbose
-    printf( "[GF] %d BETA %f " , k , beta ) ;
-    printf( "[GF] SPLINE :: %f " , spline_min ) ;
+    printf( "[GF] %d BETA %e " , iters , beta ) ;
+    printf( "[GF] SPLINE :: %e " , spline_min ) ;
     printf( "[GF] cgacc %e \n" , *tr ) ;
     #endif
 
@@ -466,10 +457,10 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
     gtransform( lat , ( const GLU_complex **)gauge ) ;
 
     // increment
-    k++ ;
+    iters++ ;
   }
 
-  return k ;
+  return iters ;
 }
 
 // overwrites the lattice links in lat to Landau gauge fixed links using CG
@@ -515,7 +506,7 @@ FACG( struct site *__restrict lat ,
   // I believe the algorithm wastes its time early on
   // these steps are better being SD'd
   // loop the CG
-  while( *th > acc && iters < max_iters ) {
+  while( ( *th > acc ) && ( iters < max_iters ) ) {
     #ifdef CAREFUL
     check_info1( lat , &link , newlink , *th , iters ) ;
     #endif
@@ -543,7 +534,7 @@ FACG( struct site *__restrict lat ,
   /////////////////////////////////
   // Have this loop just in case //
   if(  unlikely( iters >= max_iters ) ) {
-    if( *th < 1E3*acc ) {
+    if( ( *th < 1E3*acc ) ) {
       const int sumiters = iters ;
       iters = 0 ; 
       printf( "[GF] Continuation run \n" ) ;
@@ -605,7 +596,7 @@ FASD( struct site *__restrict lat ,
   double newlink = 0. , link = 0. ; 
   #endif
 
-  while(  *th > acc  && iters < max_iters ) {
+  while(  ( *th > acc ) && ( iters < max_iters ) ) {
     #ifdef CAREFUL
     check_info1( lat , &link , newlink , *th , iters ) ;
     #endif
@@ -616,7 +607,7 @@ FASD( struct site *__restrict lat ,
     check_info2( lat , ( const GLU_complex **)gauge , link , &newlink , *th , iters ) ;
     #endif
     /////// have a check for ill-convergence, which is related to plaquette-drift /////
-    if( iters%50 == 0 ) {
+    if( iters&127 == 0 ) {
       // roughly, I will allow for a deviation around 0.1*PREC_TOL per iteration
       // for the average plaquette
       if( fabs( av_plaquette( lat ) - ref_plaquette ) > (0.1 * PREC_TOL * iters) ) {
