@@ -89,7 +89,7 @@ else
 fi
 AC_SUBST(PREF)
 
-## Compile for a set NC, at the moment NC=2,3 supported may change 
+## Compile for a set NC, default is NC=3
 AC_ARG_WITH([NC],
 	AC_HELP_STRING([--with-NC=],
 		       [Compile in the gauge group number NC]),
@@ -362,9 +362,9 @@ AC_ARG_WITH([GRACEY_PROJ],
 	AC_HELP_STRING([--with-GRACEY_PROJ=],
 		       [Compile in the specific nonexceptional projector of interest]),
             [
-	    if test "x$with_GRACEY_PROJ" != "xyes" ; then	 
+	    if [ test "x$with_GRACEY_PROJ" != "xyes" ] ; then	 
 	       AC_MSG_NOTICE([User specified nonexceptional projector ${with_GRACEY_PROJ}.])
-	       AC_DEFINE_UNQUOTED([PROJ_GRACEY], [$with_GRACEY_PROJ] , [Nonexceptional projection index.] )	
+	       AC_DEFINE_UNQUOTED([PROJ_GRACEY], [${with_GRACEY_PROJ}] , [Nonexceptional projection index.] )	
 	    else
 	       AC_DEFINE([PROJ_GRACEY],[0],[Nonexceptional projection index.] )	
 	    fi
@@ -372,34 +372,35 @@ AC_ARG_WITH([GRACEY_PROJ],
 	    	AC_MSG_NOTICE([Default nonexceptional projector (1).])
 	    	AC_DEFINE([PROJ_GRACEY],[0],[Nonexceptional projection index.] ) ] )
 
-## Staple improvements options are IWASAKI, DBW2 , SYMANZIK and SYMANZIK_ONE_LOOP 
+## c0 is the term in front of the elementary staple
 AC_ARG_WITH([IMPROVED_C0],
 	AC_HELP_STRING([--with-IMPROVED_C0=],
-		       [The 1x1 improved term])
+		       [The 1x1 improved term]),
 	[
-	if test x$with_IMPROVED_C0 != "xyes" ; then
-	   AC_DEFINE([IWA_WEIGHT1],[$with_IMPROVED_C0],[Leading term])
+	if [ test "x$with_IMPROVED_C0" != "xyes" ] ; then
+	   AC_DEFINE_UNQUOTED([IWA_WEIGHT1],[${with_IMPROVED_C0}],[Leading term])
 	fi
+	## otherwise do nothing
 	],[])
 
 ## and the rectangle terms
 AC_ARG_WITH([IMPROVED_C1],
 	AC_HELP_STRING([--with-IMPROVED_C1=],
-		       [The 2x1 rectangle terms])
+		       [The 2x1 rectangle terms]),
 	[
-	if test x$with_IMPROVED_C1 != "xyes" ; then
-	   AC_DEFINE([IWA_WEIGHT1],[$with_IMPROVED_C1],[Sub-leading rectangle term])
+	if [ test "x$with_IMPROVED_C1" != "xyes" ] ; then
+	   AC_DEFINE_UNQUOTED([IWA_WEIGHT2],[${with_IMPROVED_C1}],[Sub-leading rectangle term])
 	fi
 	],[])
 
 ## if we have not specified c0 and c1
-if [ test x$with_IMPROVED_C0 != "xyes" -a x$with_IMPROVED_C1 != "xyes" ] ; then
+if [ test "x$with_IMPROVED_C0" != "xyes" -a "x$with_IMPROVED_C1" != "xyes" ] ; then
 AC_ARG_WITH([IMPROVED_STAPLE],
 	AC_HELP_STRING([--with-IMPROVED_STAPLE=],
 		       [Compile in the type of improved staple we wish to use.]),
             [
-	    AC_MSG_NOTICE([user defined ${with_IMPROVED_STAPLE} improved staple.])
-	    case ${with_IMPROVED_STAPLE} in
+	    AC_MSG_NOTICE([user defined "${with_IMPROVED_STAPLE}" improved staple.])
+	    case "${with_IMPROVED_STAPLE}" in
 	    DBW2) AC_DEFINE([DBW2],[],[DBW2 improved staple.]) ;;
 	    IWASAKI) AC_DEFINE([IWASAKI],[],[Iwasaki improved staple.])	;;
             SYMANZIK) AC_DEFINE([SYMANZIK],[],[Symanzik improved staple.]) ;;
@@ -414,7 +415,7 @@ AC_ARG_WITH([OVERIMPROVED_EPSILON],
 		       [Give a value for the overimproved epsilon. Should be used in conjunction with improved staple]),
             [
 	    ## if the user has left blank we do not define it, that'll teach them
-	    if test "x$with_OVERIMPROVED_EPSILON" != "xyes" ; then	 
+	    if [ test "x$with_OVERIMPROVED_EPSILON" != "xyes" ] ; then	 
 	    AC_MSG_NOTICE([User specified overimprovement factor ${with_OVERIMPROVED_EPSILON}.])
 	    AC_DEFINE_UNQUOTED([epsilon],[$with_OVERIMPROVED_EPSILON], [Defined the overimproved smearing parameter epsilon.]) 
 	    fi
