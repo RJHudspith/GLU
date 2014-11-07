@@ -48,12 +48,6 @@ static const double spmin = 0.05 ;
 // for more speed up we need to allocate this ... hmpf!
 static GLU_complex **gtransformed ;
 
-// used to precompute GT matrices
-static struct sp_site_herm *rotato ;
-
-// allocate in_old
-static GLU_complex **in_old ;
-
 // computed in-step when the derivative is taken
 static double zero_alpha = 1.0 ;
 
@@ -81,19 +75,12 @@ get_info( const int t , const double tr , const int iters ,
 	  const int control , const double accuracy , 
 	  const GLU_bool switched )
 {
-  // leave a space
   if( t == 0 ) {
     printf( "\n" ) ;
-  }
-  // print out some information
-  if( isnan( tr ) ) {
-    printf( "[GF] Slice :: %d {Stopped by NaN, usually a sign alpha is too big} \n"
-	    "[GF] Accuracy :: %1.5e || Iterations :: %d\n[GF] Failures :: %d \n" , 
+  } if( tr < accuracy ) {
+    printf( "[GF] Slice :: %d {Stopped by convergence} \n[GF] Accuracy :: %1.5e"
+	    " || Iterations :: %d\n[GF] Failures :: %d\n" , 
 	    t , tr , iters , control ) ; 
-  } else if( tr < accuracy ) {
-      printf( "[GF] Slice :: %d {Stopped by convergence} \n[GF] Accuracy :: %1.5e"
-	      " || Iterations :: %d\n[GF] Failures :: %d\n" , 
-	      t , tr , iters , control ) ; 
   } else {
     printf( "[GF] Slice :: %d {Stopped by iterations too high} \n"
 	    "[GF] Accuracy :: %1.5e || Iterations :: %d\n[GF] Failures :: %d \n" , 
@@ -143,14 +130,15 @@ line_search_Coulomb( const GLU_complex *__restrict *__restrict gauge ,
 // bit that calculates the steepest ascent with fourier acceleration
 // this is mad quick yo!
 static void
-steep_deriv_CG( GLU_complex *__restrict *__restrict in , 
+steep_deriv_CG( GLU_complex *__restrict *__restrict in ,
+		struct sp_site_herm *__restrict rotato ,
 		const struct site *__restrict lat , 
 		const GLU_complex *__restrict *__restrict slice_gauge , 
 		const int t ,
 		double *tr )
 {
   // sets the gtrans'd field into the temporary "rotato"
-  zero_alpha = coul_gtrans_fields( rotato , lat , slice_gauge , t , *tr ) ;
+  zero_alpha = coul_gtrans_fields( rotato , lat , slice_gauge , t ) ;
 
   // gauge transform the whole slice
   double trAA = 0.0 ;
@@ -249,6 +237,7 @@ steep_step_SD( const struct site *__restrict lat ,
 	       GLU_complex *__restrict *__restrict slice_gauge , 
 	       GLU_complex *__restrict *__restrict out , 
 	       GLU_complex *__restrict *__restrict in , 
+	       struct sp_site_herm *__restrict rotato ,
 	       const void *__restrict forward , 
 	       const void *__restrict backward , 
 	       const GLU_real *__restrict psq , 
@@ -256,7 +245,7 @@ steep_step_SD( const struct site *__restrict lat ,
 	       double *tr )
 {
   // compute deriv and Fourier Accelerate
-  steep_deriv_CG( in , lat , (const GLU_complex**)slice_gauge , t , tr ) ;
+  steep_deriv_CG( in , rotato , lat , (const GLU_complex**)slice_gauge , t , tr ) ;
 
   // if we want to Fourier accelerate, we call this otherwise it is the SD
   FOURIER_ACCELERATE( in , out , forward , backward , psq , LCU ) ;
@@ -268,8 +257,7 @@ steep_step_SD( const struct site *__restrict lat ,
 						 (const GLU_complex**)in , t ) ;
 #endif
   // exponentiate this
-  exponentiate_gauge_CG( slice_gauge , (const GLU_complex**)in , 
-			 spline_min ) ;
+  exponentiate_gauge_CG( slice_gauge , (const GLU_complex**)in , spline_min ) ;
   return ;
 }
 
@@ -281,6 +269,7 @@ steep_step_FACG_FR( const struct site *__restrict lat ,
 		    GLU_complex *__restrict *__restrict out , 
 		    GLU_complex *__restrict *__restrict in , 
 		    GLU_complex *__restrict *__restrict sn ,
+		    struct sp_site_herm *__restrict rotato ,
 		    const void *__restrict forward , 
 		    const void *__restrict backward , 
 		    const GLU_real *__restrict psq , 
@@ -289,7 +278,7 @@ steep_step_FACG_FR( const struct site *__restrict lat ,
 		    const double accuracy )
 {
   // SD start
-  steep_step_SD( lat , gauge , out , in , 
+  steep_step_SD( lat , gauge , out , in , rotato ,
 		 forward , backward , psq , t , tr ) ;
 
   int i ;
@@ -310,7 +299,7 @@ steep_step_FACG_FR( const struct site *__restrict lat ,
   while( GLU_TRUE ) {
 
     // this ONLY works with in, make sure that is what we use
-    steep_deriv_CG( in , lat , (const GLU_complex**)gauge , t , tr ) ;
+    steep_deriv_CG( in , rotato , lat , (const GLU_complex**)gauge , t , tr ) ;
 
     // if we want to Fourier accelerate, we call this otherwise it is the SD
     FOURIER_ACCELERATE( in , out , forward , backward , psq , LCU ) ;
@@ -370,7 +359,9 @@ steep_step_FACG( const struct site *__restrict lat ,
 		 GLU_complex *__restrict *__restrict gauge , 
 		 GLU_complex *__restrict *__restrict out , 
 		 GLU_complex *__restrict *__restrict in , 
+		 GLU_complex *__restrict *__restrict in_old ,
 		 GLU_complex *__restrict *__restrict sn ,
+		 struct sp_site_herm *__restrict rotato ,
 		 const void *__restrict forward , 
 		 const void *__restrict backward , 
 		 const GLU_real *__restrict psq , 
@@ -380,8 +371,8 @@ steep_step_FACG( const struct site *__restrict lat ,
 		 const int max_iters )
 {
   // SD start
-  steep_step_SD( lat , gauge , 
-		 out , in , forward , backward , psq , t , tr ) ;
+  steep_step_SD( lat , gauge , out , in , rotato , 
+		 forward , backward , psq , t , tr ) ;
 
   int i ;
   #pragma omp parallel for private(i)
@@ -400,17 +391,17 @@ steep_step_FACG( const struct site *__restrict lat ,
   double spline_min = Latt.gf_alpha ;
 
   // loop a set number of CG-iterations
-  int iters = 0 ;
+  int k = 0 ;
   while( GLU_TRUE ) {
 
     // this ONLY works with in, make sure that is what we use
-    steep_deriv_CG( in , lat , (const GLU_complex**)gauge , t , tr ) ;
+    steep_deriv_CG( in , rotato , lat , (const GLU_complex**)gauge , t , tr ) ;
 
     // if we want to Fourier accelerate, we call this otherwise it is the SD
     FOURIER_ACCELERATE( in , out , forward , backward , psq , LCU ) ;
 
     // if we have reached it already we leave
-    if( *tr < accuracy || iters > max_iters ) return iters+1 ;
+    if( *tr < accuracy || k > max_iters ) return k+1 ;
 
     // summations for computing the scaling parameter
     const double insum = sum_deriv( (const GLU_complex**)in , LCU ) ;
@@ -419,6 +410,8 @@ steep_step_FACG( const struct site *__restrict lat ,
     const double sum_conj = sum_PR_numerator( (const GLU_complex**)in , 
 					      (const GLU_complex**)in_old , 
 					      LCU ) ;
+
+    //printf( "%e %e %e \n" , insum , sum_conj , in_old_sum ) ;
 
     // compute the beta value, who knows what value is best?
     double beta = PRfmax( 0.0 , sum_conj / in_old_sum ) ;
@@ -439,8 +432,7 @@ steep_step_FACG( const struct site *__restrict lat ,
       }
     }
 
-    // because the line search is pretty expensive, we only do it once
-    // every two iterations
+    // line search up to a tolerance
     if( *tr > CG_TOL ) { 
       spline_min = line_search_Coulomb( (const GLU_complex**)gauge , lat , 
 					(const GLU_complex**)sn , t ) ;
@@ -449,13 +441,13 @@ steep_step_FACG( const struct site *__restrict lat ,
     }
 
     #ifdef verbose
-    printf( "[GF] %d BETA %f \n" , iters , beta ) ;
-    printf( "[GF] %d SPLINE2 :: %f \n" , iters , spline_min ) ;
+    printf( "[GF] %d BETA %f \n" , k , beta ) ;
+    printf( "[GF] %d SPLINE2 :: %f \n" , k , spline_min ) ;
     printf( "[GF] cgacc %e \n" , *tr ) ;
     #endif
 
     // increment
-    iters++ ;
+    k++ ;
 
     // no point in performing this rotation, 0.0 is like a flag for a broken
     // interpolation
@@ -463,14 +455,6 @@ steep_step_FACG( const struct site *__restrict lat ,
 
     // and step the optimal amount multiplying atomically into the gauge matrices
     exponentiate_gauge_CG( gauge , (const GLU_complex**)sn , spline_min ) ;
-
-    // every 128 iterations we reunitarise to counteract plaquette drift
-    if( ( iters&127 ) == 0 ) {
-      int i ; 
-      #pragma omp parallel for private(i)
-      for( i = 0 ; i < LCU ; i++ ) { reunit2( gauge[i] ) ; }
-    }
-    // end of while
   }
 }
 
@@ -480,7 +464,9 @@ steep_fix_FACG( const struct site *__restrict lat ,
 		GLU_complex *__restrict *__restrict slice_gauge , 
 		GLU_complex *__restrict *__restrict out , 
 		GLU_complex *__restrict *__restrict in , 
+		GLU_complex *__restrict *__restrict in_old ,
 		GLU_complex *__restrict *__restrict sn , 
+		struct sp_site_herm *__restrict rotato ,
 		const void *__restrict forward , 
 		const void *__restrict backward , 
 		const GLU_real *__restrict psq , 
@@ -500,12 +486,12 @@ steep_fix_FACG( const struct site *__restrict lat ,
     if( consecutive_zeros > 10 ) goto restart ;
 
     #ifdef GLU_FR_CG
-    loc_iters = steep_step_FACG_FR( lat , slice_gauge , out , in , sn , 
-				    forward , backward , psq , t , &tr , 
+    loc_iters = steep_step_FACG_FR( lat , slice_gauge , out , in , in_old , sn , 
+				    rotato , forward , backward , psq , t , &tr , 
 				    accuracy ) ;
     #else
-    loc_iters = steep_step_FACG( lat , slice_gauge , out , in , sn , 
-				 forward , backward , psq , t , &tr , accuracy ,
+    loc_iters = steep_step_FACG( lat , slice_gauge , out , in , in_old , sn , 
+				 rotato , forward , backward , psq , t , &tr , accuracy ,
 				 max_iter ) ;
     #endif
 
@@ -517,7 +503,7 @@ steep_fix_FACG( const struct site *__restrict lat ,
     }
 
     // if we have gone over the max number of iters allowed
-    // or for any other reason we randomly transform
+    // we randomly transform
     if( ( iters + loc_iters ) >= ( max_iter - 1 ) ) {
       // if we are close we continue, no use in wasting good work
       if ( tr < ( accuracy * 1E3 ) && continuation == GLU_FALSE ) {
@@ -574,14 +560,14 @@ Coulomb_FACG( struct site  *__restrict lat ,
   GLU_complex **slice_gauge_up = malloc( LCU * sizeof( GLU_complex* ) ) ; 
 
   // allocate rotato
-  rotato = malloc( LCU * sizeof( struct sp_site_herm ) ) ;
+  struct sp_site_herm *rotato = malloc( LCU * sizeof( struct sp_site_herm ) ) ;
 
   // allocate traces
   allocate_traces( LCU ) ;
 
-  // allocate sn
+  // allocate sn and temporary space "in_old"
   GLU_complex **sn = malloc( TRUE_HERM * sizeof( GLU_complex* ) ) ;
-  in_old = malloc( TRUE_HERM * sizeof( GLU_complex* ) ) ;
+  GLU_complex **in_old = malloc( TRUE_HERM * sizeof( GLU_complex* ) ) ;
 
   int i ;
 #pragma omp parallel for private(i)
@@ -607,14 +593,12 @@ Coulomb_FACG( struct site  *__restrict lat ,
 
   // OK so we have set up the gauge transformation matrices
   int t = 0 ;// initialise the time direction
-  int tot_its = steep_fix_FACG( lat , slice_gauge_end , out , in , sn , 
-				forward , backward , p_sq , 
-				t , accuracy , max_iter ) ; 
+  int tot_its = steep_fix_FACG( lat , slice_gauge_end , out , in , in_old , sn , rotato ,
+				forward , backward , p_sq , t , accuracy , max_iter ) ; 
   
   // and t+1
-  tot_its += steep_fix_FACG( lat , slice_gauge , out , in , sn , 
-			     forward , backward , p_sq , 
-			     t + 1 , accuracy , max_iter ) ; 
+  tot_its += steep_fix_FACG( lat , slice_gauge , out , in , in_old , sn , rotato ,
+			     forward , backward , p_sq , t + 1 , accuracy , max_iter ) ; 
 
   // reunitarise the gauges to counteract the accumulated round-off error
   #pragma omp parallel for private(i) 
@@ -635,9 +619,8 @@ Coulomb_FACG( struct site  *__restrict lat ,
     PFOR( i = 0 ; i < LCU ; i++ ) { identity( slice_gauge_up[i] ) ; }
 
     // gauge fix on this slice
-    tot_its += steep_fix_FACG( lat , slice_gauge_up , out , in , sn , 
-			       forward , backward , p_sq , 
-			       t , accuracy , max_iter ) ; 
+    tot_its += steep_fix_FACG( lat , slice_gauge_up , out , in , in_old , sn , rotato ,
+			       forward , backward , p_sq , t , accuracy , max_iter ) ; 
 
     // reunitarise the computed gauge to counteract the accumulated round-off error
     #pragma omp parallel for private(i) 
@@ -681,7 +664,8 @@ Coulomb_FACG( struct site  *__restrict lat ,
   free( gtransformed ) ;
   free( slice_gauge ) ; 
   free( slice_gauge_up ) ; 
-  free( slice_gauge_end ) ; 
+  free( slice_gauge_end ) ;
+ 
   // and return the total iterations
   return tot_its ;
 }
@@ -696,6 +680,7 @@ steep_fix_FA( const struct site *__restrict lat ,
 	      GLU_complex *__restrict *__restrict slice_gauge , 
 	      GLU_complex *__restrict *__restrict out , 
 	      GLU_complex *__restrict *__restrict in , 
+	      struct sp_site_herm *__restrict rotato ,
 	      const void *__restrict forward , 
 	      const void *__restrict backward , 
 	      const GLU_real *__restrict psq , 
@@ -722,16 +707,8 @@ steep_fix_FA( const struct site *__restrict lat ,
       }
     }
     // perform a Fourier accelerated step, this is where the CG can go ...
-    steep_step_SD( lat , slice_gauge , out , in , 
+    steep_step_SD( lat , slice_gauge , out , in , rotato ,
 		   forward , backward , psq , t , &tr ) ;
-
-    // every 128 or so iterations we reunitarise to counteract plaquette drift
-    if( ( iters&127 ) == 0 ) {
-      int i ; 
-      #pragma omp parallel for private(i)
-      for( i = 0 ; i < LCU ; i++ ) { reunit2( slice_gauge[i] ) ; }
-    }
-
     iters ++ ;
   }
   // and tell us about the slice's iteration
@@ -757,7 +734,7 @@ Coulomb_FASD( struct site  *__restrict lat ,
   GLU_complex **slice_gauge_up = malloc( LCU * sizeof( GLU_complex* ) ) ; 
 
   // allocate rotato
-  rotato = malloc( LCU * sizeof( struct sp_site_herm ) ) ;
+  struct sp_site_herm *rotato = malloc( LCU * sizeof( struct sp_site_herm ) ) ;
 
   // allocate traces
   allocate_traces( LCU ) ;
@@ -766,8 +743,8 @@ Coulomb_FASD( struct site  *__restrict lat ,
   int i ;
 #pragma omp parallel for private(i) 
   PFOR( i = 0 ; i < LCU ; i ++  ) {
-    slice_gauge[i] = calloc( NCNC , sizeof( GLU_complex ) ) ; 
-    slice_gauge_up[i] = calloc( NCNC , sizeof( GLU_complex ) ) ;
+    slice_gauge[i]     = calloc( NCNC , sizeof( GLU_complex ) ) ; 
+    slice_gauge_up[i]  = calloc( NCNC , sizeof( GLU_complex ) ) ;
     slice_gauge_end[i] = calloc( NCNC , sizeof( GLU_complex ) ) ; 
 
     //temporary gauges set to identity
@@ -780,11 +757,11 @@ Coulomb_FASD( struct site  *__restrict lat ,
   // OK so we have set up the gauge transformation matrices
   int t = 0 ;// initialise the time direction
   int tot_its = steep_fix_FA( lat , slice_gauge_end , out , in ,
-			      forward , backward , p_sq , 
+			      rotato , forward , backward , p_sq , 
 			      t , accuracy , max_iter ) ; 
   
   // and t+1
-  tot_its += steep_fix_FA( lat , slice_gauge , out , in ,
+  tot_its += steep_fix_FA( lat , slice_gauge , out , in , rotato ,
 			   forward , backward , p_sq , 
 			   t + 1 , accuracy , max_iter ) ; 
 
@@ -808,7 +785,7 @@ Coulomb_FASD( struct site  *__restrict lat ,
 
     // gauge fix on this slice
     tot_its += steep_fix_FA( lat , slice_gauge_up , out , in , 
-			     forward , backward , p_sq , 
+			     rotato , forward , backward , p_sq , 
 			     t , accuracy , max_iter ) ; 
 
     // reunitarise the working gauge trans matrices to counteract the accumulated round-off error
