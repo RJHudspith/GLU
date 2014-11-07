@@ -7,5 +7,5 @@ bin_PROGRAMS = unit
 unit_SOURCES = units.c
 
 ## compile against GLUlib installed somewhere
-unit_CFLAGS = -Wall -I${TOPDIR}/src/Headers/ ${CFLAGS}
-unit_LDADD = -L${TOPDIR}/src/ -lGLU ${LDFLAGS}
+unit_CFLAGS = -Wall ${CFLAGS} -I${TOPDIR}/src/Headers/
+unit_LDADD = ../src/libGLU.a ${LDFLAGS}
