@@ -55,9 +55,6 @@ static const double al[LINE_NSTEPS] = { 0.0 , 0.2 , 0.4 } ;
   const static double spmin = 0.05 ;
 #endif
 
-// allocate in_old
-static GLU_complex **in_old ; 
-
 // zero alpha can be roughly computed in step
 static double zero_alpha ;
 
@@ -209,6 +206,7 @@ exponentiate_gauge( GLU_complex *__restrict *__restrict gauge ,
   return ;
 }
 
+#define V_FOR_VERBOSE
 /**
    @fn static double line_search( GLU_complex *__restrict *__restrict gauge , const struct site *__restrict lat , const GLU_complex *__restrict *__restrict in )
    @brief line search for the minimum of the gauge functional
@@ -221,7 +219,7 @@ line_search( GLU_complex *__restrict *__restrict gauge ,
   int counter = 0 ;
   double val[LINE_NSTEPS] ;
   val[0] = zero_alpha ; // 0 is a freebie
-#ifdef verbose
+#ifdef V_FOR_VERBOSE
   printf( "[GF] Landau CG probe :: %f %f \n" , al[0] , val[0] ) ;
 #endif
   for( counter = 1 ; counter < LINE_NSTEPS ; counter++ ) {
@@ -229,7 +227,7 @@ line_search( GLU_complex *__restrict *__restrict gauge ,
     val[counter] = evaluate_alpha( (const GLU_complex**) gauge , 
 				   lat , ND , LVOLUME , 0 ) ;
     // the last argument of this has to be 0 !!! 
-#ifdef verbose
+#ifdef V_FOR_VERBOSE
     printf( "[GF] Landau CG probe :: %f %f \n" , al[counter] , val[counter] ) ;
 #endif
   }
@@ -264,6 +262,7 @@ steep_Landau_FA( GLU_complex *__restrict *__restrict gauge ,
   const double spline_min = Latt.gf_alpha ;
 #else
   const double spline_min = line_search( gauge , lat , (const GLU_complex**)in ) ;
+  printf( "[GF] SPLINE %f \n" , spline_min ) ;
 #endif
 
   // exponentiate
@@ -287,6 +286,7 @@ steep_Landau_FACG_FR( GLU_complex *__restrict *__restrict gauge ,
 		      const void *__restrict backward , 
 		      GLU_complex *__restrict *__restrict out , 
 		      GLU_complex *__restrict *__restrict in , 
+		      GLU_complex *__restrict *__restrict in_old , 
 		      GLU_complex *__restrict *__restrict sn ,
 		      const GLU_real *psq , 
 		      double *tr ,
@@ -310,7 +310,7 @@ steep_Landau_FACG_FR( GLU_complex *__restrict *__restrict gauge ,
 
   // loop a set number of CG-iterations
   int k = 0 ;
-  while( GLU_TRUE ) {
+  while( *tr > acc ) {
 
     // this ONLY works with out and in, make sure that is what we use
     FA_deriv( in , lat , psq , tr ) ;
@@ -318,9 +318,6 @@ steep_Landau_FACG_FR( GLU_complex *__restrict *__restrict gauge ,
     // and FA
     FOURIER_ACCELERATE( in , out , forward , backward ,
 			psq , LVOLUME ) ;
-
-    // if we have reached it already we leave
-    if( *tr < acc ) return k+1 ;
 
     // summations for computing the scaling parameter
     const double insum = sum_deriv( (const GLU_complex**)in , LVOLUME ) ;
@@ -382,6 +379,7 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
 		   const void *__restrict backward , 
 		   GLU_complex *__restrict *__restrict out , 
 		   GLU_complex *__restrict *__restrict in , 
+		   GLU_complex *__restrict *__restrict in_old , 
 		   GLU_complex *__restrict *__restrict sn ,
 		   const GLU_real *psq , 
 		   double *tr ,
@@ -409,7 +407,7 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
 
   // loop a set number of CG-iterations
   int k = 0 ;
-  while( GLU_TRUE ) {
+  while( ( *tr > acc ) && ( k < max_iters ) ) {
 
     // this ONLY works with out and in, make sure that is what we use
     FA_deriv( in , lat , psq , tr ) ;
@@ -417,9 +415,6 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
     // and FA
     FOURIER_ACCELERATE( in , out , forward , backward ,
 			psq , LVOLUME ) ;
-
-    // if we have reached it already we leave
-    if( *tr < acc || ( k + 1 ) > max_iters ) return k+1 ;
 
     // summation of in * in, gets put in in_old_sum
     const double insum = sum_deriv( (const GLU_complex**)in , LVOLUME ) ;
@@ -450,7 +445,6 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
 
     // do a line search
     if( *tr > CG_TOL ) {
-      // perform a line search
       spline_min = line_search( gauge , lat , (const GLU_complex**)sn ) ;
     } else {
       spline_min = Latt.gf_alpha ;
@@ -462,9 +456,6 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
     printf( "[GF] cgacc %e \n" , *tr ) ;
     #endif
 
-    // increment
-    k++ ;
-
     // spline_min == 0 is a special case where there looks like
     // there is no minimum
     if( spline_min == 0.0 ) continue ;
@@ -474,6 +465,9 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
 
     // do the gauge transform here
     gtransform( lat , ( const GLU_complex **)gauge ) ;
+
+    // increment
+    k++ ;
   }
 
   return k ;
@@ -505,7 +499,7 @@ FACG( struct site *__restrict lat ,
 
   // allocate the conjugate matrix
   GLU_complex **sn = malloc( TRUE_HERM * sizeof(GLU_complex*) ) ;
-  in_old = malloc( TRUE_HERM * sizeof( GLU_complex ) ) ;
+  GLU_complex **in_old = malloc( TRUE_HERM * sizeof( GLU_complex* ) ) ;
 
   // allocate the conjugate directions
   int i ;
@@ -532,21 +526,15 @@ FACG( struct site *__restrict lat ,
     // stopping this method wasting its time doing meaningless line searches
     #ifdef GLU_FR_CG
     loc_iters = steep_Landau_FACG_FR( gauge , lat , forward , backward , 
-				      out , in , sn , p_sq , th , acc ) ; 
+				      out , in , in_old , sn , p_sq , th , acc ) ; 
     #else
     loc_iters = steep_Landau_FACG( gauge , lat , forward , backward , 
-				   out , in , sn , p_sq , th , acc , 
+				   out , in , in_old , sn , p_sq , th , acc , 
 				   max_iters ) ; 
     #endif
 
     // and increment the iteration counter
     iters += loc_iters ;
-
-    // if in the unlikely case we hit a NaN we restart
-    if( isnan( *th ) ) {
-      printf( "NANANANANANNA BATMAN!\n" ) ;
-      return GLU_FAILURE ;
-    }
 
     #ifdef CAREFUL
     check_info2( lat , ( const GLU_complex **)gauge , link , &newlink , *th , iters ) ;
@@ -562,7 +550,7 @@ FACG( struct site *__restrict lat ,
       printf( "[GF] Continuation run \n" ) ;
       while( *th > acc && iters < max_iters ) {
 	iters = steep_Landau_FACG( gauge , lat , forward , backward , 
-				   out , in , sn , p_sq , th , acc ,
+				   out , in , in_old , sn , p_sq , th , acc ,
 				   max_iters ) ; 
       }
       // if the continuation doesn't work we restart
@@ -629,7 +617,7 @@ FASD( struct site *__restrict lat ,
     check_info2( lat , ( const GLU_complex **)gauge , link , &newlink , *th , iters ) ;
     #endif
     /////// have a check for ill-convergence, which is related to plaquette-drift /////
-    if( ( iters&127 ) == 0 ) {
+    if( iters%50 == 0 ) {
       // roughly, I will allow for a deviation around 0.1*PREC_TOL per iteration
       // for the average plaquette
       if( fabs( av_plaquette( lat ) - ref_plaquette ) > (0.1 * PREC_TOL * iters) ) {
