@@ -23,6 +23,8 @@
 
 #include "Mainfile.h"
 
+#include "GLU_timer.h" // tells us how long we spent planning FFTs
+
 // guard the whole thing
 #ifdef HAVE_FFTW3_H
 
@@ -74,37 +76,40 @@ create_plans_DFT( fftw_plan *__restrict forward ,
   for( mu = 0 ; mu < DIR ; mu++ ) {
     dimes[ mu ] = Latt.dims[ DIR - 1 - mu ] ;
   }
+
+  start_timer( ) ;
+
 #ifndef CONDOR_MODE
   char str[512] , prec_str[ 16 ] ; 
   int check = NOPLAN ; 
 
-#ifdef SINGLE_PREC
+  #ifdef SINGLE_PREC
   sprintf( prec_str , "FLOAT" ) ;
-#else
+  #else
   sprintf( prec_str , "DOUBLE" ) ;
-#endif
+  #endif
 
-#ifdef OMP_FFTW
+  #ifdef OMP_FFTW
   sprintf( str , "%s/Local/Wisdom/%s_OMPnt%d_SU%d_" , 
 	   HAVE_PREFIX , prec_str , nthreads , NC ) ;
-#else
+  #else
   sprintf( str , "%s/Local/Wisdom/%s_SU%d_" , 
 	   HAVE_PREFIX , prec_str , NC ) ;
-#endif
+  #endif
   for( mu = 0 ; mu < DIR - 1 ; mu++ ) {
     sprintf( str , "%s%dx" , str , Latt.dims[ mu ] ) ;
   }
   sprintf( str , "%s%d.wisdom" , str , Latt.dims[ DIR - 1 ] ) ;
   FILE *wizzard = fopen( str , "r" ) ; 
   if( wizzard == NULL ) {
-    printf( "[FFTW] No wisdom to be obtained here.\n\n" ) ; 
+    printf( "\n[FFTW] No wisdom to be obtained here ... planning" ) ; 
   } else {
-    printf( "[FFTW] Successful wisdom attained.\n\n" ) ; 
+    printf( "\n[FFTW] Successful wisdom attained" ) ; 
     check = fftw_import_wisdom_from_file( wizzard ) ; 
     fclose( wizzard ) ; 
   }
 #else
-  printf( "[FFTW] Creating plan on CONDOR host.\n\n" ) ; 
+  printf( "\n[FFTW] Creating plan on CONDOR host" ) ; 
 #endif
 
   for( mu = 0 ; mu < ARR_SIZE ; mu++ ) {
@@ -113,6 +118,10 @@ create_plans_DFT( fftw_plan *__restrict forward ,
     backward[mu] = fftw_plan_dft( DIR , dimes , out[mu] , in[mu] , 
 				  FFTW_BACKWARD , GLU_PLAN ) ;
   }
+
+  // I want to know how long FFTW is taking to plan its FFTs
+  print_time( ) ;
+  printf( "[FFTW] plans finished\n\n" ) ;
 
 #ifndef CONDOR_MODE
   if( check == NOPLAN )  {
@@ -148,6 +157,9 @@ create_plans_DHT( fftw_plan *__restrict plan ,
     l[mu] = FFTW_DHT ;
   }
 
+  // initialise the timer
+  start_timer( ) ;
+
 #ifndef CONDOR_MODE
   char str[512] , prec_str[16] ; 
   int check = 0 ;
@@ -171,14 +183,14 @@ create_plans_DHT( fftw_plan *__restrict plan ,
   sprintf( str , "%s%d.wisdom", str , Latt.dims[ DIR - 1 ] ) ;
   FILE *wizzard = fopen( str , "r" ) ; 
   if( wizzard == NULL ) {
-    printf( "[FFTW] No wisdom to be obtained here.\n\n" ) ; 
+    printf( "\n[FFTW] No wisdom to be obtained here" ) ; 
   } else {
-    printf( "[FFTW] Successful wisdom attained.\n\n" ) ; 
+    printf( "\n[FFTW] Successful wisdom attained" ) ; 
     check = fftw_import_wisdom_from_file( wizzard ) ; 
     fclose( wizzard ) ; 
   }
 #else
-  printf( "[FFTW] Creating plan on CONDOR host.\n\n" ) ; 
+  printf( "[FFTW] Creating plan on CONDOR host" ) ; 
 #endif
 
   // and organise the plans
@@ -186,6 +198,10 @@ create_plans_DHT( fftw_plan *__restrict plan ,
     plan[mu] = fftw_plan_r2r( DIR , dimes , in[mu] , out[mu] , l , 
 			      GLU_PLAN ) ; 
   }
+
+  // I want to know how long FFTW is taking to plan its FFTs
+  print_time( ) ;
+  printf( "[FFTW] plans finished\n\n" ) ;
 
 #ifndef CONDOR_MODE
   if( check == NOPLAN ) {
@@ -212,6 +228,10 @@ small_create_plans_DFT( fftw_plan *__restrict forward ,
   for( mu = 0 ; mu < DIR ; mu++ ) {
     dimes[ mu ] = Latt.dims[ DIR - 1 - mu ] ;
   }
+
+  // initialise the clock
+  start_timer( ) ; 
+
 #ifndef CONDOR_MODE
   char str[512] , prec_str[16] ; 
   int check = NOPLAN ; 
@@ -235,20 +255,24 @@ small_create_plans_DFT( fftw_plan *__restrict forward ,
   sprintf( str , "%s%d.wisdom", str , Latt.dims[ DIR - 1 ] ) ;
   FILE *wizzard = fopen( str , "r" ) ; 
   if( wizzard == NULL ) {
-    printf( "[FFTW] No wisdom to be obtained here.\n\n" ) ; 
+    printf( "\n[FFTW] No wisdom to be obtained here" ) ; 
   } else {
-    printf( "[FFTW] Successful wisdom attained.\n\n" ) ; 
+    printf( "\n[FFTW] Successful wisdom attained" ) ; 
     check = fftw_import_wisdom_from_file( wizzard ) ; 
     fclose( wizzard ) ; 
   }
 #else
-  printf( "[FFTW] Creating plan on CONDOR host.\n\n" ) ; 
+  printf( "\n[FFTW] Creating plan on CONDOR host" ) ; 
 #endif
 
   *forward = fftw_plan_dft( DIR , dimes , in , out , 
 			    FFTW_FORWARD , GLU_PLAN ) ; 
   *backward = fftw_plan_dft( DIR , dimes , out , in , 
 			     FFTW_BACKWARD , GLU_PLAN ) ; 
+
+  // I want to know how long FFTW is taking to plan its FFTs
+  print_time( ) ;
+  printf( "[FFTW] plans finished\n\n" ) ;
 
 #ifndef CONDOR_MODE
   if( check == NOPLAN ) {
