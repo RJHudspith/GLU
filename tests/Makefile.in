@@ -65,7 +65,7 @@ PROGRAMS = $(bin_PROGRAMS)
 am_unit_OBJECTS = unit-units.$(OBJEXT)
 unit_OBJECTS = $(am_unit_OBJECTS)
 am__DEPENDENCIES_1 =
-unit_DEPENDENCIES = $(am__DEPENDENCIES_1)
+unit_DEPENDENCIES = ../src/libGLU.a $(am__DEPENDENCIES_1)
 unit_LINK = $(CCLD) $(unit_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -183,8 +183,8 @@ top_srcdir = @top_srcdir@
 TOPDIR = @top_srcdir@
 BUILDDIR = @top_builddir@
 unit_SOURCES = units.c
-unit_CFLAGS = -Wall -I${TOPDIR}/src/Headers/ ${CFLAGS}
-unit_LDADD = -L${TOPDIR}/src/ -lGLU ${LDFLAGS}
+unit_CFLAGS = -Wall ${CFLAGS} -I${TOPDIR}/src/Headers/
+unit_LDADD = ../src/libGLU.a ${LDFLAGS}
 all: all-am
 
 .SUFFIXES:

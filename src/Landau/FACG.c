@@ -538,7 +538,7 @@ FACG( struct site *__restrict lat ,
       const int sumiters = iters ;
       iters = 0 ; 
       printf( "[GF] Continuation run \n" ) ;
-      while( *th > acc && iters < max_iters ) {
+      while( ( *th > acc ) && ( iters < max_iters ) ) {
 	iters = steep_Landau_FACG( gauge , lat , forward , backward , 
 				   out , in , in_old , sn , p_sq , th , acc ,
 				   max_iters ) ; 
