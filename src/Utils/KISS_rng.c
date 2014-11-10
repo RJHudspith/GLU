@@ -67,7 +67,7 @@ JKISS32( void )
   table[0] ^= ( table[0] << 22 ) ;
   const uint32_t t = table[1] + table[2] + table[3] ;
   table[1] = table[2] ;
-  table[3] = t < 0 ;
+  table[3] = 0 ; //t < 0 ; is always >= 0. Unsigned!
   table[4] += 1411392427 ;
   table[2] = t&2147483647 ;
   return table[0] + table[2] + table[4] ; //x + y + w ;

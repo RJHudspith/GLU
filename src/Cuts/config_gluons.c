@@ -177,7 +177,7 @@ spatial_correlator( struct site *__restrict A ,
     #endif
     register double sum = 0 ;
     for( i = 0 ; i < LCU ; i++ ) {
-      sum += *p ;
+      sum += creal( *p ) ;
       p++ ;
     }
     gsp[ t ] = sum * gsnorm ;

@@ -166,7 +166,7 @@ compute_tr( double *__restrict tr ,
   // and set tr
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < rsq_count ; i++ ) {
-    tr[ i ] += in[ list[ i ].idx ] ;
+    tr[ i ] += creal( in[ list[ i ].idx ] ) ;
   }
 
   return ;

@@ -202,16 +202,31 @@ approx_minimum( const int nmeas ,
   // compute the sum of the derivatives, if they are all small my thinking is
   // that we are at the limit of the precision of the functional
   register double sumder = 0.0 ;
-  int sumneg = 0 , i ;
+
+  // best minimum index
+  int bestmin = 0 ;
+  // best alpha
+  double func_min = 2.0 ;
+  // number of derivatives with a minus sign
+  int sumneg = 0 ;
+
+  int i ;
   for( i = 0 ; i < nmeas ; i++ ) {
 
     // sum of the derivatives, if we are too flat
     // we exit returning the user-specified tuning alpha
     sumder += fabs( derivative[i] ) ;
 
-    // we find the minimum using this dirty method
-    // this is a bad idea - what if we had more than one? TODO!
-    if( derivative[i] < 0. ) sumneg ++ ;
+    // we find a minimum using this dirty method
+    if( derivative[i] < 0. ) {
+      sumneg ++ ;
+      // find the lowest minimum in case we have more than one
+      // this is pretty unlikely unless we use a bunch of probes
+      if( functional[i] < func_min ) {
+	bestmin = i + 1 ;
+	func_min = functional[i] ;
+      }
+    }
 
     #ifdef verbose
     printf( "[GF] der[%d] %e \n" , i , derivative[i] ) ;
@@ -219,8 +234,9 @@ approx_minimum( const int nmeas ,
   }
 
   #ifdef verbose
-  printf( "[GF] sumneg :: %d \n" , sumneg ) ;
-  printf( "[GF] sumder :: %e \n" , sumder ) ;
+  printf( "[GF] sumneg  :: %d \n" , sumneg ) ;
+  printf( "[GF] bestmin :: %d \n" , bestmin ) ;
+  printf( "[GF] sumder  :: %e \n" , sumder ) ;
   #endif
 
   // if we are at the limit of precision we leave
@@ -239,7 +255,7 @@ approx_minimum( const int nmeas ,
     // otherwise we have bound the minimum and we solve for it 
   } else {
     const double result = cubic_min( alphas , functional , 
-				     derivative , sumneg ) ;
+				     derivative , bestmin ) ;
 
     if( isnan( result ) ) { 
       return 0.0 ;
@@ -257,6 +273,7 @@ void allocate_traces( const int LENGTH )
   divs = malloc( LENGTH * sizeof( double ) ) ;
   int i ;
   // set up the divs so it doesn't have to recompute all the time
+  #pragma omp parallel for private(i)
   for( i = 0 ; i < LENGTH ; i++ ) {
     divs[i] = 1.0 / (double)( i + 1. ) ;
   }
