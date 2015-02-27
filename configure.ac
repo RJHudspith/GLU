@@ -45,11 +45,12 @@
 ## --enable-OVERRELAXED_GF :: switch to the overrelaxed codes for gauge fixing
 
 AC_INIT([GLU], [1.1], [renwick.james.hudspith@gmail.com])
-AM_INIT_AUTOMAKE([-Wall])
+AM_INIT_AUTOMAKE([-Wall subdir-objects])
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_LANG([C]) 
 AC_PROG_RANLIB ## include a check for libtool if not use ranlib?
+AM_PROG_AR
 AC_C_BIGENDIAN 
 
 ## SET up the m4
@@ -98,6 +99,17 @@ AC_ARG_WITH([NC],
 	    AC_DEFINE_UNQUOTED([NC], [${with_NC}] , [Compiled for SU(NC)] )	
 	    ],[
 	    AC_MSG_NOTICE([User unspecified NC, default to SU(3)])	
+	    ])
+
+## Compile for a set ND, default is ND=4
+AC_ARG_WITH([ND],
+	AC_HELP_STRING([--with-ND=],
+		       [Compile in the number of dimensions ND]),
+            [
+	    AC_MSG_NOTICE([User specified ND, compiling for ND=${with_ND}])
+	    AC_DEFINE_UNQUOTED([ND], [${with_ND}] , [Compiled for ND] )	
+	    ],[
+	    AC_MSG_NOTICE([User unspecified ND, default to 4])	
 	    ])
 
 ## C standard libraries

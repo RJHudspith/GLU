@@ -233,7 +233,7 @@ header_type( void )
     printf( "[IO] Attempting to read an LIME file \n" ) ;
     printf( "[IO] Using sequence number from input file :: %d \n" ,
 	    Latt.flow = confno( ) ) ;
-    printf( "[IO] WARNING!! NOT CHECKING ANY CHECKSUMS!!" ) ;
+    printf( "[IO] WARNING!! NOT CHECKING ANY CHECKSUMS!! \n" ) ;
     return LIME_HEADER ;
   } else if( are_equal( INPUT[header_idx].VALUE , "ILDG_SCIDAC" ) ) {
     printf( "[IO] Attempting to read an ILDG (Scidac) file \n" ) ;

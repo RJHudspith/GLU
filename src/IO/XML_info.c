@@ -241,22 +241,24 @@ parse_and_set_xml_SCIDAC( char *xml_info ,
       if( are_equal( pch , "field" ) ) {
 	while( ( pch = strtok( 0 , "<>" ) ) ) {
 	  if( are_equal( pch , "/field" ) ) break ;
-	  char compare[32] ;
+	  // sometimes there is whitespace around these for some unknown reason
+	  char *token = realFront( pch ) ;
+	  char compare[10] ;
 	  sprintf( compare , "su%dgauge" , NC ) ;
-	  if( are_equal( pch , compare ) ) {
+	  if( !strncmp( compare , token , 8 ) ) {
 	    HEAD_DATA -> config_type = OUTPUT_NCxNC ;
 	    #ifdef DEBUG
-	    // should be "2"
 	    printf( "[ILDG] configuration type %d \n" , 
 		    HEAD_DATA -> config_type ) ; 
 	    #endif
 	  } else {
-	    printf( "[ILDG] Expected %s, got %s \n" , compare , pch ) ;
+	    printf( "[ILDG] Expected %s, got \"%s\" \n" , compare , token ) ;
 	    return GLU_FAILURE ;
 	  }
 	}
 	continue ;
       }
+      // +any others that may come up ...
     }
     break;
   }
