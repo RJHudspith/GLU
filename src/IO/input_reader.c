@@ -23,6 +23,7 @@
 
 #include "Mainfile.h"
 
+#include <errno.h>
 #include "GLU_rng.h"  // we initialise the RNG from the input file
 
 // we might want to change this at some point
@@ -53,7 +54,8 @@ pack_inputs( FILE *setup )
 {
   INPUT = ( struct inputs* )malloc( INPUTS_LENGTH * sizeof( struct inputs ) ) ;
   // and put into the buffer
-  while( NTAGS++ , fscanf( setup , "%s = %s" , INPUT[ NTAGS ].TOKEN , INPUT[ NTAGS ].VALUE )  != EOF ) { }
+  while( NTAGS++ , fscanf( setup , "%s = %s" , INPUT[ NTAGS ].TOKEN , 
+			   INPUT[ NTAGS ].VALUE )  != EOF ) { }
   return ;
 }
 
@@ -84,28 +86,71 @@ tag_search( const char *tag )
   return GLU_FAILURE ;
 }
 
+// I use this pattern quite a bit
+static int
+setint( int *val ,
+	const char *tag )
+{
+  char *endptr ;
+  errno = 0 ;
+  const int idx = tag_search( tag ) ;
+  if( idx == GLU_FAILURE ) { return tag_failure( tag ) ; }
+  *val = (int)strtol( INPUT[idx].VALUE , &endptr , 10 ) ;
+  if( endptr == INPUT[idx].VALUE || *val < 1 ||
+      errno == ERANGE ) {
+    return GLU_FAILURE ;
+  }
+  return GLU_SUCCESS ;
+}
+
+// above but for doubles
+static int
+setdbl( double *val ,
+	const char *tag )
+{
+  char *endptr ;
+  errno = 0 ;
+  const int idx = tag_search( tag ) ;
+  if( idx == GLU_FAILURE ) { return tag_failure( tag ) ; }
+  *val = strtod( INPUT[idx].VALUE , &endptr ) ;
+  if( endptr == INPUT[idx].VALUE || errno == ERANGE ) {
+    return GLU_FAILURE ;
+  }
+  return GLU_SUCCESS ;
+}
+
 // quickly get the configuration number from the input file
+// must be greater than or equal to zero
 static int
 confno( void )
 {
-  return atoi( INPUT[tag_search( "CONFNO" )].VALUE ) ;
+  int conf ;
+  if( setint( &conf , "CONFNO" ) == GLU_FAILURE ) {
+    printf( "[IO] I do not understand CONFNO %d \n" , conf ) ;
+    printf( "[IO] CONFNO should be greater than 0\n" ) ;
+    return GLU_FAILURE ;
+  }
+  return conf ;
 }
 
 // read from the input file our dimensions
-static void
+static int
 read_random_lattice_info( void )
 {
-  // lattice dimensions default to an 8^{ND} lattice is dimensions not found
+  // lattice dimensions set from input file
   int mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     char tmp[ GLU_STR_LENGTH ] ;
     sprintf( tmp , "DIM_%d" , mu ) ;
     Latt.dims[mu] = 8 ; // default to an 8^{ND} lattice
-    Latt.dims[ mu ] = atoi( INPUT[tag_search( tmp )].VALUE ) ;
+    if( setint( &Latt.dims[ mu ] , tmp ) == GLU_FAILURE ) {
+      return GLU_FAILURE ;
+    }
   }
-  // and set the config no
-  Latt.flow = confno( ) ; 
-  return ;
+  if( setint( &Latt.flow , "CONFNO" ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
+  return GLU_SUCCESS ;
 }
 
 //////////////////// input file functions /////////////////////
@@ -127,44 +172,45 @@ static int
 get_mode( GLU_mode *mode )
 {
   // look for which mode we are running in
-  const int mode_idx = tag_search( "MODE" ) ;
-  if( mode_idx == GLU_FAILURE ) { return tag_failure( "MODE" ) ; }
-
-  // what mode do we want?
-  if( are_equal( INPUT[mode_idx].VALUE , "GAUGE_FIXING" ) ) {
-    *mode = MODE_GF ;
-  } else if( are_equal( INPUT[mode_idx].VALUE , "CUTTING" ) ) {
-    *mode = MODE_CUTS ;
-  } else if( are_equal( INPUT[mode_idx].VALUE , "SMEARING" ) ) {
-    *mode = MODE_SMEARING ;
-  } else if( are_equal( INPUT[mode_idx].VALUE , "SUNCxU1" ) ) {
-    *mode = MODE_CROSS_U1 ;
-  } else {
-    *mode = MODE_REWRITE ;
+  {
+    const int mode_idx = tag_search( "MODE" ) ;
+    if( mode_idx == GLU_FAILURE ) { return tag_failure( "MODE" ) ; }
+    // what mode do we want?
+    if( are_equal( INPUT[mode_idx].VALUE , "GAUGE_FIXING" ) ) {
+      *mode = MODE_GF ;
+    } else if( are_equal( INPUT[mode_idx].VALUE , "CUTTING" ) ) {
+      *mode = MODE_CUTS ;
+    } else if( are_equal( INPUT[mode_idx].VALUE , "SMEARING" ) ) {
+      *mode = MODE_SMEARING ;
+    } else if( are_equal( INPUT[mode_idx].VALUE , "SUNCxU1" ) ) {
+      *mode = MODE_CROSS_U1 ;
+    } else {
+      *mode = MODE_REWRITE ;
+    }
   }
-
   // look at what seed type we are going to use
-  const int seed_idx = tag_search( "SEED" ) ;
-  if( seed_idx == GLU_FAILURE ) { return tag_failure( "SEED" ) ; }
-  sscanf( INPUT[seed_idx].VALUE , "%u" , &Latt.Seed[0] ) ;
-  if( Latt.Seed[0] == 0 ) {
-    printf( "\n[RNG] Generating RNG seed from urandom \n" ) ; 
-    if( initialise_seed( ) == GLU_FAILURE ) return GLU_FAILURE ;
+  {
+    const int seed_idx = tag_search( "SEED" ) ;
+    if( seed_idx == GLU_FAILURE ) { return tag_failure( "SEED" ) ; }
+    sscanf( INPUT[seed_idx].VALUE , "%u" , &Latt.Seed[0] ) ;
+    if( Latt.Seed[0] == 0 ) {
+      printf( "\n[RNG] Generating RNG seed from urandom \n" ) ; 
+      if( initialise_seed( ) == GLU_FAILURE ) return GLU_FAILURE ;
+    }
+    #ifdef KISS_RNG
+    printf( "[RNG] KISS Seed %u \n\n" , Latt.Seed[0] ) ;
+    #elif defined MWC_1038_RNG
+    printf( "[RNG] MWC_1038 Seed %u \n\n" , Latt.Seed[0] ) ;
+    #elif defined MWC_4096_RNG
+    printf( "[RNG] MWC_4096 Seed %u \n\n" , Latt.Seed[0] ) ;
+    #elif defined GSL_RNG
+    printf( "[RNG] GSL (MT) Seed %u \n\n" , Latt.Seed[0] ) ;
+    #elif defined XOR1024_RNG
+    printf( "[RNG] XOR1024 Seed %u \n\n" , Latt.Seed[0] ) ;
+    #else
+    printf( "[RNG] well_19937a Seed %u \n\n" , Latt.Seed[0] ) ;
+    #endif
   }
-#ifdef KISS_RNG
-  printf( "[RNG] KISS Seed %u \n\n" , Latt.Seed[0] ) ;
-#elif defined MWC_1038_RNG
-  printf( "[RNG] MWC_1038 Seed %u \n\n" , Latt.Seed[0] ) ;
-#elif defined MWC_4096_RNG
-  printf( "[RNG] MWC_4096 Seed %u \n\n" , Latt.Seed[0] ) ;
-#elif defined GSL_RNG
-  printf( "[RNG] GSL (MT) Seed %u \n\n" , Latt.Seed[0] ) ;
-#elif defined XOR1024_RNG
-  printf( "[RNG] XOR1024 Seed %u \n\n" , Latt.Seed[0] ) ;
-#else
-  printf( "[RNG] well_19937a Seed %u \n\n" , Latt.Seed[0] ) ;
-#endif
-
   return GLU_SUCCESS ;
 }
 
@@ -173,33 +219,33 @@ static GLU_output
 out_details( const GLU_mode mode )
 {  
   // get the storage type
-  const int storage_idx = tag_search( "STORAGE" ) ;
-  if( storage_idx == GLU_FAILURE ) { return tag_failure( "STORAGE" ) ; }
-
-  if( are_equal( INPUT[storage_idx].VALUE , "NERSC_SMALL" ) ) {
-    // small is not available for larger NC default to NCxNC
-    #if NC > 3
-    return OUTPUT_NCxNC ;
-    #else
-    return ( mode != MODE_CROSS_U1 ) ? OUTPUT_SMALL : OUTPUT_NCxNC ;
-    #endif
-  } else if( are_equal( INPUT[storage_idx].VALUE , "NERSC_GAUGE" ) ) {
-    return ( mode != MODE_CROSS_U1 ) ? OUTPUT_GAUGE : OUTPUT_NCxNC ;
-  } else if( are_equal( INPUT[storage_idx].VALUE , "NERSC_NCxNC" ) ) {
-    return OUTPUT_NCxNC ;
-  } else if( are_equal( INPUT[storage_idx].VALUE , "HIREP" ) ) {
-    return OUTPUT_HIREP ;
-  } else if( are_equal( INPUT[storage_idx].VALUE , "MILC" ) ) {
-    return OUTPUT_MILC ;
-  } else if( are_equal( INPUT[storage_idx].VALUE , "SCIDAC" ) ) {
-    return OUTPUT_SCIDAC ;
-  } else if( are_equal( INPUT[storage_idx].VALUE , "ILDG" ) ) {
-    return OUTPUT_ILDG ;
-  } else {
-    // default to NERSC_NCxNC
-    return OUTPUT_NCxNC ;
+  {
+    const int storage_idx = tag_search( "STORAGE" ) ;
+    if( storage_idx == GLU_FAILURE ) { return tag_failure( "STORAGE" ) ; }
+    if( are_equal( INPUT[storage_idx].VALUE , "NERSC_SMALL" ) ) {
+      // small is not available for larger NC default to NCxNC
+      #if NC > 3
+      return OUTPUT_NCxNC ;
+      #else
+      return ( mode != MODE_CROSS_U1 ) ? OUTPUT_SMALL : OUTPUT_NCxNC ;
+      #endif
+    } else if( are_equal( INPUT[storage_idx].VALUE , "NERSC_GAUGE" ) ) {
+      return ( mode != MODE_CROSS_U1 ) ? OUTPUT_GAUGE : OUTPUT_NCxNC ;
+    } else if( are_equal( INPUT[storage_idx].VALUE , "NERSC_NCxNC" ) ) {
+      return OUTPUT_NCxNC ;
+    } else if( are_equal( INPUT[storage_idx].VALUE , "HIREP" ) ) {
+      return OUTPUT_HIREP ;
+    } else if( are_equal( INPUT[storage_idx].VALUE , "MILC" ) ) {
+      return OUTPUT_MILC ;
+    } else if( are_equal( INPUT[storage_idx].VALUE , "SCIDAC" ) ) {
+      return OUTPUT_SCIDAC ;
+    } else if( are_equal( INPUT[storage_idx].VALUE , "ILDG" ) ) {
+      return OUTPUT_ILDG ;
+    } else {
+      // default to NERSC_NCxNC
+      return OUTPUT_NCxNC ;
+    }
   }
-
   // we will not reach this point
   return GLU_FAILURE ;
 }
@@ -208,59 +254,67 @@ out_details( const GLU_mode mode )
 static header_mode
 header_type( void )
 {
-  const int header_idx = tag_search( "HEADER" ) ;
-  if( header_idx == GLU_FAILURE ) { return tag_failure( "HEADER" ) ; }
-
-  if( are_equal( INPUT[header_idx].VALUE , "NERSC" ) ) {
-    printf( "[IO] Attempting to read a NERSC file \n" ) ;
-    return NERSC_HEADER ;
-  } else if( are_equal( INPUT[header_idx].VALUE , "HIREP" ) ) {
-    printf( "[IO] Attempting to read a HIREP file \n" ) ;
-    printf( "[IO] Using sequence number from input file :: %d \n" ,
-	    Latt.flow = confno( ) ) ;
-    return HIREP_HEADER ;
-  } else if( are_equal( INPUT[header_idx].VALUE , "MILC" ) ) {
-    printf( "[IO] Attempting to read a MILC file \n" ) ;
-    printf( "[IO] Using sequence number from input file :: %d \n" ,
-	    Latt.flow = confno( ) ) ;
-    return MILC_HEADER ;
-  } else if( are_equal( INPUT[header_idx].VALUE , "SCIDAC" ) ) {
-    printf( "[IO] Attempting to read a SCIDAC file \n" ) ;
-    printf( "[IO] Using sequence number from input file :: %d \n" ,
-	    Latt.flow = confno( ) ) ;
-    return SCIDAC_HEADER ;
-  } else if( are_equal( INPUT[header_idx].VALUE , "LIME" ) ) {
-    printf( "[IO] Attempting to read an LIME file \n" ) ;
-    printf( "[IO] Using sequence number from input file :: %d \n" ,
-	    Latt.flow = confno( ) ) ;
-    printf( "[IO] WARNING!! NOT CHECKING ANY CHECKSUMS!! \n" ) ;
-    return LIME_HEADER ;
-  } else if( are_equal( INPUT[header_idx].VALUE , "ILDG_SCIDAC" ) ) {
-    printf( "[IO] Attempting to read an ILDG (Scidac) file \n" ) ;
-    printf( "[IO] Using sequence number from input file :: %d \n" ,
-	    Latt.flow = confno( ) ) ;
-    return ILDG_SCIDAC_HEADER ;
-  } else if( are_equal( INPUT[header_idx].VALUE , "ILDG_BQCD" ) ) {
-    printf( "[IO] Attempting to read an ILDG (BQCD) file \n" ) ;
-    printf( "[IO] Using sequence number from input file :: %d \n" ,
-	    Latt.flow = confno( ) ) ;
-    return ILDG_BQCD_HEADER ;
-  } else if( are_equal( INPUT[header_idx].VALUE , "RANDOM" ) ) {
-    printf( "[IO] Attempting to generate an SU(%d) RANDOM config \n" , NC ) ;
-    read_random_lattice_info( ) ;
-    return RANDOM_CONFIG ;
-  } else if( are_equal( INPUT[header_idx].VALUE , "UNIT" ) ) {
-    printf( "[IO] Attempting to generate an %dx%d UNIT config \n" , NC , NC ) ;
-    read_random_lattice_info( ) ;
-    return UNIT_GAUGE ;
-  } else if( are_equal( INPUT[header_idx].VALUE , "INSTANTON" ) ) {
-    printf( "[IO] Attempting to generate a SU(%d) BPST instanton config \n" 
-	    , NC ) ;
-    read_random_lattice_info( ) ;
-    return INSTANTON ;
+  // headers we support
+  {
+    const int header_idx = tag_search( "HEADER" ) ;
+    if( header_idx == GLU_FAILURE ) { return tag_failure( "HEADER" ) ; }
+    if( are_equal( INPUT[header_idx].VALUE , "NERSC" ) ) {
+      printf( "[IO] Attempting to read a NERSC file \n" ) ;
+      return NERSC_HEADER ;
+    } else if( are_equal( INPUT[header_idx].VALUE , "HIREP" ) ) {
+      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return GLU_FAILURE ;
+      printf( "[IO] Attempting to read a HIREP file \n" ) ;
+      printf( "[IO] Using sequence number from input file :: %d \n" ,
+	      Latt.flow ) ;
+      return HIREP_HEADER ;
+    } else if( are_equal( INPUT[header_idx].VALUE , "MILC" ) ) {
+      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return GLU_FAILURE ;
+      printf( "[IO] Attempting to read a MILC file \n" ) ;
+      printf( "[IO] Using sequence number from input file :: %d \n" ,
+	      Latt.flow ) ;
+      return MILC_HEADER ;
+    } else if( are_equal( INPUT[header_idx].VALUE , "SCIDAC" ) ) {
+      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return GLU_FAILURE ;
+      printf( "[IO] Attempting to read a SCIDAC file \n" ) ;
+      printf( "[IO] Using sequence number from input file :: %d \n" ,
+	      Latt.flow ) ;
+      return SCIDAC_HEADER ;
+    } else if( are_equal( INPUT[header_idx].VALUE , "LIME" ) ) {
+      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return GLU_FAILURE ;
+      printf( "[IO] Attempting to read an LIME file \n" ) ;
+      printf( "[IO] Using sequence number from input file :: %d \n" ,
+	      Latt.flow ) ;
+      printf( "[IO] WARNING!! NOT CHECKING ANY CHECKSUMS!! \n" ) ;
+      return LIME_HEADER ;
+    } else if( are_equal( INPUT[header_idx].VALUE , "ILDG_SCIDAC" ) ) {
+      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return GLU_FAILURE ;
+      printf( "[IO] Attempting to read an ILDG (Scidac) file \n" ) ;
+      printf( "[IO] Using sequence number from input file :: %d \n" ,
+	      Latt.flow ) ;
+      return ILDG_SCIDAC_HEADER ;
+    } else if( are_equal( INPUT[header_idx].VALUE , "ILDG_BQCD" ) ) {
+      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return GLU_FAILURE ;
+      printf( "[IO] Attempting to read an ILDG (BQCD) file \n" ) ;
+      printf( "[IO] Using sequence number from input file :: %d \n" ,
+	      Latt.flow ) ;
+      return ILDG_BQCD_HEADER ;
+    } else if( are_equal( INPUT[header_idx].VALUE , "RANDOM" ) ) {
+      printf( "[IO] Attempting to generate an SU(%d) RANDOM config \n" , NC ) ;
+      if( read_random_lattice_info( ) == GLU_FAILURE ) return GLU_FAILURE ;
+      return RANDOM_CONFIG ;
+    } else if( are_equal( INPUT[header_idx].VALUE , "UNIT" ) ) {
+      printf( "[IO] Attempting to generate an %dx%d UNIT config \n" , NC , NC ) ;
+      read_random_lattice_info( ) ;
+      return UNIT_GAUGE ;
+    } else if( are_equal( INPUT[header_idx].VALUE , "INSTANTON" ) ) {
+      printf( "[IO] Attempting to generate a SU(%d) BPST instanton config \n" 
+	      , NC ) ;
+      if( read_random_lattice_info( ) == GLU_FAILURE ) return GLU_FAILURE ;
+      return INSTANTON ;
+    }
+    printf( "[IO] HEADER %s not recognised ... Leaving \n" , 
+	    INPUT[header_idx].VALUE ) ;
   }
-  printf( "[IO] HEADER %s not recognised ... Leaving \n" , 
-	  INPUT[header_idx].VALUE ) ;
   return GLU_FAILURE ; 
 }
 
@@ -269,77 +323,80 @@ static int
 read_cuts_struct( struct cut_info *CUTINFO )
 {
   // set up the cuttype
-  const int cuttype_idx = tag_search( "CUTTYPE" ) ;
-  if( cuttype_idx == GLU_FAILURE ) { return tag_failure( "CUTTYPE" ) ; }
-
-  if( are_equal( INPUT[cuttype_idx].VALUE , "EXCEPTIONAL" ) ) {
-    CUTINFO -> dir = EXCEPTIONAL ;
-  } else if( are_equal( INPUT[cuttype_idx].VALUE , "NON_EXCEPTIONAL" ) ) {
-    CUTINFO -> dir = NONEXCEPTIONAL ;
-  } else if( are_equal( INPUT[cuttype_idx].VALUE , "FIELDS" ) ) {
-    CUTINFO -> dir = FIELDS ;
-  } else if( are_equal( INPUT[cuttype_idx].VALUE , "SMEARED_GLUONS" ) ) {
-    CUTINFO -> dir = SMEARED_GLUONS ;
-  } else if( are_equal( INPUT[cuttype_idx].VALUE , "INSTANTANEOUS_GLUONS" ) ) {
-    CUTINFO -> dir = INSTANTANEOUS_GLUONS ;
-  } else if( are_equal( INPUT[cuttype_idx].VALUE , "CONFIGSPACE_GLUONS" ) ) {
-    CUTINFO -> dir = CONFIGSPACE_GLUONS ;
-  } else if( are_equal( INPUT[cuttype_idx].VALUE , "GLUON_PROPS" ) ) {
-    CUTINFO -> dir = GLUON_PROPS ;
-  } else if( are_equal( INPUT[cuttype_idx].VALUE , "STATIC_POTENTIAL" ) ) {
-    CUTINFO -> dir = STATIC_POTENTIAL ;
-  } else if( are_equal( INPUT[cuttype_idx].VALUE , "TOPOLOGICAL_SUSCEPTIBILITY" ) ) {
-    CUTINFO -> dir = TOPOLOGICAL_SUSCEPTIBILITY ;
-  } else {
-    printf( "[IO] I do not understand your CUTTYPE %s\n" , 
-	    INPUT[cuttype_idx].VALUE ) ;
-    printf( "[IO] Defaulting to no cutting \n" ) ;
-    CUTINFO -> dir = GLU_FAILURE ;
+  {
+    const int cuttype_idx = tag_search( "CUTTYPE" ) ;
+    if( cuttype_idx == GLU_FAILURE ) { return tag_failure( "CUTTYPE" ) ; }
+    if( are_equal( INPUT[cuttype_idx].VALUE , "EXCEPTIONAL" ) ) {
+      CUTINFO -> dir = EXCEPTIONAL ;
+    } else if( are_equal( INPUT[cuttype_idx].VALUE , "NON_EXCEPTIONAL" ) ) {
+      CUTINFO -> dir = NONEXCEPTIONAL ;
+    } else if( are_equal( INPUT[cuttype_idx].VALUE , "FIELDS" ) ) {
+      CUTINFO -> dir = FIELDS ;
+    } else if( are_equal( INPUT[cuttype_idx].VALUE , "SMEARED_GLUONS" ) ) {
+      CUTINFO -> dir = SMEARED_GLUONS ;
+    } else if( are_equal( INPUT[cuttype_idx].VALUE , "INSTANTANEOUS_GLUONS" ) ) {
+      CUTINFO -> dir = INSTANTANEOUS_GLUONS ;
+    } else if( are_equal( INPUT[cuttype_idx].VALUE , "CONFIGSPACE_GLUONS" ) ) {
+      CUTINFO -> dir = CONFIGSPACE_GLUONS ;
+    } else if( are_equal( INPUT[cuttype_idx].VALUE , "GLUON_PROPS" ) ) {
+      CUTINFO -> dir = GLUON_PROPS ;
+    } else if( are_equal( INPUT[cuttype_idx].VALUE , "STATIC_POTENTIAL" ) ) {
+      CUTINFO -> dir = STATIC_POTENTIAL ;
+    } else if( are_equal( INPUT[cuttype_idx].VALUE , "TOPOLOGICAL_SUSCEPTIBILITY" ) ) {
+      CUTINFO -> dir = TOPOLOGICAL_SUSCEPTIBILITY ;
+    } else {
+      printf( "[IO] I do not understand your CUTTYPE %s\n" , 
+	      INPUT[cuttype_idx].VALUE ) ;
+      printf( "[IO] Defaulting to no cutting \n" ) ;
+      CUTINFO -> dir = GLU_FAILURE ;
+    }
   }
-
   // momentum space cut def
-  const int momcut_idx = tag_search( "MOM_CUT" ) ;
-  if( momcut_idx == GLU_FAILURE ) { return tag_failure( "MOM_CUT" ) ; }
-  if ( are_equal( INPUT[momcut_idx].VALUE , "HYPERCUBIC_CUT" ) ) {
-    CUTINFO -> type = HYPERCUBIC_CUT ; 
-  } else if ( are_equal( INPUT[momcut_idx].VALUE , "SPHERICAL_CUT" ) ) {
-    CUTINFO -> type = PSQ_CUT ; 
-  } else if ( are_equal( INPUT[momcut_idx].VALUE , "CYLINDER_CUT" ) ) {
-    CUTINFO -> type = CYLINDER_CUT ; 
-  } else if ( are_equal( INPUT[momcut_idx].VALUE , "CONICAL_CUT" ) ) {
-    CUTINFO -> type = CYLINDER_AND_CONICAL_CUT ; 
-  } else {
-    printf( "[IO] Unrecognised type [%s] \n" , INPUT[momcut_idx].VALUE ) ; 
-    printf( "[IO] Defaulting to SPHERICAL_CUT \n" ) ; 
+  {
+    const int momcut_idx = tag_search( "MOM_CUT" ) ;
+    if( momcut_idx == GLU_FAILURE ) { return tag_failure( "MOM_CUT" ) ; }
+    if ( are_equal( INPUT[momcut_idx].VALUE , "HYPERCUBIC_CUT" ) ) {
+      CUTINFO -> type = HYPERCUBIC_CUT ; 
+    } else if ( are_equal( INPUT[momcut_idx].VALUE , "SPHERICAL_CUT" ) ) {
+      CUTINFO -> type = PSQ_CUT ; 
+    } else if ( are_equal( INPUT[momcut_idx].VALUE , "CYLINDER_CUT" ) ) {
+      CUTINFO -> type = CYLINDER_CUT ; 
+    } else if ( are_equal( INPUT[momcut_idx].VALUE , "CONICAL_CUT" ) ) {
+      CUTINFO -> type = CYLINDER_AND_CONICAL_CUT ; 
+    } else {
+      printf( "[IO] Unrecognised type [%s] \n" , INPUT[momcut_idx].VALUE ) ; 
+      printf( "[IO] Defaulting to SPHERICAL_CUT \n" ) ; 
+    }
   }
-
   // field definition
-  const int field_idx = tag_search( "FIELD_DEFINITION" ) ;
-  if( field_idx == GLU_FAILURE ) { return tag_failure( "FIELD_DEFINITION" ) ; }
-  CUTINFO -> definition = LINEAR_DEF ;
-  if( are_equal( INPUT[field_idx].VALUE , "LOGARITHMIC" ) ) {
-    CUTINFO -> definition = LOG_DEF ;
-  } 
-
+  {
+    const int field_idx = tag_search( "FIELD_DEFINITION" ) ;
+    if( field_idx == GLU_FAILURE ) { return tag_failure( "FIELD_DEFINITION" ) ; }
+    CUTINFO -> definition = LINEAR_DEF ;
+    if( are_equal( INPUT[field_idx].VALUE , "LOGARITHMIC" ) ) {
+      CUTINFO -> definition = LOG_DEF ;
+    } 
+  }
   // minmom, maxmom angle and cylinder width
-  const int max_t_idx = tag_search( "MAX_T" ) ;
-  if( max_t_idx == GLU_FAILURE ) { return tag_failure( "MAX_T" ) ; }
-  CUTINFO -> max_t = atoi( INPUT[max_t_idx].VALUE ) ;
-  const int maxmom_idx = tag_search( "MAXMOM" ) ;
-  if( maxmom_idx == GLU_FAILURE ) { return tag_failure( "MAXMOM" ) ; }
-  CUTINFO -> max_mom = atoi( INPUT[maxmom_idx].VALUE ) ;
-  const int angle_idx = tag_search( "ANGLE" ) ;
-  if( angle_idx == GLU_FAILURE ) { return tag_failure( "ANGLE" ) ; }
-  CUTINFO -> angle = atoi( INPUT[angle_idx].VALUE ) ;
-  const int cyl_idx = tag_search( "CYL_WIDTH" ) ;
-  if( cyl_idx == GLU_FAILURE ) { return tag_failure( "CYL_WIDTH" ) ; }
-  CUTINFO -> cyl_width = atof( INPUT[cyl_idx].VALUE ) ;
-
+  if( setint( &( CUTINFO -> max_t ) , "MAX_T" ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
+  if( setint( &( CUTINFO -> max_mom ) , "MAXMOM" ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
+  if( setint( &( CUTINFO -> max_mom ) , "ANGLE" ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
+  // set the cylinder width
+  if( setdbl( &( CUTINFO -> cyl_width ) , "CYL_WIDTH" ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
   // look for where the output is going
-  const int output_idx = tag_search( "OUTPUT" ) ;
-  if( cyl_idx == GLU_FAILURE ) { return tag_failure( "OUTPUT" ) ; }
-  sprintf( CUTINFO -> where , "%s" , INPUT[output_idx].VALUE ) ;
-
+  {
+    const int output_idx = tag_search( "OUTPUT" ) ;
+    if( output_idx == GLU_FAILURE ) { return tag_failure( "OUTPUT" ) ; }
+    sprintf( CUTINFO -> where , "%s" , INPUT[output_idx].VALUE ) ; 
+  }
   return GLU_SUCCESS ;
 }
 
@@ -348,47 +405,46 @@ static int
 read_gf_struct ( struct gf_info *GFINFO )
 {
   // look at what seed type we are going to use
-  const int gf_idx = tag_search( "GFTYPE" ) ;
-  if( gf_idx == GLU_FAILURE ) { return tag_failure( "GFTYPE" ) ; }
-
-  if( are_equal( INPUT[gf_idx].VALUE , "LANDAU" ) ) { 
-    GFINFO -> type = GLU_LANDAU_FIX ;
-  } else if ( are_equal( INPUT[gf_idx].VALUE , "COULOMB" ) ) {
-    GFINFO -> type = GLU_COULOMB_FIX ;
-  } else {
-    printf( "[IO] unknown type [%s] : Defaulting to NO GAUGE FIXING \n" , 
-	    INPUT[gf_idx].VALUE ) ; 
-    GFINFO -> type = DEFAULT_NOFIX ; 
+  {
+    const int gf_idx = tag_search( "GFTYPE" ) ;
+    if( gf_idx == GLU_FAILURE ) { return tag_failure( "GFTYPE" ) ; } 
+    if( are_equal( INPUT[gf_idx].VALUE , "LANDAU" ) ) { 
+      GFINFO -> type = GLU_LANDAU_FIX ;
+    } else if ( are_equal( INPUT[gf_idx].VALUE , "COULOMB" ) ) {
+      GFINFO -> type = GLU_COULOMB_FIX ;
+    } else {
+      printf( "[IO] unknown type [%s] : Defaulting to NO GAUGE FIXING \n" , 
+	      INPUT[gf_idx].VALUE ) ; 
+      GFINFO -> type = DEFAULT_NOFIX ; 
+    }
   }
-
   // have a look to see what "improvements" we would like
-  const int improve_idx = tag_search( "IMPROVEMENTS" ) ;
-  if( improve_idx == GLU_FAILURE ) { return tag_failure( "IMPROVEMENTS" ) ; }
-
-  GFINFO -> improve = NO_IMPROVE ; // default is no "Improvements" 
-  if( are_equal( INPUT[improve_idx].VALUE , "MAG" ) ) {
-    GFINFO -> improve = MAG_IMPROVE ; 
-  } else if ( are_equal( INPUT[improve_idx].VALUE , "SMEAR" ) ) {
-    GFINFO -> improve = SMPREC_IMPROVE ; 
-  } else if(  are_equal( INPUT[improve_idx].VALUE , "RESIDUAL" ) ) {
-    GFINFO -> improve = RESIDUAL_IMPROVE ; 
+  {
+    const int improve_idx = tag_search( "IMPROVEMENTS" ) ;
+    if( improve_idx == GLU_FAILURE ) { return tag_failure( "IMPROVEMENTS" ) ; } 
+    GFINFO -> improve = NO_IMPROVE ; // default is no "Improvements" 
+    if( are_equal( INPUT[improve_idx].VALUE , "MAG" ) ) {
+      GFINFO -> improve = MAG_IMPROVE ; 
+    } else if ( are_equal( INPUT[improve_idx].VALUE , "SMEAR" ) ) {
+      GFINFO -> improve = SMPREC_IMPROVE ; 
+    } else if(  are_equal( INPUT[improve_idx].VALUE , "RESIDUAL" ) ) {
+      GFINFO -> improve = RESIDUAL_IMPROVE ; 
+    }
   }
-
   // set the accuracy is 10^{-ACCURACY}
-  const int acc_idx = tag_search( "ACCURACY" ) ;
-  if( acc_idx == GLU_FAILURE ) { return tag_failure( "ACCURACY" ) ; }
-  GFINFO -> accuracy = pow( 10 , -atoi( INPUT[acc_idx].VALUE ) ) ; 
-
+  if( setdbl( &( GFINFO -> accuracy ) , "ACCURACY" ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  } 
+  GFINFO -> accuracy = pow( 10.0 , -GFINFO -> accuracy ) ;
   // set the maximum number of iterations of the routine
-  const int iters_idx = tag_search( "MAX_ITERS" ) ;
-  if( iters_idx == GLU_FAILURE ) { return tag_failure( "MAX_ITERS" ) ; }
-  GFINFO -> max_iters = atoi( INPUT[iters_idx].VALUE ) ; 
-
+  if( setint( &( GFINFO -> max_iters ) , "MAX_ITERS" ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
   // set the alpha goes in Latt.gf_alpha for some reason
-  const int alpha_idx = tag_search( "GF_TUNE" ) ;
-  if( alpha_idx == GLU_FAILURE ) { return tag_failure( "GF_TUNE" ) ; }
-  Latt.gf_alpha = atof( INPUT[alpha_idx].VALUE ) ;
-
+  if( setdbl( &Latt.gf_alpha , "GF_TUNE" ) == GLU_FAILURE ) {
+    printf( "Failure \n" ) ;
+    return GLU_FAILURE ;
+  }
   return GLU_SUCCESS ;
 }
 
@@ -397,26 +453,24 @@ static int
 read_suNC_x_U1( struct u1_info *U1INFO )
 {
   // U1 coupling strength
-  const int U1_alpha_idx = tag_search( "U1_ALPHA" ) ;
-  if( U1_alpha_idx == GLU_FAILURE ) { return tag_failure( "U1_ALPHA" ) ; }
-  U1INFO -> alpha = (double)atof( INPUT[ U1_alpha_idx ].VALUE ) ;
-
-  // U1 coupling strength
-  const int U1_charge_idx = tag_search( "U1_CHARGE" ) ;
-  if( U1_charge_idx == GLU_FAILURE ) { return tag_failure( "U1_CHARGE" ) ; }
-  U1INFO -> charge = (double)atof( INPUT[ U1_charge_idx ].VALUE ) ;
-
-  // U1 measurement type default is just the plaquette
-  const int U1_meas_idx = tag_search( "U1_MEAS" ) ;
-  if( U1_meas_idx == GLU_FAILURE ) { return tag_failure( "U1_MEAS" ) ; }
-
-  U1INFO -> meas = U1_PLAQUETTE ;
-  if( are_equal( INPUT[ U1_charge_idx ].VALUE , "U1_RECTANGLE" ) ) {
-    U1INFO -> meas = U1_RECTANGLE ;
-  } else if ( are_equal( INPUT[ U1_charge_idx ].VALUE , "U1_TOPOLOGICAL" ) ) {
-    U1INFO -> meas = U1_TOPOLOGICAL ;
+  if( setdbl( &( U1INFO -> alpha ) , "U1_ALPHA" ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
   }
-
+  // U1 charge
+  if( setdbl( &( U1INFO -> charge ) , "U1_CHARGE" ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
+  // U1 measurement type default is just the plaquette
+  {
+    const int U1_meas_idx = tag_search( "U1_MEAS" ) ;
+    if( U1_meas_idx == GLU_FAILURE ) { return tag_failure( "U1_MEAS" ) ; }
+    U1INFO -> meas = U1_PLAQUETTE ;
+    if( are_equal( INPUT[ U1_meas_idx ].VALUE , "U1_RECTANGLE" ) ) {
+      U1INFO -> meas = U1_RECTANGLE ;
+    } else if ( are_equal( INPUT[ U1_meas_idx ].VALUE , "U1_TOPOLOGICAL" ) ) {
+      U1INFO -> meas = U1_TOPOLOGICAL ;
+    }
+  }
   return GLU_SUCCESS ;
 }
 
@@ -434,64 +488,65 @@ static int
 smearing_info( struct sm_info *SMINFO )
 {
   // find the smeartype index
-  const int type_idx = tag_search( "SMEARTYPE" ) ;
-  if( type_idx == GLU_FAILURE ) { return tag_failure( "SMEARTYPE" ) ; }
-
-  if( are_equal( INPUT[type_idx].VALUE , "APE" ) ) { 
-    SMINFO -> type = SM_APE ;
-  } else if( are_equal( INPUT[type_idx].VALUE , "STOUT" ) ) {
-    SMINFO -> type = SM_STOUT ;
-  } else if( are_equal( INPUT[type_idx].VALUE , "LOG" ) ) {
-    SMINFO -> type = SM_LOG ;
-  } else if( are_equal( INPUT[type_idx].VALUE , "HYP" ) ) {
-    SMINFO -> type = SM_HYP ;
-  } else if( are_equal( INPUT[type_idx].VALUE , "HEX" ) ) {
-    SMINFO -> type = SM_HEX ;
-  } else if( are_equal( INPUT[type_idx].VALUE , "HYL" ) ) {
-    SMINFO -> type = SM_HYL ;
-  } else if( are_equal( INPUT[type_idx].VALUE , "WFLOW_LOG" ) ) {
-    SMINFO -> type = SM_WFLOW_LOG ;
-  } else if( are_equal( INPUT[type_idx].VALUE , "WFLOW_STOUT" ) ) {
-    SMINFO -> type = SM_WFLOW_STOUT ;
-  } else if( are_equal( INPUT[type_idx].VALUE , "EULWFLOW_STOUT" ) ) {
-    SMINFO -> type = SM_EULWFLOW_STOUT ;
-  } else if( are_equal( INPUT[type_idx].VALUE , "EULWFLOW_LOG" ) ) {
-    SMINFO -> type = SM_EULWFLOW_LOG ;
-  } else if( are_equal( INPUT[type_idx].VALUE , "ADAPTWFLOW_LOG" ) ) {
-    SMINFO -> type = SM_ADAPTWFLOW_LOG ;
-  } else if( are_equal( INPUT[type_idx].VALUE , "ADAPTWFLOW_STOUT" ) ) {
-    SMINFO -> type = SM_ADAPTWFLOW_STOUT ;
-  } else {
-    printf( "[IO] Unrecognised Type [%s] Defaulting to No Smearing \n" , 
-	    INPUT[type_idx].VALUE ) ;
-    SMINFO -> type = SM_NOSMEARING ;
+  {
+    const int type_idx = tag_search( "SMEARTYPE" ) ;
+    if( type_idx == GLU_FAILURE ) { return tag_failure( "SMEARTYPE" ) ; }
+    if( are_equal( INPUT[type_idx].VALUE , "APE" ) ) { 
+      SMINFO -> type = SM_APE ;
+    } else if( are_equal( INPUT[type_idx].VALUE , "STOUT" ) ) {
+      SMINFO -> type = SM_STOUT ;
+    } else if( are_equal( INPUT[type_idx].VALUE , "LOG" ) ) {
+      SMINFO -> type = SM_LOG ;
+    } else if( are_equal( INPUT[type_idx].VALUE , "HYP" ) ) {
+      SMINFO -> type = SM_HYP ;
+    } else if( are_equal( INPUT[type_idx].VALUE , "HEX" ) ) {
+      SMINFO -> type = SM_HEX ;
+    } else if( are_equal( INPUT[type_idx].VALUE , "HYL" ) ) {
+      SMINFO -> type = SM_HYL ;
+    } else if( are_equal( INPUT[type_idx].VALUE , "WFLOW_LOG" ) ) {
+      SMINFO -> type = SM_WFLOW_LOG ;
+    } else if( are_equal( INPUT[type_idx].VALUE , "WFLOW_STOUT" ) ) {
+      SMINFO -> type = SM_WFLOW_STOUT ;
+    } else if( are_equal( INPUT[type_idx].VALUE , "EULWFLOW_STOUT" ) ) {
+      SMINFO -> type = SM_EULWFLOW_STOUT ;
+    } else if( are_equal( INPUT[type_idx].VALUE , "EULWFLOW_LOG" ) ) {
+      SMINFO -> type = SM_EULWFLOW_LOG ;
+    } else if( are_equal( INPUT[type_idx].VALUE , "ADAPTWFLOW_LOG" ) ) {
+      SMINFO -> type = SM_ADAPTWFLOW_LOG ;
+    } else if( are_equal( INPUT[type_idx].VALUE , "ADAPTWFLOW_STOUT" ) ) {
+      SMINFO -> type = SM_ADAPTWFLOW_STOUT ;
+    } else {
+      printf( "[IO] Unrecognised Type [%s] Defaulting to No Smearing \n" , 
+	      INPUT[type_idx].VALUE ) ;
+      SMINFO -> type = SM_NOSMEARING ;
+    }
   }
-
   // look for the number of directions
-  const int dir_idx = tag_search( "DIRECTION" ) ;
-  if( dir_idx == GLU_FAILURE ) { return tag_failure( "DIRECTION" ) ; }
-  if( are_equal( INPUT[dir_idx].VALUE , "SPATIAL" ) ) {
-    SMINFO -> dir = SPATIAL_LINKS_ONLY ;
-  } else {
-    SMINFO -> dir = ALL_DIRECTIONS ;
+  {
+    const int dir_idx = tag_search( "DIRECTION" ) ;
+    if( dir_idx == GLU_FAILURE ) { return tag_failure( "DIRECTION" ) ; }
+    if( are_equal( INPUT[dir_idx].VALUE , "SPATIAL" ) ) {
+      SMINFO -> dir = SPATIAL_LINKS_ONLY ;
+    } else {
+      SMINFO -> dir = ALL_DIRECTIONS ;
+    }
   }
-
   // set up the number of smearing iterations
-  const int iters_idx = tag_search( "SMITERS" ) ;
-  if( iters_idx == GLU_FAILURE ) { return tag_failure( "SMITERS" ) ; }
-  SMINFO -> smiters = atoi( INPUT[ iters_idx ].VALUE ) ;
-
+  if( setint( &( SMINFO -> smiters ) , "SMITERS" ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
   // poke the smearing alpha's into Latt.smalpha[ND]
   // logically for an ND - dimensional theory there are ND - 1 HYP params.
-  int mu ;
-  for( mu = 0 ; mu < ND - 1 ; mu++ ) {
-    char alpha_str[ 64 ] ;
-    sprintf( alpha_str , "ALPHA%d" , mu + 1 ) ;
-    const int alpha_idx = tag_search( alpha_str ) ;
-    if( alpha_idx == GLU_FAILURE ) { return tag_failure( alpha_str ) ; }
-    Latt.sm_alpha[ mu ] = (double)atof(  INPUT[alpha_idx].VALUE ) ; 
+  {
+    int mu ;
+    for( mu = 0 ; mu < ND - 1 ; mu++ ) {
+      char alpha_str[ 64 ] ;
+      sprintf( alpha_str , "ALPHA%d" , mu + 1 ) ;
+      if( setdbl( &Latt.sm_alpha[ mu ] , alpha_str ) == GLU_FAILURE ) {
+	return GLU_FAILURE ;
+      }
+    }
   }
-
   return GLU_SUCCESS ;
 }
 

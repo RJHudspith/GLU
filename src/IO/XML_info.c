@@ -24,6 +24,8 @@
 
 #include "Mainfile.h"
 
+#include <errno.h>
+
 // this prints to stdout all of the header information ...
 //#define DEBUG
 
@@ -48,14 +50,17 @@ static int
 get_int_tag( char *pch , const char *tag )
 {
   const int length = strlen( tag ) ;
-  char tmp[ length + 2 ] ;
+  char tmp[ length + 2 ] , *endptr ;
   sprintf( tmp , "/%s" , tag ) ;
   // loop tokens
   int value = 0 ;
+  errno = 0 ;
   while( ( pch = strtok( 0 , "<>" ) ) ) {
-    if( !strncmp( pch , tmp , length+1 ) )
-      break ;
-    value = atoi( realFront( pch ) ) ;
+    if( !strncmp( pch , tmp , length+1 ) ) break ;
+    value = (int)strtol( realFront( pch ) , &endptr , 10 ) ;
+    if( errno == ERANGE || endptr == realFront( pch ) ) {
+      return GLU_FAILURE ;
+    }
   }
   return value ;
 }
@@ -65,7 +70,7 @@ static int
 get_prec_tag( char *pch , const char *tag )
 {
   const int length = strlen( tag ) ;
-  char tmp[ length + 2 ] ;
+  char tmp[ length + 2 ] , *endptr ;
   sprintf( tmp , "/%s" , tag ) ;
   char prec[ 8 ] = "00" ;
   // loop tokens
@@ -75,8 +80,9 @@ get_prec_tag( char *pch , const char *tag )
   }
   if( !strcmp( prec , "F" ) ) return FLOAT_PREC ;
   if( !strcmp( prec , "D" ) ) return DOUBLE_PREC ;
-  if( atoi( realFront( prec ) ) == 32 ) return FLOAT_PREC ;
-  if( atoi( realFront( prec ) ) == 64 ) return DOUBLE_PREC ;
+  const int sd = (int)strtol( realFront( prec ) , &endptr , 10 ) ;
+  if( sd == 32 ) return FLOAT_PREC ;
+  if( sd == 64 ) return DOUBLE_PREC ;
   return GLU_FAILURE ;
 }
 
@@ -188,11 +194,16 @@ parse_and_set_xml_SCIDAC( char *xml_info ,
 	while ( ( pch = strtok( 0 , "<>" ) ) ) {
 	  // break up the dimensions ...
 	  char *tofree = pch ;
-	  char *token ;
+	  char *token , *endptr ;
+	  errno = 0 ;
 	  int idx = 0 ;
 	  while( ( token = strsep( &pch , " " ) ) ) {
 	    if(  ( are_equal( token , "/dims" ) ) ) break ;
-	    Latt.dims[ idx ] = atoi( token ) ;
+	    Latt.dims[ idx ] = strtol( token , &endptr , 10 ) ;
+	    if( endptr == token || Latt.dims[ idx ] < 0 || 
+		errno == ERANGE ) {
+	      return GLU_FAILURE ;
+	    }
 	    #ifdef DEBUG
 	    printf( "[IO] DIMS_%d \n" , Latt.dims[idx]) ;
 	    #endif

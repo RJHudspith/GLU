@@ -156,7 +156,12 @@ parse_SCIDAC_hdr( FILE *infile ,
   // BQCD put their plaquette and cksum at the end without xml tags hmpf!
   if( strcmp( (const char*)typebuf , "bqcd-plaquette" ) == 0 ) {
     struct head_data tmp = *HEAD_DATA ;
-    tmp.plaquette = atof( io_data ) ;
+    char *endptr ;
+    tmp.plaquette = strtod( io_data , &endptr ) ;
+    if( io_data == endptr ) {
+      printf( "[IO] BQCD plaquette misread \n" ) ;
+      return GLU_FAILURE ;
+    }
     *HEAD_DATA = tmp ;
   }
   // read in the possible checksum
@@ -187,7 +192,7 @@ parse_SCIDAC_hdr( FILE *infile ,
 }
 
 // for writing the header record
-static void
+static int
 write_SCIDAC_binary( FILE *__restrict out ,
 		     char *record ,
 		     const int record_length ,
@@ -218,14 +223,16 @@ write_SCIDAC_binary( FILE *__restrict out ,
     header.uchr[ ref + chr ] = banf[ chr ] ;
   }
   // and write out the record
-  if( fwrite( (void*)header.int64 , sizeof( int64_t ) , MAX_HDR64 , out ) != MAX_HDR64 ) {
+  if( fwrite( (void*)header.int64 , sizeof( int64_t ) , MAX_HDR64 , out ) 
+      != MAX_HDR64 ) {
     printf( "[IO] SCIDAC header writing failure ... Leaving\n" ) ;
+    return GLU_FAILURE ;
   }
   fprintf( out , "%s" , record ) ;
   // write out some padding ...
   const int padding = lime_padding( (size_t)record_length ) ;
   fwrite( padbuf , sizeof( unsigned char ) , padding , out ) ;
-  return ;
+  return GLU_SUCCESS ;
 }
 
 // scidac file has a header, plus some xml data
@@ -264,7 +271,8 @@ write_header_SCIDAC( FILE *__restrict out )
   char str[ 512 ] ;
 
   // sprintf in some xml stuff
-  sprintf( str , "%s<scidacFile><version>1.1</version><spacetime>%d</spacetime><dims>" , start , ND ) ;
+  sprintf( str , "%s<scidacFile><version>1.1</version>"
+	   " <spacetime>%d</spacetime><dims>" , start , ND ) ;
   int mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     sprintf( str , "%s%d " , str , Latt.dims[mu] ) ;
@@ -277,15 +285,21 @@ write_header_SCIDAC( FILE *__restrict out )
 
   // gauge file informations
   sprintf( str , "%s" , start ) ;
-  sprintf( str , "%s<scidacRecord><version>1.0</version><date>%s GMT</date><globaldata>0</globaldata>" , str , get_date( ) ) ;
+  sprintf( str , "%s<scidacRecord><version>1.0</version><date>%s GMT</date>"
+	   "<globaldata>0</globaldata>" , str , get_date( ) ) ;
 #ifdef SINGLE_PREC
-  sprintf( str , "%s<datatype>QDP_F%d_ColorMatrix</datatype><precision>F</precision>" , str , NC ) ;
+  sprintf( str , "%s<datatype>QDP_F%d_ColorMatrix</datatype>"
+	   "<precision>F</precision>" , str , NC ) ;
 #else
-  sprintf( str , "%s<datatype>QDP_D%d_ColorMatrix</datatype><precision>D</precision>" , str , NC ) ;
+  sprintf( str , "%s<datatype>QDP_D%d_ColorMatrix</datatype>"
+	   "<precision>D</precision>" , str , NC ) ;
 #endif
-  sprintf( str , "%s<colors>%d</colors><typesize>%d</typesize><datacount>%d</datacount></scidacRecord>" , 
-	   str , NC , ND * NCNC * 2 * (int)( sizeof( GLU_real ) / sizeof( float ) ) , ND ) ;
-  write_SCIDAC_binary( out , str , strlen( str ) , "scidac-private-record-xml" ) ;
+  sprintf( str , "%s<colors>%d</colors><typesize>%d</typesize>"
+	   "<datacount>%d</datacount></scidacRecord>" , 
+	   str , NC , 
+	   ND * NCNC * 2 * (int)( sizeof( GLU_real ) / sizeof( float ) ) , ND ) ;
+  write_SCIDAC_binary( out , str , strlen( str ) , 
+		       "scidac-private-record-xml" ) ;
 
   // dummy again
   sprintf( str , "Dummy user record XML for lattice fields" ) ;
@@ -293,7 +307,8 @@ write_header_SCIDAC( FILE *__restrict out )
 
   // and then leave space for the gauge field
   char *nada = "" ; 
-  write_SCIDAC_binary( out , nada , sizeof( GLU_real ) * LVOLUME * ND * NCNC * 2 , "scidac-binary-data" ) ; // the 2 is for complex
+  write_SCIDAC_binary( out , nada , sizeof( GLU_real ) * \
+		       LVOLUME * ND * NCNC * 2 , "scidac-binary-data" ) ; // the 2 is for complex
   return ;
 }
 
@@ -324,7 +339,8 @@ write_header_ILDG( FILE *__restrict out )
   char str[ 512 ] ;
 
   // sprintf in some xml stuff
-  sprintf( str , "%s<scidacFile><version>1.1</version><spacetime>%d</spacetime><dims>" , start , ND ) ;
+  sprintf( str , "%s<scidacFile><version>1.1</version>"
+	   "<spacetime>%d</spacetime><dims>" , start , ND ) ;
   int mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     sprintf( str , "%s%d " , str , Latt.dims[mu] ) ;
@@ -337,13 +353,17 @@ write_header_ILDG( FILE *__restrict out )
 
   // SCIDAC gauge file informations
   sprintf( str , "%s<scidacRecord>" , start ) ;
-  sprintf( str , "%s<version>1.0</version><date>%s GMT</date><globaldata>0</globaldata>" , str , get_date( ) ) ;
+  sprintf( str , "%s<version>1.0</version><date>%s GMT</date>"
+	   "<globaldata>0</globaldata>" , str , get_date( ) ) ;
 #ifdef SINGLE_PREC
-  sprintf( str , "%s<datatype>QDP_F%d_ColorMatrix</datatype><precision>F</precision>" , str , NC ) ;
+  sprintf( str , "%s<datatype>QDP_F%d_ColorMatrix</datatype>"
+	   "<precision>F</precision>" , str , NC ) ;
 #else
-  sprintf( str , "%s<datatype>QDP_D%d_ColorMatrix</datatype><precision>D</precision>" , str , NC ) ;
+  sprintf( str , "%s<datatype>QDP_D%d_ColorMatrix</datatype>"
+	   "<precision>D</precision>" , str , NC ) ;
 #endif
-  sprintf( str , "%s<colors>%d</colors><typesize>%d</typesize><datacount>%d</datacount></scidacRecord>" , 
+  sprintf( str , "%s<colors>%d</colors><typesize>%d</typesize>"
+	   "<datacount>%d</datacount></scidacRecord>" , 
 	   str , NC , ND * NCNC * 2 * (int)( sizeof( GLU_real ) / sizeof( float ) ) , ND ) ;
   write_SCIDAC_binary( out , str , strlen( str ) , "scidac-private-record-xml" ) ;
 
@@ -352,7 +372,10 @@ write_header_ILDG( FILE *__restrict out )
   write_SCIDAC_binary( out , str , strlen( str ) , "scidac-record-xml" ) ;
 
   // FINALLY WE HAVE THE ILDG FORMAT STUFF //
-  const char *ILDG_start = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><ildgFormat xmlns=\"http://www.lqcd.org/ildg\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.lqcd.org/ildg/filefmt.xsd\">" ;
+  const char *ILDG_start = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+    "<ildgFormat xmlns=\"http://www.lqcd.org/ildg\" xmlns:xsi=\""
+    "http://www.w3.org/2001/XMLSchema-instance\" xsi:"
+    "schemaLocation=\"http://www.lqcd.org/ildg/filefmt.xsd\">" ;
   const char *ILDG_end = "</ildgFormat>" ;
   // begin with the usual spiel and the versioning ...
   sprintf( str , "%s<version>1.0</version>" , ILDG_start ) ;
@@ -380,7 +403,8 @@ write_header_ILDG( FILE *__restrict out )
 	   
   // and then leave space for the gauge field
   char *nada = "" ; 
-  write_SCIDAC_binary( out , nada , sizeof( GLU_real ) * LVOLUME * ND * NCNC * 2 , "ildg-binary-data" ) ; // the 2 is for complex
+  write_SCIDAC_binary( out , nada , sizeof( GLU_real ) * LVOLUME * ND * NCNC * 2 , 
+		       "ildg-binary-data" ) ; // the 2 is for complex
   return ;
 }
 
