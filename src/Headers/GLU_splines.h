@@ -71,4 +71,26 @@ cubic_min( const double *__restrict x ,
 	   const double *__restrict der ,
 	   const int change_up ) ;
 
+/**
+   @fn double solve_spline( const double *__restrict x , const double *__restrict y , const double *__restrict der , const double mu , const int datalength )
+   @brief solve the cubic spline y(x) = mu
+ */
+double
+solve_spline( const double *__restrict x ,
+	      const double *__restrict y ,
+	      const double *__restrict der ,
+	      const double mu ,
+	      const int change_up ) ;
+
+/**
+   @fn double solve_spline( const double *__restrict x , const double *__restrict y , const double *__restrict der , const double mu , const int datalength )
+   @brief solve the cubic spline y(x) = mu
+ */
+double
+solve_derspline( const double *__restrict x ,
+		 const double *__restrict y ,
+		 const double *__restrict der ,
+		 const double mu ,
+		 const int change_up ) ;
+
 #endif

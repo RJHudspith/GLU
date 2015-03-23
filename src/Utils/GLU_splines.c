@@ -21,8 +21,17 @@
    @brief cubic spline calculator
  */
 
-#include <stdio.h>
+/*
+#include <complex.h>
 #include <math.h>
+#include <stdio.h>
+
+#define TWOPI ( 2.0 * M_PI )
+*/
+
+#include "Mainfile.h"
+
+#define sgn( a ) ( a < 0.0 ? -1 : 1 ) 
 
 // finds the upper index of target
 static int 
@@ -247,7 +256,7 @@ cubic_min( const double *__restrict x ,
   if( change_up == 0 ) return 0.0 ;
  
   // finds the min as per evaluating the spline
-  const double diff =  x[change_up] - x[change_up-1] ;
+  const double diff = x[change_up] - x[change_up-1] ;
   const double yp   = der[change_up-1] * diff ;
   const double yp_p = der[change_up] * diff ;
 
@@ -286,3 +295,118 @@ cubic_min( const double *__restrict x ,
   // and as we have solved for "t" in the note, we have to shift up
   return ans * diff + x[change_up-1] ;
 }
+
+// CALCULATES (one of) THE CUBE ROOT(s) //
+inline static void 
+cubert( double complex *__restrict res ,
+	const double complex z )
+{
+  register const double real = cabs( z ) ;
+  register const double angle = carg( z ) / 3.0 ; 
+  *res = cbrt( real ) * ( cos( angle ) + I * sin( angle ) ) ; 
+  return ;
+}
+
+// solve a quadratic ( ca x^2 + cb x + cc == 0 ) for x
+static double
+quad_solve( double complex *Z ,
+	    const double ca ,
+	    const double cb ,
+	    const double cc ) 
+{
+  const double complex q = -0.5 * ( cb + sgn( cb ) * \
+				    csqrt( cb*cb - 4.0 * ca*cc ) ) ;
+  Z[ 0 ] = q / ca ;
+  Z[ 1 ] = cc / q ;
+  if( fabs( cimag( Z[0] ) ) < fabs( cimag( Z[0] ) ) ) {
+    return creal( Z[0] ) ;
+  } else {
+    return creal( Z[1] ) ;
+  }
+}
+
+#define TOL 1E-12
+
+// solve a cubic ( ca x^3 + cb x^2 + cc x + cd == eval ) for x 
+double
+cubic_solve( double complex Z[ 3 ] , 
+	     const double ca ,
+	     const double cb ,
+	     const double cc , 
+	     const double cd ,
+	     const double eval )
+{
+  // if ca is super small this is a quadratic
+  if( fabs( ca ) < TOL ) {
+    return quad_solve( Z , cb , cc , cd - eval ) ; 
+  }
+  // if the constant term is zero the solution is quadratic too
+  if( fabs( cd - eval ) < TOL ) {
+    return quad_solve( Z , ca , cb , cc ) ; 
+  }
+
+  // divide through by a, x^3 + (b/a)x^2 + (c/a)x + ( d - eval )/ a
+  const double a = ( cb / ca ) ;
+  const double b = ( cc / ca ) ;
+  const double c = ( ( cd - eval ) / ca ) ;
+
+  const double Q = ( a * a - 3.0 * b ) / 9.0 ;
+  const double R = ( a * ( 2.0 * a * a - 9.0 * b ) + \
+		     27.0 * c ) / 54. ;
+
+  // three real roots
+  double theta ;
+  if( R*R < Q*Q*Q ) {
+    theta = acos( R / sqrt( Q*Q*Q ) ) ;
+    Z[0] = -2.0 * sqrt( Q ) * cos( ( theta ) / 3.0 ) - a/3.0 ;
+    Z[1] = -2.0 * sqrt( Q ) * cos( ( theta + TWOPI ) / 3.0 ) - a/3.0 ;
+    Z[2] = -2.0 * sqrt( Q ) * cos( ( theta - TWOPI ) / 3.0 ) - a/3.0 ;
+  } else {
+    double complex res ;
+    cubert( &res , R + csqrt( R*R - Q*Q*Q ) ) ;
+    const double complex A = -res ;
+    const double complex B = ( A != 0.0 ) ? Q/A : 0.0 ;
+    Z[0] = ( A + B ) - a/3.0 ;
+    Z[1] = -0.5 * ( A + B ) - a/3.0 - I * sqrt( 3 ) * 0.5 * ( A - B ) ;
+    Z[2] = -0.5 * ( A + B ) - a/3.0 + I * sqrt( 3 ) * 0.5 * ( A - B ) ;
+  }
+  return 0.0 ;
+}
+
+// form our spline and solve at mu
+double
+solve_spline( const double *__restrict x ,
+	      const double *__restrict y ,
+	      const double *__restrict der ,
+	      const double mu ,
+	      const int change_up )
+{
+  // newer, slightly higher order derivative
+  const double diff = x[change_up] - x[change_up-1] ;
+  const double yp   = der[change_up-1] * diff ;
+  const double yp_p = der[change_up] * diff ;
+
+  // coefficients for the poly y(x) = d + c*x + b*x^2 + a*x^3
+  const double a = 2.0 * ( y[change_up-1] - y[change_up] ) + yp + yp_p ;
+  const double b = 0.5 * ( -3.0 * a + ( yp_p - yp ) ) ;
+  const double c = yp ;
+  const double d = y[change_up-1] ;
+
+  //return cubic_solve( a , b , c , d , mu ) ;//* diff + x[change_up-1] ;
+  double complex Z[ 3 ] = {} ;
+  cubic_solve( Z , a , b , c , d , mu ) ;
+
+  // should sanity-check the solution here too
+  int roots ;
+  for( roots = 0 ; roots < 3 ; roots++ ) {
+    const double sol = creal( Z[ roots ] ) * diff + x[ change_up - 1 ] ;
+    if( sol < x[ change_up ] && sol > x[ change_up - 1 ] ) {
+      return sol ;
+    }
+  }
+  return -1.0 ;
+}
+
+#undef TWOPI
+
+#undef sgn

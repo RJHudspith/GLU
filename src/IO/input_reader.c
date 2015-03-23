@@ -507,10 +507,6 @@ smearing_info( struct sm_info *SMINFO )
       SMINFO -> type = SM_WFLOW_LOG ;
     } else if( are_equal( INPUT[type_idx].VALUE , "WFLOW_STOUT" ) ) {
       SMINFO -> type = SM_WFLOW_STOUT ;
-    } else if( are_equal( INPUT[type_idx].VALUE , "EULWFLOW_STOUT" ) ) {
-      SMINFO -> type = SM_EULWFLOW_STOUT ;
-    } else if( are_equal( INPUT[type_idx].VALUE , "EULWFLOW_LOG" ) ) {
-      SMINFO -> type = SM_EULWFLOW_LOG ;
     } else if( are_equal( INPUT[type_idx].VALUE , "ADAPTWFLOW_LOG" ) ) {
       SMINFO -> type = SM_ADAPTWFLOW_LOG ;
     } else if( are_equal( INPUT[type_idx].VALUE , "ADAPTWFLOW_STOUT" ) ) {

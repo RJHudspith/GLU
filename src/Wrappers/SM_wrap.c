@@ -46,16 +46,6 @@ hyp_chooser( lat , SMINFO , meminfo )
      const struct sm_info SMINFO ;
      const int meminfo ;
 {
-  // EULER method of integrating the flow equation
-  if( SMINFO.type == SM_EULWFLOW_LOG || 
-      SMINFO.type == SM_EULWFLOW_STOUT ) {
-    int GENTYPE = SM_STOUT ;
-    if( SMINFO.type == SM_WFLOW_LOG ) {
-      GENTYPE = SM_LOG ;
-    }
-    flow4d( lat , SMINFO.smiters , ND , GLU_FORWARD , GENTYPE ) ;
-    return ;
-  }
   // ADAPTIVE RK4 method of integrating the flow equation
   if( SMINFO.type == SM_ADAPTWFLOW_LOG || 
       SMINFO.type == SM_ADAPTWFLOW_STOUT ) {

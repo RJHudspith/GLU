@@ -137,8 +137,6 @@ typedef enum
     SM_HYL ,
     SM_WFLOW_STOUT ,
     SM_WFLOW_LOG ,
-    SM_EULWFLOW_STOUT ,
-    SM_EULWFLOW_LOG ,
     SM_ADAPTWFLOW_STOUT , 
     SM_ADAPTWFLOW_LOG } smearing_types ;
 

@@ -162,6 +162,23 @@ struct su2_subgroups
 } ;
 
 /**
+   @struct wfmeas
+   @brief linked list for wilson flow measurements
+   @param avplaq :: average plaquette
+   @param Gt :: \f$ t^2 \langle G_{\mu\nu} G_{\mu\nu}\rangle \f$ (clover)
+   @param qtop :: gauge field topological charge
+   @param time :: flow time (has units t^2/a^2 )
+   @param next :: pointer to the next element in the list
+ */
+struct wfmeas {
+  double avplaq ;
+  double Gt ;
+  double qtop ;
+  double time ;
+  struct wfmeas *next ;
+} ;
+
+/**
    @struct gf_info
    @brief gauge fixing information storage
    @param improve :: enumerated, (NONE,MAG,SMEARED_PRECONDITIONED)

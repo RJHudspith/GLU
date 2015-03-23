@@ -504,8 +504,7 @@ M_times_c( GLU_complex M[ NCNC ] ,
 }
 
 // nodes for AntiHermitian_proj linked lists
-struct node
-{
+struct node {
   GLU_bool squareable ;
   struct node *next ;
 } ;

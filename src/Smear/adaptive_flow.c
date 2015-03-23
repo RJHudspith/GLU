@@ -27,6 +27,7 @@
 #include "Mainfile.h"
 
 #include "geometry.h"     // init_navig is called for the temporary
+#include "GLU_splines.h"  // cubic_eval and derivative calculation
 #include "plaqs_links.h"  // clover and plaquette measurements
 #include "wflowfuncs.h"   // wilson flow general routines
 
@@ -81,11 +82,8 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   ////// USUAL STARTUP INFORMATION /////////
   print_GG_info( SM_TYPE , RK4_ADAPTIVE ) ;
 
-  // Martin Luescher's choice for the variable t_0
-  static const double T0_STOP = 0.3 ;
-
   // the error between the two plaquettes
-  const double ADAPTIVE_EPS = 2.5E-6 ;
+  const double ADAPTIVE_EPS = 1E-7 ;
   // Standard shrink and factor from NRC
   const double ADAPTIVE_SHRINK = -0.25 ;
   // Standard growth and factor from NRC
@@ -118,31 +116,31 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   init_navig( lat_two ) ;
 
   // set up the step sizes ...
-  double delta_t = SIGN * Latt.sm_alpha[0] , yscal = 0. , qtop_out = 0. , t = 0.0 ;
+  double delta_t = SIGN * Latt.sm_alpha[0] ;
 
-  lattice_gmunu( lat , &qtop_out , &yscal ) ;
-  printf("[WFLOW] {err} %1.3e {t} %f {dt} %e {p} %1.10f {q} %1.10f {ttGG} 0. {W} 0. \n" ,
-	 0.0 , t , delta_t , yscal , qtop_out ) ;
+  struct wfmeas *head = NULL , *curr ;
+  curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
+  curr -> Gt = curr -> time * curr -> time * 
+    lattice_gmunu( lat , &( curr -> qtop ) , &( curr -> avplaq ) ) ;
+  curr -> time = 0.0 ;
+  printf("[WFLOW] {err} %1.3e {t} %f {dt} %e {p} %1.10f {q} %1.10f {ttGG} %g \n" ,
+	 0.0 , curr -> time , delta_t , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
+  curr -> next = head ;
+  head = curr ;
 
   // counters for the derivative ...
+  double yscal = curr -> avplaq , t = 0.0 ;
   double flow = 0. , flow_next = 0. ;
   int count = 0 , OK_STEPS = 0 , NOTOK_STEPS = 0 ; 
 
-  // stop us from stopping the flow too early ...
-#ifndef verbose
-  int first_deriv_flag = GLU_FALSE ;
-#endif
-
-  // set up a control for the measurement to stop us from running over the desired value
-  // We then step cautiously through to W0, ensuring that at least 8 "fine" measurements
-  // around WFLOW_STOP have been made so that we can fit linearly to get W0
-  const double WFLOW_MEAS_CONTROL = WFLOW_STOP * 0.1 ;
-  int T0_MEAS = GLU_FALSE ;
-
+  // loop up to smiters
   for( count = 1 ; count <= smiters ; count++ ) { 
+    curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
     int counter = 0 ;
     double errmax = 10. ;
     double new_plaq = 0. ;
+
+    // adaptive loop, shrinking or growing the stepsize accordingly
     while( ( errmax > 1.0 ) && ( counter < ADAPTIVE_BIG_NUMBER ) ) {
       int i ;
       #pragma omp parallel for private(i)
@@ -228,107 +226,74 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
 
     t += delta_t ; // add one time step to the overall time 
 
-#ifndef TIME_ONLY
-    // derivative bit, should be used as a guide for when to stop
-    // measureing for W_0 but not used to measure it, 
-    // use ttGG and take the derivative!
-    double deriv = 0. ;
-    #ifndef verbose
-    if( t > MEAS_START ) {
-    #endif
-      printf( "[WFLOW] {err} %1.3e " , errmax * ADAPTIVE_EPS ) ;
-      deriv = deriv_euler( lat , &flow , &flow_next , t , delta_t ) ;
-      #ifndef verbose
-      if( first_deriv_flag == GLU_FALSE )  {
-	first_deriv_flag = GLU_TRUE ;
-	deriv = 0. ;
-      }
-      #endif
-    #ifndef verbose
-    }
-    #endif
+    curr -> time = t ;
+    // update the linked list
+    curr -> Gt = curr -> time * curr -> time * 
+      lattice_gmunu( lat , &(curr -> qtop) , &( curr->avplaq ) ) ;
 
-    // If we are close to our goal we reduce the step size
-    if( ( WFLOW_STOP - deriv ) <= WFLOW_MEAS_CONTROL ) {
-      delta_t = 0.01 ; // Set this to something nice and low
-      // put this little routine here so that we do not do the half step again
-      const double rk1 = mnineOseventeen * delta_t ;
-      const double rk2 = delta_t ;
-      const double rk3 = ( -delta_t ) ;  
-      int fine_meas = 0 ;
-      while( ( deriv < WFLOW_STOP ) || ( fine_meas < 8 ) )  {
-	t += delta_t ; // add one time step to the overall time 
-	// regurgitate the previous error, will be much smaller!
-	printf( "[WFLOW W0] {err} %1.3e " , errmax * ADAPTIVE_EPS ) ;
-	step_distance_memcheap( lat , lat2 , lat3 , lat4 , 
-				Z , rk1 , rk2 , rk3 , SM_TYPE ) ;
-	deriv = deriv_euler( lat , &flow , &flow_next , t , delta_t ) ;
-	flow = flow_next ;
-	fine_meas++ ;
-      }
-      // leave the big loop over smearing iterations
+    // set the flow
+    flow_next = curr -> Gt ;
+
+    printf( "[WFLOW] {err} %1.3e {t} %f {dt} %g " , errmax * ADAPTIVE_EPS , curr -> time , delta_t ) ;
+    printf( "{p} %g {q} %g {Gt} %g \n" , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
+
+    // use a poor approximation of the derivative of the flow as a guide to stop
+    printf( "flowapprox :: %f \n" ,  ( flow_next - flow ) * curr -> time / delta_t ) ;
+    if( ( ( flow_next - flow ) * curr -> time / delta_t ) > ( WFLOW_STOP * 1.25 ) ) {
+      curr -> next = head ;
+      head = curr ;
       break ;
-      // we have one for t_0 too
-    } else if ( ( ( T0_STOP - flow_next ) <= T0_STOP * 0.1 ) && 
-		T0_MEAS == GLU_FALSE ) {
-      const double prev_dt = delta_t ;
-      delta_t = 0.01 ;
-      const double rk1 = mnineOseventeen * delta_t ;
-      const double rk2 = delta_t ;
-      const double rk3 = ( -delta_t ) ;  
-      int fine_meas = 0 ;
-      while( ( flow_next < T0_STOP ) || ( fine_meas < 8 ) )  {
-	t += delta_t ;
-	printf( "[WFLOW T0] {err} %1.3e " , errmax * ADAPTIVE_EPS ) ;
-	step_distance_memcheap( lat , lat2 , lat3 , lat4 , 
-				Z , rk1 , rk2 , rk3 , SM_TYPE ) ;
-	deriv = deriv_euler( lat , &flow , &flow_next , t , delta_t ) ;
-	flow = flow_next ;
-	fine_meas++ ;
-      }
-      T0_MEAS = GLU_TRUE ;
-      delta_t = prev_dt ;
-      // do not break from here ...
-    } else {
-      // Increase the step size ...
-      if( errmax > ADAPTIVE_ERRCON ) {
-	delta_t = ADAPTIVE_SAFE * delta_t * pow( errmax , ADAPTIVE_GROWTH ) ;
-      } else {
-	delta_t = ADAPTIVE_SAFE * 5.0 * delta_t ;
-      }
     }
-#else
-    printf( "[WFLOW] {err} %1.3e {t} %f {dt} %g\n" , errmax * ADAPTIVE_EPS , t , delta_t ) ;
-    if( errmax > ADAPTIVE_ERRCON ) {
-      delta_t = ADAPTIVE_SAFE * delta_t * pow( errmax , ADAPTIVE_GROWTH ) ;
-      // be too large for the exponentiation to handle ...
-      // delta_t = ( delta_t > 0.4 ) ? 0.4 : delta_t ;
-    } else {
-      delta_t = ADAPTIVE_SAFE * 5.0 * delta_t ;
-    }
-#endif
+    flow = flow_next ;
 
-    // If we are wilson-flowing to a specific time, we compute a negative flow-time correction
-    if( t > TMEAS_STOP ) {
+    // update the linked list
+    curr -> next = head ;
+    head = curr ;
+
+    // stop if we are above the max time
+    if( ( curr -> time ) > TMEAS_STOP ) {
+      curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
       const double delta_tcorr = TMEAS_STOP - t ; 
-      t = TMEAS_STOP ;
+      curr -> time = TMEAS_STOP ;
       const double rk1 = mnineOseventeen * delta_tcorr ;
       const double rk2 = delta_tcorr ;
       const double rk3 = ( -delta_tcorr ) ;  
       step_distance_memcheap( lat , lat2 , lat3 , lat4 , 
 			      Z , rk1 , rk2 , rk3 , SM_TYPE ) ;
-      // regurgitate the previous error
-      printf( "[WFLOW] {err} %1.3e " , errmax * ADAPTIVE_EPS ) ;
-      deriv_euler( lat , &flow , &flow_next , t , delta_tcorr ) ;
+      // update the linked list
+      curr -> Gt = curr -> time * curr -> time * 
+	lattice_gmunu( lat , &(curr -> qtop) , &( curr->avplaq ) ) ;
+      // set the flow
+      flow_next = curr -> Gt ;
+      printf( "[WFLOW] {err} %1.3e {t} %f {dt} %g " , errmax * ADAPTIVE_EPS , curr -> time , delta_tcorr ) ;
+      printf( "{p} %g {q} %g {Gt} %g \n" , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
+      curr -> next = head ;
+      head = curr ;
       break ;
     }
-   // end of RK step
+ 
+    // Increase the step size ...
+    if( errmax > ADAPTIVE_ERRCON ) {
+      delta_t = ADAPTIVE_SAFE * delta_t * pow( errmax , ADAPTIVE_GROWTH ) ;
+    } else {
+      delta_t = ADAPTIVE_SAFE * 5.0 * delta_t ;
+    }
   }
+  curr = head ;
 
   // Print out the stepping information
   printf( "\n[WFLOW] Inadequate steps :: %d \n" , NOTOK_STEPS ) ;
   printf( "[WFLOW] Adequate steps :: %d \n" , OK_STEPS ) ;
 
+  // compute the t_0 and w_0 scales from the measurement
+  scaleset( curr , WFLOW_STOP , WFLOW_STOP , count ) ;
+
+  // and free the list
+  while( head != NULL ) {
+    free( head ) ;
+    head = head -> next ; 
+  }
+  
   // free our fields
   free( Z ) ;
   free( lat2 ) ;
@@ -343,3 +308,4 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
 #ifdef TIME_ONLY
   #undef TIME_ONLY
 #endif
+

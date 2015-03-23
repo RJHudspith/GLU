@@ -43,40 +43,23 @@ extern const double TMEAS_STOP ;
 extern const double WFLOW_STOP ;
 
 /**
-   @fn double deriv_euler( struct site *__restrict lat , double *flow , double *flow_next , const double t , const double delta_t )
-   @brief Euler derivative
-   @param lat :: lattice gauge field
-   @param flow :: the flow before the new step
-   @param flow_next :: the result from an integration step
-   @param t :: flow time
-   @param delta_t :: flow timestep
-   @warning rewrites flow_next and flow
+   @fn const double evaluate_scale( double *der , const double *x , const double *meas , const int Nmeas , const double scale ,	const char *message )
+   @brief evaluate the flow at scale via its cubic spline
+   @param der :: high-order finite difference in GLU_splines.h
+   @param x :: flow time
+   @param meas :: flow measurement
+   @param Nmeas :: number of flow measurements
+   @param scale :: the scale the flow is evaluated at
+   @param message :: identifier to make grepping easier
+   @warning computes the derivative @der in this function
  */
-double
-deriv_euler( struct site *__restrict lat , 
-	     double *flow , 
-	     double *flow_next ,
-	     const double t ,
-	     const double delta_t ) ;
-
-/**
-   @fn double deriv_leapfrog( struct site *__restrict lat , double *flow_prev , double *flow , double *flow_next , const double t , const double delta_t )
-   @brief computes the derivative using the leapfrog def
-   @param lat :: lattice gauge field
-   @param flow_prev :: the previous wilson flow result
-   @param flow_next :: the result from an integration step
-   @param flow :: the flow before the new step
-   @param t :: flow time
-   @param delta_t :: flow timestep
-   @warning rewrites flow_prev, flow_next and flow
- */
-double
-deriv_leapfrog( struct site *__restrict lat , 
-		double *flow_prev ,
-		double *flow , 
-		double *flow_next ,
-		const double t ,
-		const double delta_t ) ;
+const double
+evaluate_scale( double *der , 
+		const double *x ,
+		const double *meas ,
+		const int Nmeas ,
+		const double scale ,
+		const char *message ) ;
 
 /**
    @fn void print_GG_info( const int SM_TYPE , const wflow_type WFLOW_TYPE )
@@ -87,6 +70,20 @@ deriv_leapfrog( struct site *__restrict lat ,
 void
 print_GG_info( const int SM_TYPE , 
 	       const wflow_type WFLOW_TYPE ) ;
+
+/**
+   @fn void scaleset( struct wfmeas *curr , const double W0 , const double T0 , const int count ) 
+   @brief computes the flow in curr for T0 and W0
+   @param curr :: measurement list
+   @param T_0 :: wilson flow scale G(t) = W_0
+   @param W_0 :: wilson flow scale t( dG(t)/dt ) = W_0
+   @param count :: number of measurements made
+ */
+void
+scaleset( struct wfmeas *curr , 
+	  const double T_0 ,
+	  const double W_0 ,
+	  const int count ) ;
 
 /**
    @fn void second_deriv( const double flow_prev , const double flow , const double flow_next , const double t , const double delta_t )

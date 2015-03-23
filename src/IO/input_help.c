@@ -37,7 +37,7 @@ create_input_file( const char *mode_str , const char *gf_str )
   for( mu = 0 ; mu < ND ; mu++ ) {
     printf( "    DIM_%d = 16\n" , mu ) ;
   }
-  printf( "CONFNO = 0\n" 
+  printf( "CONFNO = 1\n" 
 	  "RANDOM_TRANSFORM = NO\n" 
 	  "SEED = 0\n" ) ;
   printf( "GFTYPE = %s\n" , gf_str ) ;
@@ -88,7 +88,7 @@ cuttype_types( void )
   printf( "CUTTYPE = INSTANTANEOUS_GLUONS       - Writes the momentum-spacespatial and temporal gluon propagators of Coulomb gauge, the output\n"
 	  "                                       format is like that of EXCEPTIONAL but with momenta list ND-1 ( p_0 , ... , p_{ND-2}\n" ) ;
   printf( "CUTTYPE = NON_EXCEPTIONAL            - Computes the momentum space gluon propagator and 3 point function for gluons with momenta \n"
-	  "                                       p + r + q = 0, p!=r!=q, and p^2=r^2=q^2. Writes to an output file in the format of EXCEPTIONAL\n");
+	  "                                       p + r + q = 0, p!=r!=q, and p^2=r^2=q^2. Writes to an output file in the format of EXCEPTIONAL\n" );
   printf( "CUTTYPE = SMEARED_GLUONS             - Computest the unsmeared and smeared Landau gauge fixed propagators, with the same output as\n"
 	  "                                       that of EXCEPTIONAL but with the unsmeared propagator and the smeared propagator written.\n"
 	  "                                       This requires the smearing arguments to be set in the input file\n" ) ;
@@ -350,6 +350,17 @@ GLUsage( void )
 	  "./GLU --autoin={options}\n"
 	  "\nWhere {options} can be COULOMB, LANDAU, STATIC_POTENTIAL, SUNCxU1, WFLOW\n\n" ) ;
   return printf( "If using the CG gauge fixing, please cite my paper\n"
-		 "\"Fourier Accelerated Conjugate Gradient Lattice Gauge Fixing\"\n"
-		 "arxiv...\n\n" ) ;
+		 "\"Fourier Accelerated Conjugate Gradient Lattice Gauge Fixing\"\n\n"
+		 "author         = \"Hudspith, R.J.\",\n"
+                 "title          = \"{Fourier Accelerated Conjugate Gradient Lattice Gauge Fixing}\",\n"
+                 "collaboration  = \"RBC, UKQCD\",\n"
+                 "journal        = \"Comput.Phys.Commun.\",\n"
+                 "volume         = \"187\",\n"
+                 "pages          = \"115-119\",\n"
+                 "doi            = \"10.1016/j.cpc.2014.10.017\",\n"
+                 "year           = \"2014\",\n"
+                 "eprint         = \"1405.5812\",\n"
+                 "archivePrefix  = \"arXiv\",\n"
+                 "primaryClass   = \"hep-lat\",\n"
+                 "SLACcitation   = \"\%\%CITATION = ARXIV:1405.5812;\%\%\"\n\n" ) ;
 }

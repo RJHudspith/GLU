@@ -23,12 +23,13 @@
 
 #include "Mainfile.h"
 
-#include "plaqs_links.h"
-#include "projectors.h"
-#include "staples.h"
+#include "GLU_splines.h"   // spline evaluations
+#include "plaqs_links.h"   // clover discretisation
+#include "projectors.h"    // stout projection
+#include "staples.h"       // computes standard staples
 
 // controls for the wilson flow these get externed!
-const double MEAS_START = 1.0 ; // start measuring from 1 lattice spacing flow
+const double MEAS_START = 0.0 ; // start measuring from 1 lattice spacing flow
 const double WFLOW_STOP = 0.3 ; // BMW's choice for the W_0 parameter
 const double TMEAS_STOP = 12.0 ; // flow time stopper, be careful after ~10
 
@@ -300,42 +301,39 @@ RK4step_memcheap( lat , Z , lat2 , lat3 , lat4 , multiplier , step , SM_TYPE )
   return ;
 }
 
-// returns the derivative ( f(x+t) - f(x) ) / t
-double
-deriv_euler( struct site *__restrict lat , 
-	     double *flow , 
-	     double *flow_next ,
-	     const double t ,
-	     const double delta_t ) 
+// evaluate the flow using splines, evaluate a a particular scale
+const double
+evaluate_scale( double *der , 
+		const double *x ,
+		const double *meas ,
+		const int Nmeas ,
+		const double scale ,
+		const char *message )
 {
-  double qtop , avplaq ;
-  const double plaq =  lattice_gmunu( lat , &qtop , &avplaq ) ;
-  *flow = *flow_next ;
-  *flow_next = t * t * plaq ;
-  const double deriv = t * ( *flow_next - *flow ) / ( delta_t ) ;
-  printf( "{t} %g {dt} %g {p} %1.10f {q} %1.10f {ttGG} %1.10f {W} %1.10f \n" ,
-	  t , delta_t , avplaq , qtop , *flow_next , deriv ) ;
-  return deriv ;
-}
-
-// symmetric leapfrog ( f(x+t) - f(x-t) ) / ( 2*t )
-double
-deriv_leapfrog( struct site *__restrict lat , 
-		double *flow_prev ,
-		double *flow , 
-		double *flow_next ,
-		const double t ,
-		const double delta_t ) 
-{
-  double qtop , avplaq ;
-  const double plaq =  lattice_gmunu( lat , &qtop , &avplaq ) ;
-  *flow_prev = *flow ; 
-  *flow = *flow_next ;
-  *flow_next = t * t * plaq ;
-  const double deriv = t * ( *flow_next - *flow_prev ) / ( 2.0 * delta_t ) ;
-  printf( "{t} %g {dt} %g {p} %1.10f {q} %1.10f {ttGG} %1.10f {W} %1.10f \n" ,
-	  t , delta_t , avplaq , qtop , *flow_next , deriv ) ;
-  return deriv ;
+  // compute spline for observable meas, x must be sorted smallest to largest
+  int i , change_up = 0 ;
+  for( i = 0 ; i < Nmeas ; i++ ) {
+    spline_derivative( der , x , meas , Nmeas ) ;
+    // W_0 scale
+    if( i > 0 ) {
+      if( ( meas[ i ] ) > scale && ( meas[ i - 1 ] ) < scale ) {
+	change_up = i ;
+      }
+    }
+    #ifdef VERBOSE
+    printf( "[%s] %g %g \n" , message , x[ i ] , meas[ i ] ) ;
+    #endif
+  }
+  // print out the spline evaluation?
+#ifdef VERBOSE
+  double t = 0.0 ;
+  for( t = 0.0 ; t < x[ Nmeas - 1 ] ; t+= 0.005 ) {
+    printf( "[%s-spline] %g %g \n" , message , t , 
+	    cubic_eval( x , meas , der , t , Nmeas ) ) ;
+  }
+#endif
+  // evaluate at "scale" error flag is -1
+  return solve_spline( x , meas , der , scale , change_up ) ;
 }
 
 // print out the general beginning information
@@ -351,17 +349,49 @@ print_GG_info( const int SM_TYPE ,
   return ;
 }
 
-// computes the second derivative using the standard form 
-void
-second_deriv( const double flow_prev ,
-	      const double flow ,
-	      const double flow_next ,
-	      const double t ,
-	      const double delta_t )
+// use the flow of G and W for scale setting
+int
+scaleset( struct wfmeas *curr , 
+	  const double T_0 ,
+	  const double W_0 ,
+	  const int count ) 
 {
-  printf("[WFLOW] %g {W''(t)} %1.10f \n" , 
-	 t , t * t * ( flow_next + flow_prev - 2.*flow ) / ( delta_t * delta_t ) ) ;
-  return ;
+  // now we have the number of measurements in count
+  double *GT = malloc( count * sizeof( double ) ) ;
+  double *time = malloc( count * sizeof( double ) ) ;
+  double *der = malloc( count * sizeof( double ) ) ;
+  // traverse the list backwards setting the time and GT
+  int i ;
+  for( i = 0 ; i < count ; i++ ) {
+    time[ count - i - 1 ] = curr -> time ;
+    GT[ count - i - 1 ] = curr -> Gt ;
+    curr = curr -> next ;
+  }
+  const double t0 = evaluate_scale( der , time , GT , count , T_0 , "GT" ) ;
+  if( t0 == -1.0 ) {
+    printf( "[WFLOW] cubic solve failure \n" ) ;
+    printf( "[WFLOW] solve needs to bound the value you are looking for\n" ) ;
+    free( der ) ; free( time ) ; free( GT ) ;
+    return GLU_FAILURE ;
+  }
+  printf( "[T0-scale] %f \n" , sqrt( t0 ) ) ;
+  // W(t) = t ( dG(t) / dt )
+  for( i = 0 ; i < count ; i++ ) {
+    GT[ i ] = time[ i ] * der[ i ] ;
+  }
+  const double w0 = evaluate_scale( der , time , GT , count , W_0 , "GT" ) ;
+  if( w0 == -1.0 ) {
+    printf( "[WFLOW] cubic solve failure \n" ) ;
+    printf( "[WFLOW] solve needs to bound the value you are looking for\n" ) ;
+    free( der ) ; free( time ) ; free( GT ) ;
+    return GLU_FAILURE ;
+  }
+  printf( "[W0-scale] %f \n" , sqrt( w0 ) ) ;
+
+  free( der ) ;
+  free( time ) ;
+  free( GT ) ;
+  return GLU_SUCCESS ;
 }
 
 // driver function for the more memory expensive smearing

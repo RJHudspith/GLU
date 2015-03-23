@@ -25,23 +25,6 @@
 #define GLU_WFLOW_H
 
 /**
-   @fn void flow4d( struct site *__restrict lat , const int smiters , const int DIR , const int SIGN , const int SM_TYPE )
-   @brief Wilson flow using the simple Euler step
-   @param lat :: lattice gauge fields 
-   @param smiters :: number of smearing iterations
-   @param DIR :: maximum direction of the smearing #GLU_smeardir
-   @param SIGN :: of type #GLU_direction
-   @param SM_TYPE :: will accept SM_APE , SM_STOUT or SM_LOG from #smearing_types
-   @warning this one is quite innacurate and is mostly pedagogical
- **/
-void 
-flow4d( struct site *__restrict lat , 
-        const int smiters ,
-	const int DIR ,
-	const int SIGN ,
-	const int SM_TYPE ) ;
-
-/**
    @fn void flow4d_RK_fast( struct site *__restrict lat , const int smiters , const int DIR , const int SIGN , const int SM_TYPE )
    @brief wilson flow using the Runge-Kutta used in Luescher's follow up paper and by BMW.
    @param lat :: lattice gauge field
