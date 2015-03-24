@@ -44,7 +44,7 @@ create_input_file( const char *mode_str , const char *gf_str )
   printf( "    GF_TUNE = 0.08\n" 
 	  "    IMPROVEMENTS = NONE\n" 
 	  "    ACCURACY = 14\n"
-	  "    MAX_ITERS = 8000\n" ) ;
+	  "    MAX_ITERS = 1000\n" ) ;
   printf( "CUTTYPE = STATIC_POTENTIAL\n"
 	  "    FIELD_DEFINITION = LINEAR\n"
 	  "    MOM_CUT = HYPERCUBIC_CUT\n" 
@@ -351,6 +351,7 @@ GLUsage( void )
 	  "\nWhere {options} can be COULOMB, LANDAU, STATIC_POTENTIAL, SUNCxU1, WFLOW\n\n" ) ;
   return printf( "If using the CG gauge fixing, please cite my paper\n"
 		 "\"Fourier Accelerated Conjugate Gradient Lattice Gauge Fixing\"\n\n"
+		 "@article{Hudspith:2014oja,\n"
 		 "author         = \"Hudspith, R.J.\",\n"
                  "title          = \"{Fourier Accelerated Conjugate Gradient Lattice Gauge Fixing}\",\n"
                  "collaboration  = \"RBC, UKQCD\",\n"
@@ -362,5 +363,5 @@ GLUsage( void )
                  "eprint         = \"1405.5812\",\n"
                  "archivePrefix  = \"arXiv\",\n"
                  "primaryClass   = \"hep-lat\",\n"
-                 "SLACcitation   = \"\%\%CITATION = ARXIV:1405.5812;\%\%\"\n\n" ) ;
+                 "SLACcitation   = \"\%\%\%\%CITATION = ARXIV:1405.5812;\%\%\%\%\",\n}\n" ) ;
 }
