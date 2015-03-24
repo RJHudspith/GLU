@@ -37,10 +37,16 @@ extern const double MEAS_START ;
 extern const double TMEAS_STOP ;
 
 /**
-   @var WFLOW_STOP
-   @brief what derivative value do we decide to (roughly) stop at
+   @var W0_STOP
+   @brief what derivative value do we decide to (roughly) measure at
  */
-extern const double WFLOW_STOP ;
+extern const double W0_STOP ;
+
+/**
+   @var T0_STOP
+   @brief what flow value do we decide to (roughly) perform measurements at
+ */
+extern const double T0_STOP ;
 
 /**
    @fn const double evaluate_scale( double *der , const double *x , const double *meas , const int Nmeas , const double scale ,	const char *message )

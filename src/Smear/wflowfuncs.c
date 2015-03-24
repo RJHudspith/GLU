@@ -30,7 +30,8 @@
 
 // controls for the wilson flow these get externed!
 const double MEAS_START = 0.0 ; // start measuring from 1 lattice spacing flow
-const double WFLOW_STOP = 0.3 ; // BMW's choice for the W_0 parameter
+const double W0_STOP    = 0.3 ; // BMW's choice for the W_0 parameter
+const double T0_STOP    = 0.3 ; // Martin's choice for the t_0 scale
 const double TMEAS_STOP = 12.0 ; // flow time stopper, be careful after ~10
 
 // RK4 parameters
@@ -320,18 +321,18 @@ evaluate_scale( double *der ,
 	change_up = i ;
       }
     }
-    //#ifdef VERBOSE
+    #ifdef verbose
     printf( "[%s] %g %g \n" , message , x[ i ] , meas[ i ] ) ;
-    //#endif
+    #endif
   }
   // print out the spline evaluation?
-  //#ifdef VERBOSE
+#ifdef verbose
   double t = 0.0 ;
   for( t = 0.0 ; t < x[ Nmeas - 1 ] ; t+= 0.005 ) {
     printf( "[%s-spline] %g %g \n" , message , t , 
 	    cubic_eval( x , meas , der , t , Nmeas ) ) ;
   }
-  //#endif
+#endif
   // evaluate at "scale" error flag is -1
   return solve_spline( x , meas , der , scale , change_up ) ;
 }
@@ -343,7 +344,8 @@ print_GG_info( const int SM_TYPE ,
 {
   printf( "[WFLOW] Taking ({W},{GG} and {Qtop}) measurements from t >= %g \n" , 
 	  MEAS_START ) ; 
-  printf( "[WFLOW] Stopping flow integration at w0 >= %g \n" , WFLOW_STOP ) ; 
+  printf( "[WFLOW] fine measurements at t_0 >= %g \n" , T0_STOP ) ; 
+  printf( "[WFLOW] fine measurements at w_0 >= %g \n" , W0_STOP ) ; 
   printf( "[WFLOW] OR, Stopping flow integration at t >= %g \n\n" , 
 	  TMEAS_STOP ) ; 
   return ;
@@ -357,36 +359,36 @@ scaleset( struct wfmeas *curr ,
 	  const int count ) 
 {
   // now we have the number of measurements in count
-  double *GT = malloc( count * sizeof( double ) ) ;
-  double *time = malloc( count * sizeof( double ) ) ;
-  double *der = malloc( count * sizeof( double ) ) ;
+  double *GT = malloc( ( count + 1 ) * sizeof( double ) ) ;
+  double *time = malloc( ( count + 1 ) * sizeof( double ) ) ;
+  double *der = malloc( ( count + 1 ) * sizeof( double ) ) ;
   // traverse the list backwards setting the time and GT
   int i ;
-  for( i = 0 ; i < count ; i++ ) {
-    time[ count - i - 1 ] = curr -> time ;
-    GT[ count - i - 1 ] = curr -> Gt ;
+  for( i = 0 ; i < ( count + 1 ) ; i++ ) {
+    time[ ( count + 1 ) - i - 1 ] = curr -> time ;
+    GT[ ( count + 1 ) - i - 1 ] = curr -> Gt ;
     curr = curr -> next ;
   }
-  const double t0 = evaluate_scale( der , time , GT , count , T_0 , "GT" ) ;
+  const double t0 = evaluate_scale( der , time , GT , ( count + 1 ) , T_0 , "GT" ) ;
   if( t0 == -1.0 ) {
     printf( "[WFLOW] cubic solve failure \n" ) ;
     printf( "[WFLOW] solve needs to bound the value you are looking for\n" ) ;
     free( der ) ; free( time ) ; free( GT ) ;
     return GLU_FAILURE ;
   }
-  printf( "[GT-scale] %f \n" , sqrt( t0 ) ) ;
+  printf( "[GT-scale] G(%g) %f \n" , T_0 , sqrt( t0 ) ) ;
   // W(t) = t ( dG(t) / dt )
-  for( i = 0 ; i < count ; i++ ) {
+  for( i = 0 ; i < ( count + 1 ) ; i++ ) {
     GT[ i ] = time[ i ] * der[ i ] ;
   }
-  const double w0 = evaluate_scale( der , time , GT , count , W_0 , "WT" ) ;
+  const double w0 = evaluate_scale( der , time , GT , ( count + 1 ) , W_0 , "WT" ) ;
   if( w0 == -1.0 ) {
     printf( "[WFLOW] cubic solve failure \n" ) ;
     printf( "[WFLOW] solve needs to bound the value you are looking for\n" ) ;
     free( der ) ; free( time ) ; free( GT ) ;
     return GLU_FAILURE ;
   }
-  printf( "[WT-scale] %f \n" , sqrt( w0 ) ) ;
+  printf( "[WT-scale] W(%g) %f \n" , W_0 , sqrt( w0 ) ) ;
 
   free( der ) ;
   free( time ) ;

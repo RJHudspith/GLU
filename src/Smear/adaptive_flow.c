@@ -21,7 +21,7 @@
    @brief the (two step) adaptive rk4 wilson flow routine
 
    Slows down, performing fine measurements at ~t_0 and ~w_0
-   WFLOW_STOP and TMEAS_STOP are defined in wflowfuncs.h
+   W0_STOP and T0_STOP are defined in wflowfuncs.h
  */
 
 #include "Mainfile.h"
@@ -137,12 +137,18 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   const double ADAPTIVE_SAFE = 0.9 ;
   // adaptive error conserving
   const double ADAPTIVE_ERRCON = powl( 5./ADAPTIVE_SAFE , 1./ADAPTIVE_GROWTH ) ;
+  // percentage to value we want for performing fine measurements
+  const double FINETWIDDLE = 0.05 ;
+  // fine measurement step
+  const double FINESTEP = 0.02 ;
 
   printf( "[WFLOW] Adaptive Error :: %e \n" , ADAPTIVE_EPS ) ;
   printf( "[WFLOW] Adaptive ErrCon :: %f \n" , ADAPTIVE_ERRCON ) ;
   printf( "[WFLOW] Adaptive Safety Factor :: %g \n" , ADAPTIVE_SAFE ) ;
   printf( "[WFLOW] Adaptive growth factor :: %g \n" , ADAPTIVE_GROWTH ) ;
   printf( "[WFLOW] Adaptive shrink factor :: %g \n\n" , ADAPTIVE_SHRINK ) ; 
+  printf( "[WFLOW] Fine measurement %% :: %g \n" , FINETWIDDLE ) ;
+  printf( "[WFLOW] Fine step :: %g \n\n" , FINESTEP ) ;
 
   //////////////////////////////////////////
 
@@ -288,13 +294,13 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
     double wapprox = ( flow_next - flow ) * curr -> time / delta_t ;
     flow = flow_next ;
 
-    // perform fine measurements around WFLOW_STOP for t_0
-    if( fabs( WFLOW_STOP - flow ) <= ( WFLOW_STOP * 0.05 ) ) {
-      while( fabs( WFLOW_STOP - flow ) <= ( WFLOW_STOP * 0.05 ) ) {
+    // perform fine measurements around T0_STOP for t_0
+    if( fabs( T0_STOP - flow ) <= ( T0_STOP * FINETWIDDLE ) ) {
+      while( fabs( T0_STOP - flow ) <= ( T0_STOP * FINETWIDDLE ) ) {
 	curr = fine_measurement( lat , lat2 , lat3 , lat4 , Z , 
-				 &flow_next , &t , 0.01 , 
+				 &flow_next , &t , FINESTEP , 
 				 errmax * ADAPTIVE_EPS , SM_TYPE ) ;
-	wapprox = ( flow_next - flow ) * curr -> time / 0.01 ;
+	wapprox = ( flow_next - flow ) * curr -> time / FINESTEP ;
 	flow = flow_next ;
 	curr -> next = head ;
 	head = curr ;
@@ -302,13 +308,13 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
       }
     }
 
-    if( fabs( WFLOW_STOP - wapprox ) <= ( WFLOW_STOP * 0.05 ) ) {
-      // perform some fine measurements around w_0
-      while( fabs( WFLOW_STOP - wapprox ) <= ( WFLOW_STOP * 0.05 ) ) {
+    // perform some fine measurements around W0_STOP
+    if( fabs( W0_STOP - wapprox ) <= ( W0_STOP * FINETWIDDLE ) ) {
+      while( fabs( W0_STOP - wapprox ) <= ( W0_STOP * FINETWIDDLE ) ) {
 	curr = fine_measurement( lat , lat2 , lat3 , lat4 , Z , 
-				 &flow_next , &t , 0.01 , 
+				 &flow_next , &t , FINESTEP , 
 				 errmax * ADAPTIVE_EPS , SM_TYPE ) ;
-	wapprox = ( flow_next - flow ) * curr -> time / 0.01 ;
+	wapprox = ( flow_next - flow ) * curr -> time / FINESTEP ;
 	flow = flow_next ;
 	curr -> next = head ;
 	head = curr ;
@@ -317,7 +323,7 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
     }
 
     // use a poor approximation of the derivative of the flow as a guide to stop
-    if( wapprox > ( WFLOW_STOP * 1.25 ) ) {
+    if( wapprox > ( W0_STOP * 1.5 ) ) {
       break ;
     }
 
@@ -347,7 +353,7 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   printf( "[WFLOW] Adequate steps :: %d \n" , OK_STEPS ) ;
 
   // compute the t_0 and w_0 scales from the measurement
-  scaleset( curr , WFLOW_STOP , WFLOW_STOP , count ) ;
+  scaleset( curr , T0_STOP , W0_STOP , count ) ;
 
   // and free the list
   while( head != NULL ) {

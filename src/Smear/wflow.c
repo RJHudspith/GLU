@@ -102,7 +102,7 @@ flow4d_RK_fast( struct site *__restrict lat ,
 	    curr -> time , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
 
     // use a poor approximation of the derivative of the flow as a guide to stop
-    if( ( ( flow_next - flow ) * curr -> time / delta_t ) > ( WFLOW_STOP * 1.25 ) ) {
+    if( ( ( flow_next - flow ) * curr -> time / delta_t ) > ( W0_STOP * 1.25 ) ) {
       curr -> next = head ;
       head = curr ;
       break ;
@@ -135,7 +135,8 @@ flow4d_RK_fast( struct site *__restrict lat ,
   }
   curr = head ;
   
-  scaleset( curr , WFLOW_STOP , WFLOW_STOP , count ) ;
+  // set the scale at t_0 and w_0
+  scaleset( curr , T0_STOP , W0_STOP , count ) ;
 
   // free the list
   while( head != NULL ) {
@@ -214,7 +215,7 @@ flow4d_RK_slow( struct site *__restrict lat ,
 	    curr -> time , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
 
     // use a poor approximation of the derivative of the flow as a guide to stop
-    if( ( ( flow_next - flow ) * curr -> time / delta_t ) > ( WFLOW_STOP * 1.25 ) ) {
+    if( ( ( flow_next - flow ) * curr -> time / delta_t ) > ( W0_STOP * 1.25 ) ) {
       curr -> next = head ;
       head = curr ;
       break ;
@@ -250,7 +251,7 @@ flow4d_RK_slow( struct site *__restrict lat ,
   curr = head ;
   
   // set the scales t0 and w0 evaluated by our splines
-  scaleset( curr , WFLOW_STOP , WFLOW_STOP , count ) ;
+  scaleset( curr , T0_STOP , W0_STOP , count ) ;
 
   // free the list
   while( head != NULL ) {
