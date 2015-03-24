@@ -66,6 +66,51 @@ adaptfmin( a , b )
 }
 
 /**
+   @brief print the flow progress
+ */
+static void
+print_flow( const struct wfmeas *curr ,
+	    const double err ,
+	    const double delta_t)
+{
+  printf( "[WFLOW] {err} %1.3e {t} %f {dt} %g " , err , curr -> time , delta_t ) ;
+  printf( "{p} %g {q} %g {Gt} %g \n" , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
+}
+
+/**
+   @brief fine measurements
+ */
+static struct wfmeas *
+fine_measurement( struct site *lat , 
+		  struct spt_site *lat2 , 
+		  struct spt_site *lat3 , 
+		  struct spt_site *lat4 , 
+		  struct spt_site_herm *Z , 
+		  double *flow_next , 
+		  double *t , 
+		  const double delta_t ,
+		  const double preverr , 
+		  const int SM_TYPE )
+{
+  struct wfmeas *curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
+  *t += delta_t ;
+  curr -> time = *t ;
+  const double rk1 = mnineOseventeen * delta_t ;
+  const double rk2 = delta_t ;
+  const double rk3 = ( -delta_t ) ;  
+  step_distance_memcheap( lat , lat2 , lat3 , lat4 , 
+			  Z , rk1 , rk2 , rk3 , SM_TYPE ) ;
+  // update the linked list
+  curr -> Gt = curr -> time * curr -> time * 
+    lattice_gmunu( lat , &(curr -> qtop) , &( curr->avplaq ) ) ;
+  // set the flow
+  *flow_next = curr -> Gt ;
+  // the error in a fine measurement will be at least that of the previous
+  print_flow( curr , preverr , delta_t ) ;
+  return curr ;
+}
+
+/**
    @enum adaptive_control
    @brief when to break our adaptive algorithm if we have done this many halvings and still have no result
  */
@@ -120,11 +165,10 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
 
   struct wfmeas *head = NULL , *curr ;
   curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
+  curr -> time = 0.0 ;
   curr -> Gt = curr -> time * curr -> time * 
     lattice_gmunu( lat , &( curr -> qtop ) , &( curr -> avplaq ) ) ;
-  curr -> time = 0.0 ;
-  printf("[WFLOW] {err} %1.3e {t} %f {dt} %e {p} %1.10f {q} %1.10f {ttGG} %g \n" ,
-	 0.0 , curr -> time , delta_t , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
+  print_flow( curr , 0.0 , 0.0 ) ;
   curr -> next = head ;
   head = curr ;
 
@@ -234,39 +278,56 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
     // set the flow
     flow_next = curr -> Gt ;
 
-    printf( "[WFLOW] {err} %1.3e {t} %f {dt} %g " , errmax * ADAPTIVE_EPS , curr -> time , delta_t ) ;
-    printf( "{p} %g {q} %g {Gt} %g \n" , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
-
-    // use a poor approximation of the derivative of the flow as a guide to stop
-    printf( "flowapprox :: %f \n" ,  ( flow_next - flow ) * curr -> time / delta_t ) ;
-    if( ( ( flow_next - flow ) * curr -> time / delta_t ) > ( WFLOW_STOP * 1.25 ) ) {
-      curr -> next = head ;
-      head = curr ;
-      break ;
-    }
-    flow = flow_next ;
+    print_flow( curr , errmax * ADAPTIVE_EPS , delta_t ) ;
 
     // update the linked list
     curr -> next = head ;
     head = curr ;
 
+    // approximate the derivative
+    double wapprox = ( flow_next - flow ) * curr -> time / delta_t ;
+    flow = flow_next ;
+
+    // perform fine measurements around WFLOW_STOP for t_0
+    if( fabs( WFLOW_STOP - flow ) <= ( WFLOW_STOP * 0.05 ) ) {
+      while( fabs( WFLOW_STOP - flow ) <= ( WFLOW_STOP * 0.05 ) ) {
+	curr = fine_measurement( lat , lat2 , lat3 , lat4 , Z , 
+				 &flow_next , &t , 0.01 , 
+				 errmax * ADAPTIVE_EPS , SM_TYPE ) ;
+	wapprox = ( flow_next - flow ) * curr -> time / 0.01 ;
+	flow = flow_next ;
+	curr -> next = head ;
+	head = curr ;
+	count++ ;
+      }
+    }
+
+    if( fabs( WFLOW_STOP - wapprox ) <= ( WFLOW_STOP * 0.05 ) ) {
+      // perform some fine measurements around w_0
+      while( fabs( WFLOW_STOP - wapprox ) <= ( WFLOW_STOP * 0.05 ) ) {
+	curr = fine_measurement( lat , lat2 , lat3 , lat4 , Z , 
+				 &flow_next , &t , 0.01 , 
+				 errmax * ADAPTIVE_EPS , SM_TYPE ) ;
+	wapprox = ( flow_next - flow ) * curr -> time / 0.01 ;
+	flow = flow_next ;
+	curr -> next = head ;
+	head = curr ;
+	count++ ;
+      }
+    }
+
+    // use a poor approximation of the derivative of the flow as a guide to stop
+    if( wapprox > ( WFLOW_STOP * 1.25 ) ) {
+      break ;
+    }
+
     // stop if we are above the max time
     if( ( curr -> time ) > TMEAS_STOP ) {
-      curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
-      const double delta_tcorr = TMEAS_STOP - t ; 
-      curr -> time = TMEAS_STOP ;
-      const double rk1 = mnineOseventeen * delta_tcorr ;
-      const double rk2 = delta_tcorr ;
-      const double rk3 = ( -delta_tcorr ) ;  
-      step_distance_memcheap( lat , lat2 , lat3 , lat4 , 
-			      Z , rk1 , rk2 , rk3 , SM_TYPE ) ;
-      // update the linked list
-      curr -> Gt = curr -> time * curr -> time * 
-	lattice_gmunu( lat , &(curr -> qtop) , &( curr->avplaq ) ) ;
-      // set the flow
-      flow_next = curr -> Gt ;
-      printf( "[WFLOW] {err} %1.3e {t} %f {dt} %g " , errmax * ADAPTIVE_EPS , curr -> time , delta_tcorr ) ;
-      printf( "{p} %g {q} %g {Gt} %g \n" , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
+      curr = fine_measurement( lat , lat2 , lat3 , lat4 , Z , 
+			       &flow_next , &t , TMEAS_STOP - t , 
+			       errmax * ADAPTIVE_EPS , SM_TYPE ) ;
+      count++ ;
+      flow = flow_next ;
       curr -> next = head ;
       head = curr ;
       break ;

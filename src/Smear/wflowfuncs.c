@@ -320,18 +320,18 @@ evaluate_scale( double *der ,
 	change_up = i ;
       }
     }
-    #ifdef VERBOSE
+    //#ifdef VERBOSE
     printf( "[%s] %g %g \n" , message , x[ i ] , meas[ i ] ) ;
-    #endif
+    //#endif
   }
   // print out the spline evaluation?
-#ifdef VERBOSE
+  //#ifdef VERBOSE
   double t = 0.0 ;
   for( t = 0.0 ; t < x[ Nmeas - 1 ] ; t+= 0.005 ) {
     printf( "[%s-spline] %g %g \n" , message , t , 
 	    cubic_eval( x , meas , der , t , Nmeas ) ) ;
   }
-#endif
+  //#endif
   // evaluate at "scale" error flag is -1
   return solve_spline( x , meas , der , scale , change_up ) ;
 }
@@ -374,19 +374,19 @@ scaleset( struct wfmeas *curr ,
     free( der ) ; free( time ) ; free( GT ) ;
     return GLU_FAILURE ;
   }
-  printf( "[T0-scale] %f \n" , sqrt( t0 ) ) ;
+  printf( "[GT-scale] %f \n" , sqrt( t0 ) ) ;
   // W(t) = t ( dG(t) / dt )
   for( i = 0 ; i < count ; i++ ) {
     GT[ i ] = time[ i ] * der[ i ] ;
   }
-  const double w0 = evaluate_scale( der , time , GT , count , W_0 , "GT" ) ;
+  const double w0 = evaluate_scale( der , time , GT , count , W_0 , "WT" ) ;
   if( w0 == -1.0 ) {
     printf( "[WFLOW] cubic solve failure \n" ) ;
     printf( "[WFLOW] solve needs to bound the value you are looking for\n" ) ;
     free( der ) ; free( time ) ; free( GT ) ;
     return GLU_FAILURE ;
   }
-  printf( "[W0-scale] %f \n" , sqrt( w0 ) ) ;
+  printf( "[WT-scale] %f \n" , sqrt( w0 ) ) ;
 
   free( der ) ;
   free( time ) ;
