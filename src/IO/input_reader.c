@@ -19,6 +19,8 @@
 /**
    @file input_reader.c
    @brief reader for the input file
+
+   This file is too long, I should split it up
 */
 
 #include "Mainfile.h"
@@ -39,7 +41,7 @@ struct inputs {
 } ;
 
 // is this what valgrind dislikes?
-static struct inputs *INPUT ;
+static struct inputs *INPUT = NULL ;
 
 // counter for the number of tags
 static int NTAGS = 0 ;
@@ -52,7 +54,7 @@ are_equal( const char *str_1 , const char *str_2 ) { return !strcmp( str_1 , str
 static void 
 pack_inputs( FILE *setup )
 {
-  INPUT = ( struct inputs* )malloc( INPUTS_LENGTH * sizeof( struct inputs ) ) ;
+  INPUT = ( struct inputs* )calloc( INPUTS_LENGTH , sizeof( struct inputs ) ) ;
   // and put into the buffer
   while( NTAGS++ , fscanf( setup , "%s = %s" , INPUT[ NTAGS ].TOKEN , 
 			   INPUT[ NTAGS ].VALUE )  != EOF ) { }
@@ -96,7 +98,7 @@ setint( int *val ,
   const int idx = tag_search( tag ) ;
   if( idx == GLU_FAILURE ) { return tag_failure( tag ) ; }
   *val = (int)strtol( INPUT[idx].VALUE , &endptr , 10 ) ;
-  if( endptr == INPUT[idx].VALUE || *val < 1 ||
+  if( endptr == INPUT[idx].VALUE || *val < 0 ||
       errno == ERANGE ) {
     return GLU_FAILURE ;
   }

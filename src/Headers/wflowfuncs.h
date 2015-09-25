@@ -34,7 +34,7 @@ extern const double MEAS_START ;
    @var TMEAS_STOP
    @brief at what point in the flow do we intend to stop
 **/
-extern const double TMEAS_STOP ;
+extern double TMEAS_STOP ;
 
 /**
    @var W0_STOP
@@ -47,6 +47,14 @@ extern const double W0_STOP ;
    @brief what flow value do we decide to (roughly) perform measurements at
  */
 extern const double T0_STOP ;
+
+/**
+   @fn void set_TMEAS_STOP( const double c0 )
+   @brief set the flow time we want to stop at
+   @param c0 :: scale setting parameter
+ */
+void
+set_TMEAS_STOP( const double c0 ) ;
 
 /**
    @fn const double evaluate_scale( double *der , const double *x , const double *meas , const int Nmeas , const double scale ,	const char *message )

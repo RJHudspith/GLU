@@ -32,7 +32,16 @@
 const double MEAS_START = 0.0 ; // start measuring from 1 lattice spacing flow
 const double W0_STOP    = 0.3 ; // BMW's choice for the W_0 parameter
 const double T0_STOP    = 0.3 ; // Martin's choice for the t_0 scale
-const double TMEAS_STOP = 12.0 ; // flow time stopper, be careful after ~10
+double TMEAS_STOP = 0.65 ;
+
+// set tmeas using some c0 if that is your thing
+void 
+set_TMEAS_STOP( const double c0 ) 
+{ 
+  TMEAS_STOP = ( c0 * Latt.dims[0] ) * ( c0 * Latt.dims[0] ) / 8 ; 
+  printf( "[WFLOW] TMEAS_STOP changed to %f \n" , TMEAS_STOP ) ;
+  return ;
+}
 
 // RK4 parameters
 static const double mthreeOfour = -0.75 ; // 3.0/4.0

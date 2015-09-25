@@ -71,14 +71,14 @@ compute_Qsusc( struct site *__restrict lat ,
   // precompute all of charge densities q(x)
   compute_Gmunu_array( qtop , lat ) ;
 
-#ifdef verbose
+  #ifdef verbose
   register double sum = 0.0 , sumsq = 0.0 ;
   for( i = 0 ; i < LVOLUME ; i++ ) {
     sum += creal( qtop[i] ) ;
     sumsq += creal( qtop[i] * qtop[i] ) ;
   }
   printf( "\nQTOP %f %f \n" , sum * NORM , sumsq * NORMSQ ) ;
-#endif
+  #endif
 
   // allocate the results
   double *qcorr = malloc( size[0] * sizeof( double ) ) ; 

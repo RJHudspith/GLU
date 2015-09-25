@@ -98,8 +98,10 @@ flow4d_RK_fast( struct site *__restrict lat ,
 
     // set the flow
     flow_next = curr -> Gt ;
-    printf( "[WFLOW] {t} %g {p} %g {q} %g {Gt} %g \n" , 
-	    curr -> time , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
+    printf( "[WFLOW] {t} %1.12f {s} %1.12f {p} %1.12f {q} %1.12f {Gt} %1.12f {Alpha} %1.12f\n" , 
+	    curr -> time , sqrt( 1.0 / ( 8.0 * curr -> time ) ) ,
+	    curr -> avplaq , curr -> qtop , curr -> Gt ,
+	    curr -> Gt * 4. / 3.0 ) ;
 
     // use a poor approximation of the derivative of the flow as a guide to stop
     if( ( ( flow_next - flow ) * curr -> time / delta_t ) > ( W0_STOP * 1.25 ) ) {
@@ -115,6 +117,7 @@ flow4d_RK_fast( struct site *__restrict lat ,
     // If we are wilson-flowing to a specific time, we compute a negative 
     // flow-time correction
     if( curr -> time > TMEAS_STOP ) {
+      curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
       const double delta_tcorr = TMEAS_STOP - count * delta_t ; 
       curr -> time = TMEAS_STOP ;
       const double rk1 = mnineOseventeen * delta_tcorr ;
@@ -125,7 +128,7 @@ flow4d_RK_fast( struct site *__restrict lat ,
       curr -> Gt = curr -> time * curr -> time * 
 	lattice_gmunu( lat , &(curr -> qtop) , &( curr->avplaq ) ) ;
       // output details
-      printf( "[WFLOW] {t} %g {p} %g {q} %g {Gt} %g \n" , 
+      printf( "[WFLOW] {t} %1.12f {p} %1.12f {q} %1.12f {Gt} %1.12f \n" , 
 	      curr -> time , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
       curr -> next = head ;
       head = curr ;
@@ -133,10 +136,13 @@ flow4d_RK_fast( struct site *__restrict lat ,
     }
     // end of the integration step ...
   }
-  curr = head ;
-  
-  // set the scale at t_0 and w_0
-  scaleset( curr , T0_STOP , W0_STOP , count ) ;
+  curr = head ;  
+
+  if( fabs( curr -> time - TMEAS_STOP ) > PREC_TOL & 
+      count <= smiters ) {
+    // set the scale at t_0 and w_0
+    scaleset( curr , T0_STOP , W0_STOP , count ) ;
+  }
 
   // free the list
   while( head != NULL ) {
@@ -229,6 +235,7 @@ flow4d_RK_slow( struct site *__restrict lat ,
     // If we are wilson-flowing to a specific time, we compute a negative 
     // flow-time correction
     if( curr -> time > TMEAS_STOP ) {
+      curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
       const double delta_tcorr = TMEAS_STOP - count * delta_t ; 
       curr -> time = TMEAS_STOP ;
       const double rk1 = mnineOseventeen * delta_tcorr ;
@@ -248,10 +255,14 @@ flow4d_RK_slow( struct site *__restrict lat ,
     }
     // end of the integration step ...
   }
-  curr = head ;
-  
+  curr = head ;  
+
   // set the scales t0 and w0 evaluated by our splines
-  scaleset( curr , T0_STOP , W0_STOP , count ) ;
+  if( fabs( curr -> time - TMEAS_STOP ) > PREC_TOL & 
+      count <= smiters ) {
+    // set the scale at t_0 and w_0
+    scaleset( curr , T0_STOP , W0_STOP , count ) ;
+  }
 
   // free the list
   while( head != NULL ) {

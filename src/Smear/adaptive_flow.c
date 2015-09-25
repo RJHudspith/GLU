@@ -73,7 +73,11 @@ print_flow( const struct wfmeas *curr ,
 	    const double err ,
 	    const double delta_t)
 {
-  printf( "[WFLOW] {err} %1.3e {t} %f {dt} %g " , err , curr -> time , delta_t ) ;
+  if( delta_t < 0 ) {
+    printf( "[WFLOW-TSTOP] {err} %1.3e {t} %f {dt} %g " , err , curr -> time , delta_t ) ;
+  } else {
+    printf( "[WFLOW] {err} %1.3e {t} %f {dt} %g " , err , curr -> time , delta_t ) ;
+  }
   printf( "{p} %g {q} %g {Gt} %g \n" , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
 }
 
@@ -124,14 +128,17 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
 		    const int SIGN ,
 		    const int SM_TYPE )
 {  
+  // set this for the coupling measurement
+  //set_TMEAS_STOP( 0.4 ) ;
+
   ////// USUAL STARTUP INFORMATION /////////
   print_GG_info( SM_TYPE , RK4_ADAPTIVE ) ;
 
   // the error between the two plaquettes
   const double ADAPTIVE_EPS = 1E-7 ;
-  // Standard shrink and factor from NRC
+  // Standard shrink and factor from NRC RK4
   const double ADAPTIVE_SHRINK = -0.25 ;
-  // Standard growth and factor from NRC
+  // Standard growth and factor from NRC RK4
   const double ADAPTIVE_GROWTH = -0.20 ;
   // define adaptive safe
   const double ADAPTIVE_SAFE = 0.9 ;
@@ -329,8 +336,9 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
 
     // stop if we are above the max time
     if( ( curr -> time ) > TMEAS_STOP ) {
+      delta_t = TMEAS_STOP - t ;
       curr = fine_measurement( lat , lat2 , lat3 , lat4 , Z , 
-			       &flow_next , &t , TMEAS_STOP - t , 
+			       &flow_next , &t , delta_t , 
 			       errmax * ADAPTIVE_EPS , SM_TYPE ) ;
       count++ ;
       flow = flow_next ;
@@ -353,7 +361,9 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   printf( "[WFLOW] Adequate steps :: %d \n" , OK_STEPS ) ;
 
   // compute the t_0 and w_0 scales from the measurement
-  scaleset( curr , T0_STOP , W0_STOP , count ) ;
+  if( delta_t > 0 ) {
+    scaleset( curr , T0_STOP , W0_STOP , count ) ;
+  }
 
   // and free the list
   while( head != NULL ) {
