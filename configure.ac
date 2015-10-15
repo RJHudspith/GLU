@@ -135,6 +135,10 @@ AC_CHECK_HEADERS([time.h],
 AC_CHECK_HEADERS([complex.h strings.h stdio.h stdlib.h limits.h],[],[
 AC_MSG_ERROR([Sorry, but we need these headers (complex.h , strings.h , stdlib.h , stdio.h and limits.h) somewhere in the code])])
 
+## check for immintrin.h -> Intel vector instructions
+AC_CHECK_HEADERS([immintrin.h],
+	[AC_MSG_NOTICE([Vector intrinsics being used])],[])
+
 ## And we can now run in single precision
 single=false
 AC_ARG_ENABLE([single],

@@ -35,7 +35,68 @@ gtransform_local( const GLU_complex *__restrict a ,
 		  GLU_complex *__restrict b ,
 		  const GLU_complex *__restrict c )
 {
-#if NC == 3
+  // standard gauge transform
+  GLU_complex temp[ NCNC ] ;
+  multab_dag_suNC( temp , b , c ) ;
+  multab_suNC( b , a , temp ) ; 
+  return ;
+}
+
+//gauge_transform lattice-wide
+void 
+gtransform( struct site *__restrict lat ,
+	    const GLU_complex *__restrict *__restrict gauge )
+{
+  int i ;
+#pragma omp parallel for private(i)
+  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+
+    #if ND == 4
+    gtransform_local( gauge[i] , lat[i].O[0] , gauge[lat[i].neighbor[0]] ) ;
+    gtransform_local( gauge[i] , lat[i].O[1] , gauge[lat[i].neighbor[1]] ) ;
+    gtransform_local( gauge[i] , lat[i].O[2] , gauge[lat[i].neighbor[2]] ) ;
+    gtransform_local( gauge[i] , lat[i].O[3] , gauge[lat[i].neighbor[3]] ) ;
+    #else
+    int mu ;
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      gtransform_local( gauge[i] , lat[i].O[mu] , gauge[lat[i].neighbor[mu]] ) ;
+    }
+    #endif
+
+  } 
+  return ;
+}
+
+// gauge_transform for the Coulomb definition 
+void
+gtransform_slice( const GLU_complex *__restrict *__restrict gauge , 
+		  struct site *__restrict lat , 
+		  const GLU_complex *__restrict *__restrict gauge_up ,
+		  const int t )
+{
+  int i ;
+  const int slice = LCU  *  t ; 
+#pragma omp parallel for private(i)
+  PFOR(  i = 0  ;  i < LCU  ;  i ++ ) {
+    const int j = slice + i ;
+
+#if ND == 4   
+    gtransform_local( gauge[i] , lat[j].O[0] , gauge[lat[i].neighbor[0]] ) ;
+    gtransform_local( gauge[i] , lat[j].O[1] , gauge[lat[i].neighbor[1]] ) ;
+    gtransform_local( gauge[i] , lat[j].O[2] , gauge[lat[i].neighbor[2]] ) ;
+#else
+    int mu ;
+    for( mu = 0 ; mu < ND - 1  ; mu++ ) {
+      gtransform_local( gauge[i] , lat[j].O[mu] , gauge[lat[i].neighbor[mu]] ) ;
+    }
+#endif
+    gtransform_local( gauge[i] , lat[j].O[ND-1] , gauge_up[i] ) ;
+  }
+  return ;
+}
+
+#if 0
+  #if NC == 3
   // product of three SU(3) matrices?
   //const GLU_complex c0 = b[0] * conj( c[0] ) + b[1] * conj( c[1] ) + b[2] * conj( c[2] ) ;
   const GLU_real REc0 = + creal( b[0] ) * creal( c[0] ) + cimag( b[0] ) * cimag( c[0] ) 
@@ -163,7 +224,7 @@ gtransform_local( const GLU_complex *__restrict a ,
        - creal( b[1] ) * creal( b[3] ) + cimag( b[1] ) * cimag( b[3] ) 
     + I * ( creal( b[1] ) * cimag( b[3] ) + creal( b[3] ) * cimag( b[1] ) ) ;
 
-#elif NC == 2 // gives us about a 5% speedup, interesting
+  #elif NC == 2 // gives us about a 5% speedup, interesting
   register const GLU_real REcache1 = ( creal( b[0] ) * creal( c[0] ) + cimag( b[0] ) * cimag( c[0] )
 				       + creal( b[1] ) * creal( c[1] ) + cimag( b[1] ) * cimag( c[1] ) ) ;
   register const GLU_real IMcache1 = ( cimag( b[0] ) * creal( c[0] ) - creal( b[0] ) * cimag( c[0] ) 
@@ -180,64 +241,6 @@ gtransform_local( const GLU_complex *__restrict a ,
        + REA1 * REcache1 + IMA1 * IMcache1 + I * ( -REA1 * IMcache1 + IMA1 * REcache1 ) ;
   b[2] = -conj( b[1] ) ;
   b[3] =  conj( b[0] ) ;
-#else
-  // standard gauge transform
-  GLU_complex temp[ NCNC ] ;
-  multab_dag_suNC( temp , b , c ) ;
-  multab_suNC( b , a , temp ) ; 
+  #endif
+
 #endif
-  return ;
-}
-
-//gauge_transform lattice-wide
-void 
-gtransform( struct site *__restrict lat ,
-	    const GLU_complex *__restrict *__restrict gauge )
-{
-  int i ;
-#pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-
-    #if ND == 4
-    gtransform_local( gauge[i] , lat[i].O[0] , gauge[lat[i].neighbor[0]] ) ;
-    gtransform_local( gauge[i] , lat[i].O[1] , gauge[lat[i].neighbor[1]] ) ;
-    gtransform_local( gauge[i] , lat[i].O[2] , gauge[lat[i].neighbor[2]] ) ;
-    gtransform_local( gauge[i] , lat[i].O[3] , gauge[lat[i].neighbor[3]] ) ;
-    #else
-    int mu ;
-    for( mu = 0 ; mu < ND ; mu++ ) {
-      gtransform_local( gauge[i] , lat[i].O[mu] , gauge[lat[i].neighbor[mu]] ) ;
-    }
-    #endif
-
-  } 
-  return ;
-}
-
-// gauge_transform for the Coulomb definition 
-void
-gtransform_slice( const GLU_complex *__restrict *__restrict gauge , 
-		  struct site *__restrict lat , 
-		  const GLU_complex *__restrict *__restrict gauge_up ,
-		  const int t )
-{
-  int i ;
-  const int slice = LCU  *  t ; 
-#pragma omp parallel for private(i)
-  PFOR(  i = 0  ;  i < LCU  ;  i ++ ) {
-    const int j = slice + i ;
-
-#if ND == 4   
-    gtransform_local( gauge[i] , lat[j].O[0] , gauge[lat[i].neighbor[0]] ) ;
-    gtransform_local( gauge[i] , lat[j].O[1] , gauge[lat[i].neighbor[1]] ) ;
-    gtransform_local( gauge[i] , lat[j].O[2] , gauge[lat[i].neighbor[2]] ) ;
-#else
-    int mu ;
-    for( mu = 0 ; mu < ND - 1  ; mu++ ) {
-      gtransform_local( gauge[i] , lat[j].O[mu] , gauge[lat[i].neighbor[mu]] ) ;
-    }
-#endif
-    gtransform_local( gauge[i] , lat[j].O[ND-1] , gauge_up[i] ) ;
-  }
-  return ;
-}

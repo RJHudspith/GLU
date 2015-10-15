@@ -495,8 +495,8 @@ FACG( struct site *__restrict lat ,
   int i ;
   #pragma omp parallel for private(i)
   for( i = 0 ; i < TRUE_HERM ; i++ ) {
-    sn[i] = malloc( LVOLUME * sizeof( GLU_complex ) ) ;
-    in_old[i] = malloc( LVOLUME * sizeof( GLU_complex ) ) ;
+    GLU_malloc( (void**)&sn[i]     , 16 , LVOLUME * sizeof( GLU_complex ) ) ;
+    GLU_malloc( (void**)&in_old[i] , 16 , LVOLUME * sizeof( GLU_complex ) ) ;
   }
 
   #ifdef CAREFUL
@@ -658,7 +658,8 @@ FASD_SMEAR( struct site *__restrict lat ,
   GLU_complex **gauge2 = malloc( LVOLUME * sizeof( GLU_complex* ) ) ;
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-    gauge2[i] = ( GLU_complex* )malloc( NCNC * sizeof( GLU_complex ) ) ; 
+    //gauge2[i] = ( GLU_complex* )malloc( NCNC * sizeof( GLU_complex ) ) ; 
+    GLU_malloc( (void**)&gauge2[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
     identity( gauge2[i] ) ;
   }
 

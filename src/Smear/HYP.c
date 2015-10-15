@@ -182,8 +182,7 @@ staples3D( stap , lat , lev1 , i , mu , t , type )
 }
 #endif
 
-/********************** [ ROUTINE ] *******************/
-
+// spatial only smearing
 void 
 HYPSLsmear3D( struct site *__restrict lat , 
 	      const int smiters , 
@@ -201,8 +200,13 @@ HYPSLsmear3D( struct site *__restrict lat ,
     return ; 
   }
 
-  struct spatial_lv1 *lev1 = malloc( LCU * sizeof( struct spatial_lv1 ) ) ; 
-  struct sp_site *lat2 = malloc( LCU * sizeof( struct sp_site ) ) ; 
+  struct spatial_lv1 *lev1 = NULL ;
+  struct sp_site *lat2 = NULL ;
+  if( GLU_malloc( (void**)&lev1 , 16 , LCU * sizeof( struct spatial_lv1 ) ) != 0 || 
+      GLU_malloc( (void**)&lat2 , 16 , LCU * sizeof( struct sp_site ) ) != 0 ) {
+    printf( "[SMAERING] field allocation failure\n" ) ;
+    return ;
+  }
  
   int count = 0 ; 
 

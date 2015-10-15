@@ -99,7 +99,10 @@ read_file( struct head_data *HEAD_DATA ,
   }
 
   // malloc our gauge field and initialise our lattice geometry
-  struct site *lat = malloc( LVOLUME * sizeof ( struct site ) ) ;
+  struct site *lat = NULL ;
+  if( GLU_malloc( (void**)&lat , 16 , LVOLUME * sizeof( struct site ) ) != 0 ) {
+    return NULL ;
+  }
   init_navig( lat ) ;
 
 #ifdef SINGLE_PREC

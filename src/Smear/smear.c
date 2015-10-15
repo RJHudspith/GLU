@@ -65,8 +65,13 @@ smear3D( struct site *__restrict lat ,
   double qtop_new , qtop_old = 0. ;
   #endif
 
-  struct sp_site *lat2 = malloc( LCU * sizeof( struct sp_site ) ) ; 
- 
+  // allocate temporary lattice field
+  struct sp_site *lat2 = NULL ;
+  if( GLU_malloc( (void**)&lat2 , 16 , LCU * sizeof( struct sp_site ) ) != 0 ) {
+    printf( "[SMEARING] field allocation failure\n" ) ;
+    return ;
+  }
+
   int count = 0 ; 
   for( count = 1 ; count <= smiters ; count++ ) {
     #ifdef SYMANZIK_ONE_LOOP
@@ -166,7 +171,6 @@ smear4D( struct site *__restrict lat ,
   }
 
 #if ND != 4 
-  // oh god, so I wimped out and allow you to set the alpha in the input file
   const GLU_real alpha1 = ND > 2 ? Latt.sm_alpha[0] / ( ( ND - 1 ) * ( ND - 2 ) ) : Latt.sm_alpha[0] ;
   const GLU_real one_min_a1 = ( 1.0 - Latt.sm_alpha[0] ) ;
 #endif	
@@ -175,15 +179,22 @@ smear4D( struct site *__restrict lat ,
   double qtop_new , qtop_old = 0. ;
   #endif
 
-  struct spt_site *lat2 = malloc( LCU * sizeof( struct spt_site ) ) ; 
+  struct spt_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
+  if( GLU_malloc( (void**)&lat2 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ) {
+    printf( "[SMEARING] field allocation failure\n" ) ;
+  }
   #ifdef IMPROVED_SMEARING
-  struct spt_site *lat3 = malloc( 2*LCU * sizeof( struct spt_site ) ) ; 
-  struct spt_site *lat4 = malloc( 2*LCU * sizeof( struct spt_site ) ) ; 
+  if( GLU_malloc( (void**)&lat3 , 16 , 2 * LCU * sizeof( struct spt_site ) ) != 0 ||
+      GLU_malloc( (void**)&lat4 , 16 , 2 * LCU * sizeof( struct spt_site ) ) != 0) {
+    printf( "[SMEARING] field allocation failure\n" ) ;
+  }
   #else
-  struct spt_site *lat3 = malloc( LCU * sizeof( struct spt_site ) ) ; 
-  struct spt_site *lat4 = malloc( LCU * sizeof( struct spt_site ) ) ; 
+  if( GLU_malloc( (void**)&lat3 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ||
+      GLU_malloc( (void**)&lat4 , 16 , LCU * sizeof( struct spt_site ) ) != 0) {
+    printf( "[SMEARING] field allocation failure\n" ) ;
+  }
   #endif
- 
+  
   int count = 0 ; 
 
   for( count = 1 ; count <= smiters ; count++ ) {

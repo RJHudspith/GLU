@@ -158,19 +158,29 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   printf( "[WFLOW] Fine step :: %g \n\n" , FINESTEP ) ;
 
   //////////////////////////////////////////
+  struct spt_site_herm *Z = NULL ;
+  struct spt_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
+  struct site *lat_two = NULL ;
 
-  struct spt_site_herm *Z = malloc( LVOLUME * sizeof ( struct spt_site_herm ) ) ;
-  struct spt_site *lat2 = malloc( LCU * sizeof ( struct spt_site ) ) ;
+  if( GLU_malloc( (void**)&Z , 16 , LVOLUME * sizeof( struct spt_site_herm ) ) != 0 ||
+      GLU_malloc( (void**)&lat2 , 16 , LCU * sizeof( struct spt_site ) )       != 0 ||
+      GLU_malloc( (void**)&lat_two , 16 , LVOLUME * sizeof( struct site ) )    != 0 ) {
+    printf( "[SMEARING] allocation failure \n" ) ;
+    return ;
+  }
 #ifdef IMPROVED_SMEARING
-  struct spt_site *lat3 = malloc( 2*LCU * sizeof ( struct spt_site ) ) ;
-  struct spt_site *lat4 = malloc( 2*LCU * sizeof ( struct spt_site ) ) ;
+  if( GLU_malloc( (void**)&lat3 , 16 , 2 * LCU * sizeof( struct spt_site ) )   != 0 ||
+      GLU_malloc( (void**)&lat4 , 16 , 2 * LCU * sizeof( struct spt_site ) )   != 0 ) {
+    printf( "[SMEARING] allocation failure \n" ) ;
+    return ;
+  }
 #else
-  struct spt_site *lat3 = malloc( LCU * sizeof ( struct spt_site ) ) ;
-  struct spt_site *lat4 = malloc( LCU * sizeof ( struct spt_site ) ) ;
+  if( GLU_malloc( (void**)&lat3 , 16 , LCU * sizeof( struct spt_site ) )   != 0 ||
+      GLU_malloc( (void**)&lat4 , 16 , LCU * sizeof( struct spt_site ) )   != 0 ) {
+    printf( "[SMEARING] allocation failure \n" ) ;
+    return ;
+  }
 #endif
-
-  // Set up a temporary lattice of the semi-steps
-  struct site *lat_two = malloc( LVOLUME * sizeof ( struct site ) ) ;
   init_navig( lat_two ) ;
 
   // set up the step sizes ...

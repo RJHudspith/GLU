@@ -55,7 +55,7 @@ GF_wrap_coulomb( lat , GFINFO )
     int i ;
     #pragma omp parallel for private(i)
     for( i = 0 ; i < LVOLUME ; i++ ) {
-      gauge[i] = ( GLU_complex * )malloc( NCNC * sizeof( GLU_complex ) ) ; 
+      GLU_malloc( (void**)&gauge[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
     }
     // mag improvement
     mag( lat , gauge ) ; 
@@ -110,7 +110,7 @@ GF_wrap_landau( infile , lat , GFINFO , improvement )
     int i ;
     #pragma omp parallel for private(i)
     for( i = 0 ; i < LVOLUME ; i++ ) {
-      gauge[i] = ( GLU_complex* )malloc( NCNC * sizeof( GLU_complex ) ) ; 
+      GLU_malloc( (void**)&gauge[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
       identity( gauge[i] ) ;
     }
     mag( lat , gauge ) ;

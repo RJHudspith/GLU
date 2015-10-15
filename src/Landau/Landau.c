@@ -165,10 +165,12 @@ luxury_copy_fast( lat , gauge , out , in , forward , backward , psq , th , accur
      const int max_iters ;
 {
   int i ;
-  struct site *lat_copy = malloc( LVOLUME * sizeof( struct site ) ) ;
+  struct site *lat_copy = NULL , *lat_best = NULL ;
+
+  GLU_malloc( (void**)&lat_copy , 16 , LVOLUME * sizeof( struct site ) ) ;
   init_navig( lat_copy ) ;
-  struct site *lat_best = malloc( LVOLUME * sizeof( struct site ) ) ;
-  init_navig( lat_best ) ;
+  GLU_malloc( (void**)&lat_best , 16 , LVOLUME * sizeof( struct site ) ) ;
+  init_navig( lat_copy ) ;
 
 #ifdef BEST_COPY
   double maxlink = 1.0 , newlink ;
@@ -313,7 +315,7 @@ Landau( struct site *__restrict lat ,
   int i ;
   #pragma omp parallel for private(i)
   PFOR(  i = 0 ; i < TRUE_HERM ; i++  ) {
-    in[i] = ( GLU_complex* )malloc( LVOLUME * sizeof( GLU_complex ) ) ; 
+    GLU_malloc( (void**)&in[i] , 16 , LVOLUME * sizeof( GLU_complex ) ) ;
   }
   // these are really dummy variables that don't get used in the SD
   GLU_complex **out = NULL ;

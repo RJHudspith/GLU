@@ -95,5 +95,6 @@ extern struct latt_info Latt ;
 // logs and hermitian projections
 #include "exactQ.h"                // Q = log( U ) (approximations+exact)
 #include "expMat.h"                // U = exp( Q ) (exact)
+#include "GLU_malloc.h"            // GLUey allocations
 
 #endif

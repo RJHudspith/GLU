@@ -56,8 +56,13 @@ flow4d_RK_fast( struct site *__restrict lat ,
   //////////////////////////////////////
 
   // Set up the temporary fields ...
-  struct spt_site_herm *Z = malloc( LVOLUME * sizeof ( struct spt_site_herm ) ) ;
-  struct spt_site *lat2 = malloc( LVOLUME * sizeof ( struct spt_site ) ) ;
+  struct spt_site_herm *Z = NULL ;
+  struct spt_site *lat2 = NULL ;
+  if( GLU_malloc( (void**)&Z , 16 , LVOLUME * sizeof( struct spt_site_herm ) ) != 0 ||
+      GLU_malloc( (void**)&lat2 , 16 , LVOLUME * sizeof( struct spt_site ) ) != 0 ) {
+    printf( "[WFLOW] temporary field allocation failure\n" ) ;
+    return ;
+  }
 
   const double delta_t = SIGN * Latt.sm_alpha[0] ;
 
@@ -169,14 +174,25 @@ flow4d_RK_slow( struct site *__restrict lat ,
   print_GG_info( SM_TYPE , RK4_SLOW ) ;
   //////////////////////////////////////
 
-  struct spt_site_herm *Z = malloc( LVOLUME * sizeof ( struct spt_site_herm ) ) ;
-  struct spt_site *lat2 = malloc( LCU * sizeof ( struct spt_site ) ) ;
+  struct spt_site_herm *Z = NULL ;
+  struct spt_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
+  if( GLU_malloc( (void**)&Z , 16 , LVOLUME * sizeof( struct spt_site_herm ) ) != 0 ||
+      GLU_malloc( (void**)&lat2 , 16 , LVOLUME * sizeof( struct spt_site ) ) != 0 ) {
+    printf( "[WFLOW] temporary field allocation failure\n" ) ;
+    return ;
+  }
 #ifdef IMPROVED_SMEARING
-  struct spt_site *lat3 = malloc( 2*LCU * sizeof ( struct spt_site ) ) ;
-  struct spt_site *lat4 = malloc( 2*LCU * sizeof ( struct spt_site ) ) ;
+  if( GLU_malloc( (void**)&lat3 , 16 , 2 * LCU * sizeof( struct spt_site ) ) != 0 ||
+      GLU_malloc( (void**)&lat4 , 16 , 2 * LCU * sizeof( struct spt_site ) ) != 0 ) {
+    printf( "[WFLOW] temporary field allocation failure\n" ) ;
+    return ;
+  }
 #else
-  struct spt_site *lat3 = malloc( LCU * sizeof ( struct spt_site ) ) ;
-  struct spt_site *lat4 = malloc( LCU * sizeof ( struct spt_site ) ) ;
+  if( GLU_malloc( (void**)&lat3 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ||
+      GLU_malloc( (void**)&lat4 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ) {
+    printf( "[WFLOW] temporary field allocation failure\n" ) ;
+    return ;
+  }
 #endif
 
   const double delta_t = SIGN * Latt.sm_alpha[0] ;

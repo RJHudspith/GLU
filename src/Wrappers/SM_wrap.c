@@ -164,10 +164,10 @@ print_smearinfo( const struct sm_info SMINFO )
       break ;
     case SM_HEX : printf( "HEX smearing\n" ) ; break ;
     case SM_HYL : printf( "HYL smearing\n" ) ; break ;
-    case SM_WFLOW_LOG : printf( "RK4-Wilson flow Log\n" ) ; break ;
-    case SM_WFLOW_STOUT : printf( "RK4-Wilson flow STOUT\n" ) ; break ;
-    case SM_ADAPTWFLOW_LOG : printf( "Adaptive RK4-Wilson flow Log\n" ) ; break ;
-    case SM_ADAPTWFLOW_STOUT : printf( "Adaptive RK4-Wilson flow STOUT\n" ) ; break ;
+    case SM_WFLOW_LOG : printf( "RK3-Wilson flow Log\n" ) ; break ;
+    case SM_WFLOW_STOUT : printf( "RK3-Wilson flow STOUT\n" ) ; break ;
+    case SM_ADAPTWFLOW_LOG : printf( "Adaptive RK3-Wilson flow Log\n" ) ; break ;
+    case SM_ADAPTWFLOW_STOUT : printf( "Adaptive R3-Wilson flow STOUT\n" ) ; break ;
     default : printf( "No smearing\n" ) ;
     }
   // wilson flow information about the clover terms and what have you

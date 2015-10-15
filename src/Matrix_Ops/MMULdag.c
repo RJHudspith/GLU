@@ -23,6 +23,8 @@
 
 #include "Mainfile.h"
 
+#if !( defined HAVE_IMMINTRIN_H ) || ( defined SINGLE_PREC )
+
 #ifndef multabdag
 // 3x3 mult a=b^{\dagger}.c//
 void 
@@ -138,3 +140,5 @@ multabdag_suNC( GLU_complex a[ NCNC ] ,
   return ;
 }
 #endif
+
+#endif // immintrin.h

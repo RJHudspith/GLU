@@ -112,7 +112,6 @@ get_lv1( lev1 , lat , type )
       }
     }
   }
-
   return ;
 }
 
@@ -336,15 +335,20 @@ HYPSLsmear4D( struct site *__restrict lat ,
   }
 
   // allocate temporaries ...
-  struct spt_site *lat2 = malloc( LCU * sizeof( struct spt_site ) ) ; 
-  struct spt_site *lat3 = malloc( LCU * sizeof( struct spt_site ) ) ; 
-  struct spt_site *lat4 = malloc( LCU * sizeof( struct spt_site ) ) ; 
+  struct spt_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
+  struct smallest_lv1 *lev1 = NULL , *lev2 = NULL , 
+    *lev2_up = NULL , *lev2_down = NULL ;
 
-  struct smallest_lv1 *lev1 = malloc( LVOLUME * sizeof( struct smallest_lv1 ) ) ; 
-
-  struct smallest_lv1 *lev2 = malloc( LCU * sizeof( struct smallest_lv1 ) ) ; 
-  struct smallest_lv1 *lev2_up = malloc( LCU * sizeof( struct smallest_lv1 ) ) ; 
-  struct smallest_lv1 *lev2_down = malloc( LCU * sizeof( struct smallest_lv1 ) ) ; 
+  if( GLU_malloc( (void**)&lat2 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ||
+      GLU_malloc( (void**)&lat3 , 16 , LCU * sizeof( struct spt_site ) ) != 0 || 
+      GLU_malloc( (void**)&lat4 , 16 , LCU * sizeof( struct spt_site ) ) != 0 || 
+      GLU_malloc( (void**)&lev1 , 16 , LVOLUME * sizeof( struct smallest_lv1 ) ) != 0 || 
+      GLU_malloc( (void**)&lev2 , 16 , LCU * sizeof( struct smallest_lv1 ) ) != 0 || 
+      GLU_malloc( (void**)&lev2_up , 16 , LCU * sizeof( struct smallest_lv1 ) ) != 0 || 
+      GLU_malloc( (void**)&lev2_down , 16 , LCU * sizeof( struct smallest_lv1 ) ) != 0 ) {
+    printf( "[SMEARING] field allocation error\n" ) ;
+    return ;
+  }
 
 #ifdef TOP_VALUE
   double qtop_new , qtop_old = 0. ;

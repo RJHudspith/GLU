@@ -194,21 +194,20 @@ recurse_staples( link , lat , i , lev , list_dirs , type )
     // and so it should recurse inside this
   }
   // OK and we now project the fields 
-  switch( type )
-    {
-    case SM_APE :
-      project_APE( link , stap , lat[i].O[rho] , 
-		   smear_alphas[ MAXDIR-lev ] , one_minus_smalpha[ MAXDIR-lev ] ) ; 
-      break ; 
-    case SM_STOUT :
-      project_STOUT_short( link , stap , lat[i].O[rho] , 
-			   smear_alphas[ MAXDIR-lev ] ) ; 
-      break ; 
-    case SM_LOG :
-      project_LOG_short( link , stap , lat[i].O[rho] , 
+  switch( type ) {
+  case SM_APE :
+    project_APE( link , stap , lat[i].O[rho] , 
+		 smear_alphas[ MAXDIR-lev ] , one_minus_smalpha[ MAXDIR-lev ] ) ; 
+    break ; 
+  case SM_STOUT :
+    project_STOUT_short( link , stap , lat[i].O[rho] , 
 			 smear_alphas[ MAXDIR-lev ] ) ; 
-      break ; 
-    }
+    break ; 
+  case SM_LOG :
+    project_LOG_short( link , stap , lat[i].O[rho] , 
+		       smear_alphas[ MAXDIR-lev ] ) ; 
+    break ; 
+  }
   return ;
 }
 
@@ -237,9 +236,13 @@ HYsmearND( struct site *__restrict lat ,
   // initialise our smearing parameters and print their values to the screen
   init_smearing_alphas( ) ;
 
-  struct spt_site *lat2 = malloc( LCU * sizeof( struct spt_site ) ) ; 
-  struct spt_site *lat3 = malloc( LCU * sizeof( struct spt_site ) ) ; 
-  struct spt_site *lat4 = malloc( LCU * sizeof( struct spt_site ) ) ; 
+  // allocate temporaries
+  struct spt_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
+  if( GLU_malloc( (void**)lat2 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ||
+      GLU_malloc( (void**)lat3 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ||
+      GLU_malloc( (void**)lat4 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ) {
+    printf( "[SMEARING] field allocation failure\n" ) ;
+  }
 
   const int lev = MAXDIR - 1 ;
   int count = 0 ; 

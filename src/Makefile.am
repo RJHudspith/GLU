@@ -31,8 +31,12 @@ LANDAUFILES=./Landau/CFACG.c ./Landau/CG.c ./Landau/Coulomb.c ./Landau/FACG.c ./
 ## home-spun matrix operations
 MATRIXOPSFILES=./Matrix_Ops/effs.c ./Matrix_Ops/exactQ.c ./Matrix_Ops/expMat.c \
 	./Matrix_Ops/givens.c ./Matrix_Ops/gramschmidt.c ./Matrix_Ops/invert.c \
-	./Matrix_Ops/lie_mats.c ./Matrix_Ops/MMUL.c ./Matrix_Ops/MMUL_dag.c ./Matrix_Ops/MMULdag.c \
-	./Matrix_Ops/MMULdagdag.c ./Matrix_Ops/solver.c ./Matrix_Ops/taylor_logs.c \
+	./Matrix_Ops/lie_mats.c \
+	./Matrix_Ops/MMUL.c ./Matrix_Ops/MMUL_SSE.c \
+	./Matrix_Ops/MMUL_dag.c ./Matrix_Ops/MMUL_dag_SSE.c \
+	./Matrix_Ops/MMULdag.c ./Matrix_Ops/MMULdag_SSE.c \
+	./Matrix_Ops/MMULdagdag.c ./Matrix_Ops/MMULdagdag_SSE.c \
+	./Matrix_Ops/solver.c ./Matrix_Ops/taylor_logs.c \
 	./Matrix_Ops/U_Nops.c ./Matrix_Ops/vandermonde.c 
 
 ## smearing codes, generic and targeted blockings, flows etc
@@ -46,7 +50,7 @@ U1FILES=./U1/SUNCxU1_config.c ./U1/U1_obs.c ./U1/U1_top.c
 ## utilities: memory checking, rngs splines byte swapping
 UTILSFILES=./Utils/GLU_bswap.c ./Utils/GLU_memcheck.c ./Utils/GLU_rng.c ./Utils/GLU_splines.c \
 	./Utils/GLU_timer.c ./Utils/KISS_rng.c ./Utils/MWC_1038.c ./Utils/MWC_4096.c \
-	./Utils/well_rng_19937a.c
+	./Utils/well_rng_19937a.c ./Utils/GLU_malloc.c
 
 ## wrapper files
 WRAPPERSFILES=./Wrappers/CUT_wrap.c ./Wrappers/GF_wrap.c ./Wrappers/GLUlib_wrap.c \

@@ -196,7 +196,7 @@ static_quark_correlator( double *__restrict result ,
   int i ;
 #pragma omp parallel for private(i)
   for( i = 0 ; i < LCU ; i++ ) {
-    slice_poly[ i ] = malloc( NCNC * sizeof( GLU_complex ) ) ;
+    GLU_malloc( (void**)&slice_poly[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
   }
 
   // create some plans
@@ -330,7 +330,7 @@ Coul_staticpot( struct site *__restrict lat ,
   int i ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) { 
-    poly[i] = (GLU_complex*) malloc( NCNC * sizeof( GLU_complex ) ) ;
+    GLU_malloc( (void**)&poly[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
     identity( poly[i] ) ;
   }
 

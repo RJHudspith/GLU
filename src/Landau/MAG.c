@@ -116,13 +116,11 @@ void
 residual_fix( struct site *__restrict lat )
 {
   int i ;
-  // oh god this is pretty weird, oh wait no I get it, 
-  // it is like the axial gauge all over again ... 
 
   // temporal gauge transformation matrices
   GLU_complex **gauge = malloc( Latt.dims[ND-1] * sizeof( GLU_complex* ) ) ;
   for( i = 0 ; i < Latt.dims[ND-1] ; i++ ) {
-    gauge[i] = ( GLU_complex* ) malloc( NCNC*sizeof( GLU_complex ) ) ;
+    GLU_malloc( (void**)&gauge[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
   } 
 
   // puts the transform at slice "t" in gauge

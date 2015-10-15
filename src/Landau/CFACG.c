@@ -548,40 +548,45 @@ Coulomb_FACG( struct site  *__restrict lat ,
 	      const int max_iter )
 {
   // allocations 
-  GLU_complex **gtransformed = malloc( LCU * sizeof( GLU_complex* ) ) ;
-  GLU_complex **slice_gauge = malloc( LCU * sizeof( GLU_complex* ) ) ; 
+  GLU_complex **gtransformed    = malloc( LCU * sizeof( GLU_complex* ) ) ;
+  GLU_complex **slice_gauge     = malloc( LCU * sizeof( GLU_complex* ) ) ; 
   GLU_complex **slice_gauge_end = malloc( LCU * sizeof( GLU_complex* ) ) ;
-  GLU_complex **slice_gauge_up = malloc( LCU * sizeof( GLU_complex* ) ) ; 
+  GLU_complex **slice_gauge_up  = malloc( LCU * sizeof( GLU_complex* ) ) ; 
 
   // allocate rotato
-  struct sp_site_herm *rotato = malloc( LCU * sizeof( struct sp_site_herm ) ) ;
+  struct sp_site_herm *rotato = NULL ; 
+  if( GLU_malloc( (void**)&rotato , 16 , LCU * sizeof( struct sp_site_herm ) ) != 0 ) {
+    return GLU_FAILURE ;
+  }
 
   // allocate traces
   allocate_traces( LCU ) ;
 
   // allocate sn and temporary space "in_old"
-  GLU_complex **sn = malloc( TRUE_HERM * sizeof( GLU_complex* ) ) ;
+  GLU_complex **sn     = malloc( TRUE_HERM * sizeof( GLU_complex* ) ) ;
   GLU_complex **in_old = malloc( TRUE_HERM * sizeof( GLU_complex* ) ) ;
 
   int i ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < TRUE_HERM ; i ++  ) {
-    sn[i] = malloc( LCU * sizeof( GLU_complex ) ) ;
-    in_old[i] = malloc( LCU * sizeof( GLU_complex ) ) ;
+    GLU_malloc( (void**)&sn[i] , 16 , LCU * sizeof( GLU_complex ) ) ;
+    GLU_malloc( (void**)&in_old[i] , 16 , LCU * sizeof( GLU_complex ) ) ;
   }
 
   // allocate the transformation matrices
 #pragma omp parallel for private(i) 
   PFOR( i = 0 ; i < LCU ; i++ ) {
-    slice_gauge[i]     = calloc( NCNC , sizeof( GLU_complex ) ) ; 
-    slice_gauge_up[i]  = calloc( NCNC , sizeof( GLU_complex ) ) ;
-    slice_gauge_end[i] = calloc( NCNC , sizeof( GLU_complex ) ) ; 
-    gtransformed[i]    = calloc( NCNC , sizeof( GLU_complex ) ) ; 
+
+    // allocations
+    GLU_malloc( (void**)&slice_gauge[i]     , 16 , NCNC * sizeof( GLU_complex ) ) ;
+    GLU_malloc( (void**)&slice_gauge_up[i]  , 16 , NCNC * sizeof( GLU_complex ) ) ;
+    GLU_malloc( (void**)&slice_gauge_end[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
+    GLU_malloc( (void**)&gtransformed[i]    , 16 , NCNC * sizeof( GLU_complex ) ) ;
 
     //temporary gauges set to identity
     int k ;
-    for( k = 0 ; k < NC ; k++ ) {
-      slice_gauge_end[i][k*(NC+1)] = slice_gauge[i][k*(NC+1)] = 1.0;
+    for( k = 0 ; k < NCNC ; k++ ) {
+      slice_gauge_end[i][k] = slice_gauge[i][k] = ( k%(NC+1) == 0 ) ? 1.0 : 0.0 ;
     }
   }
 

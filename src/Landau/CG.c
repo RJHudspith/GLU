@@ -26,6 +26,7 @@
 #include "GLU_splines.h" // GLUbic spline interpolation code
 #include "gramschmidt.h" // for reunitarisation
 #include "gtrans.h"      // gauge transformations
+#include "SSE2_OPS.h"    // SSE operations
 
 // this is the point where the gram-schmidt loses out
 // to the n-ape det-rescaled projection
@@ -106,6 +107,78 @@ gtrans_log( GLU_complex A[ NCNC ] ,
 #endif
 
 // trace of an SU(NC) gauge transformation
+#if (defined HAVE_IMMINTRIN_H ) && !( defined SINGLE_PREC )
+
+#include <immintrin.h>
+#include "SSE2_OPS.h"
+
+static void
+print_m128d( const char *message , const __m128d a ) 
+{
+   double complex A ;
+  _mm_store_pd( (void*)&A , a ) ;
+  printf( "%s :: %1.12f %1.12f \n" , message ,
+	  creal( A ) , cimag( A ) ) ;
+  return ;
+}
+
+static inline double
+Re_trace_abc_dag_suNC( const GLU_complex a[ NCNC ] , 
+		       const GLU_complex b[ NCNC ] , 
+		       const GLU_complex c[ NCNC ] )
+{
+  __m128d *A = ( __m128d* )a ;
+  const __m128d *B = ( const __m128d* )b ;
+  const __m128d *C = ( const __m128d* )c ;
+
+  //const GLU_complex a0 = ( a[0] * b[0] + a[1] * b[3] + a[2] * b[6] ) ;
+  const __m128d a0 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 0 ) ) ,
+				 _mm_add_pd( SSE2_MUL( *( A + 1 ) , *( B + 3 ) ) ,
+					     SSE2_MUL( *( A + 2 ) , *( B + 6 ) ) ) ) ;
+  const __m128d a1 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 1 ) ) ,
+				 _mm_add_pd( SSE2_MUL( *( A + 1 ) , *( B + 4 ) ) ,
+					     SSE2_MUL( *( A + 2 ) , *( B + 7 ) ) ) ) ;
+  const __m128d a2 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 2 ) ) ,
+				 _mm_add_pd( SSE2_MUL( *( A + 1 ) , *( B + 5 ) ) ,
+					     SSE2_MUL( *( A + 2 ) , *( B + 8 ) ) ) ) ;
+  // second row
+  const __m128d a3 = _mm_add_pd( SSE2_MUL( *( A + 3 ) , *( B + 0 ) ) ,
+				 _mm_add_pd( SSE2_MUL( *( A + 4 ) , *( B + 3 ) ) ,
+					     SSE2_MUL( *( A + 5 ) , *( B + 6 ) ) ) ) ;
+  const __m128d a4 = _mm_add_pd( SSE2_MUL( *( A + 3 ) , *( B + 1 ) ) ,
+				 _mm_add_pd( SSE2_MUL( *( A + 4 ) , *( B + 4 ) ) ,
+					     SSE2_MUL( *( A + 5 ) , *( B + 7 ) ) ) ) ;
+  const __m128d a5 = _mm_add_pd( SSE2_MUL( *( A + 3 ) , *( B + 2 ) ) ,
+				 _mm_add_pd( SSE2_MUL( *( A + 4 ) , *( B + 5 ) ) ,
+					     SSE2_MUL( *( A + 5 ) , *( B + 8 ) ) ) ) ;
+  // last row is always a completion
+  //const GLU_complex a6 = conj( a1 * a5 - a2 * a4 ) ;
+  const __m128d a6 = SSE2_CONJ( _mm_sub_pd( SSE2_MUL( a1 , a5 ) ,
+					    SSE2_MUL( a2 , a4 ) ) ) ;
+  const __m128d a7 = SSE2_CONJ( _mm_sub_pd( SSE2_MUL( a2 , a3 ) ,
+					    SSE2_MUL( a0 , a5 ) ) ) ;
+  const __m128d a8 = SSE2_CONJ( _mm_sub_pd( SSE2_MUL( a0 , a4 ) ,
+					    SSE2_MUL( a1 , a3 ) ) ) ;
+
+  // and compute the real part of the trace
+  register __m128d sum = _mm_setzero_pd( ) ;
+  sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a0 , *( C + 0 ) ) ) ;
+  sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a1 , *( C + 1 ) ) ) ;
+  sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a2 , *( C + 2 ) ) ) ;
+  sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a3 , *( C + 3 ) ) ) ;
+  sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a4 , *( C + 4 ) ) ) ;
+  sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a5 , *( C + 5 ) ) ) ;
+  sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a6 , *( C + 6 ) ) ) ;
+  sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a7 , *( C + 7 ) ) ) ;
+  sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a8 , *( C + 8 ) ) ) ;
+
+  double complex csum ;
+  _mm_store_pd( (void*)&csum , sum ) ;
+  return creal( csum ) ;  
+}
+
+#else
+
 static inline double
 Re_trace_abc_dag_suNC( const GLU_complex a[ NCNC ] , 
 		       const GLU_complex b[ NCNC ] , 
@@ -188,6 +261,7 @@ Re_trace_abc_dag_suNC( const GLU_complex a[ NCNC ] ,
 #endif
   return sum ;
 }
+#endif
 
 // could have several different searches here
 double

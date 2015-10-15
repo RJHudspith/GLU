@@ -23,6 +23,8 @@
 
 #include "Mainfile.h"
 
+#if !( defined HAVE_IMMINTRIN_H ) || ( defined SINGLE_PREC )
+
 #ifndef multab
 // simple matrix multiplication
 void 
@@ -272,3 +274,4 @@ multab_suNC( GLU_complex a[ NCNC ] ,
 
 #endif
 
+#endif // <immintrin.h>

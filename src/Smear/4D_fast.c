@@ -290,12 +290,20 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
 #endif
 
   // allocate temporary lattices ...
-  struct spt_site *lat2 = malloc( LCU * sizeof( struct spt_site ) ) ; 
-  struct spt_site *lat3 = malloc( LCU * sizeof( struct spt_site ) ) ; 
-  struct spt_site *lat4 = malloc( LCU * sizeof( struct spt_site ) ) ; 
+  struct spt_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
+  if( GLU_malloc( (void**)&lat2 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ||
+      GLU_malloc( (void**)&lat3 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ||
+      GLU_malloc( (void**)&lat4 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ) {
+    printf( "[SMEARING] field allocation failure \n" ) ;
+    return ;
+  }
 
-  struct lv1 *lev1 = malloc( LVOLUME * sizeof( struct lv1 ) ) ; 
-  struct lv1 *lev2 = malloc( LVOLUME * sizeof( struct lv1 ) ) ; 
+  struct lv1 *lev1 = NULL , *lev2 = NULL ;
+  if( GLU_malloc( (void**)&lev1 , 16 , LVOLUME * sizeof( struct lv1 ) ) != 0 ||
+      GLU_malloc( (void**)&lev2 , 16 , LVOLUME * sizeof( struct lv1 ) ) != 0 ) {
+    printf( "[SMEARING] field allocation failure \n" ) ;
+    return ;
+  }
 
   int count = 0 ; 
   for( count = 1 ; count <= smiters ; count++ ) {
