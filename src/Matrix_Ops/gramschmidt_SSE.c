@@ -1,7 +1,7 @@
 /*
     Copyright 2013 Renwick James Hudspith
 
-    This file (gramschmidt.c) is part of GLU.
+    This file (gramschmidt_SSE.c) is part of GLU.
 
     GLU is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,14 +18,17 @@
 */
 /**
    @file gramschmidt.c
-   @brief reunitarisation procedures
+   @brief reunitarisation procedures SSEd for SU(3) and SU(2)
  */
 
 #include "Mainfile.h"
 
 #include "GLU_rng.h"  // generate_NCxNC() is called
 
-#if !( defined HAVE_IMMINTRIN_H ) || ( defined SINGLE_PREC )
+#if (defined HAVE_IMMINTRIN_H ) && !( defined SINGLE_PREC)
+
+#include <immintrin.h>
+#include "SSE2_OPS.h"
 
 #if NC > 3
 
@@ -73,118 +76,66 @@ vect_norm2( a )
 void 
 reunit2( GLU_complex *__restrict U)
 {
-#if NC==3
+    __m128d *u = ( __m128d* )U ;
+#if NC == 3
+  // orthogonalise the first row
+  register __m128d sum ;
 
-  GLU_real *uu = (GLU_real*)U ;
-  double v00R = *( uu + 0 ) ;
-  double v00I = *( uu + 1 ) ;
-  double v10R = *( uu + 2 ) ;
-  double v10I = *( uu + 3 ) ;
-  double v01R = *( uu + 6 ) ;
-  double v01I = *( uu + 7 ) ;
-  double v11R = *( uu + 8 ) ;
-  double v11I = *( uu + 9 ) ;
-  double v02R = *( uu + 12 ) ;
-  double v02I = *( uu + 13 ) ;
-  double v12R = *( uu + 14 ) ;
-  double v12I = *( uu + 15 ) ;
+  double complex s ;
 
-  double v20R , v20I , v21R , v21I , v22R , v22I ;
-  double cR , cI , norm ;
-  
-  //the procedure i use is a gram schmidt orthogonalization with a cross product
-  //the first column is normalized and invariant second orthogonal third cross product
-  norm = ( v00R * v00R + v00I * v00I ) ;
-  norm = ( v01R * v01R + v01I * v01I ) + norm ;
-  norm = ( v02R * v02R + v02I * v02I ) + norm ;	
-  norm = 1. / sqrt( norm ) ;
+  // orthogonalise first row
 
-  v00R *= norm ;
-  v00I *= norm ;
-  v01R *= norm ;
-  v01I *= norm ;
-  v02R *= norm ;
-  v02I *= norm ;
+  sum = _mm_add_pd( _mm_mul_pd( *( u + 0 ) , *( u + 0 ) ) ,
+		    _mm_add_pd( _mm_mul_pd( *( u + 3 ) , *( u + 3 ) ) ,
+				_mm_mul_pd( *( u + 6 ) , *( u + 6 ) ) ) ) ;
 
-  //initial gramschmidt
-  cR = ( v10R * v00R ) + ( v10I * v00I ) ;
-  cR = ( v11R * v01R ) + ( v12R * v02R ) + cR ;
-  cR = ( v12I * v02I ) + ( v11I * v01I ) + cR ;
-
-  cI = ( v00R * v10I - v10R * v00I ) ;
-  cI = ( v01R * v11I - v11R * v01I ) + cI ;
-  cI = ( v02R * v12I - v12R * v02I ) + cI ;
-
-  //now with 25% more loop unrolling
-  v10R -= ( cR * v00R - cI * v00I ) ; 
-  v10I -= ( cR * v00I + cI * v00R ) ; 
-  v11R -= ( cR * v01R - cI * v01I ) ; 
-  v11I -= ( cR * v01I + cI * v01R ) ; 
-  v12R -= ( cR * v02R - cI * v02I ) ; 
-  v12I -= ( cR * v02I + cI * v02R ) ; 
-
-  norm = v10R * v10R + v10I * v10I ;
-  norm = v11R * v11R + v11I * v11I + norm ;
-  norm = v12R * v12R + v12I * v12I + norm ;	
-  norm = 1. / sqrt( norm ) ;
-
-  v10R *= norm ;
-  v10I *= norm ;
-  v11R *= norm ;
-  v11I *= norm ;
-  v12R *= norm ;
-  v12I *= norm ;
-
-  //complete
-  v20R = v01R * v12R - v01I * v12I ; 
-  v20R = v20R - v02R * v11R + v02I * v11I ;
-  v20I = v01R * v12I + v12R * v01I ;
-  v20I = v02R * v11I + v11R * v02I - v20I ;
-
-  v21R = v02R * v10R - v02I * v10I ; 
-  v21R = v21R - v12R * v00R + v12I * v00I ;
-  v21I = v02R * v10I + v10R * v02I ;
-  v21I = v00R * v12I + v12R * v00I - v21I ;
-
-  v22R = v00R * v11R - v00I * v11I ; 
-  v22R = v22R - v01R * v10R + v01I * v10I ;
-  v22I = v00R * v11I + v11R * v00I ;
-  v22I = v01R * v10I + v10R * v01I - v22I ;
+  sum = _mm_add_pd( sum , _mm_shuffle_pd( sum , sum , 1 ) ) ;
+  sum = _mm_div_pd( _mm_setr_pd( 1. , 1. ) , _mm_sqrt_pd( sum ) ) ; // has the norm
  
-  *( ( (GLU_real*) U + 0 ) ) = v00R ;
-  *( ( (GLU_real*) U + 1 ) ) = v00I ;
-  *( ( (GLU_real*) U + 2 ) ) = v10R ;
-  *( ( (GLU_real*) U + 3 ) ) = v10I ;
-  *( ( (GLU_real*) U + 4 ) ) = v20R ;
-  *( ( (GLU_real*) U + 5 ) ) = v20I ;
-  *( ( (GLU_real*) U + 6 ) ) = v01R ;
-  *( ( (GLU_real*) U + 7 ) ) = v01I ;
-  *( ( (GLU_real*) U + 8 ) ) = v11R ;
-  *( ( (GLU_real*) U + 9 ) ) = v11I ;
-  *( ( (GLU_real*) U + 10 ) ) = v21R ;
-  *( ( (GLU_real*) U + 11 ) ) = v21I ;
-  *( ( (GLU_real*) U + 12 ) ) = v02R ;
-  *( ( (GLU_real*) U + 13 ) ) = v02I ;
-  *( ( (GLU_real*) U + 14 ) ) = v12R ;
-  *( ( (GLU_real*) U + 15 ) ) = v12I ;
-  *( ( (GLU_real*) U + 16 ) ) = v22R ;
-  *( ( (GLU_real*) U + 17 ) ) = v22I ;
- 
+  *( u + 0 ) = _mm_mul_pd( *( u + 0 ) , sum ) ;
+  *( u + 3 ) = _mm_mul_pd( *( u + 3 ) , sum ) ;
+  *( u + 6 ) = _mm_mul_pd( *( u + 6 ) , sum ) ;
+
+  // gramschmidt second with respect to first
+  // u = u - vw / ww
+  sum = _mm_add_pd( SSE2_MUL_CONJ( *( u + 1 ) , *( u + 0 ) ) ,
+		    _mm_add_pd( SSE2_MUL_CONJ( *( u + 4 ) , *( u + 3 ) ) ,
+				SSE2_MUL_CONJ( *( u + 7 ) , *( u + 6 ) ) ) ) ;
+  *( u + 1 ) = _mm_sub_pd( *( u + 1 ) , SSE2_MUL( sum , *( u + 0 ) ) ) ;
+  *( u + 4 ) = _mm_sub_pd( *( u + 4 ) , SSE2_MUL( sum , *( u + 3 ) ) ) ;
+  *( u + 7 ) = _mm_sub_pd( *( u + 7 ) , SSE2_MUL( sum , *( u + 6 ) ) ) ;
+
+  // normalise
+  sum = _mm_add_pd( _mm_mul_pd( *( u + 1 ) , *( u + 1 ) ) ,
+		    _mm_add_pd( _mm_mul_pd( *( u + 4 ) , *( u + 4 ) ) ,
+				_mm_mul_pd( *( u + 7 ) , *( u + 7 ) ) ) ) ;
+
+  sum = _mm_add_pd( sum , _mm_shuffle_pd( sum , sum , 1 ) ) ;
+  sum = _mm_div_pd( _mm_setr_pd( 1. , 1. ) , _mm_sqrt_pd( sum ) ) ; // has the norm
+
+  *( u + 1 ) = _mm_mul_pd( *( u + 1 ) , sum ) ;
+  *( u + 4 ) = _mm_mul_pd( *( u + 4 ) , sum ) ;
+  *( u + 7 ) = _mm_mul_pd( *( u + 7 ) , sum ) ;
+
+  // and complete using the minors
+  *( u + 2 ) = SSE2_CONJ( _mm_sub_pd( SSE2_MUL( *( u + 3 ) , *( u + 7 ) ) ,
+				      SSE2_MUL( *( u + 4 ) , *( u + 6 ) ) ) ) ;
+  *( u + 5 ) = SSE2_CONJ( _mm_sub_pd( SSE2_MUL( *( u + 1 ) , *( u + 6 ) ) ,
+				      SSE2_MUL( *( u + 0 ) , *( u + 7 ) ) ) ) ;
+  *( u + 8 ) = SSE2_CONJ( _mm_sub_pd( SSE2_MUL( *( u + 0 ) , *( u + 4 ) ) ,
+				      SSE2_MUL( *( u + 1 ) , *( u + 3 ) ) ) ) ;
 #elif NC == 2
 
-  GLU_real *uu = (GLU_real*)U ;
-  const double v00R = *( uu + 0 ) ;
-  const double v00I = *( uu + 1 ) ;
-  const double v01R = *( uu + 4 ) ;
-  const double v01I = *( uu + 5 ) ;
-
-  double norm = sqrt( v00R * v00R + v00I * v00I + v01R * v01R + v01I * v01I ) ;
-  norm = 1. / norm ;
-
-  U[0] = ( v00R * norm + I * v00I * norm ); 
-  U[1] = -( v01R * norm - I * v01I * norm ) ; 
-  U[2] = ( v01R * norm + I * v01I * norm ) ; 
-  U[3] = ( v00R * norm - I * v00I * norm ); 
+  // compute the norm 
+  register __m128d sum ;
+  sum = _mm_add_pd( _mm_mul_pd( *( u + 0 ) , *( u + 0 ) ) ,
+		    _mm_mul_pd( *( u + 2 ) , *( u + 0 ) ) ) ;
+  sum = _mm_add_pd( sum , shuffle( sum , sum , 1 ) ) ;
+  sum = _mm_div_pd( _mm_setr_pd( 1 , 1 ) , _mm_sqrt_pd( sum ) ) ;
+  *( u + 0 ) = _mm_mul_pd( *( u + 0 ) , sum ) ;
+  *( u + 2 ) = _mm_mul_pd( *( u + 2 ) , sum ) ;
+  *( u + 1 ) = SSE2_FLIP( SSE2_CONJ( *( u + 2 ) ) ) ; 
+  *( u + 3 ) = SSE2_CONJ( *( u + 0 ) ) ;
 
 #else
   // need a modified gram-schmidt process, leaves the
@@ -261,4 +212,5 @@ Sunitary_gen( GLU_complex Z[ NCNC ] )
   return ;
 }
 
-#endif
+#endif // <immintrin.h>
+

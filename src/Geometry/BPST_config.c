@@ -94,7 +94,8 @@ instanton_config( struct site *lat )
  
     // perform the exponentiation, loop nu
     for( nu = 0 ; nu < ND ; nu++ ) {
-      GLU_complex temp[ NCNC ] = {} ;
+      GLU_complex temp[ NCNC ] ;
+      zero_mat( temp ) ;
       int j ;
       for( j = 0 ; j < 3 ; j++ ) {
 	int k ;

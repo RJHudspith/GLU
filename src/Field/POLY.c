@@ -321,7 +321,7 @@ Coul_staticpot( struct site *__restrict lat ,
   simorb_ratios( ND ) ;
 
   // compute the momentum list
-  int size[1] = {} ;
+  int size[1] = { 0 } ;
   struct veclist *list = compute_veclist( size , CUTINFO , ND-1 , GLU_TRUE ) ;
 
   // precompute the correlator

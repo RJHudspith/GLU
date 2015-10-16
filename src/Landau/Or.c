@@ -89,7 +89,8 @@ OR_single( struct site *__restrict lat ,
 	   const int i ,
 	   const int DIMS )
 {
-  GLU_complex L[ NCNC ] = {} ;
+  GLU_complex L[ NCNC ] ;
+  zero_mat( L ) ;
   int mu , j , k ;
   // loop directions summing into L
   for( mu = 0 ; mu < DIMS ; mu++ ) {

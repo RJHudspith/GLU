@@ -144,7 +144,7 @@ get_header_data_MILC( FILE *__restrict in ,
   }
 
   // read the two checksums
-  uint32_t sum29[1] = {} , sum31[1] = {} ;
+  uint32_t sum29[1] = { 0 } , sum31[1] = { 0 } ;
   if( fread( sum29 , sizeof(uint32_t) , 1 , in ) != 1 ) return GLU_FAILURE ;
   if( fread( sum31 , sizeof(uint32_t) , 1 , in ) != 1 ) return GLU_FAILURE ;
   if( need_swap ) { 

@@ -39,8 +39,8 @@ const_time( const struct site *__restrict lat ,
 	    double *const_lin ,
 	    double *const_log )
 {
-  GLU_complex sum1[ NCNC ] = { } ;
-  GLU_complex sum1_log[ NCNC ] = { } ;
+  GLU_complex sum1[ NCNC ] , sum1_log[ NCNC ];
+  zero_mat( sum1 ) ; zero_mat( sum1_log ) ;
 
   // initialise the first layer
   int j ;
@@ -62,8 +62,8 @@ const_time( const struct site *__restrict lat ,
 
       double av = 0. , avlog = 0. ; 
 
-      GLU_complex sum2[ NCNC ] = { } ;
-      GLU_complex sum2_log[ NCNC ] = { } ;
+      GLU_complex sum2[ NCNC ] , sum2_log[ NCNC ] ;
+      zero_mat( sum2 ) ; zero_mat( sum2_log ) ;
       //loop inner cube
       int i ;
       for( i = LCU * t ; i < LCU * t + LCU ; i++ ) {
@@ -233,7 +233,7 @@ theta_test_lin( const struct site *__restrict lat ,
 		const int MAX_DIR ) 
 {
   double tr = 0. ; 
-  int i ; 
+  size_t i ; 
   *max = 0. ;
   #ifdef GLU_OMP_MEAS
   omp_lock_t writelock ;
@@ -241,7 +241,11 @@ theta_test_lin( const struct site *__restrict lat ,
   #endif
 #pragma omp parallel for private(i) reduction(+:tr)
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    GLU_complex temp[ HERMSIZE ] = { } ; 
+    GLU_complex temp[ HERMSIZE ] ;
+    size_t mu ;
+    for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
+      temp[ mu ] = 0.0 ;
+    }
     register double res = latt_deriv_AntiHermitian_proj( temp , lat , 
 							 i , MAX_DIR ) ; 
     tr = tr + (double)res ; 
@@ -276,7 +280,11 @@ theta_test_log( const struct site *__restrict lat ,
   #endif
   #pragma omp parallel for private(i) reduction(+:tr) 
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    GLU_complex temp[ HERMSIZE ] = { } ; 
+    GLU_complex temp[ HERMSIZE ] ; 
+    size_t mu ;
+    for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
+      temp[ mu ] = 0.0 ;
+    }
     double functional ;
     register const double res = log_deriv( temp , &functional , lat ,
 					   i , MAX_DIR ) ; 

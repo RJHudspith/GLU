@@ -20,7 +20,6 @@
    @file expMat.c
    @brief matrix exponentiation routines
  */
-
 #include "Mainfile.h"
 
 #include "effs.h"     // compute the f-constants of Cayley-Hamilton
@@ -535,7 +534,7 @@ approx_exp( GLU_complex U[ NCNC ] ,
   // Taylor expand the living these values.
   double series = c0 / c0_max ;   
   const double sseries = series * series ; 
-  const double theta = M_PI_2 - series * (  1 + sseries * oneOsix * (  1 + sseries * nineOtwenty  ) ) * OneO3 ; 
+  const double theta = PIOtwo - series * (  1 + sseries * oneOsix * (  1 + sseries * nineOtwenty  ) ) * OneO3 ; 
 
   series = theta * theta ;
   const double u = rc1 * (  1 - series * (  0.5 - series * oneOtwelve * ( 0.5 - series * oneOsixty  ) ) ) ; 
@@ -667,7 +666,7 @@ approx_exp_short( GLU_complex U[ NCNC ] ,
   // Taylor expand these values as much as we can
   double series = c0 / c0_max ;   
   const double sseries = series * series ; 
-  const double theta = M_PI_2 - series * (  1 + sseries * oneOsix * (  1 + sseries * nineOtwenty  ) ) * OneO3 ; 
+  const double theta = PIOtwo - series * (  1 + sseries * oneOsix * (  1 + sseries * nineOtwenty  ) ) * OneO3 ; 
 
   series = theta * theta ;
   const double u = rc1 * (  1 - series * (  0.5 - series * oneOtwelve * ( 0.5 - series * oneOsixty  ) ) ) ; 

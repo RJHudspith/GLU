@@ -264,45 +264,45 @@ header_type( void )
       printf( "[IO] Attempting to read a NERSC file \n" ) ;
       return NERSC_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "HIREP" ) ) {
-      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return GLU_FAILURE ;
+      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return UNSUPPORTED ;
       printf( "[IO] Attempting to read a HIREP file \n" ) ;
       printf( "[IO] Using sequence number from input file :: %d \n" ,
 	      Latt.flow ) ;
       return HIREP_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "MILC" ) ) {
-      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return GLU_FAILURE ;
+      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return UNSUPPORTED ;
       printf( "[IO] Attempting to read a MILC file \n" ) ;
       printf( "[IO] Using sequence number from input file :: %d \n" ,
 	      Latt.flow ) ;
       return MILC_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "SCIDAC" ) ) {
-      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return GLU_FAILURE ;
+      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return UNSUPPORTED ;
       printf( "[IO] Attempting to read a SCIDAC file \n" ) ;
       printf( "[IO] Using sequence number from input file :: %d \n" ,
 	      Latt.flow ) ;
       return SCIDAC_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "LIME" ) ) {
-      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return GLU_FAILURE ;
+      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return UNSUPPORTED ;
       printf( "[IO] Attempting to read an LIME file \n" ) ;
       printf( "[IO] Using sequence number from input file :: %d \n" ,
 	      Latt.flow ) ;
       printf( "[IO] WARNING!! NOT CHECKING ANY CHECKSUMS!! \n" ) ;
       return LIME_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "ILDG_SCIDAC" ) ) {
-      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return GLU_FAILURE ;
+      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return UNSUPPORTED ;
       printf( "[IO] Attempting to read an ILDG (Scidac) file \n" ) ;
       printf( "[IO] Using sequence number from input file :: %d \n" ,
 	      Latt.flow ) ;
       return ILDG_SCIDAC_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "ILDG_BQCD" ) ) {
-      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return GLU_FAILURE ;
+      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return UNSUPPORTED ;
       printf( "[IO] Attempting to read an ILDG (BQCD) file \n" ) ;
       printf( "[IO] Using sequence number from input file :: %d \n" ,
 	      Latt.flow ) ;
       return ILDG_BQCD_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "RANDOM" ) ) {
       printf( "[IO] Attempting to generate an SU(%d) RANDOM config \n" , NC ) ;
-      if( read_random_lattice_info( ) == GLU_FAILURE ) return GLU_FAILURE ;
+      if( read_random_lattice_info( ) == GLU_FAILURE ) return UNSUPPORTED ;
       return RANDOM_CONFIG ;
     } else if( are_equal( INPUT[header_idx].VALUE , "UNIT" ) ) {
       printf( "[IO] Attempting to generate an %dx%d UNIT config \n" , NC , NC ) ;
@@ -311,13 +311,14 @@ header_type( void )
     } else if( are_equal( INPUT[header_idx].VALUE , "INSTANTON" ) ) {
       printf( "[IO] Attempting to generate a SU(%d) BPST instanton config \n" 
 	      , NC ) ;
-      if( read_random_lattice_info( ) == GLU_FAILURE ) return GLU_FAILURE ;
+      if( read_random_lattice_info( ) == GLU_FAILURE ) return UNSUPPORTED ;
       return INSTANTON ;
     }
     printf( "[IO] HEADER %s not recognised ... Leaving \n" , 
 	    INPUT[header_idx].VALUE ) ;
+    return UNSUPPORTED ;
   }
-  return GLU_FAILURE ; 
+  return UNSUPPORTED ; 
 }
 
 // pack the cut_info struct
@@ -581,7 +582,7 @@ get_input_data( struct infile_data *INFILE ,
 
   // get the header type
   INFILE -> head = header_type( ) ;
-  if( INFILE -> head == GLU_FAILURE ) INPUT_FAILS++ ;
+  if( INFILE -> head == UNSUPPORTED ) INPUT_FAILS++ ;
   Latt.head = INFILE -> head ; // set the header type
 
   // and the storage type

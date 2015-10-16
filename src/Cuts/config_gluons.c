@@ -71,7 +71,8 @@ check_landau_condition( const struct site *__restrict A )
   int i ;
 #pragma omp parallel for private(i) reduction(+:sum)
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    GLU_complex dA[ NCNC ] = {} ;
+    GLU_complex dA[ NCNC ] ;
+    zero_mat( dA ) ;
     int mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       const int back = gen_shift( i , -mu - 1 ) ; 

@@ -63,7 +63,7 @@ get_spatial_lv1( lev1 , lat , t , type )
       for( nu = 0 ; nu < ND - 1 ; nu++ ) {
 	if( likely( nu != mu ) ) {
 	  // b is our staple
-	  GLU_complex b[ NCNC ] = { } ;
+	  GLU_complex b[ NCNC ] ;
 	  // j is our staple counter
 	  j ++ ; 
 	    
@@ -122,7 +122,7 @@ staples3D( stap , lat , lev1 , i , mu , t , type )
      struct site *__restrict lat ; 
      const struct spatial_lv1 *__restrict lev1 ; 
      GLU_complex stap[ NCNC ] ; 
-     const int i , mu , type ; 
+     const int i , mu , t , type ; 
 { 
   GLU_complex a[ NCNC ] , b[ NCNC ] ;
   int nu ;
@@ -224,25 +224,25 @@ HYPSLsmear3D( struct site *__restrict lat ,
 	const int it = slice + i ;
 	int mu ;
 	for( mu = 0 ; mu < ND - 1 ; mu++ ) {
-	  GLU_complex stap[ NCNC ] = { } ;
+	  GLU_complex stap[ NCNC ] ;
+	  zero_mat( stap ) ;
 	  staples3D( stap , lat , lev1 , i , mu , t , type ) ; 
 
-	  switch( type )
-	    {
-	    case SM_APE :
-	      project_APE( lat2[ i ].O[ mu ] , stap , 
-			   lat[ it ].O[ mu ] , alpha1 , 
-			   one_min_a1 ) ; 
-	      break ; 
-	    case SM_STOUT :
-	      project_STOUT_short( lat2[ i ].O[ mu ] , stap , 
-				   lat[ it ].O[ mu ] , alpha1 ) ; 
-	      break ; 
-	    case SM_LOG :
-	      project_LOG_short( lat2[ i ].O[ mu ] , stap , 
+	  switch( type ) {
+	  case SM_APE :
+	    project_APE( lat2[ i ].O[ mu ] , stap , 
+			 lat[ it ].O[ mu ] , alpha1 , 
+			 one_min_a1 ) ; 
+	    break ; 
+	  case SM_STOUT :
+	    project_STOUT_short( lat2[ i ].O[ mu ] , stap , 
 				 lat[ it ].O[ mu ] , alpha1 ) ; 
-	      break ; 
-	    }
+	    break ; 
+	  case SM_LOG :
+	    project_LOG_short( lat2[ i ].O[ mu ] , stap , 
+			       lat[ it ].O[ mu ] , alpha1 ) ; 
+	    break ; 
+	  }
 	}
 	// swap these round using memcpy
 	memcpy( &lat[it] , &lat2[i] , sizeof( struct sp_site ) ) ;

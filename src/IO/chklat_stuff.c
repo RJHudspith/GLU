@@ -26,6 +26,7 @@
 
 #include "GLU_types.h"
 #include <stdint.h>
+#include <strings.h>
 
 // get_string: find a token and return its value as a string 
 int 
@@ -96,8 +97,8 @@ get_header( FILE *__restrict in )
   }
 
   // Allocate space for QCDheader and its pointers 
-  tokens = ( char ** ) malloc( MAX_TOKENS * sizeof( char * ) );
-  values = ( char ** ) malloc( MAX_TOKENS * sizeof( char * ) );
+  tokens = ( char ** )malloc( MAX_TOKENS * sizeof( char * ) );
+  values = ( char ** )malloc( MAX_TOKENS * sizeof( char * ) );
   hdr = ( struct QCDheader * ) malloc( sizeof ( struct QCDheader ) ) ;
   (*hdr).token = tokens ;
   (*hdr).value = values ;

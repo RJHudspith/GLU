@@ -88,7 +88,8 @@ flow_directions( lat2 , lat , Z , multiplier , delta_t , i , it , mu , SM_TYPE )
      const int mu ;
      const int SM_TYPE ;
 {
-  GLU_complex staple[ NCNC ] = { } ;
+  GLU_complex staple[ NCNC ] ;
+  zero_mat( staple ) ;
   // first element
   #ifdef IMPROVED_SMEARING
   all_staples_improve( staple , lat , it , mu , ND , SM_TYPE ) ;
@@ -148,9 +149,10 @@ RK4step( lat , lat2 , Z , factor , RKfactor , SM_TYPE )
   int i ;
 #pragma omp parallel for private(i) SCHED
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+    GLU_complex staple[ NCNC ] ;
     int mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
-      GLU_complex staple[ NCNC ] = { } ;
+      zero_mat( staple ) ;
       // first element
       #ifdef IMPROVED_SMEARING
       all_staples_improve( staple , lat , i , mu , ND , SM_TYPE ) ;

@@ -341,7 +341,8 @@ approx_minimum( const int nmeas ,
 }
 
 // little wrapper for the traces array
-void allocate_traces( const int LENGTH )
+void 
+allocate_traces( const int LENGTH )
 {
   traces = malloc( LENGTH * sizeof( double ) ) ;
   divs = malloc( LENGTH * sizeof( double ) ) ;
@@ -678,7 +679,7 @@ sum_PR_numerator( const GLU_complex *__restrict *__restrict in ,
 		  const int LENGTH ) 
 {
   int i ;
-#pragma omp parallel for private(i)
+  #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LENGTH ; i++ ) {
     register double loc_sum = 0.0 ;
 #if NC == 3

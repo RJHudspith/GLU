@@ -907,7 +907,8 @@ compute_q( GLU_complex q[ NCNC ] ,
 {
 #if ND == 4 
   // accumulated mu-nu in sum_1 and rho-delta in sum_2
-  GLU_complex sum_1[ NCNC ] = { } , sum_2[ NCNC ] = { } ;
+  GLU_complex sum_1[ NCNC ] , sum_2[ NCNC ] ;
+  zero_mat( sum_1 ) ; zero_mat( sum_2 ) ;
   // temp matrices in u and v
   GLU_complex u[ NCNC ] , v[ NCNC ] ;
 #ifdef CLOVER_IMPROVE
@@ -971,7 +972,8 @@ compute_Gmunu_kernel( double *__restrict plaq_t ,
 {
 #if ND == 4
   // accumulated mu-nu in sum_1 and rho-delta in sum_2
-  GLU_complex sum_1[ NCNC ] = { } , sum_2[ NCNC ] = { } ;
+  GLU_complex sum_1[ NCNC ] , sum_2[ NCNC ] ;
+  zero_mat( sum_1 ) ; zero_mat( sum_2 ) ;
   // temp matrices in u and v
   GLU_complex u[ NCNC ] , v[ NCNC ] ;
 #ifdef CLOVER_IMPROVE

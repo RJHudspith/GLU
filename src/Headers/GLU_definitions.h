@@ -106,9 +106,9 @@
    @def PIOtwo
    @brief is \f$ 0.5\times\pi \f$
  */
-#define MPI M_PI //3.141592653589793
+#define MPI 3.141592653589793
 #define TWOPI 6.283185307179586
-#define PIOtwo M_PI_2 //1.5707963267948966
+#define PIOtwo 1.5707963267948966
 
 /**
    @def r2

@@ -128,7 +128,8 @@ residual_fix( struct site *__restrict lat )
   const GLU_real one_LCU = 1.0 / LCU ; 
   int t ;
   for( t = 0 ; t < Latt.dims[ND-1]-1 ; t++ ) {
-    GLU_complex sum[ NCNC ] = {} ;
+    GLU_complex sum[ NCNC ] ;
+    zero_mat( sum ) ;
     for( i = 0 ; i < LCU ; i++ ) {
       a_plus_b( sum , lat[ i + LCU*t ].O[ND-1] ) ;
     }

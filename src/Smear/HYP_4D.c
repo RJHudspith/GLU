@@ -56,7 +56,8 @@ get_lv1( lev1 , lat , type )
       int nu ; 
       for( nu = 0  ;  nu < ND  ;  nu++ ) {
 	if( likely( nu != mu ) ) {
-	  GLU_complex stap[ NCNC ] = { } ;
+	  GLU_complex stap[ NCNC ] ;
+	  zero_mat( stap ) ;
 
 	  // staple counter
 	  j++ ; 
@@ -145,7 +146,8 @@ get_lv22( lev2 , lev1 , lat , type , t )
 	if( unlikely( nu == mu ) ) { continue ; } 
 	    
 	ii++ ; 
-	GLU_complex stap[ NCNC ] = { } ;
+	GLU_complex stap[ NCNC ] ;
+	zero_mat( stap ) ;
 	int rho ;
 
 	for( rho = 0 ;  rho < ND ;  rho++ ) {
@@ -203,23 +205,19 @@ get_lv22( lev2 , lev1 , lat , type , t )
 	  a_plus_b( stap , b ) ; 
 	}
 	// here are the projections; SM_APE, SM_STOUT and SM_LOG
-	GLU_complex b[ NCNC ] = { } ;
-	switch( type )
-	  {
-	  case SM_APE :
-	    project_APE( b , stap , 
-			 lat[it].O[mu] , alpha2 , 
-			 one_min_a2 ) ; 
-	    break ; 
-	  case SM_STOUT :
-	    //project_STOUT( b , stap , lat[it].O[mu] , alpha2 ) ; 
-	    project_STOUT_short( b , stap , lat[it].O[mu] , alpha2 ) ; 
-	    break ; 
-	  case SM_LOG :
-	    //project_LOG( b , stap , lat[it].O[mu] , alpha2 ) ; 
-	    project_LOG_short( b , stap , lat[it].O[mu] , alpha2 ) ;
-	    break ; 
-	  }
+	GLU_complex b[ NCNC ] ;
+	zero_mat( b ) ;
+	switch( type ) {
+	case SM_APE :
+	  project_APE( b , stap , lat[it].O[mu] , alpha2 , one_min_a2 ) ; 
+	  break ; 
+	case SM_STOUT :
+	  project_STOUT_short( b , stap , lat[it].O[mu] , alpha2 ) ; 
+	  break ; 
+	case SM_LOG :
+	  project_LOG_short( b , stap , lat[it].O[mu] , alpha2 ) ;
+	  break ; 
+	}
 	shorten( lev2[i].O[ii] , b ) ; 
       }
     } 
@@ -370,27 +368,27 @@ HYPSLsmear4D( struct site *__restrict lat ,
       const int bck = back + i ;
       int mu ;
       for( mu = 0 ; mu < ND ; mu++ ) {
-	GLU_complex stap[ NCNC ] = { } ;
+	GLU_complex stap[ NCNC ] ;
+	zero_mat( stap ) ;
 	gen_staples_4D2( stap , lat , 
 			 lev2 , lev2_up , lev2_down , 
 			 i , mu , Latt.dims[ ND - 1 ] - 1 , type ) ; 
 
-	switch( type )
-	  {
-	  case SM_APE :
-	    project_APE( lat4[ i ].O[ mu ] , stap , 
-			 lat[ bck ].O[ mu ] , alpha1 , 
-			 one_min_a1 ) ; 
-	    break ; 
-	  case SM_STOUT :
-	    project_STOUT_short( lat4[ i ].O[ mu ] , stap , 
-				 lat[ bck ].O[ mu ] , alpha1 ) ; 
-	    break ; 
-	  case SM_LOG :
-	    project_LOG_short( lat4[ i ].O[ mu ] , stap , 
+	switch( type ) {
+	case SM_APE :
+	  project_APE( lat4[ i ].O[ mu ] , stap , 
+		       lat[ bck ].O[ mu ] , alpha1 , 
+		       one_min_a1 ) ; 
+	  break ; 
+	case SM_STOUT :
+	  project_STOUT_short( lat4[ i ].O[ mu ] , stap , 
 			       lat[ bck ].O[ mu ] , alpha1 ) ; 
-	    break ; 
-	  }
+	  break ; 
+	case SM_LOG :
+	  project_LOG_short( lat4[ i ].O[ mu ] , stap , 
+			     lat[ bck ].O[ mu ] , alpha1 ) ; 
+	  break ; 
+	}
       }
     }
     ///exchange the level2's
@@ -414,27 +412,27 @@ HYPSLsmear4D( struct site *__restrict lat ,
 	int mu ;
 
 	for( mu = 0 ; mu < ND ; mu++ ) {
-	  GLU_complex stap[ NCNC ] = { } ;
+	  GLU_complex stap[ NCNC ] ;
+	  zero_mat( stap ) ;
 	  gen_staples_4D2( stap , lat , 
 			   lev2 , lev2_up , lev2_down , 
 			   i , mu , t , type ) ; 
 		  
-	  switch( type )
-	    {
-	    case SM_APE :
-	      project_APE( lat2[ i ].O[ mu ] , stap , 
-			   lat[ it ].O[ mu ] , alpha1 , 
-			   one_min_a1 ) ; 
-	      break ; 
-	    case SM_STOUT :
-	      project_STOUT_short( lat2[ i ].O[ mu ] , stap , 
-				   lat[ it ].O[ mu ] , alpha1 ) ; 
-	      break ; 
-	    case SM_LOG :
-	      project_LOG_short( lat2[ i ].O[ mu ] , stap , 
-				 lat[ it ].O[ mu ] , alpha1 ) ;  
-	      break ; 
-	    }
+	  switch( type ) {
+	  case SM_APE :
+	    project_APE( lat2[ i ].O[ mu ] , stap , 
+			 lat[ it ].O[ mu ] , alpha1 , 
+			 one_min_a1 ) ; 
+	    break ; 
+	  case SM_STOUT :
+	    project_STOUT_short( lat2[ i ].O[ mu ] , stap , 
+				 lat[ it ].O[ mu ] , alpha1 ) ; 
+	    break ; 
+	  case SM_LOG :
+	    project_LOG_short( lat2[ i ].O[ mu ] , stap , 
+			       lat[ it ].O[ mu ] , alpha1 ) ;  
+	    break ; 
+	  }
 	}
       }
 	  

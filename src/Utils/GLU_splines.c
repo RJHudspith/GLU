@@ -393,7 +393,7 @@ solve_spline( const double *__restrict x ,
   const double d = y[change_up-1] ;
 
   //return cubic_solve( a , b , c , d , mu ) ;//* diff + x[change_up-1] ;
-  double complex Z[ 3 ] = {} ;
+  double complex Z[ 3 ] = { 0.0 , 0.0 , 0.0 } ;
   cubic_solve( Z , a , b , c , d , mu ) ;
 
   // should sanity-check the solution here too

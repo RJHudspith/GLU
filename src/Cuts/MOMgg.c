@@ -48,9 +48,11 @@ contraction_matrices( A , posit , conj , lzero_mat , mom , spsq )
      const double spsq ;
 {
   // Zero_Mat all of these matrices
-  GLU_complex AA[NCNC] = {} , AM[ NCNC ] = {} ;
-  GLU_complex Arho[NCNC] = {} , AP[ NCNC ] = {} ;
+  GLU_complex AA[NCNC] , AM[ NCNC ] ;
+  GLU_complex Arho[NCNC] , AP[ NCNC ] ;
   GLU_complex temp[ NCNC ] ; 
+  zero_mat( AA ) ; zero_mat( AM ) ; zero_mat( Arho ) ;
+  zero_mat( AP ) ;
   int mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     // AA is g_{\mu\nu}A_\mu(p) A_\nu(-p)

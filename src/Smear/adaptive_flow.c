@@ -166,19 +166,19 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
       GLU_malloc( (void**)&lat2 , 16 , LCU * sizeof( struct spt_site ) )       != 0 ||
       GLU_malloc( (void**)&lat_two , 16 , LVOLUME * sizeof( struct site ) )    != 0 ) {
     printf( "[SMEARING] allocation failure \n" ) ;
-    return ;
+    return GLU_FAILURE ;
   }
 #ifdef IMPROVED_SMEARING
   if( GLU_malloc( (void**)&lat3 , 16 , 2 * LCU * sizeof( struct spt_site ) )   != 0 ||
       GLU_malloc( (void**)&lat4 , 16 , 2 * LCU * sizeof( struct spt_site ) )   != 0 ) {
     printf( "[SMEARING] allocation failure \n" ) ;
-    return ;
+    return GLU_FAILURE ;
   }
 #else
   if( GLU_malloc( (void**)&lat3 , 16 , LCU * sizeof( struct spt_site ) )   != 0 ||
       GLU_malloc( (void**)&lat4 , 16 , LCU * sizeof( struct spt_site ) )   != 0 ) {
     printf( "[SMEARING] allocation failure \n" ) ;
-    return ;
+    return GLU_FAILURE ;
   }
 #endif
   init_navig( lat_two ) ;

@@ -81,15 +81,15 @@ static void
 recurse_staples( link , lat , i , lev , list_dirs , type )
      GLU_complex *__restrict link ; 
      const struct site *__restrict lat ; 
-     int lev ;
+     int i , lev ;
      const int list_dirs[ MAXDIR - lev ] ; 
      const int type ;
 {
   // the last index is our rho plane
   const int rho = list_dirs[ MAXDIR - lev - 1 ] ;
   // generic storage and stuff
-  GLU_complex stap[ NCNC ] = { } ;
-  GLU_complex a[ NCNC ] , b[ NCNC ] ;
+  GLU_complex stap[ NCNC ] , a[ NCNC ] , b[ NCNC ] ;
+  zero_mat( stap ) ;
 
   if( lev == 1 ) { 
     // this is the final one

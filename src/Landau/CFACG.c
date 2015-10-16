@@ -140,13 +140,16 @@ steep_deriv_CG( GLU_complex *__restrict *__restrict in ,
 
   // gauge transform the whole slice
   double trAA = 0.0 ;
-  int i ;
+  size_t i ;
 #pragma omp parallel for private(i) reduction( +:trAA )
   PFOR( i = 0 ; i < LCU ; i ++ ) {
 
     // compute gauge rotated derivatives
-    GLU_complex sum[ HERMSIZE ] = {} ;
-    int mu ;
+    GLU_complex sum[ HERMSIZE ] ;
+    size_t mu ;
+    for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
+      sum[ mu ] = 0.0 ;
+    }
     for( mu = 0 ; mu < ND-1 ; mu++ ) {
       const int back = lat[i].back[mu] ;
       #if NC == 3

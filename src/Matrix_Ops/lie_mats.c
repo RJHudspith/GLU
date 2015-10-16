@@ -37,7 +37,7 @@ static struct struc_func *d ;
 static int fcount = 0 , dcount = 0 ;
 
 // inline for the matrix idx
-static inline int mat_idx( row , column ) { return row + column * NC ; }
+static inline int mat_idx( const int row , const int column ) { return row + column * NC ; }
 
 // the generators get allocated at some point or not
 static GLU_complex **lambda ; 

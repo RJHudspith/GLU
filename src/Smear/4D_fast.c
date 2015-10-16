@@ -136,7 +136,8 @@ get_lv2( lev2 , lev1 , lat , type )
 	ii++ ; 
 
 	// int rho  = -1 , sigma = 0 ;
-	GLU_complex stap[ NCNC ] = { } ;
+	GLU_complex stap[ NCNC ] ;
+	zero_mat( stap ) ;
 
 	for( rho = 0 ;  rho < ND ;  ++rho ) {
 	  int jj = -1 ;
@@ -319,7 +320,8 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
       int mu ;
 
       for( mu = 0 ; mu < ND ; mu++ ) {
-	GLU_complex stap[ NCNC ] = { } ;
+	GLU_complex stap[ NCNC ] ;
+	zero_mat( stap ) ;
 
 	gen_staples_4D( stap , lat , lev2 , back , mu , type ) ; 
 	      
@@ -355,7 +357,8 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
 	int mu ;
 	      
 	for( mu = 0 ; mu < ND ; mu++ ) {
-	  GLU_complex stap[ NCNC ] = { } ;
+	  GLU_complex stap[ NCNC ] ;
+	  zero_mat( stap ) ;
 		  
 	  gen_staples_4D( stap , lat , lev2 , it , mu , type ) ; 
 		  

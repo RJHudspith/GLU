@@ -221,7 +221,7 @@ static char *diag_vect_test( ) {
 // test the identity routine
 static char *identity_test(  ) {
   GLU_bool is_ok = GLU_TRUE ;
-  GLU_complex d[ NCNC ] = {} ;
+  GLU_complex d[ NCNC ] ;
   identity( d ) ;
   // diagonal is 1, everything else is 0
   int i , j ;
@@ -639,7 +639,8 @@ static char *rng_tests( ) {
 
 // test the exponential e^{0} = Identity?
 static char *exponentiate_test(  ) {
-  GLU_complex A[ NCNC ] = {} , Id[ NCNC ] ;
+  GLU_complex A[ NCNC ] , Id[ NCNC ] ;
+  zero_mat( A ) ;
   exponentiate( Id , A ) ;
   int i ;
   GLU_bool is_ok = GLU_TRUE ;

@@ -329,7 +329,9 @@ Eigenvalues_suNC( double complex z[ NC ] ,
 {
 #if NC == 3
   if( 1.0 - OneO3 * ( creal( U[0] ) + creal( U[4] ) + creal( U[8] ) )  < 1E-12 ) { 
-    return Eigenvalues_su3_stab( z , U ) ; }
+    Eigenvalues_su3_stab( z , U ) ; 
+    return ;
+  }
   const double complex a = -(double complex)( U[0] + U[4] + U[8] ) * OneO3 ; 
   register const double complex conjA = conj( a ) ;
   const double complex Q = ( a * a ) + conjA ;

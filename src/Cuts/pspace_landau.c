@@ -40,7 +40,7 @@ correct_pspace_landau( struct site *__restrict A ,
     const int list_idx = list[ i ].idx ;
 
     // this is for the p-space test
-    double complex sum[ NCNC ] = { } ;
+    register double sum = 0.0 ;
 
     // Loop over polarisations ...
     int mu ;
@@ -67,19 +67,14 @@ correct_pspace_landau( struct site *__restrict A ,
       for( j = 0 ; j < NCNC ; j++ ) {
 	A[ list_idx ].O[ mu ][ j ] *= exp_cache ;
         #if ( defined deriv_linn ) || ( defined deriv_fulln ) || ( defined deriv_fullnn )
-	sum[ j ] += (double complex)A[ list_idx ].O[ mu ][ j ] * p_mu_nn ;
+	sum += cabs( A[ list_idx ].O[ mu ][ j ] * p_mu_nn ) ;
 	#else
-	sum[ j ] += (double complex)A[ list_idx ].O[ mu ][ j ] * p_mu ;
+	sum += cabs( A[ list_idx ].O[ mu ][ j ] * p_mu ) ;
 	#endif
       }
     }
     // and finally do the reduction on ave_err
-    double tmp = 0. ;
-    int j ;
-    for( j = 0 ; j < NCNC ; j++ ) {
-      tmp += cabs( sum[j] ) ;
-    }
-    ave_err = ave_err + (double)( tmp / (double)NCNC ) ;
+    ave_err = ave_err + (double)( sum / (double)NCNC ) ;
   }
   printf( "\n[CUTS] P-Space gauge fixing error :: %1.5e \n\n" , ave_err / (double)in[0] ) ;
   return ;

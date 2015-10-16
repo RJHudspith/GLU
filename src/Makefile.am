@@ -30,8 +30,9 @@ LANDAUFILES=./Landau/CFACG.c ./Landau/CG.c ./Landau/Coulomb.c ./Landau/FACG.c ./
 
 ## home-spun matrix operations
 MATRIXOPSFILES=./Matrix_Ops/effs.c ./Matrix_Ops/exactQ.c ./Matrix_Ops/expMat.c \
-	./Matrix_Ops/givens.c ./Matrix_Ops/gramschmidt.c ./Matrix_Ops/invert.c \
-	./Matrix_Ops/lie_mats.c \
+	./Matrix_Ops/givens.c \
+	./Matrix_Ops/gramschmidt.c ./Matrix_Ops/gramschmidt_SSE.c \
+	./Matrix_Ops/invert.c ./Matrix_Ops/lie_mats.c \
 	./Matrix_Ops/MMUL.c ./Matrix_Ops/MMUL_SSE.c \
 	./Matrix_Ops/MMUL_dag.c ./Matrix_Ops/MMUL_dag_SSE.c \
 	./Matrix_Ops/MMULdag.c ./Matrix_Ops/MMULdag_SSE.c \

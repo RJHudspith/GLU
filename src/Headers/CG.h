@@ -111,21 +111,21 @@ double
 gauge_functional_fast( const struct site *__restrict lat ) ;
 
 /**
-   @fn inline double PRfmax( const double a , const double b )
+   @fn double PRfmax( const double a , const double b )
    @brief maximum of a and b
  */
-inline double
+double
 PRfmax( const double a , 
 	const double b ) ;
 
 /**
-   @fn inline void set_gauge_matrix( GLU_complex *__restrict gx , const GLU_complex *__restrict *__restrict in , const double alpha , const int i ) 
+   @fn void set_gauge_matrix( GLU_complex *__restrict gx , const GLU_complex *__restrict *__restrict in , const double alpha , const int i ) 
    @brief unpacks and exponentiates the derivative into the array gx at site i
    @param gx :: gauge transformation matrix
    @param in :: derivative at site i
    @param i :: site index
  */
-inline void
+void
 set_gauge_matrix( GLU_complex *__restrict gx ,
 		  const GLU_complex *__restrict *__restrict in ,
 		  const double alpha ,

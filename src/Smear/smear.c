@@ -91,30 +91,30 @@ smear3D( struct site *__restrict lat ,
 	int mu ;
 
 	for( mu = 0 ; mu < ND - 1 ; mu++ ) {
-	  GLU_complex stap[ NCNC ] = { } ;
+	  GLU_complex stap[ NCNC ] ;
+	  zero_mat( stap ) ;
           #ifdef IMPROVED_SMEARING
 	  all_staples_improve( stap , lat , it , mu , ND - 1 , type ) ; 
           #else
 	  all_staples( stap , lat , it , mu , ND - 1 , type ) ; 
           #endif
 		  
-	  switch( type )
-	    {
-	    case SM_APE:
-	      project_APE( lat2[ i ].O[ mu ] , stap , 
-			   lat[ it ].O[ mu ] , alpha1 , 
-			   one_min_a1 ) ; 
-	      break ; 
-	    case SM_STOUT:
-	      project_STOUT_short( lat2[ i ].O[ mu ] , stap , 
-				   lat[ it ].O[ mu ] , alpha1 ) ; 
-	      break ; 
-	    case SM_LOG:
-	      project_LOG_short( lat2[ i ].O[ mu ] , stap , 
+	  switch( type ) {
+	  case SM_APE:
+	    project_APE( lat2[ i ].O[ mu ] , stap , 
+			 lat[ it ].O[ mu ] , alpha1 , 
+			 one_min_a1 ) ; 
+	    break ; 
+	  case SM_STOUT:
+	    project_STOUT_short( lat2[ i ].O[ mu ] , stap , 
 				 lat[ it ].O[ mu ] , alpha1 ) ; 
-	      break ; 
-	    default : break ;
-	    }
+	    break ; 
+	  case SM_LOG:
+	    project_LOG_short( lat2[ i ].O[ mu ] , stap , 
+			       lat[ it ].O[ mu ] , alpha1 ) ; 
+	    break ; 
+	  default : break ;
+	  }
 	}
       }
 	  
@@ -221,30 +221,30 @@ smear4D( struct site *__restrict lat ,
       int mu ;
 
       for( mu = 0 ; mu < ND ; mu++ )   { 
-	GLU_complex stap[ NCNC ] = { } ;
+	GLU_complex stap[ NCNC ] ;
+	zero_mat( stap ) ;
         #ifdef IMPROVED_SMEARING
 	all_staples_improve( stap , lat , bck , mu , ND , type ) ;
         #else
 	all_staples( stap , lat , bck , mu , ND , type ) ;
         #endif
 
-	switch( type )
-	  {
-	  case SM_APE:
-	    project_APE( lat4[ i ].O[ mu ] , stap , 
-			 lat[ bck ].O[ mu ] , alpha1 ,
-			 one_min_a1 ) ; 
-	    break ; 
-	  case SM_STOUT:
-	    project_STOUT_short( lat4[ i ].O[ mu ] , stap ,
-				 lat[ bck ].O[ mu ] , alpha1 ) ; 
-	    break ; 
-	  case SM_LOG:
-	    project_LOG_short( lat4[ i ].O[ mu ] , stap ,
+	switch( type ) {
+	case SM_APE:
+	  project_APE( lat4[ i ].O[ mu ] , stap , 
+		       lat[ bck ].O[ mu ] , alpha1 ,
+		       one_min_a1 ) ; 
+	  break ; 
+	case SM_STOUT:
+	  project_STOUT_short( lat4[ i ].O[ mu ] , stap ,
 			       lat[ bck ].O[ mu ] , alpha1 ) ; 
-	    break ; 
-	  default : break ;
-	  }
+	  break ; 
+	case SM_LOG:
+	  project_LOG_short( lat4[ i ].O[ mu ] , stap ,
+			     lat[ bck ].O[ mu ] , alpha1 ) ; 
+	  break ; 
+	default : break ;
+	}
       }
     }
       
@@ -262,7 +262,8 @@ smear4D( struct site *__restrict lat ,
 	int mu ;
 
 	for( mu = 0 ; mu < ND ; mu++ ) {
-	  GLU_complex stap[ NCNC ] = { } ;
+	  GLU_complex stap[ NCNC ] ;
+	  zero_mat( stap ) ;
           #ifdef IMPROVED_SMEARING
 	  all_staples_improve( stap , lat , it , mu , ND , type ) ;
           #else

@@ -363,5 +363,5 @@ GLUsage( void )
                  "eprint         = \"1405.5812\",\n"
                  "archivePrefix  = \"arXiv\",\n"
                  "primaryClass   = \"hep-lat\",\n"
-                 "SLACcitation   = \"\%\%\%\%CITATION = ARXIV:1405.5812;\%\%\%\%\",\n}\n" ) ;
+                 "SLACcitation   = \"%%%%CITATION = ARXIV:1405.5812;%%%%\",\n}\n" ) ;
 }
