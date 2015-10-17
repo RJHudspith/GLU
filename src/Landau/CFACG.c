@@ -24,6 +24,7 @@
 #include "Mainfile.h"      // for all the definitions
 
 #include "CG.h"            // for some of the shared routines
+#include "GLU_sums.h"      // round-off resistant sums
 #include "gftests.h"       // theta_test stopping condition
 #include "gramschmidt.h"   // for reunit2, gram-schmidt reunitarisation
 #include "gtrans.h"        // gauge transformations
@@ -139,9 +140,9 @@ steep_deriv_CG( GLU_complex *__restrict *__restrict in ,
   zero_alpha = coul_gtrans_fields( rotato , lat , slice_gauge , t , *tr ) ;
 
   // gauge transform the whole slice
-  double trAA = 0.0 ;
+  double *trAA = malloc( LCU * sizeof( double ) ) ;
   size_t i ;
-#pragma omp parallel for private(i) reduction( +:trAA )
+#pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LCU ; i ++ ) {
 
     // compute gauge rotated derivatives
@@ -223,12 +224,12 @@ steep_deriv_CG( GLU_complex *__restrict *__restrict in ,
       in[mu][i] = I * sum[mu] ;
     }
     #endif
-    trAA = trAA + (double)der ;
+    trAA[i] = der ;
   }
  
   // normalise the measure
-  *tr = trAA * GFNORM_COULOMB ; 
-
+  *tr = kahan_summation( trAA , LCU ) * GFNORM_COULOMB ; 
+  free( trAA ) ;
   return ;
 }
 

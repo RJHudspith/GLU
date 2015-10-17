@@ -26,6 +26,7 @@
 #include "Mainfile.h"    // for all the definitions
 
 #include "CG.h"          // routines used by both CG codes
+#include "GLU_sums.h"    // round off resistant summations
 #include "gftests.h"     // theta_test stopping condition
 #include "gtrans.h"      // gauge transformations
 #include "lin_derivs.h"  // linear approximation of lie matrices
@@ -91,7 +92,6 @@ check_info2( const struct site *__restrict lat ,
     printf("[GF] CHROMA ACC :: %1.15e \n" , 1. - link/(*newlink) ) ;
     printf("[GF] GAUGE ACC :: %1.15e \n" , gauge_test( gauge ) ) ;
     printf("[GF] THETA ACC :: %1.15e \n" , theta ) ;
-    //printf("GAMMA ACC :: %1.15e \n" , const_time( lat ) ) ;
   }
   return ;
 }
@@ -107,10 +107,12 @@ FA_deriv(  GLU_complex *__restrict *__restrict in ,
 	   const GLU_real *psq , 
 	   double *tr )
 {
-  int i ; 
+  size_t i ;
+  // put the functional and the trace of the square of the deriv here
+  double *alpha = malloc( LVOLUME * sizeof( double ) ) ;
+  double *trAA = malloc( LVOLUME * sizeof( double ) ) ;
   const double fact = 1.0 / (double)( NC * ND ) ;
-  double trAA = 0. , alpha = 0.0 ;
-#pragma omp parallel for private(i) reduction(+:trAA) reduction(+:alpha)
+  #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
 
     #if ( defined deriv_lin || defined deriv_linn )
@@ -143,18 +145,16 @@ FA_deriv(  GLU_complex *__restrict *__restrict in ,
     // nearest neighbour version
     #elif defined deriv_fulln    
     const double deriv = *tr > 0.1 ? \
-      approx_log_deriv_nn( sum , lat , i , ND ) \
-      : log_deriv_nn( sum , lat , i , ND ) ; 
+      approx_log_deriv_nn( sum , lat , i , ND ) : log_deriv_nn( sum , lat , i , ND ) ; 
     // next nearest neighbour version
     #elif defined deriv_fullnn
     const double deriv = *tr > 0.1 ? \
-      approx_log_deriv_nnn( sum , lat , i , ND )\
-      : log_deriv_nnn( sum , lat , i , ND ) ;
+      approx_log_deriv_nnn( sum , lat , i , ND ) : log_deriv_nnn( sum , lat , i , ND ) ;
     #endif
 
     // reductions
-    trAA = trAA + (double)deriv ;
-    alpha = alpha + (double)functional * fact ;
+    trAA[i]  = deriv ;
+    alpha[i] = functional * fact ;
 
     // make in anti-hermitian here!
     #if NC == 3
@@ -172,16 +172,17 @@ FA_deriv(  GLU_complex *__restrict *__restrict in ,
     #endif
   }
 #if ( defined deriv_lin ) || (defined deriv_linn )
-  zero_alpha = 1.0 - alpha / (double)LVOLUME ;
+  zero_alpha = 1.0 - kahan_summation( alpha , LVOLUME ) / (double)LVOLUME ;
 #else
   #if NC < 4
   zero_alpha = *tr > 0.1 ? gauge_functional_fast( lat ) :\
-    0.5 * alpha / (double)LVOLUME ;
+    0.5 * kahan_summation( alpha , LVOLUME ) / (double)LVOLUME ;
   #else
-  zero_alpha = 0.5 * alpha / (double)LVOLUME ;
+  zero_alpha = 0.5 * kahan_summation( alpha , LVOLUME )  / (double)LVOLUME ;
   #endif
 #endif
-  *tr = trAA * ( GFNORM_LANDAU ) ; 
+  *tr = kahan_summation( trAA , LVOLUME ) * ( GFNORM_LANDAU ) ; 
+  free( alpha ) ; free( trAA ) ;
   return ;
 }
 

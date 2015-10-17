@@ -154,7 +154,7 @@ get_uint32_t( char *s ,
 #ifdef INTS_ARE_32BIT
   sscanf( p , "%x" , q ) ;
 #else
-  int j ;
+  uint32_t j ;
   sscanf( p , "%x" , &j ) ;
   *q = (uint32_t) j ;
 #endif

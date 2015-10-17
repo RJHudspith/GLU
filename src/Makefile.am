@@ -51,7 +51,7 @@ U1FILES=./U1/SUNCxU1_config.c ./U1/U1_obs.c ./U1/U1_top.c
 ## utilities: memory checking, rngs splines byte swapping
 UTILSFILES=./Utils/GLU_bswap.c ./Utils/GLU_memcheck.c ./Utils/GLU_rng.c ./Utils/GLU_splines.c \
 	./Utils/GLU_timer.c ./Utils/KISS_rng.c ./Utils/MWC_1038.c ./Utils/MWC_4096.c \
-	./Utils/well_rng_19937a.c ./Utils/GLU_malloc.c
+	./Utils/well_rng_19937a.c ./Utils/GLU_malloc.c ./Utils/GLU_sums.c
 
 ## wrapper files
 WRAPPERSFILES=./Wrappers/CUT_wrap.c ./Wrappers/GF_wrap.c ./Wrappers/GLUlib_wrap.c \

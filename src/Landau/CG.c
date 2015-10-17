@@ -24,6 +24,7 @@
 #include "Mainfile.h"    // general definitions
 
 #include "GLU_splines.h" // GLUbic spline interpolation code
+#include "GLU_sums.h"    // round-off resistant summations
 #include "gramschmidt.h" // for reunitarisation
 #include "gtrans.h"      // gauge transformations
 #include "SSE2_OPS.h"    // SSE operations
@@ -35,7 +36,7 @@
 #endif
 
 // some small memory for the stabler average
-static double *traces , *divs ;
+static double *traces = NULL ;
 
 #ifdef exp_a2_approx
 // expansion :: 1 + i du Au - 0.5 * ( du Au ) ^ 2, must have A2_APPROX_EXPAND defined
@@ -77,18 +78,6 @@ a2_approx_expand( GLU_complex dA[ NCNC ] )
   return ;
 }
 #endif
-
-// numerically more friendly average?
-static double
-average_traces( const int LENGTH )
-{
-  int i ;
-  register double ave = 0.0 ;
-  for( i = 0 ; i < LENGTH ; i++ ) {
-    ave += ( traces[i] - ave ) * divs[i] ;
-  }
-  return ave ;
-}
 
 // gauge transformation and a log
 #if (defined deriv_full) || (defined deriv_fulln)
@@ -345,13 +334,6 @@ void
 allocate_traces( const int LENGTH )
 {
   traces = malloc( LENGTH * sizeof( double ) ) ;
-  divs = malloc( LENGTH * sizeof( double ) ) ;
-  int i ;
-  // set up the divs so it doesn't have to recompute all the time
-  #pragma omp parallel for private(i)
-  for( i = 0 ; i < LENGTH ; i++ ) {
-    divs[i] = 1.0 / (double)( i + 1. ) ;
-  }
   return ;
 }
 
@@ -417,9 +399,9 @@ coul_gtrans_fields( struct sp_site_herm *__restrict rotato ,
 #endif
 
 #if defined deriv_full
-  return average_traces( LCU ) ;
+  return knuth_average( traces , LCU ) ;
 #elif defined deriv_lin
-  return 1.0 - average_traces( LCU ) ;
+  return 1.0 - knuth_average( traces , LCU ) ;
 #endif
 }
 
@@ -484,9 +466,9 @@ evaluate_alpha( const GLU_complex *__restrict *__restrict gauge ,
 
   // functional definitions are slightly different
 #if ( defined deriv_lin ) || (defined deriv_linn )
-  return 1.0 - average_traces( LENGTH ) ;
+  return 1.0 - knuth_average( traces , LENGTH ) ;
 #else
-  return average_traces( LENGTH ) ;
+  return knuth_average( traces , LENGTH ) ;
 #endif
 }
 
@@ -497,14 +479,14 @@ FOURIER_ACCELERATE( GLU_complex *__restrict *__restrict in ,
 		    const void *__restrict forward ,
 		    const void *__restrict backward ,
 		    const GLU_real *__restrict psq ,
-		    const int LENGTH ) 
+		    const size_t LENGTH ) 
 {
 #ifdef HAVE_FFTW3_H
   const fftw_plan *forw = ( const fftw_plan* )forward ;
   const fftw_plan *back = ( const fftw_plan* )backward ;
   ///// Fourier Acceleration //////
   #ifdef OMP_FFTW
-  int mu , i ;
+  size_t mu , i ;
   for( mu = 0 ; mu < TRUE_HERM ; mu++ ) {
     PSPAWN fftw_execute( forw[mu] ) ; 
     #pragma omp parallel for private(i)
@@ -516,11 +498,11 @@ FOURIER_ACCELERATE( GLU_complex *__restrict *__restrict in ,
   PSYNC ;
   #else
   // single core FFT's
-  int mu ;
+  size_t mu ;
   #pragma omp parallel for private(mu) schedule(dynamic)
   for( mu = 0 ; mu < TRUE_HERM ; mu++ ) {
     PSPAWN fftw_execute( forw[mu] ) ; 
-    int i ;
+    size_t i ;
     PFOR( i = 0 ; i < LENGTH ; i++ ) {
       out[ mu ][ i ] *= psq[i] ;
     }
@@ -533,7 +515,7 @@ FOURIER_ACCELERATE( GLU_complex *__restrict *__restrict in ,
 }
 
 // and for freeing the traces array
-void free_traces( void ) { free( traces ) ; free( divs ) ; }
+void free_traces( void ) { free( traces ) ; }
 
 // compute the functional quickly
 double
@@ -541,7 +523,7 @@ gauge_functional_fast( const struct site *__restrict lat )
 {
   const double fact = 1.0 / (double)( NC * ND ) ;
   int i ;
-#pragma omp parallel for private(i)
+  #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     #if (defined deriv_full) || (defined deriv_fulln) || (defined deriv_fullnn)
     //GLU_complex A[ HERMSIZE ] ;
@@ -577,9 +559,9 @@ gauge_functional_fast( const struct site *__restrict lat )
   }
 
 #if ( defined deriv_lin ) || (defined deriv_linn )
-  return 1.0 - average_traces( LVOLUME ) ;
+  return 1.0 - knuth_average( traces , LVOLUME ) ;
 #else
-  return average_traces( LVOLUME ) ; 
+  return knuth_average( traces , LVOLUME ) ; 
 #endif
 }
 
@@ -644,7 +626,7 @@ double
 sum_deriv( const GLU_complex *__restrict *__restrict in , 
 	   const int LENGTH )
 {
-  int i ;
+  size_t i ;
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LENGTH ; i++ ) {
     register double loc_sum = 0.0 ;
@@ -669,7 +651,7 @@ sum_deriv( const GLU_complex *__restrict *__restrict in ,
     #endif
     traces[i] = loc_sum ;
   }
-  return 2.0 * average_traces( LENGTH ) ;
+  return 2.0 * kahan_summation( traces , LENGTH ) ; 
 }
 
 // Polak Ribiere Numerator
@@ -678,7 +660,7 @@ sum_PR_numerator( const GLU_complex *__restrict *__restrict in ,
 		  const GLU_complex *__restrict *__restrict in_old ,
 		  const int LENGTH ) 
 {
-  int i ;
+  size_t i ;
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LENGTH ; i++ ) {
     register double loc_sum = 0.0 ;
@@ -699,7 +681,7 @@ sum_PR_numerator( const GLU_complex *__restrict *__restrict in ,
     loc_sum += 2.0 * ( creal( in[1][i] ) * creal( temp ) + cimag( in[1][i] ) * cimag( temp ) ) ;
 #else
     GLU_complex temp[ HERMSIZE ] , temp2[ NCNC ] ;
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
       temp[mu] = in[mu][i] - in_old[mu][i] ;
       temp2[ mu ] = in[ mu ][ i ] ;
@@ -710,6 +692,6 @@ sum_PR_numerator( const GLU_complex *__restrict *__restrict in ,
 #endif
     traces[i] = loc_sum ;
   }
-  return average_traces( LENGTH ) ;
+  return kahan_summation( traces , LENGTH ) ;
 }
 
