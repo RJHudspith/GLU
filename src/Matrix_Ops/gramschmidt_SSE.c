@@ -126,15 +126,31 @@ reunit2( GLU_complex *__restrict U)
 				      SSE2_MUL( *( u + 1 ) , *( u + 3 ) ) ) ) ;
 #elif NC == 2
 
+  /*
+  GLU_real *uu = (GLU_real*)U ;
+  const double v00R = *( uu + 0 ) ;
+  const double v00I = *( uu + 1 ) ;
+  const double v01R = *( uu + 4 ) ;
+  const double v01I = *( uu + 5 ) ;
+
+  double norm = sqrt( v00R * v00R + v00I * v00I + v01R * v01R + v01I * v01I ) ;
+  norm = 1. / norm ;
+
+  U[0] =  ( v00R * norm + I * v00I * norm ) ; 
+  U[1] = -( v01R * norm - I * v01I * norm ) ; 
+  U[2] =  ( v01R * norm + I * v01I * norm ) ; 
+  U[3] =  ( v00R * norm - I * v00I * norm ) ; 
+  */
+
   // compute the norm 
   register __m128d sum ;
   sum = _mm_add_pd( _mm_mul_pd( *( u + 0 ) , *( u + 0 ) ) ,
-		    _mm_mul_pd( *( u + 2 ) , *( u + 0 ) ) ) ;
-  sum = _mm_add_pd( sum , shuffle( sum , sum , 1 ) ) ;
+		    _mm_mul_pd( *( u + 2 ) , *( u + 2 ) ) ) ;
+  sum = _mm_add_pd( sum , _mm_shuffle_pd( sum , sum , 1 ) ) ;
   sum = _mm_div_pd( _mm_setr_pd( 1 , 1 ) , _mm_sqrt_pd( sum ) ) ;
   *( u + 0 ) = _mm_mul_pd( *( u + 0 ) , sum ) ;
   *( u + 2 ) = _mm_mul_pd( *( u + 2 ) , sum ) ;
-  *( u + 1 ) = SSE2_FLIP( SSE2_CONJ( *( u + 2 ) ) ) ; 
+  *( u + 1 ) = SSE_FLIP( SSE2_CONJ( *( u + 2 ) ) ) ; 
   *( u + 3 ) = SSE2_CONJ( *( u + 0 ) ) ;
 
 #else

@@ -119,7 +119,7 @@ Re_trace_abc_dag_suNC( const GLU_complex a[ NCNC ] ,
   __m128d *A = ( __m128d* )a ;
   const __m128d *B = ( const __m128d* )b ;
   const __m128d *C = ( const __m128d* )c ;
-
+#if NC == 3
   //const GLU_complex a0 = ( a[0] * b[0] + a[1] * b[3] + a[2] * b[6] ) ;
   const __m128d a0 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 0 ) ) ,
 				 _mm_add_pd( SSE2_MUL( *( A + 1 ) , *( B + 3 ) ) ,
@@ -164,6 +164,26 @@ Re_trace_abc_dag_suNC( const GLU_complex a[ NCNC ] ,
   double complex csum ;
   _mm_store_pd( (void*)&csum , sum ) ;
   return creal( csum ) ;  
+#elif NC==2
+  // puts the four parts of the sum into the upper and lower parts of 
+  // two SSE-packed double words
+  const __m128d a0 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 0 ) ) ,
+				 SSE2_MUL( *( A + 1 ) , *( B + 2 ) ) ) ;
+  const __m128d a1 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 1 ) ) ,
+				 SSE2_MUL( *( A + 1 ) , *( B + 3 ) ) ) ;
+  register __m128d sum1 , sum2 ;
+  sum1 = _mm_add_pd( _mm_mul_pd( a0 , *( C + 0 ) ) , 
+		     _mm_mul_pd( a0 , SSE2_CONJ( *( C + 3 ) ) ) ) ;
+  sum2 = _mm_sub_pd( _mm_mul_pd( a1 , *( C + 1 ) ) ,
+		     _mm_mul_pd( a1 , SSE2_CONJ( *( C + 2 ) ) ) ) ;
+  double complex csum ;
+  _mm_store_pd( (void*)&csum , _mm_add_pd( sum1 , sum2 )  ) ;
+  return creal( csum ) + cimag( csum ) ;  
+#else
+  GLU_real trABCdag ;
+  trace_abc_dag_Re( &trABCdag , a , b , c ) ;
+  return (double)trABCdag ;
+#endif
 }
 
 #else

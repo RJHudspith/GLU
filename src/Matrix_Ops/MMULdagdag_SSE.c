@@ -172,7 +172,7 @@ multab_dagdag_suNC( GLU_complex a[ NCNC ] ,
   *( A + 1 ) = _mm_add_pd( SSE2_MUL_CONJCONJ( *( B + 0 ) , *( C + 2 ) ) ,
 			   SSE2_MUL_CONJCONJ( *( B + 2 ) , *( C + 3 ) ) ) ;
   // a[2] = -conj( a[1] )
-  *( A + 2 ) = SSE2_FLIP( SSE2_CONJ( *( A + 1 ) ) ) ; 
+  *( A + 2 ) = SSE_FLIP( SSE2_CONJ( *( A + 1 ) ) ) ; 
   // a[3] =  conj( a[0] )
   *( A + 3 ) = SSE2_CONJ( *( A + 0 ) ) ;
 #else

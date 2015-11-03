@@ -97,7 +97,7 @@ multabdag( GLU_complex a[ NCNC ] ,
     for( j = 0 ; j < NC ; j++ ) {
       sum = _mm_setzero_pd( ) ;
       for( m = 0 ; m < NC ; m++ ) {
-	sum = _mm_add_pd( sum , SSE2_MULCONJ( *( B + i + NC*m ) , *( C + j + NC*m ) ) ;
+	sum = _mm_add_pd( sum , SSE2_MULCONJ( *( B + i + NC*m ) , *( C + j + NC*m ) ) ) ;
       }
       *( A + j + NC*i ) = sum ;
     }
@@ -160,10 +160,10 @@ multabdag_suNC( GLU_complex a[ NCNC ] ,
   *( A + 0 ) = _mm_add_pd( SSE2_MULCONJ( *( B + 0 ) , *( C + 0 ) ) ,
 			   SSE2_MULCONJ( *( B + 2 ) , *( C + 2 ) ) ) ;
   //a[1] = conj( b[0] ) * c[1] + conj( b[2] ) * c[3]
-  *( A + 0 ) = _mm_add_pd( SSE2_MULCONJ( *( B + 0 ) , *( C + 1 ) ) ,
+  *( A + 1 ) = _mm_add_pd( SSE2_MULCONJ( *( B + 0 ) , *( C + 1 ) ) ,
 			   SSE2_MULCONJ( *( B + 2 ) , *( C + 3 ) ) ) ;
   // a[2] = -conj( a[1] )
-  *( A + 2 ) = SSE2_FLIP( SSE2_CONJ( *( A + 1 ) ) ) ; 
+  *( A + 2 ) = SSE_FLIP( SSE2_CONJ( *( A + 1 ) ) ) ; 
   // a[3] =  conj( a[0] )
   *( A + 3 ) = SSE2_CONJ( *( A + 0 ) ) ;
 #else

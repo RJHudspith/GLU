@@ -145,7 +145,8 @@ project_STOUT_short( GLU_complex stout[ NCNC ] ,
 		     const double smear_alpha )
 {
 #if NC > 3
-  return project_STOUT( stout , staple , link , smear_alpha ) ;
+  project_STOUT( stout , staple , link , smear_alpha ) ;
+  return ;
 #else
   GLU_complex b[ NCNC ] ;  
   // staple is no longer in SU(NC) cannot use speedy versions
@@ -292,7 +293,8 @@ project_LOG_short( GLU_complex log[ NCNC ] ,
 		   const double smear_alpha )
 {
 #if NC > 3
-  return project_LOG( log , staple , link , smear_alpha ) ;
+  project_LOG( log , staple , link , smear_alpha ) ;
+  return ;
 #else
   #if NC == 3
   *( staple + 0 ) *= smear_alpha ; 

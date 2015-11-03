@@ -43,19 +43,35 @@ static const double oneOfortytwo = 0.023809523809523809524 ; // 1./42.
 #include "invert.h"
 #include "gramschmidt.h"
 
+// use the pade approximation! It is MUCH faster
+#define USE_PADE
+
 #ifdef SINGLE_PREC
   #define MAX_FACTORIAL 10
 #else
   #define MAX_FACTORIAL 20
 #endif
 
-// precompute the factorial? Should I just write these here?
+// LUT for the factorials
+#ifdef USE_PADE
+static GLU_real *pade ;
+#else
 static GLU_real *factorial ;
+#endif
 
 // initialise the factorial in Mainfile.c
 void
 init_factorial( void ) 
 {
+#ifdef USE_PADE
+  pade = ( GLU_real* ) malloc( 6 * sizeof( GLU_real ) ) ;
+  pade[ 0 ] = 1.0 ;
+  pade[ 1 ] = 1.0/2.0 ;
+  pade[ 2 ] = 1.0/9.0 ;
+  pade[ 3 ] = 1.0/72.0 ;
+  pade[ 4 ] = 1.0/1008.0 ;
+  pade[ 5 ] = 1.0/30240.0 ;
+#else
   factorial = ( GLU_real* ) malloc ( MAX_FACTORIAL * sizeof( GLU_real ) ) ;
   factorial[ 0 ] = 1.0 ;
   factorial[ 1 ] = 1.0 ;
@@ -79,6 +95,7 @@ init_factorial( void )
   factorial[ 18 ] = 1.0/121645100408832000 ;
   factorial[ 19 ] = 1.0/2432902008176640000 ;
   #endif
+#endif
   return ;
 }
 
@@ -86,10 +103,31 @@ init_factorial( void )
 void
 free_factorial( void )
 {
+#ifdef USE_PADE
+  free( pade ) ;
+#else
   free( factorial ) ;
+#endif
   return ;
 }
 
+#ifdef USE_PADE
+// 5,5 pade approximation for the exponential
+static void
+horners_pade( a , b )
+     GLU_complex a[ NCNC ] ;
+     const GLU_complex b[ NCNC ] ;
+{
+  int i ;
+  for( i = 0 ; i < NCNC ; i++ ) { a[i] = b[i] * pade[5] ; } 
+  for( i = 4 ; i > 0 ; i-- ) {    
+    add_constant( a , pade[i] ) ; 
+    multab_atomic_left( a , b ) ;    
+  }
+  for( i = 0 ; i < NC ; i++ ) { a[ i*(NC+1) ] += 1.0 ; }
+  return ;
+}
+#else
 // horner's expansion for the exponential
 static void
 horners_exp( a , b , n )
@@ -117,6 +155,7 @@ horners_exp( a , b , n )
   for( i = 0 ; i < NC ; i++ ) { a[ i*(NC+1) ] += 1.0 ; }
   return ;
 }
+#endif
 
 #endif
 
@@ -272,8 +311,11 @@ exponentiate( GLU_complex U[ NCNC ] ,
   // exponentiate routine from stephan durr's paper
   // Performs the nesting
   // U = ( exp{ A / DIV^n ) ) ^ ( DIV * n )
-  GLU_complex EOLD[ NCNC ] = {} , SN[ NCNC ] ;
-  GLU_complex RN_MIN[ NCNC ] , RN[NCNC] ;
+  GLU_complex EOLD[ NCNC ] , SN[ NCNC ] ;
+  GLU_complex RN_MIN[ NCNC ] , RN[ NCNC ] ;
+
+  // set to zero
+  zero_mat( EOLD ) ;
 
   // set up the divisor and the minimum 
   double sum ;
@@ -288,11 +330,19 @@ exponentiate( GLU_complex U[ NCNC ] ,
     const int iter = pow( DIV , n ) ;
 
     // and the rational approximations
+#ifdef USE_PADE
+    for( j = 0 ; j < NCNC ; j++ ) { SN[ j ] = ( I * Q[j] * fact ) ; }
+    horners_pade( RN , SN ) ;
+
+    for( j = 0 ; j < NCNC ; j++ ) { SN[ j ] *= -1.0 ; }
+    horners_pade( RN_MIN , SN ) ; 
+#else
     for( j = 0 ; j < NCNC ; j++ ) { SN[ j ] = ( I * Q[j] * fact ) / 2.0 ; }
     horners_exp( RN , SN , 14 ) ;
 
     for( j = 0 ; j < NCNC ; j++ ) { SN[ j ] *= -1.0 ; }
     horners_exp( RN_MIN , SN , 14 ) ; 
+#endif
 
     inverse( SN , RN_MIN ) ; // uses our numerical inverse
     multab_atomic_right( RN , SN ) ; // gets the correct rational approx
@@ -738,5 +788,8 @@ approx_exp_short( GLU_complex U[ NCNC ] ,
 
 // and clear it up
 #if !( defined HAVE_LAPACKE_H || defined HAVE_GSL ) && ( NC > 3 )
+ #ifdef USE_PADE
+  #undef USE_PADE
+ #endif
  #undef MAX_FACTORIAL
 #endif

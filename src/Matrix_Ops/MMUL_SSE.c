@@ -56,20 +56,23 @@ multab_atomic_left( GLU_complex a[ NCNC ] ,
   a[1] = C0 ; a[3] = C1 ;					
 #else
   // slow and stupid loopy version, memory access pattern is odd
-  int i , j , m ;
-  GLU_complex R[ NC ] ;
-  register GLU_complex sum ;
+  size_t i , j , m ;
+  __m128d *A = (__m128d*)a ;
+  __m128d R[ NC ] ; // temporary storage up in here
+  register __m128d sum ;
   for( i = 0 ; i < NC ; i++ ) { // loop cols
+    const __m128d *B = (const __m128d*)b ;
     for( j = 0 ; j < NC ; j ++ ) { // loop rows
-      sum = 0.0 ;
+      sum = _mm_setzero_pd( ) ;
       for( m = 0 ; m < NC ; m ++  ) { // loop elements in row or column
-        sum += b[ m + j*NC ] * a[ i + m*NC ] ;
+	sum = _mm_add_pd( sum , SSE2_MUL( *( B ) , *( A + i + m * NC ) ) ) ;
+	B++ ;
       }	
-      R[j] = sum ;
+      *( R + j ) = sum ;
     }
     // copy back over to a ...
     for( m = 0 ; m < NC ; m++ ) {
-      a[ i + m*NC ] = R[m] ;
+      *( A + i + m*NC ) = *( R + m ) ;
     }
   }
 #endif
@@ -244,7 +247,7 @@ multab_suNC( GLU_complex a[ NCNC ] ,
   *( A + 1 ) = _mm_add_pd( SSE2_MUL( *( B + 0 ) , *( C + 1 ) ) ,
 			   SSE2_MUL( *( B + 1 ) , *( C + 3 ) ) ) ;
   // a[2] = -conj( a[1] )
-  *( A + 2 ) = SSE2_FLIP( SSE2_CONJ( *( A + 1 ) ) ) ; 
+  *( A + 2 ) = SSE_FLIP( SSE2_CONJ( *( A + 1 ) ) ) ; 
   // a[3] =  conj( a[0] )
   *( A + 3 ) = SSE2_CONJ( *( A + 0 ) ) ;
 #else

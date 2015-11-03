@@ -87,7 +87,7 @@ multab_dag( GLU_complex a[ NCNC ] ,
 			   SSE2_MUL_CONJ( *( B + 1 ) , *( C + 3 ) ) ) ;
   *( A + 2 ) = _mm_add_pd( SSE2_MUL_CONJ( *( B + 2 ) , *( C + 0 ) ) ,
 			   SSE2_MUL_CONJ( *( B + 3 ) , *( C + 1 ) ) ) ;
-  *( A + 1 ) = _mm_add_pd( SSE2_MUL_CONJ( *( B + 2 ) , *( C + 2 ) ) , 
+  *( A + 3 ) = _mm_add_pd( SSE2_MUL_CONJ( *( B + 2 ) , *( C + 2 ) ) , 
 			   SSE2_MUL_CONJ( *( B + 3 ) , *( C + 3 ) ) ) ;
 #else // instead of inlining we have a function call
   int i , j , m ;
@@ -97,8 +97,8 @@ multab_dag( GLU_complex a[ NCNC ] ,
       sum = _mm_setzero_pd( ) ;
       for( m = 0 ; m < NC ; m++ ) {
 	//sum += REB * REC + IMB * IMC + I * ( REC * IMB - REB * IMC ) ;
-	sum = _mm_add_pd( sum , SSE2_MUL_CONJ( *( b + m + NC*i ) ,
-					       *( c + m + NC*j ) ) ) ;
+	sum = _mm_add_pd( sum , SSE2_MUL_CONJ( *( B + m + NC*i ) ,
+					       *( C + m + NC*j ) ) ) ;
       }
       A[ j + NC*i ] = sum ;
     }
@@ -156,16 +156,15 @@ multab_dag_suNC( GLU_complex a[ NCNC ] ,
   // a[8] = conj( a[0] * a[4] - a[1] * a[3] ) ; 
   *( A + 8 ) = SSE2_CONJ( _mm_sub_pd( SSE2_MUL( *( A + 0 ) , *( A + 4 ) ) ,
 				      SSE2_MUL( *( A + 1 ) , *( A + 3 ) ) ) ) ;
-#elif NC == 2
-  //faster multab?   
-  //a[0] = b[0]*conj( c[0] ) + b[1]*conj( c[2] )
+#elif NC == 2 
+  //a[0] = b[0]*conj( c[0] ) + b[1]*conj( c[1] )
   *( A + 0 ) = _mm_add_pd( SSE2_MUL_CONJ( *( B + 0 ) , *( C + 0 ) ) ,
-			   SSE2_MUL_CONJ( *( B + 1 ) , *( C + 2 ) ) ) ;
+			   SSE2_MUL_CONJ( *( B + 1 ) , *( C + 1 ) ) ) ;
   //a[1] = b[0] * conj( c[2] ) + b[1] * conj( c[3] ) 
-  *( A + 0 ) = _mm_add_pd( SSE2_MUL_CONJ( *( B + 0 ) , *( C + 2 ) ) ,
+  *( A + 1 ) = _mm_add_pd( SSE2_MUL_CONJ( *( B + 0 ) , *( C + 2 ) ) , 
 			   SSE2_MUL_CONJ( *( B + 1 ) , *( C + 3 ) ) ) ;
   // a[2] = -conj( a[1] )
-  *( A + 2 ) = SSE2_FLIP( SSE2_CONJ( *( A + 1 ) ) ) ; 
+  *( A + 2 ) = SSE_FLIP( SSE2_CONJ( *( A + 1 ) ) ) ; 
   // a[3] =  conj( a[0] )
   *( A + 3 ) = SSE2_CONJ( *( A + 0 ) ) ;
 #else

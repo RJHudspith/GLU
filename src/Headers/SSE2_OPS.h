@@ -58,6 +58,6 @@
 #define SSE2_miMUL(a) ( _mm_shuffle_pd( a , SSE_FLIP(a) , 1 ) )
 
 // complex conjugate
-#define SSE2_CONJ(a) ( _mm_move_sd( SSE_FLIP(a) , a ) ) ;
+#define SSE2_CONJ(a) ( _mm_move_sd( SSE_FLIP(a) , a ) )
 
 #endif
