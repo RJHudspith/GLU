@@ -387,7 +387,7 @@ read_cuts_struct( struct cut_info *CUTINFO )
   if( setint( &( CUTINFO -> max_mom ) , "MAXMOM" ) == GLU_FAILURE ) {
     return GLU_FAILURE ;
   }
-  if( setint( &( CUTINFO -> max_mom ) , "ANGLE" ) == GLU_FAILURE ) {
+  if( setint( &( CUTINFO -> angle ) , "ANGLE" ) == GLU_FAILURE ) {
     return GLU_FAILURE ;
   }
   // set the cylinder width

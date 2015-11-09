@@ -245,6 +245,29 @@ output_str_struct( const struct cut_info CUTINFO )
   return str ;
 }
 
+// Write the gluonic two and three point functions to the file Ap
+void
+write_complex_g2g3_to_list( FILE *__restrict Ap , 
+			    double complex *__restrict g2 , 
+			    double complex *__restrict g3 , 
+			    int num_mom[ 1 ] ) 
+{
+#ifdef ASCII_CHECK
+  printf("%d \n", num_mom[ 0 ] ) ;
+  int i ;
+  for( i = 0 ; i < num_mom[0] ; i++ ) { printf("%e \n", g2[i] ) ; }
+  printf("%d \n", num_mom[ 0 ] ) ;
+  for( i = 0 ; i < num_mom[0] ; i++ ) { printf("%e \n", g3[i] ) ; }
+#else
+  // write NUM_MOM[0] , G2 , NUM_MOM[0] , G3
+  FWRITE( num_mom , sizeof(int) , 1 , Ap ) ;
+  FWRITE( g2 , sizeof(double) , 2 * num_mom[0] , Ap ) ;
+  FWRITE( num_mom , sizeof(int) , 1 , Ap ) ;
+  FWRITE( g3 , sizeof(double) , 2 * num_mom[0] , Ap ) ;
+#endif
+  return ;
+}
+
 // Write the gluonic two point function to the file Ap
 void
 write_g2_to_list( FILE *__restrict Ap , 

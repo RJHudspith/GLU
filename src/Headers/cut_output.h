@@ -44,6 +44,26 @@ char*
 output_str_struct( const struct cut_info CUTINFO ) ;
 
 /**
+   @fn void write_complex_g2g3_to_list( FILE *__restrict Ap , double complex *__restrict g2 , double complex *__restrict g3 , int num_mom[ 1 ] ) ;
+
+   @brief This function writes out the real part of the trace of the gluonic two and three point functions.
+   
+   @param Ap :: File that we output to.
+   @param g2 :: The gluon propagator
+   @param g3 :: The gluon three point function
+   @param num_mom :: number of momenta in the list after cutting.
+
+   This function writes first the two point function
+   and then the three point function corresponding to the
+   momenta written at the top of the file.
+ **/
+void
+write_complex_g2g3_to_list( FILE *__restrict Ap , 
+			    double complex *__restrict g2 , 
+			    double complex *__restrict g3 , 
+			    int num_mom[ 1 ] ) ;
+
+/**
    @fn void write_g2_to_list( FILE *__restrict Ap , double *__restrict g2 , int num_mom[ 1 ] ) ;
 
    @brief This function writes out the real part of the trace of the gluonic two and three point functions.

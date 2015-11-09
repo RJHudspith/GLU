@@ -43,3 +43,31 @@ dandc_sum( const double *a ,
     dandc_sum( a , lo , (hi+lo)/2 ) +\
     dandc_sum( a , (hi+lo)/2 , hi ) ;
 }
+
+// parallel divide and conquer sum
+#ifdef HAVE_OMP_H
+
+#include <omp.h>
+
+double
+par_danc_sum( const double *a , 
+	      const size_t N )
+{
+  size_t i , Nth = 1 ;
+  // open a parallel environment to get number of threads
+  #pragma omp parallel
+  {
+    Nth = omp_get_num_threads() ;
+  }
+  const size_t split = ( N + Nth - 1 ) / Nth ;
+  register double sum = 0 ;
+  // anything less than the division goes to the last thread
+  #pragma omp parallel for private(i) reduction(+:sum)
+  for( i = 0 ; i < Nth ; i++ ) {
+    sum = sum + (double)dandc_sum( a , i * split , 
+				   (i+1)*split> N ? N : (i+1)*split ) ;
+  }
+  return sum ;
+}
+
+#endif

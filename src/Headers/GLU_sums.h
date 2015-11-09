@@ -41,4 +41,16 @@ dandc_sum( const double *a ,
 	   const size_t lo ,
 	   const size_t hi ) ;
 
+/**
+   @fn double par_dandc_sum( const double *a , const size_t N )
+   @brief recursive parralelised divide and conquer sum
+   @param a :: array of values
+   @param N :: length of array a
+   @return the sum of the values in @a
+   Note:: Error should go like Nlog(N)
+ */
+double
+par_dandc_sum( const double *a , 
+	       const size_t N ) ;
+
 #endif

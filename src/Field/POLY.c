@@ -79,7 +79,7 @@ poly( const struct site *__restrict lat ,
 
 // trace-trace computation is nice and easy
 static void
-compute_trtr( double *__restrict trtr ,      
+compute_trtr( double complex *__restrict trtr ,      
 	      GLU_complex *__restrict out ,
 	      GLU_complex *__restrict in ,
 	      const GLU_complex *__restrict *__restrict poly ,
@@ -111,7 +111,7 @@ compute_trtr( double *__restrict trtr ,
   // and set the trace-trace
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < rsq_count ; i++ ) {
-    trtr[ i ] += (double)creal( in[ list[i].idx ] ) ;
+    trtr[ i ] += in[ list[i].idx ] ;
   }
   return ;
 }
@@ -119,7 +119,7 @@ compute_trtr( double *__restrict trtr ,
 // traced computation is hard, I want to do the computation in momentum space
 // but cannot overwrite poly?
 static void
-compute_tr( double *__restrict tr ,      
+compute_tr( double complex *__restrict tr ,      
 	    GLU_complex *__restrict out ,
 	    GLU_complex *__restrict in ,
 	    GLU_complex *__restrict *__restrict slice_poly ,
@@ -166,7 +166,7 @@ compute_tr( double *__restrict tr ,
   // and set tr
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < rsq_count ; i++ ) {
-    tr[ i ] += creal( in[ list[ i ].idx ] ) ;
+    tr[ i ] += in[ list[ i ].idx ] ;
   }
 
   return ;
@@ -174,8 +174,8 @@ compute_tr( double *__restrict tr ,
 
 /// correlator
 static int
-static_quark_correlator( double *__restrict result ,
-			 double *__restrict trtr ,
+static_quark_correlator( double complex *__restrict result ,
+			 double complex *__restrict trtr ,
 			 const GLU_complex *__restrict *__restrict poly ,
 			 const struct veclist *__restrict list ,
 			 const int rsq_count )
@@ -247,8 +247,8 @@ static_quark_correlator( double *__restrict result ,
 
 /// correlator
 static int
-static_quark_correlator( double *__restrict result ,
-			 double *__restrict trtr ,
+static_quark_correlator( double complex *__restrict result ,
+			 double complex *__restrict trtr ,
 			 const GLU_complex *__restrict *__restrict poly ,
 			 const struct veclist *__restrict list ,
 			 const int rsq_count )
@@ -261,9 +261,9 @@ static_quark_correlator( double *__restrict result ,
   PFOR( i = 0 ; i < rsq_count ; i++ ) {
 
     // COOL, can now contract these over the volume
-    GLU_real res ;
-    register double tr = 0.0 ;
-    register double tracetrace = 0.0 ;
+    GLU_complex res ;
+    register double complex tr = 0.0 ;
+    register double complex tracetrace = 0.0 ;
 
     // the (positive) lattice vector for the separation
     int separation[ ND ] ;
@@ -284,13 +284,13 @@ static_quark_correlator( double *__restrict result ,
 	const int sink   = translate + LCU * t ;
 	
 	// trace of the product
-	trace_ab_dag_Re( &res , poly[source] , poly[sink] ) ;
-	tr += (double)res ;
+	trace_ab_dag( &res , poly[source] , poly[sink] ) ;
+	tr += res ;
 	
 	// and the trace-trace
 	const GLU_complex tr1 = trace( poly[source] ) ;
 	const GLU_complex tr2 = trace( poly[sink] ) ;
-	tracetrace += creal( tr1 ) * creal( tr2 ) + cimag( tr1 ) * cimag( tr2 ) ;
+	tracetrace += tr1 * tr2 ;
       }
     }
     result[i] = tr * NORM ;
@@ -352,8 +352,8 @@ Coul_staticpot( struct site *__restrict lat ,
   if( !WORDS_BIGENDIAN ) { bswap_32( 1 , Tcorrs ) ; }  
 
   // allocate the results
-  double *result = malloc( size[0] * sizeof( double ) ) ; 
-  double *trtr   = malloc( size[0] * sizeof( double ) ) ; 
+  double complex *result = malloc( size[0] * sizeof( double complex ) ) ; 
+  double complex *trtr   = malloc( size[0] * sizeof( double complex ) ) ; 
 
   // precompute the polyakov loop
   int t ; // t == 0 term makes no sense ...
@@ -372,12 +372,12 @@ Coul_staticpot( struct site *__restrict lat ,
       multab_atomic_right( poly[i] , lat[( i + t * LCU ) % LVOLUME].O[ND-1] ) ;
     }
     
-    // compute the three quark correlator?
+    // compute the two quark correlator
     static_quark_correlator( result , trtr , (const GLU_complex**)poly , 
 			     list , size[0] ) ;
 
     // write out the result of all that work
-    write_g2g3_to_list( Ap , result , trtr , size ) ;
+    write_complex_g2g3_to_list( Ap , result , trtr , size ) ;
 
     // and tell us which temporal separation has been done
     printf( "[STATIC-POTENTIAL] T = %d sepation computed and written \n" , t ) ;
