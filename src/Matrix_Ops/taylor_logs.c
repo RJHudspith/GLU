@@ -161,6 +161,90 @@ precompute_taylor_factors( void )
   return ;
 }
 
+// logarithm of a unitary matrix by asinh
+void
+asinh_log( GLU_complex *__restrict Q , 
+	   const GLU_complex *__restrict U )
+{
+  // should I allocate these?, possibly
+  GLU_complex y[ NCNC ] , z[ NCNC ] , zz[ NCNC ] ;
+  equiv( y , U ) ;
+
+  const int NROOTS = 3 ;
+  int roots , i ;
+  // do 3 some rootings
+  for( roots = 0 ; roots < NROOTS ; roots++ ) {
+    denman_rootY( y ) ;
+  }
+  // ok, now compute z = ( U - U^{\dagger} ) / 2
+  AntiHermitian_proj( z , y ) ;
+  // compute z^2 is the true expansion parameter
+  multab( zz , z , z ) ;
+
+  // use pade approximation for asinh
+  GLU_complex numerator[ NCNC ] , denominator[ NCNC ] ;
+
+  // asinh order could be four but I prefer five, it 
+  // almost allows us to reduce the rootings to 2
+  #if 0
+  const double num[ 4 ] = { -0.166666666666667 ,  
+			    -0.248680701061979 ,
+			    -0.102674860281026 , 
+			    -0.010064013171361 } ;
+  const double dum[ 4 ] = { 1.942084206371874 , 
+			    1.222129911696356 ,
+			    0.272433079251442 ,
+			    0.015031471556997 } ;
+  #endif
+  const double num[ 5 ] = { -0.166666666666667 ,
+			    -0.331918710383403 ,
+			    -0.216426024716025 ,
+			    -0.050968522959400 ,
+			    -0.003111318437640 } ;
+  const double dum[ 5 ] = { 2.441512262300421 ,
+			    2.129379523474199 ,
+			    0.792347091155989 ,
+			    0.115688971366126 ,
+			    0.004377533437037 } ;
+  // compute the last term
+  for( i = 0 ; i < NCNC ; i++ ) {
+    numerator[ i ]   = num[ 4 ] * zz[ i ] ;
+    denominator[ i ] = dum[ 4 ] * zz[ i ] ;
+  }
+  // horner's rule for the series of numerator 
+  // and denominator
+  for( roots = 3 ; roots > -1 ; roots-- ) {
+    for( i = 0 ; i < NC ; i++ ) {
+      numerator[i*(NC+1)]   += num[roots] ;
+      denominator[i*(NC+1)] += dum[roots] ;
+    }
+    multab_atomic_left( numerator , zz ) ;
+    multab_atomic_left( denominator , zz ) ;
+  }
+  // add one to the denominator
+  for( i = 0 ; i < NC ; i++ ) {
+    denominator[i*(NC+1)] += 1.0 ;
+  }
+  inverse( y , denominator ) ;
+
+  multab_atomic_right( numerator , y ) ;
+
+  // add one to it
+  for( i = 0 ; i < NC ; i++ ) {
+    numerator[i*(NC+1)] += 1.0 ;
+  }
+
+  // multiply on the left by z
+  multab_atomic_left( numerator , z ) ;
+
+  // multiply by 2^NROOTS-1
+  const GLU_complex SCALE = -I * (double)( 2 << ( NROOTS - 1 ) ) ;
+  for( i = 0 ; i < NCNC ; i++ ) {
+    Q[i] = SCALE * numerator[i] ;
+  }
+  return ;
+}
+
 //  Analytic brute force Logarithm, it is v. expensive!
 //
 //  It computes 

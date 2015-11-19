@@ -20,9 +20,28 @@
    @file taylor_logs.h
    @brief Taylor series approximations to the logarithm of a link matrix.
  */
-
 #ifndef GLU_TAYLOR_LOGS_H
 #define GLU_TAYLOR_LOGS_H
+
+/**
+   @fn void asinh_log( GLU_complex *__restrict Q , const GLU_complex *__restrict U )
+   @brief computes the logarithm of a Unitary matrix
+   @param Q :: the logarithm of U
+   @param U :: Unitary or special unitary matrix
+   
+   The series of asinh goes as
+
+   asinh(x) = x*( 1 - x^2/6 + 3x^4/40 .... )
+
+   I use a [5,5] pade approximation of the bracketed series
+
+   asinh(x) = x*( 1 + ( -x^2/6 + ... ) / ( 1 + ... ) )
+
+   Here, we use x = ( U - U^{\dagger} ) / 2
+ */
+void
+asinh_log( GLU_complex *__restrict Q , 
+	   const GLU_complex *__restrict U ) ;
 
 /**
    @fn void brute_force_log( GLU_complex *__restrict Q , const GLU_complex *__restrict U , const int NROOTS ) ;
