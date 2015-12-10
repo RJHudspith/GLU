@@ -36,7 +36,7 @@
 #endif
 
 // global maximum smearing direction ( ND-1 == SPATIAL , ND == ALL_DIRECTIONS )
-static int MAXDIR ;
+static int MAXDIR = 0 ;
 static GLU_real smear_alphas[ ND ] , one_minus_smalpha[ ND ] ;
 
 // just for simplicity

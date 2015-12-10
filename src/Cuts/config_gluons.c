@@ -377,11 +377,14 @@ cuts_struct_configspace( struct site *__restrict A ,
 
   // normalisations :: LVOLUME is the FFT norm
   const double spat_norm = 1.0 / ( ( ND-1 ) * LCU * LVOLUME ) ;
-  
+
+  // flag whether it worked or not
+  int FLAG = GLU_FAILURE ;
+
   // spatial correlator from the convolution in momentum space
   if( spatial_correlator( A , gsp , spat_norm , 
 			  CUTINFO.max_t ) == GLU_FAILURE ) {
-    return GLU_FAILURE ;
+    goto memfree ;
   }
 
   // write out the timeslice list ...
@@ -394,10 +397,20 @@ cuts_struct_configspace( struct site *__restrict A ,
   // tell us where we are writing out to
   printf( "[CUTS] data written to %s \n" , str ) ;
 
+  // we are so successful
+  FLAG = GLU_SUCCESS ;
+
+ memfree :
+
+  // close the file
+  fclose( Ap ) ;
+  // and its name
+  free( str ) ;
+
   // and free the gluon correlator
   free( gsp ) ;
 
-  return GLU_SUCCESS ;
+  return FLAG ;
 }
 
 #undef LT // clean it up?

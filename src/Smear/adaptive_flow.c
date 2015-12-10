@@ -200,6 +200,9 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   double flow = 0. , flow_next = 0. ;
   int count = 0 , OK_STEPS = 0 , NOTOK_STEPS = 0 ; 
 
+  // have a flag for whether we mess up
+  int FLAG = GLU_FAILURE ;
+
   // loop up to smiters
   for( count = 1 ; count <= smiters ; count++ ) { 
     curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
@@ -263,11 +266,14 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
       const double del_temp =  ADAPTIVE_SAFE * delta_t * pow( errmax , ADAPTIVE_SHRINK ) ; 
       // set up a tolerance s.t del_temp doesn't go too crazy, only really used when starting guess is bad
       const double tol = 0.1 * delta_t ; 
-      delta_t = ( 0. < del_temp ? adaptfmax( del_temp , tol ) : adaptfmin( del_temp , tol ) ) ;
+      delta_t = ( 0. < del_temp ?			\
+		  adaptfmax( del_temp , tol ) :		\
+		  adaptfmin( del_temp , tol ) ) ;
 
       // Print if we are in trouble
       if( counter == ADAPTIVE_BIG_NUMBER - 1 ) {
 	printf( "[WFLOW] Not stepping to required accuracy after < %d > attempts! \n" , counter ) ;
+	goto memfree ;
       }
 
       // Increment our counter ...
@@ -277,12 +283,6 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
     // set up a scaling parameter to control the adaptation uses a first order finite difference def ...
     const double yscal_new = new_plaq ;
     yscal = 2.0 * yscal_new - yscal ;
-
-    // If we get stuck in a rut of updating by zero we leave
-    if( fabs( delta_t ) < DBL_MIN ) {
-      printf( "[WFLOW] No update made delta_t :: %1.5e \nLeaving ... \n" , delta_t ) ;  
-      return GLU_FAILURE ;
-    }
 
     // rewrite lat .. 
     int i ;
@@ -310,6 +310,12 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
     // approximate the derivative
     double wapprox = ( flow_next - flow ) * curr -> time / delta_t ;
     flow = flow_next ;
+
+    // If we get stuck in a rut of updating by zero we leave
+    if( fabs( delta_t ) < DBL_MIN ) {
+      printf( "[WFLOW] No update made delta_t :: %1.5e \nLeaving ... \n" , delta_t ) ; 
+      goto memfree ;
+    }
 
     // perform fine measurements around T0_STOP for t_0
     if( fabs( T0_STOP - flow ) <= ( T0_STOP * FINETWIDDLE ) ) {
@@ -351,7 +357,6 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
 			       &flow_next , &t , delta_t , 
 			       errmax * ADAPTIVE_EPS , SM_TYPE ) ;
       count++ ;
-      flow = flow_next ;
       curr -> next = head ;
       head = curr ;
       break ;
@@ -375,10 +380,15 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
     scaleset( curr , T0_STOP , W0_STOP , count ) ;
   }
 
+  // we are successful
+  FLAG = GLU_SUCCESS ;
+
+ memfree :
+
   // and free the list
-  while( head != NULL ) {
-    free( head ) ;
+  while( ( curr = head ) != NULL ) {
     head = head -> next ; 
+    free( curr ) ;
   }
   
   // free our fields
@@ -388,7 +398,7 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   free( lat4 ) ;
   free( lat_two ) ;
 
-  return GLU_SUCCESS ;
+  return FLAG ;
 }
 
 // if we have set the code in "TIME_ONLY" mode we make sure we clean it up

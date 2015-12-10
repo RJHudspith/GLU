@@ -101,25 +101,15 @@ gtrans_log( GLU_complex A[ NCNC ] ,
 #include <immintrin.h>
 #include "SSE2_OPS.h"
 
-static void
-print_m128d( const char *message , const __m128d a ) 
-{
-   double complex A ;
-  _mm_store_pd( (void*)&A , a ) ;
-  printf( "%s :: %1.12f %1.12f \n" , message ,
-	  creal( A ) , cimag( A ) ) ;
-  return ;
-}
-
 static inline double
 Re_trace_abc_dag_suNC( const GLU_complex a[ NCNC ] , 
 		       const GLU_complex b[ NCNC ] , 
 		       const GLU_complex c[ NCNC ] )
 {
+#if NC == 3
   __m128d *A = ( __m128d* )a ;
   const __m128d *B = ( const __m128d* )b ;
   const __m128d *C = ( const __m128d* )c ;
-#if NC == 3
   //const GLU_complex a0 = ( a[0] * b[0] + a[1] * b[3] + a[2] * b[6] ) ;
   const __m128d a0 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 0 ) ) ,
 				 _mm_add_pd( SSE2_MUL( *( A + 1 ) , *( B + 3 ) ) ,
@@ -165,6 +155,9 @@ Re_trace_abc_dag_suNC( const GLU_complex a[ NCNC ] ,
   _mm_store_pd( (void*)&csum , sum ) ;
   return creal( csum ) ;  
 #elif NC==2
+  __m128d *A = ( __m128d* )a ;
+  const __m128d *B = ( const __m128d* )b ;
+  const __m128d *C = ( const __m128d* )c ;
   // puts the four parts of the sum into the upper and lower parts of 
   // two SSE-packed double words
   const __m128d a0 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 0 ) ) ,

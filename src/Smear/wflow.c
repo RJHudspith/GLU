@@ -150,9 +150,9 @@ flow4d_RK_fast( struct site *__restrict lat ,
   }
 
   // free the list
-  while( head != NULL ) {
-    free( head ) ;
+  while( ( curr = head ) != NULL ) {
     head = head -> next ; 
+    free( curr ) ;
   }
 
   // free our fields
@@ -281,9 +281,9 @@ flow4d_RK_slow( struct site *__restrict lat ,
   }
 
   // free the list
-  while( head != NULL ) {
-    free( head ) ;
+  while( ( curr = head ) != NULL ) {
     head = head -> next ; 
+    free( curr ) ;
   }
 
   // free our fields

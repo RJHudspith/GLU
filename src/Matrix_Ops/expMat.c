@@ -25,16 +25,8 @@
 #include "effs.h"     // compute the f-constants of Cayley-Hamilton
 #include "solver.h"   // characteristic equation eigensolver
 
-// Taylor Expansion coefficients
-static const double r3 = 1.7320508075688772935 ;
-static const double nineOtwenty = 0.45 ;                   // 9./20.
-static const double oneOsix = 0.16666666666666666667 ;     // 1./6.
-static const double oneOtwelve = 0.083333333333333333333 ; // 1./12.
-static const double oneOfifteen = 0.066666666666666666667 ; // 1./15.
-static const double oneOtwenty = 0.05 ;                    // 1./20.
-static const double oneOtwentysix = 0.038461538461538461538 ; // 1./26.
-static const double oneOsixty = 0.016666666666666666667 ;  // 1./60.
-static const double oneOfortytwo = 0.023809523809523809524 ; // 1./42.
+// sqrt of three appears everywhere
+#define r3 (1.7320508075688772935)
 
 // if we don't have easier options we need some routines defined elsewhere
 #if !( defined HAVE_LAPACKE_H || defined HAVE_GSL ) && ( NC > 3 )
@@ -235,7 +227,7 @@ exponentiate( GLU_complex U[ NCNC ] ,
   two *= two ;
  
   // taylor expand if getting toward the numerically unstable end
-  const double E0 = fabs( w ) < SINTOL ? ( 1 - ww * oneOsix * ( 1 - ww * oneOtwenty * ( 1 - ww * oneOfortytwo ) ) ) : sin( w ) / w ; 
+  const double E0 = fabs( w ) < SINTOL ? ( 1 - ww / 6. * ( 1 - ww / 20. * ( 1 - ww / 42. ) ) ) : sin( w ) / w ; 
 
   double complex f0 = ( uu - ww ) * two + one * ( 8. * uu * cw + 2. * I * u * ( 3. * uu + ww ) * E0 ) ; 
   double complex f1 = 2. * u * two - one * ( 2. * u * cw - I * ( 3. * uu - ww ) * E0 ) ; 
@@ -285,7 +277,7 @@ exponentiate( GLU_complex U[ NCNC ] ,
   // have eigenvalues, now for the "fun" bit.
   f0 = cos( z ) ;
   // taylor expand 
-  f1 = fabs ( z ) < SINTOLSU2 ? ( 1 - z * oneOsix * ( 1 - z * oneOtwenty * ( 1 - z * oneOfortytwo ) ) ) : sin( z ) / z ;
+  f1 = fabs ( z ) < SINTOLSU2 ? ( 1 - z / 6. * ( 1 - z / 20. * ( 1 - z / 42. ) ) ) : sin( z ) / z ;
 
   const double complex f1Q0 = I * f1 * creal( Q[0] ) ;
   const double complex f1Q1 = I * f1 * Q[1] ;
@@ -448,7 +440,7 @@ exponentiate_short( GLU_complex U[ NCNC ] ,
   two *= two ;
 
   // taylor expand if getting toward the numerically unstable end
-  const double E0 = fabs( w ) < SINTOL ? ( 1 - ww * oneOsix * ( 1 - ww * oneOtwenty * ( 1 - ww * oneOfortytwo ) ) ) : sin( w ) / w ; 
+  const double E0 = fabs( w ) < SINTOL ? ( 1 - ww / 6. * ( 1 - ww / 20. * ( 1 - ww / 42. ) ) ) : sin( w ) / w ; 
 
   double complex f0 = ( uu - ww ) * two + one * ( 8 * uu * cw + 2 * I * u * ( 3 * uu + ww ) * E0 ) ; 
   double complex f1 = 2. * u * two - one * ( 2. * u * cw - I * ( 3 * uu - ww ) * E0 ) ; 
@@ -503,7 +495,7 @@ exponentiate_short( GLU_complex U[ NCNC ] ,
   // have eigenvalues, now for the "fun" bit.
   f0 = cos( z ) ;
   // taylor expand 
-  f1 = fabs ( z ) < SINTOLSU2 ? ( 1.0 - z * oneOsix * ( 1 - z * oneOtwenty * ( 1 - z * oneOfortytwo ) ) ) : sin( z ) / z ;
+  f1 = fabs ( z ) < SINTOLSU2 ? ( 1.0 - z / 6. * ( 1 - z / 20. * ( 1 - z / 42. ) ) ) : sin( z ) / z ;
 
   const double complex f1Q0 = I * f1 * Q[0] ;
   const double complex f1Q1 = I * f1 * Q[1] ;
@@ -584,18 +576,18 @@ approx_exp( GLU_complex U[ NCNC ] ,
   // Taylor expand the living these values.
   double series = c0 / c0_max ;   
   const double sseries = series * series ; 
-  const double theta = PIOtwo - series * (  1 + sseries * oneOsix * (  1 + sseries * nineOtwenty  ) ) * OneO3 ; 
+  const double theta = PIOtwo - series * (  1 + sseries / 6. * (  1 + sseries * 9 / 20.  ) ) * OneO3 ; 
 
   series = theta * theta ;
-  const double u = rc1 * (  1 - series * (  0.5 - series * oneOtwelve * ( 0.5 - series * oneOsixty  ) ) ) ; 
-  const double w = rc1 * r3 * ( theta * ( 1 - series * oneOsix * (  1 - series * oneOtwentysix ) ) ) ; 
+  const double u = rc1 * (  1 - series * (  0.5 - series / 12. * ( 0.5 - series / 60.  ) ) ) ; 
+  const double w = rc1 * r3 * ( theta * ( 1 - series / 6. * (  1 - series / 26. ) ) ) ; 
   const double uu = u * u  ,  ww = w * w  ;
-  const double cw = 1 - ww * (  0.5 - ww * oneOtwelve * ( 0.5 - ww * oneOsixty ) )  ; 
+  const double cw = 1 - ww * (  0.5 - ww / 12. * ( 0.5 - ww / 60. ) )  ; 
   const double denom = 1.0 / ( 9. * uu - ww ) ;
-  const double E0 = 1 - ww * oneOsix * ( 1 - ww * oneOtwenty * ( 1 - ww * oneOfortytwo ) ) ; 
+  const double E0 = 1 - ww / 6. * ( 1 - ww / 20. * ( 1 - ww / 42. ) ) ; 
   //cos( u ) - i*sin( u )
-  const double cu = 1 - uu * ( 0.5 - uu * oneOsix * ( 0.5 - uu * oneOfifteen ) ) ;
-  const double su = u * (  1 - uu * oneOsix * (  1 - uu * oneOtwenty * ( 1 - uu * oneOfortytwo ) ) ) ; 
+  const double cu = 1 - uu * ( 0.5 - uu / 6. * ( 0.5 - uu / 15. ) ) ;
+  const double su = u * (  1 - uu / 6. * (  1 - uu / 20. * ( 1 - uu / 42. ) ) ) ; 
   const double complex one = cu - I * su ;
   double complex two = cu + I * su ;
   two *= two ;
@@ -605,9 +597,9 @@ approx_exp( GLU_complex U[ NCNC ] ,
   double complex f2 = two - one * ( cw + 3. * I * u * E0 ) ; 
 
   if( flag == 1 ) {
-    f0 = conj( f0 ) ;
+    f0 =  conj( f0 ) ;
     f1 = -conj( f1 ) ;
-    f2 = conj( f2 ) ;
+    f2 =  conj( f2 ) ;
   }
 
   f0 *= denom ; 
@@ -716,18 +708,18 @@ approx_exp_short( GLU_complex U[ NCNC ] ,
   // Taylor expand these values as much as we can
   double series = c0 / c0_max ;   
   const double sseries = series * series ; 
-  const double theta = PIOtwo - series * (  1 + sseries * oneOsix * (  1 + sseries * nineOtwenty  ) ) * OneO3 ; 
+  const double theta = PIOtwo - series * (  1 + sseries / 6. * (  1 + sseries * 9./20.  ) ) / 3. ; 
 
   series = theta * theta ;
-  const double u = rc1 * (  1 - series * (  0.5 - series * oneOtwelve * ( 0.5 - series * oneOsixty  ) ) ) ; 
-  const double w = rc1 * r3 * ( theta * ( 1 - series * oneOsix * (  1 - series * oneOtwentysix ) ) ) ; 
+  const double u = rc1 * (  1 - series * (  0.5 - series/12. * ( 0.5 - series /60.  ) ) ) ; 
+  const double w = rc1 * r3 * ( theta * ( 1 - series/6. * (  1 - series /26. ) ) ) ; 
   const double uu = u * u  ,  ww = w * w  ;
-  const double cw = 1 - ww * (  0.5 - ww * oneOtwelve * ( 0.5 - ww * oneOsixty ) )  ; 
+  const double cw = 1 - ww * (  0.5 - ww/12. * ( 0.5 - ww/60. ) )  ; 
   const double denom = 1.0 / ( 9. * uu - ww ) ;
-  const double E0 = 1 - ww * oneOsix * ( 1 - ww * oneOtwenty * ( 1 - ww * oneOfortytwo ) ) ; 
+  const double E0 = 1 - ww/6. * ( 1 - ww/20. * ( 1 - ww/42. ) ) ; 
   //cos( u ) - i*sin( u )
-  const double cu = 1 - uu * ( 0.5 - uu * oneOsix * ( 0.5 - uu * oneOfifteen ) ) ;
-  const double su = u * (  1 - uu * oneOsix * (  1 - uu * oneOtwenty * ( 1 - uu * oneOfortytwo ) ) ) ; 
+  const double cu = 1 - uu * ( 0.5 - uu/6. * ( 0.5 - uu/15. ) ) ;
+  const double su = u * (  1 - uu/6. * (  1 - uu/20. * ( 1 - uu/42. ) ) ) ; 
   const double complex one = cu - I * su ;
   double complex two = cu + I * su ;
   two *= two ;
@@ -785,6 +777,9 @@ approx_exp_short( GLU_complex U[ NCNC ] ,
 #endif
   return ;
 }
+
+// clean up r3
+#undef r3
 
 // and clear it up
 #if !( defined HAVE_LAPACKE_H || defined HAVE_GSL ) && ( NC > 3 )

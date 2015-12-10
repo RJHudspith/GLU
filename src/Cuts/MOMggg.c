@@ -82,7 +82,7 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
   read_trip( trip , nnmax ) ;
 
   int nn , counter[ 1 ] ;
-  counter[ 0 ] = 0 ; 
+  counter[ 0 ] = 1 ; 
   for( nn = 0 ; nn < nnmax/2 ; nn++ ) {
     counter[ 0 ] += trip[ nn ] ;
   }

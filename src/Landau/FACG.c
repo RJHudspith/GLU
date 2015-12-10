@@ -394,9 +394,6 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
   // compute the quantity Tr( dA dA )
   double in_old_sum = sum_deriv( (const GLU_complex**)in , LVOLUME ) ;
 
-  // initialise this to the one provided in the input file
-  double spline_min = Latt.gf_alpha ;
-
   // loop a set number of CG-iterations
   int iters = 0 ;
   while( ( *tr > acc ) && ( iters < max_iters ) ) {
@@ -435,10 +432,9 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
     }
 
     // do a line search
+    double spline_min = Latt.gf_alpha ;
     if( *tr > CG_TOL ) {
       spline_min = line_search( gauge , lat , (const GLU_complex**)sn ) ;
-    } else {
-      spline_min = Latt.gf_alpha ;
     }
 
     #ifdef verbose

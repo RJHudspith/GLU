@@ -59,8 +59,6 @@ static inline uint32_t
 magic_number( void ) { return header.int32[0] ; }
 static inline uint16_t
 header_version( void ) { return header.int16[2] ; }
-static inline unsigned char
-header_mbme( void ) { return header.uchr[6] ; }
 
 static unsigned char *lime_hdr_rec_type = &header.uchr[16] ;
 
@@ -182,10 +180,12 @@ parse_SCIDAC_hdr( FILE *infile ,
   free( io_data ) ;
 
   // and skip the file along by "padding" amount
-  char pad_str[ padding ] ;
-  if( fread( pad_str , sizeof( char ) , padding , infile ) != padding ) {
-    printf( "[IO] Reading of padded data failed \n" ) ;
-    return GLU_FAILURE ;
+  if( padding > 0 ) {
+    char pad_str[ padding ] ;
+    if( fread( pad_str , sizeof( char ) , padding , infile ) != padding ) {
+      printf( "[IO] Reading of padded data failed \n" ) ;
+      return GLU_FAILURE ;
+    }
   }
 
   return GLU_SUCCESS ;

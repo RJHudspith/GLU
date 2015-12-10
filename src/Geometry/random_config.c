@@ -66,17 +66,11 @@ random_gtrans( struct site *__restrict lat )
   printf( "\n[RNG] Performing a RANDOM gauge transformation \n" ) ;
 
   GLU_complex **gauge = malloc ( LVOLUME * sizeof( GLU_complex * ) ) ;
-  int i ; 
-#pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+  size_t i ; 
+  for( i = 0 ; i < LVOLUME ; i++ ) {
     gauge[i] = malloc ( NCNC * sizeof( GLU_complex ) ) ;
-  }
-
-  // openmp does not play nice with static arrays used in the WELL and MWC_1038
-  for( i = 0 ; i < LVOLUME ; i++ ) { generate_NCxNC( gauge[i] ) ; }
- 
-  #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {    
+    // openmp does not play nice with static arrays in the WELL and MWC_1038
+    generate_NCxNC( gauge[i] ) ;
     #if NC > 5 && ( ( defined HAVE_GSL ) || ( defined HAVE_LAPACKE_H ) )
     GLU_complex A[ NCNC ] ;
     Hermitian_proj( A , gauge[i] ) ;
@@ -85,9 +79,7 @@ random_gtrans( struct site *__restrict lat )
     reunit2( gauge[i] ) ;
     #endif
   }
-
   gtransform( lat , ( const GLU_complex ** )gauge ) ; 
-
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) { 
     int mu ;

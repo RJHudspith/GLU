@@ -33,7 +33,7 @@
   #include <gsl/gsl_eigen.h>
 #endif
 
-static const double complex rr3 = I * 1.7320508075688772 ;
+#define rr3 (I * 1.7320508075688772)
 
 // CALCULATES (one of) THE CUBE ROOT(s) //
 inline void 
@@ -129,12 +129,11 @@ rayliegh_quotient( GLU_complex v[ NC ] ,
 #endif
 
 // CALCULATION OF THE COMPLEX SQUARE ROOT WITH CONDITION Re( R*sqrt( R^2+g^3 ) )>=0 very slow apparently -> retired //
-inline void 
+void 
 squarert( double complex *__restrict res ,
 	  const double complex z ,
 	  const double complex R )
 {
-  //register const double real = sqrt( creal(z)*creal(z) + cimag(z)*cimag(z) ) ; 
   register const double real = cabs( z ) ;
   register const double angle = carg( z ) * 0.5 ;
   const double temp = sqrt( real ) * ( cos( angle ) + I * sin( angle ) ) ; 
@@ -143,7 +142,7 @@ squarert( double complex *__restrict res ,
 }
 
 // one that returns the root
-static inline double complex 
+double complex 
 squarert2( const double complex z ,
 	   const double complex R )
 {
@@ -357,6 +356,8 @@ Eigenvalues_suNC( double complex z[ NC ] ,
 #endif
   return ;
 }
+
+#undef rr3
 
 
 

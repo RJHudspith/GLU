@@ -58,17 +58,17 @@
 
 // improvement factors from the bilson-thompson paper ...
 #ifndef NK5
-  static GLU_real fClover_k1 ;
-  static GLU_real fClover_k2 ;
-  static GLU_real fClover_k3 ;
-  static GLU_real fClover_k4 ;
-  static GLU_real fClover_k5 ;
+   GLU_real fClover_k1 ;
+   GLU_real fClover_k2 ;
+   GLU_real fClover_k3 ;
+   GLU_real fClover_k4 ;
+   GLU_real fClover_k5 ;
 #else
-  static const GLU_real fClover_k1 = 19./9. ;
-  static const GLU_real fClover_k2 = 1./36. ;
-  static const GLU_real fClover_k3 = 32./90. ;
-  static const GLU_real fClover_k4 = 1./30. ;
-  static const GLU_real fClover_k5 = 0.0 ;
+   const GLU_real fClover_k1 = 19./9. ;
+   const GLU_real fClover_k2 = 1./36. ;
+   const GLU_real fClover_k3 = 32./90. ;
+   const GLU_real fClover_k4 = 1./30. ;
+   const GLU_real fClover_k5 = 0.0 ;
 #endif
 
 #if ND == 4 /// this definition is only correct for ND = 4

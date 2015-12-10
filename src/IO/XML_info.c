@@ -42,7 +42,6 @@ are_equal( const char *pch , const char *tag )
   my code for understanding the xml is similar to theirs
  */
 inline static char *realFront(char *string) { return string + strspn(string, " \t"); }
-inline static size_t realLen(char *string) { return strcspn(realFront(string), " \t") ; }
 
 // returns 0 if there is nothing else returns the value we
 // are looking for

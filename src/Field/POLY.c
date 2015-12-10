@@ -191,11 +191,13 @@ static_quark_correlator( double complex *__restrict result ,
   // FFTW routines
   GLU_complex *in = fftw_malloc( LCU * sizeof( GLU_complex ) ) ;
   GLU_complex *out = fftw_malloc( LCU * sizeof( GLU_complex ) ) ;
-  GLU_complex **slice_poly = malloc( LCU * sizeof( GLU_complex ) ) ;
+  GLU_complex **slice_poly = NULL ;
+  slice_poly = malloc( LCU * sizeof( GLU_complex* ) ) ;
 
   int i ;
 #pragma omp parallel for private(i)
   for( i = 0 ; i < LCU ; i++ ) {
+    slice_poly[i] = NULL ;
     GLU_malloc( (void**)&slice_poly[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
   }
 
@@ -314,6 +316,8 @@ Coul_staticpot( struct site *__restrict lat ,
   // important!! T is the length of the polyakov loop in time direction
   const int T = CUTINFO.max_t ;
 
+  if( T < 1 || LVOLUME < 1 ) return GLU_FAILURE ;
+
   //
   printf( "\n[STATIC-POTENTIAL] measurements at T = %d\n" , T ) ;
 
@@ -326,7 +330,9 @@ Coul_staticpot( struct site *__restrict lat ,
 
   // precompute the correlator
   // compute all of the poly loops, lattice-wide
-  GLU_complex **poly = malloc( LVOLUME * sizeof( GLU_complex* ) ) ;
+  GLU_complex **poly = NULL ;
+  poly = malloc( LVOLUME * sizeof( GLU_complex* ) ) ;
+
   int i ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) { 

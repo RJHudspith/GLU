@@ -91,23 +91,19 @@ multab_dagdag( GLU_complex a[ NCNC ] ,
   *( A + 3 ) = _mm_add_pd( SSE2_MUL_CONJCONJ( *( B + 1 ) , *( C + 2 ) ) ,
 			   SSE2_MUL_CONJCONJ( *( B + 3 ) , *( C + 3 ) ) ) ;
 #else
-  int i , j , m ;
-  register GLU_complex sumr = 0.0 , sumi = 0.0 ;
-  register GLU_real REB , IMB , REC , IMC ;
-  const GLU_complex *pC , *pB ;
+  size_t i , j , m ;
+  register __m128d sum ;
+  const __m128d *pC , *pB ;
   for( i = 0 ; i < NC ; i++ ) {
-    pC = c ;
+    pC = C ;
     for( j = 0 ; j < NC ; j++ ) {
-      pB = b ;
-      sumr = sumi = 0.0 ;
+      pB = B ;
+      sum = _mm_setzero_pd( ) ;
       for( m = 0 ; m < NC ; m++ ) {
-	REB = creal( pB[i] ) ; IMB = cimag( pB[i] ) ;
-	REC = creal( pC[m] ) ; IMC = cimag( pC[m] ) ;
-	sumr += REB * REC - IMB * IMC ;
-	sumi += REB * IMC + IMB * REC ;
+	sum = _mm_add_pd( sum , SSE2_MUL_CONJCONJ( pB[i] , pC[m] ) ) ;
 	pB += NC ;
       }
-      a[ j + NC*i ] = sumr + I * sumi ;
+      *A++ = sum ;
       pC += NC ;
     }
   }

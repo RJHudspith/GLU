@@ -118,13 +118,15 @@ residual_fix( struct site *__restrict lat )
   int i ;
 
   // temporal gauge transformation matrices
-  GLU_complex **gauge = malloc( Latt.dims[ND-1] * sizeof( GLU_complex* ) ) ;
+  GLU_complex **gauge = NULL ;
+  
+  // set these
+  gauge = malloc( Latt.dims[ND-1] * sizeof( GLU_complex* ) ) ;
   for( i = 0 ; i < Latt.dims[ND-1] ; i++ ) {
     GLU_malloc( (void**)&gauge[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
+    if( i == 0 ) identity( gauge[0] ) ;
   } 
 
-  // puts the transform at slice "t" in gauge
-  identity( gauge[0] ) ;
   const GLU_real one_LCU = 1.0 / LCU ; 
   int t ;
   for( t = 0 ; t < Latt.dims[ND-1]-1 ; t++ ) {
@@ -136,7 +138,8 @@ residual_fix( struct site *__restrict lat )
     // turn it into the average ... not needed?
     for( i = 0 ; i < NCNC ; i++ ) { sum[i] *= one_LCU ; }
 
-    // project the sum of the temporal links back to SU(NC) two ways of doing this I can think of
+    // project the sum of the temporal links back to SU(NC) 
+    // two ways of doing this I can think of
     #ifdef HERM_PROJ
     // 1. Hermitian projection and exact exponentiation
     GLU_complex A[ NCNC ] ;
@@ -147,32 +150,10 @@ residual_fix( struct site *__restrict lat )
     givens_reunit( sum ) ;
     #endif
 
-    // and multiply the next gauge transformations with the previous and this one!
+    // and multiply the next gauge transformations with the 
+    // previous and this one!
     multab_suNC( gauge[t+1] , gauge[t] , sum ) ;
   } 
-  // test whether this does actually diagonalise the sum
-  #ifdef DEBUG_RESFIX
-  for( t = 0 ; t < Latt.dims[ND-1] ; t++ ) {
-    GLU_complex sum[ NCNC ] = {} ;
-    for( i = 0 ; i < LCU ; i++ ) {
-      a_plus_b( sum , lat[ i + LCU*t ].O[ND-1] ) ;
-    }
-
-    #ifdef HERM_PROJ
-    GLU_complex A[ NCNC ] ;
-    Hermitian_proj( A , sum ) ;
-    exponentiate( sum , A ) ;
-    #else
-    givens_reunit( sum ) ;
-    #endif
-
-    GLU_complex temp[ NCNC ] ;
-    const int tup = ( t == Latt.dims[ND-1]-1 ) ? 0 : t+1 ;
-    multab_dag_suNC( temp , sum , gauge[tup] ) ;
-    multab_suNC( sum , gauge[t] , temp ) ;
-    write_matrix( sum ) ;
-  }
-  #endif
 #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     GLU_complex temp[ NCNC ] ;
@@ -192,5 +173,10 @@ residual_fix( struct site *__restrict lat )
       #endif
     }
   }
+  // free the temporary gauges
+  for( i = 0 ; i < Latt.dims[ND-1] ; i++ ) {
+    free( gauge[i] ) ;
+  }
+  free( gauge ) ;
   return ;
 }

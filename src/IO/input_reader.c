@@ -126,7 +126,7 @@ setdbl( double *val ,
 static int
 confno( void )
 {
-  int conf ;
+  int conf = GLU_FAILURE ;
   if( setint( &conf , "CONFNO" ) == GLU_FAILURE ) {
     printf( "[IO] I do not understand CONFNO %d \n" , conf ) ;
     printf( "[IO] CONFNO should be greater than 0\n" ) ;

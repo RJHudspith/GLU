@@ -34,11 +34,6 @@
   #include "taylor_logs.h"
 #endif
 
-// taylor expansion coeffs
-static const double oneOsix = 0.16666666666666666667 ;
-static const double oneOtwenty = 0.05 ;
-static const double oneOfortytwo = 0.023809523809523809524 ;
-
 // compute eigenvectors from s ,  put into v ,  need eigenvalues z//
 static void 
 vectors( v , U , z )
@@ -59,7 +54,6 @@ vectors( v , U , z )
       S[i] = ( i%( NC+1 ) == 0 ) ? U[i] - (GLU_complex)z[j] : U[i] ;
     }
     #endif
- 
     // computes the adjunct of S //
     cofactor_transpose( B , S ) ; 
     //loop through B //
@@ -409,7 +403,7 @@ exact_log_slow_short( GLU_complex Q[ HERMSIZE ] ,
   // we only allow the taylor expansion at a very low acc to allow the 3D
   // hyl smearing to not get stuck, this is similar to the problem I saw with
   // the su2 log and stout expansions
-  const double E0 = fabs( w ) < STOL ? 1 - ww * oneOsix * ( 1 - ww * oneOtwenty * ( 1 - ww * oneOfortytwo ) ) : sin( w ) / w ; 
+  const double E0 = fabs( w ) < STOL ? 1 - ww / 6. * ( 1 - ww / 20. * ( 1 - ww / 42. ) ) : sin( w ) / w ; 
   
   //const register double twou = 2. * u ;
   f[0] = ( uu - ww ) * two1 + one1 * ( 8 * uu * cw + I * 2 * u * ( 3 * uu + ww ) * E0 ) ; 

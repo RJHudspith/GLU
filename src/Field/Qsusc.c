@@ -82,6 +82,9 @@ compute_Qsusc( struct site *__restrict lat ,
 
   // allocate the results
   double *qcorr = malloc( size[0] * sizeof( double ) ) ; 
+
+  // flag for success or failure
+  int FLAG = GLU_FAILURE ;
   
   // if we have fftw, use it for the contractions
 #ifdef HAVE_FFTW3_H
@@ -89,8 +92,7 @@ compute_Qsusc( struct site *__restrict lat ,
   // init parallel threads, maybe
   if( parallel_ffts( ) == GLU_FAILURE ) {
     printf( "[PAR] Problem with initialising the OpenMP FFTW routines \n" ) ;
-    // should clean up the memory here
-    return GLU_FAILURE ;
+    goto memfree ;
   }
 
   // FFT Gmunu
@@ -156,6 +158,11 @@ compute_Qsusc( struct site *__restrict lat ,
 
   // tell us where to go
   printf( "[CUTS] Outputting to %s \n" , str ) ;
+  
+  // we are quite successful if we get here
+  FLAG = GLU_SUCCESS ;
+
+ memfree :
 
   // write out the result of all that work
   write_g2_to_list( Ap , qcorr , size ) ;
@@ -171,5 +178,5 @@ compute_Qsusc( struct site *__restrict lat ,
   // free the list
   free( list ) ;
 
-  return GLU_SUCCESS ;
+  return FLAG ;
 }

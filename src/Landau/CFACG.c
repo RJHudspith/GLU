@@ -253,13 +253,14 @@ steep_step_SD( const struct site *__restrict lat ,
   // if we want to Fourier accelerate, we call this otherwise it is the SD
   FOURIER_ACCELERATE( in , out , forward , backward , psq , LCU ) ;
 
-#if (defined GLU_GFIX_SD) || (defined GLU_FR_CG)
-  const double spline_min = Latt.gf_alpha ;
-#else
-  const double spline_min = line_search_Coulomb( gtransformed , 
-						 (const GLU_complex**)slice_gauge , lat , 
-						 (const GLU_complex**)in , t ) ;
+  double spline_min = Latt.gf_alpha ;
+  if( gtransformed != NULL ) {
+#if !(defined GLU_GFIX_SD) && !(defined GLU_FR_CG)
+    spline_min = line_search_Coulomb( gtransformed , 
+				      (const GLU_complex**)slice_gauge , lat , 
+				      (const GLU_complex**)in , t ) ;
 #endif
+  }
   // exponentiate this
   exponentiate_gauge_CG( slice_gauge , (const GLU_complex**)in , spline_min ) ;
   return ;
@@ -387,9 +388,6 @@ steep_step_FACG( const struct site *__restrict lat ,
   // compute the quantity Tr( dA dA )
   double in_old_sum = sum_deriv( (const GLU_complex**)in , LCU ) ;
 
-  // initialise this
-  double spline_min = Latt.gf_alpha ;
-
   // loop a set number of CG-iterations
   int iters = 0 ;
   while( ( *tr > accuracy ) && ( iters < max_iters ) ) {
@@ -428,12 +426,11 @@ steep_step_FACG( const struct site *__restrict lat ,
     }
 
     // line search up to a tolerance
+    double spline_min = Latt.gf_alpha ;
     if( *tr > CG_TOL ) { 
       spline_min = line_search_Coulomb( gtransformed , 
 					(const GLU_complex**)gauge , lat , 
 					(const GLU_complex**)sn , t ) ;
-    } else {
-      spline_min = Latt.gf_alpha ;
     }
 
     #ifdef verbose
@@ -557,12 +554,6 @@ Coulomb_FACG( struct site  *__restrict lat ,
   GLU_complex **slice_gauge_end = malloc( LCU * sizeof( GLU_complex* ) ) ;
   GLU_complex **slice_gauge_up  = malloc( LCU * sizeof( GLU_complex* ) ) ; 
 
-  // allocate rotato
-  struct sp_site_herm *rotato = NULL ; 
-  if( GLU_malloc( (void**)&rotato , 16 , LCU * sizeof( struct sp_site_herm ) ) != 0 ) {
-    return GLU_FAILURE ;
-  }
-
   // allocate traces
   allocate_traces( LCU ) ;
 
@@ -570,23 +561,35 @@ Coulomb_FACG( struct site  *__restrict lat ,
   GLU_complex **sn     = malloc( TRUE_HERM * sizeof( GLU_complex* ) ) ;
   GLU_complex **in_old = malloc( TRUE_HERM * sizeof( GLU_complex* ) ) ;
 
+  // allocate rotato
+  struct sp_site_herm *rotato = NULL ; 
+
+  // flag for if something goes wrong
+  int tot_its = GLU_FAILURE ;
+
+  if( GLU_malloc( (void**)&rotato , 16 , LCU * sizeof( struct sp_site_herm ) ) != 0 ) {
+    goto memfree ;
+  }
+
   int i ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < TRUE_HERM ; i ++  ) {
-    GLU_malloc( (void**)&sn[i] , 16 , LCU * sizeof( GLU_complex ) ) ;
-    GLU_malloc( (void**)&in_old[i] , 16 , LCU * sizeof( GLU_complex ) ) ;
+    if( GLU_malloc( (void**)&sn[i] , 16 , LCU * sizeof( GLU_complex ) ) != 0 ||
+	GLU_malloc( (void**)&in_old[i] , 16 , LCU * sizeof( GLU_complex ) != 0 ) ) {
+      goto memfree ;
+    }
   }
 
   // allocate the transformation matrices
 #pragma omp parallel for private(i) 
   PFOR( i = 0 ; i < LCU ; i++ ) {
-
     // allocations
-    GLU_malloc( (void**)&slice_gauge[i]     , 16 , NCNC * sizeof( GLU_complex ) ) ;
-    GLU_malloc( (void**)&slice_gauge_up[i]  , 16 , NCNC * sizeof( GLU_complex ) ) ;
-    GLU_malloc( (void**)&slice_gauge_end[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
-    GLU_malloc( (void**)&gtransformed[i]    , 16 , NCNC * sizeof( GLU_complex ) ) ;
-
+    if( GLU_malloc( (void**)&slice_gauge[i]     , 16 , NCNC * sizeof( GLU_complex ) ) != 0 ||
+	GLU_malloc( (void**)&slice_gauge_up[i]  , 16 , NCNC * sizeof( GLU_complex ) ) != 0 ||
+	GLU_malloc( (void**)&slice_gauge_end[i] , 16 , NCNC * sizeof( GLU_complex ) ) != 0 ||
+	GLU_malloc( (void**)&gtransformed[i]    , 16 , NCNC * sizeof( GLU_complex ) ) != 0 ) {
+      goto memfree ;
+    }
     //temporary gauges set to identity
     int k ;
     for( k = 0 ; k < NCNC ; k++ ) {
@@ -596,9 +599,9 @@ Coulomb_FACG( struct site  *__restrict lat ,
 
   // OK so we have set up the gauge transformation matrices
   int t = 0 ;// initialise the time direction
-  int tot_its = steep_fix_FACG( lat , slice_gauge_end , out , in , in_old , 
-				sn , rotato , gtransformed , forward , backward , 
-				p_sq , t , accuracy , max_iter ) ; 
+  tot_its = steep_fix_FACG( lat , slice_gauge_end , out , in , in_old , 
+			    sn , rotato , gtransformed , forward , backward , 
+			    p_sq , t , accuracy , max_iter ) ; 
   
   // and t+1
   tot_its += steep_fix_FACG( lat , slice_gauge , out , in , in_old , 
@@ -649,6 +652,8 @@ Coulomb_FACG( struct site  *__restrict lat ,
 		    ( const GLU_complex ** )slice_gauge_end , t - 1 ) ; 
 
   // and free all of that memory, especially rotato
+ memfree :
+
   free( rotato ) ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < TRUE_HERM ; i++ ) {
@@ -762,7 +767,7 @@ Coulomb_FASD( struct site  *__restrict lat ,
     slice_gauge[i]     = calloc( NCNC , sizeof( GLU_complex ) ) ; 
     slice_gauge_up[i]  = calloc( NCNC , sizeof( GLU_complex ) ) ;
     slice_gauge_end[i] = calloc( NCNC , sizeof( GLU_complex ) ) ; 
-
+    slice_gauge_up = NULL ;
     //temporary gauges set to identity
     int k ;
     for( k = 0 ; k < NC ; k++ ) {

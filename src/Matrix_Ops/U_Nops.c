@@ -22,6 +22,7 @@
  */
 
 #include "Mainfile.h"
+#include "LU.h"
 
 // add constant diagonal matrix to a
 inline void
@@ -281,7 +282,7 @@ diag_vect( GLU_complex M[ NCNC ] ,
   M[0] = c[ 0 ] ; M[1] = 0.     ; 
   M[2] = 0.     ; M[3] = c[ 1 ] ;
 #else
-  int i , j , idx = 0 ;
+  int i , j ;
   for( i = 0 ; i < NC ; i++ ) {
     for( j = i+1 ; j < NC ; j++ ) {
       M[ j + i * NC ] = M[ i + j * NC ] = 0.0 ;
@@ -394,69 +395,6 @@ is_unitary( const GLU_complex U[ NCNC ] )
   return problem ; 
 }
 
-//  the column-pivoted LU decomposition determinant
-//  does not save L, just need the diagonal of U as determinant is product
-//  of these elements
-double complex
-LU_det( const int N , const GLU_complex U[ N*N ] )
-{
-  int i , j , l , piv , perms = 0 ;
-  double complex a[ N*N ] , dt , determinant = 1. ;
-
-  // workspace is double precision
-  for( i = 0 ; i < N*N ; i++ ) {
-    a[ i ] = (double complex)U[ i ] ;
-  }
-
-  double attempt , best ; 
-  for( i = 0 ; i < N-1 ; i++ ) {
-    // swap rows s.t a[i] has largest pivot number first
-    best = creal( a[i*(N+1)] ) * creal( a[i*(N+1)] ) 
-         + cimag( a[i*(N+1)] ) * cimag( a[i*(N+1)] ) ;
-    piv = i ;
-    // again only care about the pivots below i
-    for( j = i+1 ; j < N ; j++ ) {
-      attempt = creal( a[i+j*N] ) * creal( a[i+j*N] ) 
-	      + cimag( a[i+j*N] ) * cimag( a[i+j*N] ) ;
-      if( attempt > best ) { 
-	piv = j ; 
-	best = attempt ; 
-      }
-    }
-    if( a[i+piv*N] == 0.0 ) { 
-      printf( "[DETERMINANT] LU  Singular Matrix!!!\n" ) ;
-      return 0.0 ;
-    }
-    if( piv != i ) {
-      // unlike what I am told, I physically swap rows
-      // this is measured to be faster than saving the permutations
-      // which I find quite weird, must be a caching thing
-      for( l = 0 ; l < N ; l++ ) {
-	dt         = a[l+i*N] ;
-	a[l+i*N]   = a[l+piv*N] ;
-	a[l+piv*N] = dt ;
-      }
-      perms++ ;
-    }
-    // perform gaussian elimination
-    dt = 1.0 / a[ i*(N+1) ] ;
-    double complex *pA = a + i*N ;
-    for( j = N-1 ; j > i ; j-- ) { // go up in other column
-      register double complex fac1 = a[ i + j*N ] * dt ; 
-      // go along the row performing the subtraction, there is no point in
-      // subtracting elements where we have determined the best pivot, just the
-      // columns to the right of the pivot
-      for( l = i + 1 ; l < N ; l++ ) {
-	a[ l + j*N ] -= creal( fac1 ) * creal( pA[l] ) - cimag( fac1 ) * cimag( pA[l] ) 
-	        + I * ( creal( fac1 ) * cimag( pA[l] ) + cimag( fac1 ) * creal( pA[l] ) ) ;
-      }
-    }
-    determinant *= a[ i*(N+1) ] ;
-  }
-  determinant *= a[ N*N-1 ] ;
-  return perms&1 ? -determinant : determinant ;
-}
-
 // matrix times a vector ( vector )vect=( matrix )S.( vector )v //
 INLINE_VOID
 mat_mult_vec( GLU_complex vect[ NC ] , 
@@ -550,9 +488,9 @@ matrix_power( GLU_complex a[ NCNC ] ,
       curr = curr -> next ;
     }
     // clean up the list, removing all the allocs
-    while( head != NULL ) {
-      free( head ) ;
+    while( ( curr = head ) != NULL ) {
       head = head -> next ;
+      free( curr ) ;
     }
   }
   return ;

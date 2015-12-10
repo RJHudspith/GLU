@@ -399,7 +399,9 @@ GF_wrap_smprec( infile , lat , GFINFO , SMINFO , HEAD_DATA , recurses )
      const struct head_data HEAD_DATA ;
      int recurses ;
 {
-  GLU_complex **gauge = malloc( LVOLUME * sizeof( GLU_complex* ) ) ;
+  GLU_complex **gauge = NULL ;
+
+  gauge = malloc( LVOLUME * sizeof( GLU_complex* ) ) ;
   int i ;
   #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
@@ -419,9 +421,9 @@ GF_wrap_smprec( infile , lat , GFINFO , SMINFO , HEAD_DATA , recurses )
       ( recurses < GF_GLU_FAILURES ) ) {
     if( grab_file( lat , gauge , infile ) == GLU_FAILURE ) {
       printf( "[GF] Error in (re)reading the file ... Leaving in a state of disarray.\n" ) ;
-      return GLU_FAILURE ;
+    } else {
+      restart = GLU_TRUE ;
     }
-    restart = GLU_TRUE ;
   } if( recurses == GF_GLU_FAILURES ) {
     printf( "\n[GF] We have failed enough! %d Strongly consider increasing the tuning parameter"
 	    " and/or increasing the number of gauge-fixing iterations.\n" , recurses ) ;

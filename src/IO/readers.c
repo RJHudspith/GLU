@@ -25,12 +25,12 @@
  */
 
 #include "Mainfile.h"
-#include "random_config.h"
-#include "GLU_bswap.h"
-#include "gramschmidt.h"
-#include "crc.h" // for the scidac circular checksum
 
-//#define DEBUG
+#include "crc.h"           // for the scidac circular checksum
+#include "LU.h"            // LU_det_overwrite()
+#include "GLU_bswap.h"     // bswap_*()
+#include "gramschmidt.h"   // reunit2()
+#include "random_config.h" // latt_reunitU()
 
 static inline void 
 complete_NCxNC( O , uout )
@@ -109,7 +109,7 @@ complete_top( O , uout )
     #else
     register const GLU_real mulfact = ( i % 2 == 0 ) ? 1.0 : -1.0 ; 
     #endif
-    O[i]= conj( mulfact * (GLU_complex)LU_det( NC-1 , array ) ) ;
+    O[i]= conj( mulfact * (GLU_complex)LU_det_overwrite( NC-1 , array ) ) ;
   }
 #endif
   return ;

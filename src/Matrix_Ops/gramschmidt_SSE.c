@@ -23,7 +23,7 @@
 
 #include "Mainfile.h"
 
-#include "GLU_rng.h"  // generate_NCxNC() is called
+#include "GLU_rng.h"    // generate_NCxNC() is called
 
 #if (defined HAVE_IMMINTRIN_H ) && !( defined SINGLE_PREC)
 
@@ -31,6 +31,9 @@
 #include "SSE2_OPS.h"
 
 #if NC > 3
+
+#include "GLU_malloc.h" // GLU_malloc()
+#include "LU.h"         // LU_det()
 
 // gramschmidt projection V = V - V.U^{\dagger}
 static void
@@ -76,15 +79,12 @@ vect_norm2( a )
 void 
 reunit2( GLU_complex *__restrict U)
 {
-    __m128d *u = ( __m128d* )U ;
 #if NC == 3
+    __m128d *u = ( __m128d* )U ;
   // orthogonalise the first row
   register __m128d sum ;
 
-  double complex s ;
-
   // orthogonalise first row
-
   sum = _mm_add_pd( _mm_mul_pd( *( u + 0 ) , *( u + 0 ) ) ,
 		    _mm_add_pd( _mm_mul_pd( *( u + 3 ) , *( u + 3 ) ) ,
 				_mm_mul_pd( *( u + 6 ) , *( u + 6 ) ) ) ) ;
@@ -125,22 +125,7 @@ reunit2( GLU_complex *__restrict U)
   *( u + 8 ) = SSE2_CONJ( _mm_sub_pd( SSE2_MUL( *( u + 0 ) , *( u + 4 ) ) ,
 				      SSE2_MUL( *( u + 1 ) , *( u + 3 ) ) ) ) ;
 #elif NC == 2
-
-  /*
-  GLU_real *uu = (GLU_real*)U ;
-  const double v00R = *( uu + 0 ) ;
-  const double v00I = *( uu + 1 ) ;
-  const double v01R = *( uu + 4 ) ;
-  const double v01I = *( uu + 5 ) ;
-
-  double norm = sqrt( v00R * v00R + v00I * v00I + v01R * v01R + v01I * v01I ) ;
-  norm = 1. / norm ;
-
-  U[0] =  ( v00R * norm + I * v00I * norm ) ; 
-  U[1] = -( v01R * norm - I * v01I * norm ) ; 
-  U[2] =  ( v01R * norm + I * v01I * norm ) ; 
-  U[3] =  ( v00R * norm - I * v00I * norm ) ; 
-  */
+    __m128d *u = ( __m128d* )U ;
 
   // compute the norm 
   register __m128d sum ;
@@ -181,7 +166,9 @@ reunit2( GLU_complex *__restrict U)
   }
 
   // OK so this process leaves the bottom row as was, need to complete
-  GLU_complex *array = malloc( ( NC - 1 ) * ( NC - 1 ) * sizeof( GLU_complex ) ) ;
+  GLU_complex *array = NULL ;
+  GLU_malloc( (void**)&array , 16 , ( NC - 1 ) * ( NC - 1 ) * sizeof( GLU_complex ) ) ;
+
   for( i = (NCNC-NC) ; i < NCNC ; i++ ) { // our bona-fide minor index loops the bottom row
     int idx = 0 ;
     for( j = 0 ; j < ( NCNC - NC ) ; j++ ) {
@@ -197,7 +184,7 @@ reunit2( GLU_complex *__restrict U)
     register const GLU_real mulfact = ( i % 2 == 0 ) ? 1.0 : -1.0 ; 
     #endif
     // compute the determinant of the minors using the LU decomp
-    U[i] = conj( mulfact * (GLU_complex)LU_det( NC-1 , array ) ) ;
+    U[i] = conj( mulfact * (GLU_complex)LU_det_overwrite( NC-1 , array ) ) ;
   }
   free( array ) ;
 #endif

@@ -30,6 +30,7 @@
 #include "GLUlib_wrap.h"
 #include "gramschmidt.h"
 #include "invert.h"
+#include "LU.h"
 #include "minunit.h"
 #include "plaqs_links.h"
 #include "POLY.h"
@@ -252,6 +253,7 @@ static char *is_unitary_test( ) {
   return 0;
 }
 
+#if NC > 3
 // test the LU_det comparing to the identity for now
 static char *LU_det_test( ) {
   GLU_complex d[ NCNC ] ;
@@ -260,6 +262,7 @@ static char *LU_det_test( ) {
 	    cabs( LU_det( NC , d ) - 1.0 ) > PREC_TOL ? GLU_FALSE : GLU_TRUE  );
   return 0;
 }
+#endif
 
 // test the determinant of the identity
 static char *det_test( ) {
@@ -844,7 +847,9 @@ static char *all_tests( ) {
   mu_run_test( diag_vect_test ) ;
   mu_run_test( identity_test ) ;
   mu_run_test( is_unitary_test ) ;
+#if NC>3
   mu_run_test( LU_det_test ) ;
+#endif
   mu_run_test( det_test ) ;
   mu_run_test( cofactor_transpose_test ) ;
   mu_run_test( mat_mult_vec_test ) ;

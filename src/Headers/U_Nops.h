@@ -178,16 +178,6 @@ GLU_bool
 is_unitary( const GLU_complex U[ NCNC ] ) ;
 
 /**
-   @fn double complex LU_det( const int N , const GLU_complex U[ N*N ] )
-   @brief computes the determinant of a matrix U
-   @param N :: Side length of the square matrix
-   @param U :: Matrix having its determinant taken
-   @return the determinant
- */
-double complex
-LU_det( const int N , const GLU_complex U[ N*N ] ) ;
-
-/**
    @fn GLU_complex det( const GLU_complex U[ NCNC ] )
    @brief computes the determinant of a matrix U
    @param U :: Matrix having its determinant taken

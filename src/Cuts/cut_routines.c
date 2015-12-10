@@ -491,7 +491,7 @@ compute_veclist( int *__restrict list_size ,
 		 const GLU_bool CONFIGSPACE )
 {
   int in[1] ;
-  struct veclist *list ;
+  struct veclist *list = NULL ;
 
   // loop up to DIMS
   int LOOP = 1 , i ;
@@ -551,7 +551,15 @@ compute_veclist( int *__restrict list_size ,
       in[0] = get_veclist( kept , CUTINFO , LOOP , DIMS ) ;
     } else {
       in[0] = get_mom_veclist( kept , CUTINFO , LOOP , DIMS ) ;
-      // get_list( kept , CUTINFO , DIMS ) ;
+    }
+
+    // check that in[0] isn't something silly
+    if( in[0] == 0 ) {
+      printf( "[CUTS] Empty Momentum list .. Nothing to do ... Leaving\n" ) ;
+      fclose( config ) ;
+      *list_size = 0 ;
+      free( kept ) ;
+      return NULL ;
     }
 
     // write out the length of the array first
@@ -569,21 +577,27 @@ compute_veclist( int *__restrict list_size ,
 
     free( kept ) ; 
   }
-
   // reopen the file
   config = fopen( str , "rb" ) ;
   // malloc list if not already done so
   int check = fread( in , sizeof(int) , 1 , config ) ;
+  if( check != 1 ) {
+    printf( "[CUTS] cut file cannot be read\n" ) ;
+    fclose( config ) ;
+    *list_size = 0 ;
+    free( list ) ;
+    return NULL ;
+  }
   if( flag != NO_MOMENTUM_CONFIG ) {
     list = ( struct veclist* )malloc( in[0] * sizeof( struct veclist ) ) ;
   }
   check = fread( list , sizeof(struct veclist) , in[0] , config ) ;
-
   if( unlikely( check == 0 ) ) {
     printf( "[CUTS] Empty Momentum list .. Nothing to do ... Leaving\n" ) ;
     fclose( config ) ;
     *list_size = 0 ;
-    return 0 ;
+    free( list ) ;
+    return NULL ;
   }
   fclose( config ) ;
 
