@@ -26,21 +26,22 @@
 
 // general structure function
 struct struc_func {
-  int a, b , c ;
+  size_t a, b , c ;
   GLU_real val ;
 } ;
 
 // f^{abc} and d^{abc}, get allocated or not
-static struct struc_func *f ; 
-static struct struc_func *d ; 
-
-static int fcount = 0 , dcount = 0 ;
-
-// inline for the matrix idx
-static inline int mat_idx( const int row , const int column ) { return row + column * NC ; }
+static struct struc_func *f = NULL ; 
+static struct struc_func *d = NULL ; 
 
 // the generators get allocated at some point or not
-static GLU_complex **lambda ; 
+static GLU_complex **lambda = NULL ; 
+
+// some counters
+static size_t fcount = 0 , dcount = 0 ;
+
+// inline for the matrix idx
+static inline int mat_idx( const size_t row , const size_t column ) { return row + column * NC ; }
 
 #if NC > 3
 // Obviously,
@@ -48,12 +49,11 @@ static GLU_complex **lambda ;
 // and then we can use our solution for the trace of three arbitrary
 // matrices to remove a bunch of ops.
 static void
-compute_f_and_d( f , d , lambdaA , lambdaB , lambdaC ) 
-     GLU_real *f ;
-     GLU_real *d ;
-     const GLU_complex lambdaA[ NCNC ] ;
-     const GLU_complex lambdaB[ NCNC ] ;
-     const GLU_complex lambdaC[ NCNC ] ;
+compute_f_and_d( GLU_real *f , 
+		 GLU_real *d ,
+		 const GLU_complex lambdaA[ NCNC ] ,
+		 const GLU_complex lambdaB[ NCNC ] ,
+		 const GLU_complex lambdaC[ NCNC ] )
 {
   GLU_complex tr1 , tr2 ;
   trace_abc( &tr1 , lambdaA , lambdaB , lambdaC ) ;
@@ -189,12 +189,10 @@ actually_compute_fs_and_ds( void )
   d[55].val = -one_twor3 ; d[55].a = 7 ; d[55].b = 5 ; d[55].c = 5 ; 
   d[56].val = -one_twor3 ; d[56].a = 7 ; d[56].b = 6 ; d[56].c = 6 ; 
   d[57].val = -one_r3    ; d[57].a = 7 ; d[57].b = 7 ; d[57].c = 7 ;
-  // well that was gratuitous*/
+  // well that was gratuitous
 #elif NC == 2
   fcount = 6 ;
-  dcount = 0 ;
   f = ( struct struc_func* )malloc( fcount * sizeof( struct struc_func ) ) ;
-  d = ( struct struc_func* )malloc( dcount * sizeof( struct struc_func ) ) ;
   f[0].val = 1.0  ; f[0].a = 0 ; f[0].b = 1 ; f[0].c = 2 ; 
   f[1].val = -1.0 ; f[1].a = 0 ; f[1].b = 2 ; f[1].c = 1 ; 
   f[2].val = -1.0 ; f[2].a = 1 ; f[2].b = 0 ; f[2].c = 2 ; 
@@ -202,13 +200,12 @@ actually_compute_fs_and_ds( void )
   f[4].val = 1.0  ; f[4].a = 2 ; f[4].b = 0 ; f[4].c = 1 ; 
   f[5].val = -1.0 ; f[5].a = 2 ; f[5].b = 1 ; f[5].c = 0 ;
 #else
-  int a ; 
+  size_t a , b , c ; 
   //  Two pass variant ... The first pass is to calculate how many there are and then the second to allocate
   //  this was a lot uglier than my previous idea of using a linked list, but this can be used in parallel
   //  easier than traversing a linked list when calling for the f's and d's, not saying it isn't possible
   GLU_real ff , dd ;
   for( a = 0 ; a < NCNC - 1 ; a++ ) {
-    int b , c ;
     for( b = 0 ; b < NCNC - 1 ; b++ ) {
       for( c = 0 ; c < NCNC - 1 ; c++ ) {
 	compute_f_and_d( &ff , &dd , lambda[a] , lambda[b] , lambda[c] ) ;
@@ -220,9 +217,7 @@ actually_compute_fs_and_ds( void )
   f = ( struct struc_func* )malloc( fcount * sizeof( struct struc_func ) ) ;
   d = ( struct struc_func* )malloc( dcount * sizeof( struct struc_func ) ) ;
   fcount = dcount = 0 ;
-
   for( a = 0 ; a < NCNC - 1 ; a++ ) {
-    int b , c ;
     for( b = 0 ; b < NCNC - 1 ; b++ ) {
       for( c = 0 ; c < NCNC - 1 ; c++ ) {
 	// compute both the f and the d
@@ -266,7 +261,7 @@ lie_data( GLU_complex a[ NCNC - 1 ]  ,
   a[2] = ( A[0] ) ;
 #else
   // calculation of this is not so bad, a[i] = 2 Tr( A T^{i} )
-  int i ;
+  size_t i ;
   for( i = 0 ; i < NCNC-1 ; i++ ) {
     GLU_complex tr ;
     trace_ab( &tr , A , lambda[i] ) ; 
@@ -326,7 +321,7 @@ dabc_ABC( const GLU_complex A[ NCNC ] ,
   lie_data( b , B ) ;
   lie_data( c , C ) ;
   double complex result = 0.0 ;
-  int i ;
+  size_t i ;
   for( i = 0 ; i < dcount ; i++ ) {
     const int a_idx = d[i].a , b_idx = d[i].b , c_idx = d[i].c ;
     result += ( d[i].val ) * a[a_idx] * b[b_idx] * c[c_idx] ;
@@ -347,7 +342,7 @@ free_f_and_d( void )
 void
 free_generators( void )
 {
-  int i ;
+  size_t i ;
   for( i = 0 ; i < NCNC-1 ; i++ ) { free( lambda[i] ) ; }
   free( lambda ) ;
   return ;
@@ -364,9 +359,9 @@ ifabc_ABC( const GLU_complex A[ NCNC ] ,
   lie_data( b , B ) ;
   lie_data( c , C ) ;
   double complex result = 0.0 ;
-  int i ;
+  size_t i ;
   for( i = 0 ; i < fcount ; i++ ) {
-    const int a_idx = f[i].a , b_idx = f[i].b , c_idx = f[i].c ;
+    const size_t a_idx = f[i].a , b_idx = f[i].b , c_idx = f[i].c ;
     result += ( I * f[i].val ) * a[a_idx] * b[b_idx] * c[c_idx] ;
   }
   return result ;
@@ -384,13 +379,13 @@ ifabc_dabc_ABC( const GLU_complex A[ NCNC ] ,
   lie_data( b , B ) ;
   lie_data( c , C ) ;
   double complex result = 0.0 ;
-  int i ;
+  size_t i ;
   for( i = 0 ; i < dcount ; i++ ) {
-    const int a_idx = d[i].a , b_idx = d[i].b , c_idx = d[i].c ;
+    const size_t a_idx = d[i].a , b_idx = d[i].b , c_idx = d[i].c ;
     result += ( d[i].val ) * a[a_idx] * b[b_idx] * c[c_idx] ;
   }
   for( i = 0 ; i < fcount ; i++ ) {
-    const int a_idx = f[i].a , b_idx = f[i].b , c_idx = f[i].c ;
+    const size_t a_idx = f[i].a , b_idx = f[i].b , c_idx = f[i].c ;
     result += ( I*f[i].val ) * a[a_idx] * b[b_idx] * c[c_idx] ;
   }
   return result ;
@@ -401,19 +396,16 @@ void
 init_generators( void )
 {
   lambda = ( GLU_complex** )malloc( ( NCNC-1 ) * sizeof( GLU_complex* ) ) ;
-  int i ;
+  size_t i , j ;
   for( i = 0 ; i < NCNC-1 ; i++ ) {
     lambda[ i ] = ( GLU_complex* )malloc( NCNC * sizeof( GLU_complex ) ) ;
-    int j ;
     for( j = 0 ; j < NCNC ; j++ ) { lambda[i][j] = 0.0 ; } // initialise to 0
   }  
-
   // the idea is to compute the 2x2, and then embed in the 3x3 and so on
-  int subblock = 2 , j ;
-  int idx = 0 ;
+  size_t subblock = 2 , idx = 0 ;
   while( subblock <= NC ) {
     // fix the column to be the last element in the subblock
-    const int k = subblock-1 ;
+    const size_t k = subblock-1 ;
     for( j = 0 ; j < k ; j++ ) {
       lambda[idx][ mat_idx(j,k) ] = 0.5 ;
       lambda[idx][ mat_idx(k,j) ] = 0.5 ;
@@ -423,7 +415,6 @@ init_generators( void )
       idx ++ ;
     } // fill in the final diagonal for this sub-block
     const register GLU_real fact = sqrt( 1.0 / (GLU_real)( 2.0 * (subblock) * ( subblock-1 ) ) ) ; 
-    int i ;
     for( i = 0 ; i < subblock-1 ; i++ ) {
       lambda[idx][ mat_idx(i,i) ] = fact ;
     }

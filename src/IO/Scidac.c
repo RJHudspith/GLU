@@ -16,7 +16,6 @@
     You should have received a copy of the GNU General Public License
     along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 /**
    @file Scidac.c
    @brief Scidac and ILDG configuration header readers and writers
@@ -275,7 +274,7 @@ write_header_SCIDAC( FILE *__restrict out )
 	   " <spacetime>%d</spacetime><dims>" , start , ND ) ;
   int mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    sprintf( str , "%s%d " , str , Latt.dims[mu] ) ;
+    sprintf( str , "%s%zu " , str , Latt.dims[mu] ) ;
   }
   sprintf( str , "%s</dims><volfmt>0</volfmt></scidacFile>" , str ) ;
   // some dummy file
@@ -341,9 +340,9 @@ write_header_ILDG( FILE *__restrict out )
   // sprintf in some xml stuff
   sprintf( str , "%s<scidacFile><version>1.1</version>"
 	   "<spacetime>%d</spacetime><dims>" , start , ND ) ;
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    sprintf( str , "%s%d " , str , Latt.dims[mu] ) ;
+    sprintf( str , "%s%zu " , str , Latt.dims[mu] ) ;
   }
   sprintf( str , "%s</dims><volfmt>0</volfmt></ScidacFile>" , str ) ;
   // some dummy file
@@ -389,12 +388,12 @@ write_header_ILDG( FILE *__restrict out )
   const char close[4][6] = { "</lx>" , "</ly>" , "</lz>" , "</lt>" } ;
   for( mu = 0 ; mu < ND-1 ; mu++ ) {
     if( mu < 4 ) {
-      sprintf( str , "%s%s%d%s" , str , open[mu] , Latt.dims[mu] , close[mu] ) ;
+      sprintf( str , "%s%s%zu%s" , str , open[mu] , Latt.dims[mu] , close[mu] ) ;
     } else {
-      sprintf( str , "%s<l%d>%d</l%d>" , str , mu , Latt.dims[mu] , mu ) ;
+      sprintf( str , "%s<l%zu>%zu</l%zu>" , str , mu , Latt.dims[mu] , mu ) ;
     }
   }
-  sprintf( str , "%s%s%d%s%s" , str , open[3] , Latt.dims[ND-1] , close[3] , ILDG_end ) ;
+  sprintf( str , "%s%s%zu%s%s" , str , open[3] , Latt.dims[ND-1] , close[3] , ILDG_end ) ;
   write_SCIDAC_binary( out , str , strlen( str ) , "ildg-format" ) ;
 
   // Logical file name; just leave it blank for now

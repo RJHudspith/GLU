@@ -43,11 +43,6 @@ set_TMEAS_STOP( const double c0 )
   return ;
 }
 
-// RK4 parameters
-static const double mthreeOfour = -0.75 ; // 3.0/4.0
-static const double mseventeenOthsix = -0.47222222222222222222 ; // -17.0/36.0
-static const double eightOnine = 0.88888888888888888889 ; // 8.0/9.0
-
 // shortening function needs to be out of alphabetical order because
 // it is called by flow directions
 static INLINE_VOID
@@ -64,7 +59,7 @@ make_short_log( GLU_complex short_staple[ HERMSIZE ] ,
   *( short_staple + 0 ) = staple[ 0 ] ;
   *( short_staple + 1 ) = staple[ 1 ] ;
 #else
-  int i, j , idx = 0 ;
+  size_t i, j , idx = 0 ;
   for( i = 0 ; i < NC-1 ; i++ ) {
     for( j = i ; j < NC ; j++ ) {
       short_staple[ idx ] = staple[ j + i*NC ] ;
@@ -77,16 +72,19 @@ make_short_log( GLU_complex short_staple[ HERMSIZE ] ,
 
 // wilson flow in all ND directions ...
 static void
-flow_directions( lat2 , lat , Z , multiplier , delta_t , i , it , mu , SM_TYPE )
-     struct spt_site *__restrict lat2 ;
-     const struct site *__restrict lat ;
-     struct spt_site_herm *__restrict Z ;
-     const double multiplier ;
-     const double delta_t ;
-     const int i ;
-     const int it ;
-     const int mu ;
-     const int SM_TYPE ;
+flow_directions( struct spt_site *__restrict lat2 ,
+		 struct spt_site_herm *__restrict Z ,
+		 const struct site *__restrict lat ,
+		 const double multiplier ,
+		 const double delta_t ,
+		 const size_t i ,
+		 const size_t it ,
+		 const size_t mu ,
+		 const int SM_TYPE ,
+		 void (*project)( GLU_complex log[ NCNC ] , 
+				  GLU_complex *__restrict staple , 
+				  const GLU_complex link[ NCNC ] , 
+				  const double smear_alpha ) )
 {
   GLU_complex staple[ NCNC ] ;
   zero_mat( staple ) ;
@@ -96,7 +94,6 @@ flow_directions( lat2 , lat , Z , multiplier , delta_t , i , it , mu , SM_TYPE )
   #else
   all_staples( staple , lat , it , mu , ND , SM_TYPE ) ;
   #endif
-
   GLU_complex short_staple[ HERMSIZE ] ; // does not need to be inited
   // default to STOUT ...
   if( SM_TYPE == SM_LOG ) {
@@ -124,33 +121,28 @@ flow_directions( lat2 , lat , Z , multiplier , delta_t , i , it , mu , SM_TYPE )
   }
   #endif
   // perform the stout projection on the hermitian-shortened links
-  switch( SM_TYPE )
-    {
-    case SM_LOG :
-      project_LOG_wflow_short( lat2[i].O[mu] , Z[it].O[mu] , 
-			       lat[it].O[mu] , delta_t ) ; 
-      break ;
-    default :
-      project_STOUT_wflow_short( lat2[i].O[mu] , Z[it].O[mu] , 
-				 lat[it].O[mu] , delta_t ) ; 
-    }
+  project( lat2[i].O[mu] , Z[it].O[mu] , lat[it].O[mu] , delta_t ) ; 
   return ;
 }
 
-// memory-expensive rung-kutta step
+// memory-expensive runge-kutta step
 static void
-RK4step( lat , lat2 , Z , factor , RKfactor , SM_TYPE )
-     struct site *__restrict lat ;
-     struct spt_site *__restrict lat2 ;
-     struct spt_site_herm *__restrict Z ;
-     const double factor , RKfactor ;
-     const int SM_TYPE ;
+RK4step( struct spt_site_herm *__restrict Z ,
+	 struct spt_site *__restrict lat2 ,
+	 const struct site *__restrict lat ,
+	 const double factor , 
+	 const double RKfactor ,
+	 const int SM_TYPE ,
+	 void (*project)( GLU_complex log[ NCNC ] , 
+			  GLU_complex *__restrict staple , 
+			  const GLU_complex link[ NCNC ] , 
+			  const double smear_alpha ) )
 {
-  int i ;
+  size_t i ;
 #pragma omp parallel for private(i) SCHED
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
     GLU_complex staple[ NCNC ] ;
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       zero_mat( staple ) ;
       // first element
@@ -188,18 +180,7 @@ RK4step( lat , lat2 , Z , factor , RKfactor , SM_TYPE )
 	Z[i].O[mu][ elements ] += factor * short_staple[ elements ] ;
       }
       #endif
-      switch( SM_TYPE )
-	{
-	case SM_LOG :
-	  project_LOG_wflow_short( lat2[i].O[mu] , Z[i].O[mu] , 
-				   lat[i].O[mu] , RKfactor ) ; 
-	  break ;
-	default :
-	  project_STOUT_wflow_short( lat2[i].O[mu] , Z[i].O[mu] , 
-				     lat[i].O[mu] , RKfactor ) ; 
-	  break ;
-	}
-      // end of the mu-loop
+      project( lat2[i].O[mu] , Z[i].O[mu] , lat[i].O[mu] , RKfactor ) ; 
     }
   }
   #pragma omp parallel for private(i)
@@ -211,24 +192,25 @@ RK4step( lat , lat2 , Z , factor , RKfactor , SM_TYPE )
 
 // computes one of the RK steps, doesn't matter which one
 static void
-RK4step_memcheap( lat , Z , lat2 , lat3 , lat4 , multiplier , step , SM_TYPE )
-     struct site *__restrict lat ;
-     struct spt_site_herm *__restrict Z ;
-     struct spt_site *__restrict lat2 ;
-     struct spt_site *__restrict lat3 ;
-     struct spt_site *__restrict lat4 ;  
-     const double multiplier ;
-     const double step ;
-     const int SM_TYPE ;
+RK4step_memcheap( struct spt_site_herm *__restrict Z ,
+		  struct spt_site *__restrict lat2 ,
+		  struct spt_site *__restrict lat3 ,
+		  struct spt_site *__restrict lat4 ,  
+		  const struct site *__restrict lat ,
+		  const double multiplier ,
+		  const double step ,
+		  const int SM_TYPE ,
+		  void (*project)( GLU_complex log[ NCNC ] , 
+				   GLU_complex *__restrict staple , 
+				   const GLU_complex link[ NCNC ] , 
+				   const double smear_alpha ) )
 {
-  int i ;
-
+  size_t i ;
   #ifdef IMPROVED_SMEARING
-  const int back = lat[ lat[0].back[ ND-1 ] ].back[ ND-1 ] ;
+  const size_t back = lat[ lat[0].back[ ND-1 ] ].back[ ND-1 ] ;
   #else
-  const int back = lat[0].back[ ND - 1 ] ;
+  const size_t back = lat[0].back[ ND - 1 ] ;
   #endif
-
   // split volume - wise
   #pragma omp parallel for private(i) SCHED
   #ifdef IMPROVED_SMEARING
@@ -236,44 +218,42 @@ RK4step_memcheap( lat , Z , lat2 , lat3 , lat4 , multiplier , step , SM_TYPE )
   #else
   PFOR( i = 0 ; i < LCU ; i++ ) {
   #endif
-    const int bck = back + i ;
-    int mu ;
+    const size_t bck = back + i ;
+    size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
-      flow_directions( lat4 , lat , Z , multiplier , 
-		       step , i , bck , mu , SM_TYPE ) ; 
+      flow_directions( lat4 , Z , lat , multiplier , 
+		       step , i , bck , mu , SM_TYPE , project ) ; 
     }
   }
-  int t ;
+  size_t t ;
   #ifdef IMPROVED_SMEARING
   for( t = 0 ; t < Latt.dims[ ND - 1 ] - 2 ; t++ ) {
   #else
   for( t = 0 ; t < Latt.dims[ ND - 1 ] - 1 ; t++ ) {
   #endif
-    const int slice = LCU * t ;
-
+    const size_t slice = LCU * t ;
     // perform the wilson flow for a point on the slice
     #pragma omp parallel for private(i) SCHED
     PFOR( i = 0 ; i < LCU ; i++ ) {
-      const int it = slice + i ;
-      int mu ;
+      const size_t it = slice + i ;
+      size_t mu ;
       for( mu = 0 ; mu < ND ; mu++ ) {
-	flow_directions( lat2 , lat , Z , multiplier , 
-			 step , i , it , mu , SM_TYPE ) ;
+	flow_directions( lat2 , Z , lat , multiplier , 
+			 step , i , it , mu , SM_TYPE , project ) ;
       }
     }
     // swap over the temporary lattice fields
-    #ifdef IMPROVED_SMEARING
-    const int bck = lat[ lat[ slice ].back[ ND-1 ] ].back[ ND-1 ] ;
-    #else
-    const int bck = lat[ slice ].back[ ND -1 ] ;
-    #endif
-
-   #pragma omp parallel for private(i)
+#ifdef IMPROVED_SMEARING
+    const size_t bck = lat[ lat[ slice ].back[ ND-1 ] ].back[ ND-1 ] ;
+#else
+    const size_t bck = lat[ slice ].back[ ND -1 ] ;
+#endif
+#pragma omp parallel for private(i)
     PFOR( i = 0 ; i < LCU ; i++ ) {
       //put temp into the previous time-slice
       #ifdef IMPROVED_SMEARING
       if( likely( t > 1 ) ) { 
-	register const int back = bck + i ;
+	register const size_t back = bck + i ;
 	memcpy( &lat[back] , &lat3[i] , sizeof( struct spt_site ) ) ;
       }
       // put the evaluation two time slices before into the front half of lat3
@@ -282,7 +262,7 @@ RK4step_memcheap( lat , Z , lat2 , lat3 , lat4 , multiplier , step , SM_TYPE )
       memcpy( &lat3[i+LCU] , &lat2[i] , sizeof( struct spt_site ) ) ;
       #else
       if( likely( t != 0 ) ) { 
-	register const int back = bck + i ;
+	register const size_t back = bck + i ;
 	memcpy( &lat[back] , &lat3[i] , sizeof( struct spt_site ) ) ;
       }
       //make temporary lat3 lat2 again and repeat
@@ -291,15 +271,15 @@ RK4step_memcheap( lat , Z , lat2 , lat3 , lat4 , multiplier , step , SM_TYPE )
     }
   }
   // put the last couple back in ....
-  const int slice = LCU * t ;
-  const int behind = lat[ slice ].back[ ND - 1 ] ;
+  const size_t slice = LCU * t ;
+  const size_t behind = lat[ slice ].back[ ND - 1 ] ;
   #ifdef IMPROVED_SMEARING
-  const int behind2 = lat[ behind ].back[ ND-1 ] ;
+  const size_t behind2 = lat[ behind ].back[ ND-1 ] ;
   #endif
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LCU ; i++ ) {
-    register const int back = behind + i ;
-    register const int it = slice + i ; 
+    register const size_t back = behind + i ;
+    register const size_t it = slice + i ; 
     #ifdef IMPROVED_SMEARING
     memcpy( &lat[behind2+i] , &lat3[i] , sizeof( struct spt_site ) ) ; 
     memcpy( &lat[back] , &lat3[i+LCU] , sizeof( struct spt_site ) ) ; 
@@ -318,12 +298,12 @@ const double
 evaluate_scale( double *der , 
 		const double *x ,
 		const double *meas ,
-		const int Nmeas ,
+		const size_t Nmeas ,
 		const double scale ,
 		const char *message )
 {
   // compute spline for observable meas, x must be sorted smallest to largest
-  int i , change_up = 0 ;
+  size_t i , change_up = 0 ;
   for( i = 0 ; i < Nmeas ; i++ ) {
     spline_derivative( der , x , meas , Nmeas ) ;
     // W_0 scale
@@ -367,14 +347,14 @@ int
 scaleset( struct wfmeas *curr , 
 	  const double T_0 ,
 	  const double W_0 ,
-	  const int count ) 
+	  const size_t count ) 
 {
   // now we have the number of measurements in count
-  double *GT = malloc( ( count + 1 ) * sizeof( double ) ) ;
+  double *GT   = malloc( ( count + 1 ) * sizeof( double ) ) ;
   double *time = malloc( ( count + 1 ) * sizeof( double ) ) ;
-  double *der = malloc( ( count + 1 ) * sizeof( double ) ) ;
+  double *der  = malloc( ( count + 1 ) * sizeof( double ) ) ;
   // traverse the list backwards setting the time and GT
-  int i ;
+  size_t i ;
   for( i = 0 ; i < ( count + 1 ) ; i++ ) {
     time[ ( count + 1 ) - i - 1 ] = curr -> time ;
     GT[ ( count + 1 ) - i - 1 ] = curr -> Gt ;
@@ -415,16 +395,26 @@ step_distance( struct site *__restrict lat ,
 	       const double rk1 ,
 	       const double rk2 , 
 	       const double rk3 , 
-	       const int SM_TYPE )
+	       const int SM_TYPE ,
+	       void (*project)( GLU_complex log[ NCNC ] , 
+				GLU_complex *__restrict staple , 
+				const GLU_complex link[ NCNC ] , 
+				const double smear_alpha ) )
 {
-  int i ;
+  // RK4 parameters
+  const double mthreeOfour = -3.0/4.0 ;
+  const double mseventeenOthsix = -17.0/36.0 ;
+  const double eightOnine = 8.0/9.0 ;
+  // set z to zero
+  size_t i ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
     memset( &Z[i] , 0.0 , sizeof( struct spt_site_herm ) ) ;
   }
-  RK4step( lat , lat2 , Z , mseventeenOthsix , rk1 , SM_TYPE ) ;
-  RK4step( lat , lat2 , Z , eightOnine , rk2 , SM_TYPE ) ;
-  RK4step( lat , lat2 , Z , mthreeOfour , rk3 , SM_TYPE ) ;
+  // flow forwards one timestep
+  RK4step( Z , lat2 , lat , mseventeenOthsix , rk1 , SM_TYPE , project ) ;
+  RK4step( Z , lat2 , lat , eightOnine , rk2 , SM_TYPE , project ) ;
+  RK4step( Z , lat2 , lat , mthreeOfour , rk3 , SM_TYPE , project ) ;
   return ;
 }
 
@@ -438,17 +428,29 @@ step_distance_memcheap( struct site *__restrict lat ,
 			const double rk1 ,
 			const double rk2 , 
 			const double rk3 , 
-			const int SM_TYPE )
+			const int SM_TYPE ,
+			void (*project)( GLU_complex log[ NCNC ] , 
+					 GLU_complex *__restrict staple , 
+					 const GLU_complex link[ NCNC ] , 
+					 const double smear_alpha ) )
 {
-  // initial zero ...
-  int i ;
+  // RK4 parameters
+  const double mthreeOfour = -3.0/4.0 ;
+  const double mseventeenOthsix = -17.0/36.0 ;
+  const double eightOnine = 8.0/9.0 ;
+  // set z to zero
+  size_t i ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
     memset( &Z[i] , 0.0 , sizeof( struct spt_site_herm ) ) ;
   }
-  RK4step_memcheap( lat , Z , lat2 , lat3 , lat4 , mseventeenOthsix , rk1 , SM_TYPE ) ;
-  RK4step_memcheap( lat , Z , lat2 , lat3 , lat4 , eightOnine , rk2 , SM_TYPE ) ;
-  RK4step_memcheap( lat , Z , lat2 , lat3 , lat4 , mthreeOfour , rk3 , SM_TYPE ) ;
+  // flow forwards one timestep
+  RK4step_memcheap( Z , lat2 , lat3 , lat4 , 
+		    lat , mseventeenOthsix , rk1 , SM_TYPE , project ) ;
+  RK4step_memcheap( Z , lat2 , lat3 , lat4 , 
+		    lat , eightOnine , rk2 , SM_TYPE , project ) ;
+  RK4step_memcheap( Z , lat2 , lat3 , lat4 , 
+		    lat , mthreeOfour , rk3 , SM_TYPE , project ) ;
   return ;
 }
 

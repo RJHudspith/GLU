@@ -61,6 +61,49 @@ parallel_ffts()
   return GLU_SUCCESS ;
 }
 
+// see if we have wisdom already
+static char *
+obtain_wisdom( int *planflag ,
+	       const int DIR , 
+	       const char *type )
+{
+#ifndef CONDOR_MODE
+  FILE *wizzard ;
+  size_t mu ;
+  char *str = malloc( 256 * sizeof( char ) ) ;
+  char prec_str[ 16 ] ; 
+  *planflag = NOPLAN ; 
+#ifdef SINGLE_PREC
+  sprintf( prec_str , "FLOAT" ) ;
+#else
+  sprintf( prec_str , "DOUBLE" ) ;
+#endif
+  // openmp'd wisdom
+#ifdef OMP_FFTW
+  sprintf( str , "%s/Local/Wisdom/%s_%sOMPnt%d_SU%d_" , 
+	   HAVE_PREFIX , prec_str , type , nthreads , NC ) ;
+#else
+  sprintf( str , "%s/Local/Wisdom/%s_%sSU%d_" , 
+	   HAVE_PREFIX , prec_str , type , NC ) ;
+#endif
+  for( mu = 0 ; mu < DIR - 1 ; mu++ ) {
+    sprintf( str , "%s%zux" , str , Latt.dims[ mu ] ) ;
+  }
+  sprintf( str , "%s%zu.wisdom" , str , Latt.dims[ DIR - 1 ] ) ;
+  if( ( wizzard = fopen( str , "r" ) ) == NULL ) {
+    printf( "\n[FFTW] No wisdom to be obtained here ... planning" ) ; 
+  } else {
+    printf( "\n[FFTW] Successful wisdom attained" ) ; 
+    *planflag = fftw_import_wisdom_from_file( wizzard ) ; 
+    fclose( wizzard ) ; 
+  }
+  // condor mode ifdef
+#else
+  printf( "[FFTW] Creating plan on CONDOR host" ) ; 
+#endif
+  return str ;
+}
+
 // record both the forward and backward
 void
 create_plans_DFT( fftw_plan *__restrict forward , 
@@ -71,7 +114,7 @@ create_plans_DFT( fftw_plan *__restrict forward ,
 		  const int DIR )
 {
   // set up our fft
-  int dimes[ DIR ] , mu ;
+  int dimes[ DIR ] , mu , planflag ;
   // swap these defs around
   for( mu = 0 ; mu < DIR ; mu++ ) {
     dimes[ mu ] = Latt.dims[ DIR - 1 - mu ] ;
@@ -79,38 +122,7 @@ create_plans_DFT( fftw_plan *__restrict forward ,
 
   start_timer( ) ;
 
-#ifndef CONDOR_MODE
-  char str[512] , prec_str[ 16 ] ; 
-  int check = NOPLAN ; 
-
-  #ifdef SINGLE_PREC
-  sprintf( prec_str , "FLOAT" ) ;
-  #else
-  sprintf( prec_str , "DOUBLE" ) ;
-  #endif
-
-  #ifdef OMP_FFTW
-  sprintf( str , "%s/Local/Wisdom/%s_OMPnt%d_SU%d_" , 
-	   HAVE_PREFIX , prec_str , nthreads , NC ) ;
-  #else
-  sprintf( str , "%s/Local/Wisdom/%s_SU%d_" , 
-	   HAVE_PREFIX , prec_str , NC ) ;
-  #endif
-  for( mu = 0 ; mu < DIR - 1 ; mu++ ) {
-    sprintf( str , "%s%dx" , str , Latt.dims[ mu ] ) ;
-  }
-  sprintf( str , "%s%d.wisdom" , str , Latt.dims[ DIR - 1 ] ) ;
-  FILE *wizzard = fopen( str , "r" ) ; 
-  if( wizzard == NULL ) {
-    printf( "\n[FFTW] No wisdom to be obtained here ... planning" ) ; 
-  } else {
-    printf( "\n[FFTW] Successful wisdom attained" ) ; 
-    check = fftw_import_wisdom_from_file( wizzard ) ; 
-    fclose( wizzard ) ; 
-  }
-#else
-  printf( "\n[FFTW] Creating plan on CONDOR host" ) ; 
-#endif
+  char *str = obtain_wisdom( &planflag , DIR , "" ) ;
 
   for( mu = 0 ; mu < ARR_SIZE ; mu++ ) {
     forward[mu] = fftw_plan_dft( DIR , dimes , in[mu] , out[mu] , 
@@ -124,12 +136,14 @@ create_plans_DFT( fftw_plan *__restrict forward ,
   printf( "[FFTW] plans finished\n\n" ) ;
 
 #ifndef CONDOR_MODE
-  if( check == NOPLAN )  {
-    wizzard = fopen( str , "w" ) ; 
+  if( planflag == NOPLAN )  {
+    FILE *wizzard = fopen( str , "w" ) ; 
     fftw_export_wisdom_to_file( wizzard ) ; 
     fclose( wizzard ) ; 
   }
 #endif
+  free( str ) ;
+
   return ;
 }
 
@@ -142,10 +156,9 @@ create_plans_DHT( fftw_plan *__restrict plan ,
 		  const int DIR )
 {
   // set up our fft
-  int dimes[ DIR ] ;
+  int dimes[ DIR ] , mu , planflag ;
 
   // swap these defs around 
-  int mu ;
   for( mu = 0 ; mu < DIR ; mu++ ) {
     dimes[ mu ] = Latt.dims[ DIR - 1 - mu ] ;
   }
@@ -160,38 +173,7 @@ create_plans_DHT( fftw_plan *__restrict plan ,
   // initialise the timer
   start_timer( ) ;
 
-#ifndef CONDOR_MODE
-  char str[512] , prec_str[16] ; 
-  int check = 0 ;
-
-#ifdef SINGLE_PREC
-  sprintf( prec_str , "FLOAT" ) ;
-#else
-  sprintf( prec_str , "DOUBLE" ) ;
-#endif
-
-#ifdef OMP_FFTW
-  sprintf( str , "%s/Local/Wisdom/%s_DHT_OMPnt%d_" , 
-	   HAVE_PREFIX , prec_str , nthreads ) ;
-#else
-  sprintf( str , "%s/Local/Wisdom/%s_DHT_" , 
-	   HAVE_PREFIX , prec_str ) ;
-#endif
-  for( mu = 0 ; mu < DIR - 1 ; mu++ ){
-    sprintf( str , "%s%dx" , str , Latt.dims[ mu ] ) ;
-  }
-  sprintf( str , "%s%d.wisdom", str , Latt.dims[ DIR - 1 ] ) ;
-  FILE *wizzard = fopen( str , "r" ) ; 
-  if( wizzard == NULL ) {
-    printf( "\n[FFTW] No wisdom to be obtained here" ) ; 
-  } else {
-    printf( "\n[FFTW] Successful wisdom attained" ) ; 
-    check = fftw_import_wisdom_from_file( wizzard ) ; 
-    fclose( wizzard ) ; 
-  }
-#else
-  printf( "[FFTW] Creating plan on CONDOR host" ) ; 
-#endif
+  char *str = obtain_wisdom( &planflag , DIR , "DHT_" ) ;
 
   // and organise the plans
   for( mu = 0 ; mu < ARR_SIZE ; mu++ ) {
@@ -204,12 +186,14 @@ create_plans_DHT( fftw_plan *__restrict plan ,
   printf( "[FFTW] plans finished\n\n" ) ;
 
 #ifndef CONDOR_MODE
-  if( check == NOPLAN ) {
-    wizzard = fopen( str , "w" ) ; 
+  if( planflag == NOPLAN ) {
+    FILE *wizzard = fopen( str , "w" ) ; 
     fftw_export_wisdom_to_file( wizzard ) ; 
     fclose( wizzard ) ; 
   }
 #endif
+  free( str ) ;
+
   return ;
 }
 
@@ -222,9 +206,8 @@ small_create_plans_DFT( fftw_plan *__restrict forward ,
 			const int DIR )
 {
   // set up our fft
-  int dimes[ DIR ] ;
+  int dimes[ DIR ] , mu , planflag ;
   // swap these defs around
-  int mu ;
   for( mu = 0 ; mu < DIR ; mu++ ) {
     dimes[ mu ] = Latt.dims[ DIR - 1 - mu ] ;
   }
@@ -232,38 +215,7 @@ small_create_plans_DFT( fftw_plan *__restrict forward ,
   // initialise the clock
   start_timer( ) ; 
 
-#ifndef CONDOR_MODE
-  char str[512] , prec_str[16] ; 
-  int check = NOPLAN ; 
-
-#ifdef SINGLE_PREC
-  sprintf( prec_str , "FLOAT" ) ;
-#else
-  sprintf( prec_str , "DOUBLE" ) ;
-#endif
-
-#ifdef OMP_FFTW
-  sprintf( str , "%s/Local/Wisdom/%s_OMPnt%d_single_" , 
-	   HAVE_PREFIX , prec_str , nthreads ) ;
-#else
-  sprintf( str , "%s/Local/Wisdom/%s_single_" , 
-	   HAVE_PREFIX , prec_str ) ;
-#endif
-  for( mu = 0 ; mu < DIR - 1 ; mu++ ) {
-    sprintf( str , "%s%dx" , str , Latt.dims[ mu ] ) ;
-  }
-  sprintf( str , "%s%d.wisdom", str , Latt.dims[ DIR - 1 ] ) ;
-  FILE *wizzard = fopen( str , "r" ) ; 
-  if( wizzard == NULL ) {
-    printf( "\n[FFTW] No wisdom to be obtained here" ) ; 
-  } else {
-    printf( "\n[FFTW] Successful wisdom attained" ) ; 
-    check = fftw_import_wisdom_from_file( wizzard ) ; 
-    fclose( wizzard ) ; 
-  }
-#else
-  printf( "\n[FFTW] Creating plan on CONDOR host" ) ; 
-#endif
+  char *str = obtain_wisdom( &planflag , DIR , "single_" ) ;
 
   *forward = fftw_plan_dft( DIR , dimes , in , out , 
 			    FFTW_FORWARD , GLU_PLAN ) ; 
@@ -275,12 +227,14 @@ small_create_plans_DFT( fftw_plan *__restrict forward ,
   printf( "[FFTW] plans finished\n\n" ) ;
 
 #ifndef CONDOR_MODE
-  if( check == NOPLAN ) {
-    wizzard = fopen( str , "w" ) ; 
+  if( planflag == NOPLAN ) {
+    FILE *wizzard = fopen( str , "w" ) ; 
     fftw_export_wisdom_to_file( wizzard ) ; 
     fclose( wizzard ) ; 
   }
 #endif
+  free( str ) ;
+
   return ;
 }
 

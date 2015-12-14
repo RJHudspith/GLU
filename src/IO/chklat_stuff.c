@@ -76,6 +76,21 @@ get_int( char *s ,
   return GLU_SUCCESS ;
 }
 
+// get a long unsigned int
+int
+get_size_t( char *s ,
+	    struct QCDheader *hdr ,
+	    size_t *q )
+{
+  char *p ;
+  get_string( s , hdr , &p ) ;
+  if( p == NULL ) {
+    return ( GLU_FAILURE ) ;
+  }
+  sscanf( p , "%zu" , q ) ;
+  return GLU_SUCCESS ;
+}
+
 // get_header: read from stream, parsing tokens 
 struct QCDheader * 
 get_header( FILE *__restrict in )
@@ -115,14 +130,14 @@ get_header( FILE *__restrict in )
       break;
     }
 
-    /* Tokens are terminated by a space */
+    // Tokens are terminated by a space 
     q = index( line,' ' ) ;
 
-    /* Overwrite space with a terminating null */
+    // Overwrite space with a terminating null 
     *q = '\0';
     len = q - line ;
 
-    /* allocate space and copy the token in to it */
+    // allocate space and copy the token in to it 
     p = malloc( len+1 ) ;
     (*hdr).token[n] = p ;
     strcpy( p , line ) ;

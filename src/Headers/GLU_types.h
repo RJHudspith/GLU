@@ -40,12 +40,12 @@
    @param head :: what header type we use
    @param Seed :: the seed we use for our RNG 
  */
-struct latt_info{
-  int dims[ ND ] ; // dimensions in x,y,z,t order opposite to FFTW
-  int Lsq ; // dims[0] * dims[1] x,y plane
-  int Lcu ; // dims[2] * Lsq x,y,z cubic volume
-  int Volume ; // lattice Volume
-  int flow ; // config number , gets passed around a bit
+struct latt_info {
+  size_t dims[ ND ] ; // dimensions in x,y,z,t order opposite to FFTW
+  size_t Lsq ; // dims[0] * dims[1] x,y plane
+  size_t Lcu ; // dims[2] * Lsq x,y,z cubic volume
+  size_t Volume ; // lattice Volume
+  size_t flow ; // config number , gets passed around a bit
   double gf_alpha ; //gauge fixing alpha
   double sm_alpha[ ND -1 ] ; // smearing alphas
   header_mode head ;// Which header type are we using
@@ -58,7 +58,7 @@ struct latt_info{
    @brief contains the NERSC header information
    This is only used in chklat_stuff.c and should probably be moved there
  */
-struct QCDheader{
+struct QCDheader {
   int ntoken ; 
   char **token ; 
   char **value ; 
@@ -68,8 +68,7 @@ struct QCDheader{
    @struct site
    @brief the gauge field format
  */
-struct site
-{
+struct site {
   GLU_complex O[ ND ][ NCNC ] ;
   int neighbor[ ND ] ;
   int back[ ND ] ;
@@ -79,8 +78,7 @@ struct site
    @struct sp_site
    @brief spatial site format
  */
-struct sp_site
-{
+struct sp_site {
   GLU_complex O[ ND - 1 ][ NCNC ] ;
 } ;
 
@@ -88,8 +86,7 @@ struct sp_site
    @struct spt_site
    @brief gauge link format
  */
-struct spt_site
-{
+struct spt_site {
   GLU_complex O[ ND ][ NCNC ] ;
 } ;
 
@@ -97,8 +94,7 @@ struct spt_site
    @struct spt_site_herm
    @brief specifically for the Wilson flow
  */
-struct spt_site_herm
-{
+struct spt_site_herm {
   #if NC == 3
   GLU_complex O[ ND ][ HERMSIZE - 1 ] ;
   #else
@@ -110,8 +106,7 @@ struct spt_site_herm
    @struct sp_site_herm
    @brief specifically for the CGF
  */
-struct sp_site_herm
-{
+struct sp_site_herm {
   GLU_complex O[ ND-1 ][ HERMSIZE ] ;
 } ;
 
@@ -119,8 +114,7 @@ struct sp_site_herm
    @struct lv1
    @param the "level1" dressed links for HYP smearing
  */
-struct lv1
-{
+struct lv1 {
   GLU_complex O[ ND * ( ND - 1 ) ][ NCNC ] ;
 } ; 
 
@@ -128,7 +122,7 @@ struct lv1
    @struct smallest_lv1
    @param the "level1" dressed links for HYP smearing shortened using the 8 parameter link definition
  */
-struct smallest_lv1{
+struct smallest_lv1 {
   GLU_real O[ ND * ( ND - 1 ) ][ NCNC - 1 ] ;
 } ; 
 
@@ -136,7 +130,7 @@ struct smallest_lv1{
    @struct spatial_lv1
    @param the "level1" dressed links for HYP smearing in spatial directions only
  */
-struct spatial_lv1{
+struct spatial_lv1 {
   GLU_complex O[ ( ND - 1 ) * ( ND - 2 ) ][ NCNC ] ;
 } ; 
 
@@ -145,7 +139,7 @@ struct spatial_lv1{
    @brief storage for the momenta
  */
 struct veclist {
-  int idx ;
+  size_t idx ;
   int MOM[ ND ] ;
 } ;
 
@@ -153,12 +147,11 @@ struct veclist {
    @struct su2_subgroups
    @brief storage for the indices of su(2) subgroups
 */
-struct su2_subgroups 
-{
-  int idx_a ;
-  int idx_b ;
-  int idx_c ;
-  int idx_d ;
+struct su2_subgroups {
+  size_t idx_a ;
+  size_t idx_b ;
+  size_t idx_c ;
+  size_t idx_d ;
 } ;
 
 /**
@@ -186,9 +179,9 @@ struct wfmeas {
    @param accuracy :: gauge fixing accuracy we try to meet 1E-20 is good
    @param type :: enumerated (LANDAU,COULOMB)
  */
-struct gf_info{
+struct gf_info {
   GF_improvements improve ; // improvement = MAG , SMEARED_PRECONDITIONED
-  int max_iters ; // maximum iterations of the gauge fixing routine
+  size_t max_iters ; // maximum iterations of the gauge fixing routine
   double accuracy ; // average accuracy to be used 
   GLU_fixing type ; // type of gauge fixing used, coulomb or landau?
 } ;
@@ -205,14 +198,14 @@ struct gf_info{
    @param angle :: conical angle from the p=0.
    @param cyl_width :: width of the cylinder in lattice units
  */
-struct cut_info{
+struct cut_info {
   cut_mode dir ; // overwrite to something more sensible
   momentum_cut_def type ; // enumerated cutting type
-  int max_mom ; // maximum momentum allowed for the cut
-  int max_t ; // maximum T for the static potential
+  size_t max_mom ; // maximum momentum allowed for the cut
+  size_t max_t ; // maximum T for the static potential
   char where[ 256 ] ; // where do we output to ?
   lie_field_def definition ; // LOG or LINEAR definition of gluons
-  int angle ; // conical cut angle
+  size_t angle ; // conical cut angle
   double cyl_width ; // cylinder with
 } ;
 
@@ -223,9 +216,9 @@ struct cut_info{
    @param smiters :: number of smearing iterations
    @param type :: can either be (SM_APE,SM_LOG,SM_STOUT)
  */
-struct sm_info{
+struct sm_info {
   GLU_smeardir dir ; // direction ND or ND - 1
-  int smiters ; // number of smearing iterations
+  size_t smiters ; // number of smearing iterations
   smearing_types type ; // type of smearing
 } ;
 
@@ -239,7 +232,7 @@ struct sm_info{
    @param trace :: the read value of the average link trace
    @param checksum :: the read value of the checksum
  */
-struct head_data{
+struct head_data {
   GLU_endian endianess ;
   GLU_output config_type ;
   file_prec precision ;
@@ -257,7 +250,7 @@ struct head_data{
    @param charge :: the sign of the QED charge
    @param meas :: the U(1) measurement being made
  */
-struct u1_info{
+struct u1_info {
   double alpha ;
   double charge ;
   U1_meas meas ;    
@@ -267,7 +260,7 @@ struct u1_info{
    @struct infile_data 
    @brief one struct to rule them all 
  */
-struct infile_data{
+struct infile_data {
   struct gf_info GFINFO ;
   struct cut_info CUTINFO ;
   struct sm_info SMINFO ;

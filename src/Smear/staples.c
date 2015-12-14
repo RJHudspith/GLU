@@ -32,19 +32,19 @@
 void
 all_staples( GLU_complex stap[ NCNC ] , 
 	     const struct site *__restrict lat , 
-	     const int i , 
-	     const int mu , 
-	     const int dir , 
-	     const int type )
+	     const size_t i , 
+	     const size_t mu , 
+	     const size_t dir , 
+	     const size_t type )
 {
   GLU_complex a[ NCNC ] , b[ NCNC ] ; 
-  int nu ; 
+  size_t nu ; 
   for( nu = 0 ; nu < dir ; nu++ ) {
     if( likely( nu != mu ) ) {
       //top staple
-      register const int t1 = lat[ i ].neighbor[nu] ; 
+      register const size_t t1 = lat[ i ].neighbor[nu] ; 
       multab_suNC( a , lat[ i ].O[nu] , lat[ t1 ].O[mu] ) ; 
-      register const int t2 = lat[ i ].neighbor[mu] ; 
+      register const size_t t2 = lat[ i ].neighbor[mu] ; 
       multab_dag_suNC( b , a , lat[ t2 ].O[nu] ) ; 
 
       if( type == SM_LOG ) {
@@ -58,9 +58,9 @@ all_staples( GLU_complex stap[ NCNC ] ,
       a_plus_b( stap , b ) ; 
 
       //bottom staple
-      register const int b1 = lat[ i ].back[nu] ; 
+      register const size_t b1 = lat[ i ].back[nu] ; 
       multabdag_suNC( a , lat[ b1 ].O[nu] , lat[ b1 ].O[mu] ) ; 
-      register const int b2 = lat[ b1 ].neighbor[mu] ; 
+      register const size_t b2 = lat[ b1 ].neighbor[mu] ; 
       multab_suNC( b , a , lat[ b2 ].O[nu] ) ; 
 
       if( type == SM_LOG ) {
@@ -82,10 +82,10 @@ all_staples( GLU_complex stap[ NCNC ] ,
 void
 all_staples_improve( GLU_complex stap[ NCNC ] , 
 		     const struct site *__restrict lat , 
-		     const int i , 
-		     const int mu , 
-		     const int dir , 
-		     const int type )
+		     const size_t i , 
+		     const size_t mu , 
+		     const size_t dir , 
+		     const size_t type )
 {
   // and do the improvement
   GLU_complex c0_stap[ NCNC ] = { } , c1_stap[ NCNC ] = { } ;
@@ -96,13 +96,13 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
   GLU_complex c2_stap[ NCNC ] = { } ;
 #endif 
 
-  int nu ; 
+  size_t nu ; 
   for( nu = 0 ; nu < dir ; nu++ ) {
     if( likely( nu != mu ) ) {
       //top staple
-      register const int t1 = lat[i].neighbor[nu] ; 
+      register const size_t t1 = lat[i].neighbor[nu] ; 
       multab_suNC( a , lat[i].O[nu] , lat[ t1 ].O[mu] ) ; 
-      register const int t2 = lat[i].neighbor[mu] ; 
+      register const size_t t2 = lat[i].neighbor[mu] ; 
       multab_dag_suNC( b , a , lat[ t2 ].O[nu] ) ; 
       if( type == SM_LOG ) {
 	multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
@@ -115,9 +115,9 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
       a_plus_b( c0_stap , b ) ;
 
       //bottom staple
-      const int b1 = lat[i].back[nu] ; 
+      const size_t b1 = lat[i].back[nu] ; 
       multabdag_suNC( a , lat[ b1 ].O[nu] , lat[ b1 ].O[mu] ) ; 
-      const int b2 = lat[ b1 ].neighbor[mu] ; 
+      const size_t b2 = lat[ b1 ].neighbor[mu] ; 
       multab_suNC( b , a , lat[ b2 ].O[nu] ) ; 
       if( type == SM_LOG )  {
 	multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
@@ -130,29 +130,26 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
       a_plus_b( c0_stap , b ) ;
 
       // IMPROVEMENT factors
-
       // this is the ( nu , nu , mu , -nu , -nu )
-      /*
-	The ==<== is the dagger of the link U_\mu(x)
-
-	x-->--x          x==<==x
-	|     |          |     |
-	^     v          v     ^
-	|     |          |     |
-	x     x     +    x     x  
-	|     |          |     |
-	^     v          v     ^
-	|     |          |     |
-	x==<==x          x-->--x
-      */
-
-      register const int tv1 = lat[ i ].neighbor[nu] ; 
+      //
+      // The ==<== is the dagger of the link U_\mu(x)
+      //
+      // x-->--x          x==<==x
+      // |     |          |     |
+      // ^     v          v     ^
+      // |     |          |     |
+      // x     x     +    x     x  
+      // |     |          |     |
+      // ^     v          v     ^
+      // |     |          |     |
+      // x==<==x          x-->--x
+      register const size_t tv1 = lat[ i ].neighbor[nu] ; 
       multab_suNC( a , lat[ i ].O[nu] , lat[ tv1 ].O[nu] ) ; 
-      register const int tv2 = lat[ tv1 ].neighbor[nu] ; 
+      register const size_t tv2 = lat[ tv1 ].neighbor[nu] ; 
       multab_suNC( b , a , lat[ tv2 ].O[mu] ) ; 
       // halfway there ...
-      register const int tv3 = lat[ i ].neighbor[ mu ] ; 
-      register const int tv4 = lat[ tv3 ].neighbor[ nu ] ; 
+      register const size_t tv3 = lat[ i ].neighbor[ mu ] ; 
+      register const size_t tv4 = lat[ tv3 ].neighbor[ nu ] ; 
       multab_dag_suNC( a , b , lat[ tv4 ].O[ nu ] ) ; 
       multab_dag_suNC( b , a , lat[ tv3 ].O[ nu ] ) ; 
       if( type == SM_LOG ) {
@@ -166,13 +163,13 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
       a_plus_b( c1_stap , b ) ;
 
       // include the lower half contributions .....
-      register const int bv1 = lat[ i ].back[nu] ; 
-      register const int bv2 = lat[ bv1 ].back[nu] ; 
+      register const size_t bv1 = lat[ i ].back[nu] ; 
+      register const size_t bv2 = lat[ bv1 ].back[nu] ; 
       multab_dagdag_suNC( a , lat[ bv1 ].O[nu] , lat[ bv2 ].O[nu] ) ; 
       multab_suNC( b , a , lat[ bv2 ].O[mu] ) ; 
-      register const int bv3 = lat[ bv2 ].neighbor[mu] ; 
+      register const size_t bv3 = lat[ bv2 ].neighbor[mu] ; 
       multab_suNC( a , b , lat[ bv3 ].O[nu] ) ; 
-      register const int bv4 = lat[ bv3 ].neighbor[nu] ; 
+      register const size_t bv4 = lat[ bv3 ].neighbor[nu] ; 
       multab_suNC( b , a , lat[ bv4 ].O[nu] ) ; 
       if( type == SM_LOG ) {
 	multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
@@ -185,20 +182,18 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
       a_plus_b( c1_stap , b ) ;
 
       // Horizontal, forwards contribution ....
-      /*
-	x-->--x-->--x        x==<==x--<--x
-	|           |        |           |
-	^           v   +    v           ^
-	|           |        |           |
-	x==<==x--<--<        x-->--x-->--x
-      */
+      //  x-->--x-->--x        x==<==x--<--x
+      //  |           |        |           |
+      //  ^           v   +    v           ^
+      //  |           |        |           |
+      //  x==<==x--<--<        x-->--x-->--x
       // The log is a pain as we usually can eliminate 1 matrix multiply
-      register const int tf1 = lat[ i ].neighbor[nu] ; 
+      register const size_t tf1 = lat[ i ].neighbor[nu] ; 
       multab_suNC( a , lat[ i ].O[nu] , lat[ tf1 ].O[mu] ) ; 
-      register const int tf2 = lat[ tf1 ].neighbor[mu] ; 
+      register const size_t tf2 = lat[ tf1 ].neighbor[mu] ; 
       multab_suNC( b , a , lat[ tf2 ].O[mu] ) ; 
-      const int tf3 = lat[ i ].neighbor[ mu ] ; 
-      register const int tf4 = lat[ tf3 ].neighbor[ mu ] ; 
+      register const size_t tf3 = lat[ i ].neighbor[ mu ] ; 
+      register const size_t tf4 = lat[ tf3 ].neighbor[ mu ] ; 
       multab_dag_suNC( a , b , lat[ tf4 ].O[ nu ] ) ; 
       if( type == SM_LOG ) {
 	multab_dag_suNC( b , a , lat[ tf3 ].O[ mu ] ) ; 
@@ -214,11 +209,11 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
       }
 
       // bottom rectangle
-      register const int bf1 = lat[ i ].back[nu] ; 
+      register const size_t bf1 = lat[ i ].back[nu] ; 
       multabdag_suNC( a , lat[ bf1 ].O[nu] , lat[ bf1 ].O[mu] ) ; 
-      register const int bf2 = lat[ bf1 ].neighbor[mu] ; 
+      register const size_t bf2 = lat[ bf1 ].neighbor[mu] ; 
       multab_suNC( b , a , lat[ bf2 ].O[mu] ) ; 
-      register const int bf3 = lat[ bf2 ].neighbor[mu] ; 
+      register const size_t bf3 = lat[ bf2 ].neighbor[mu] ; 
       multab_suNC( a , b , lat[ bf3 ].O[nu] ) ; 
       if( type == SM_LOG ) {
 	multab_dag_suNC( b , a , lat[ tf3 ].O[ mu ] ) ; 
@@ -235,25 +230,23 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
       a_plus_b( c1_stap , b ) ;
 
       //// The horizontal, backwards contribution
-      /*
-	x-->--x-->--x       x--<--x==<==x
-	|           |       |           |
-	^           v   +   v           ^
-	|           |       |           |
-	x--<--x==<==x       x-->--x-->--x
-      */
-
+      //
+      // x-->--x-->--x       x--<--x==<==x
+      // |           |       |           |
+      // ^           v   +   v           ^
+      // |           |       |           |
+      // x--<--x==<==x       x-->--x-->--x
       // this one is split
       if( type == SM_LOG ) {
 	// do the top staple
-	register const int tb1 = lat[ i ].back[mu] ; 
+	register const size_t tb1 = lat[ i ].back[mu] ; 
 	multabdag_suNC( a , lat[ tb1 ].O[mu] , lat[ tb1 ].O[nu] ) ; 
-	register const int tb2 = lat[ tb1 ].neighbor[nu] ; 
+	register const size_t tb2 = lat[ tb1 ].neighbor[nu] ; 
 	multab_suNC( b , a , lat[ tb2 ].O[mu] ) ; 
 	// halfway there ...
-	register const int tb3 = lat[ tb2 ].neighbor[mu] ; 
+	register const size_t tb3 = lat[ tb2 ].neighbor[mu] ; 
 	multab_suNC( a , b , lat[ tb3 ].O[ mu ] ) ; 
-	register const int tb4 = lat[ i ].neighbor[ mu ] ; 
+	register const size_t tb4 = lat[ i ].neighbor[ mu ] ; 
 	multab_dag_suNC( b , a , lat[ tb4 ].O[ nu ] ) ; 
 	multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
         #ifdef SLOW_SMEAR
@@ -264,13 +257,13 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
 	a_plus_b( c1_stap , b ) ;
 
 	// and the bottom staple ...
-	register const int bb1 = lat[ i ].back[mu] ; 
-	register const int bb2 = lat[ bb1 ].back[nu] ; 
+	register const size_t bb1 = lat[ i ].back[mu] ; 
+	register const size_t bb2 = lat[ bb1 ].back[nu] ; 
 	multab_dagdag_suNC( a , lat[ bb1 ].O[mu] , lat[ bb2 ].O[nu] ) ; 
 	multab_suNC( b , a , lat[ bb2 ].O[mu] ) ; 
-	const register int bb3 = lat[ bb2 ].neighbor[mu] ; 
+	const register size_t bb3 = lat[ bb2 ].neighbor[mu] ; 
 	multab_suNC( a , b , lat[ bb3 ].O[mu] ) ; 
-	const register int bb4 = lat[ bb3 ].neighbor[mu] ; 
+	const register size_t bb4 = lat[ bb3 ].neighbor[mu] ; 
 	multab_suNC( b , a , lat[ bb4 ].O[nu] ) ; 
 	multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
         #ifdef SLOW_SMEAR
@@ -279,57 +272,52 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
 	exact_log_fast( b , a ) ; 
         #endif
       } else {
-	register const int tb1 = lat[i].back[mu] ; 
-	register const int tb2 = lat[ tb1 ].neighbor[nu] ; 
+	register const size_t tb1 = lat[i].back[mu] ; 
+	register const size_t tb2 = lat[ tb1 ].neighbor[nu] ; 
 	multab_suNC( b , lat[ tb1 ].O[nu] , lat[ tb2 ].O[mu] ) ; 
-	register const int tb3 = lat[ tb2 ].neighbor[mu] ; 
+	register const size_t tb3 = lat[ tb2 ].neighbor[mu] ; 
 	multab_suNC( a , b , lat[ tb3 ].O[ mu ] ) ; 
-	register const int tb4 = lat[ i ].neighbor[ mu ] ; 
+	register const size_t tb4 = lat[ i ].neighbor[ mu ] ; 
 	multab_dag_suNC( b , a , lat[ tb4 ].O[ nu ] ) ; 
 	equiv( tempstap , b ) ;
 
 	// bottom rectangle
-	register const int bb2 = lat[ tb1 ].back[nu] ; 
+	register const size_t bb2 = lat[ tb1 ].back[nu] ; 
 	multabdag_suNC( b , lat[ bb2 ].O[nu] , lat[ bb2 ].O[mu] ) ; 
-	register const int bb3 = lat[ bb2 ].neighbor[mu] ; 
+	register const size_t bb3 = lat[ bb2 ].neighbor[mu] ; 
 	multab_suNC( a , b , lat[ bb3 ].O[mu] ) ; 
-	register const int bb4 = lat[ bb3 ].neighbor[mu] ; 
+	register const size_t bb4 = lat[ bb3 ].neighbor[mu] ; 
 	multab_suNC( b , a , lat[ bb4 ].O[nu] ) ; 
 	a_plus_b( tempstap , b ) ; 
-
 	multabdag( b , lat[ tb1 ].O[mu] , tempstap ) ;
       }
       a_plus_b( c1_stap , b ) ;
 
-
-      /*
-	ONE LOOP SYMANZIK EXTRA TERM
-
-          is of the form 
-
-              x-->--x          x==<==x
-             /     /           |     |
-            ^     v            v     ^
-           /     /             |     |
-          x     x      +       x     x
-          |     |             /     /
-          ^     v            v     ^
-          |     |           /     /
-          x==<==x          x-->--x
-
-      */
+      // ONE LOOP SYMANZIK EXTRA TERM
+      //
+      // is of the form 
+      //
+      //      x-->--x          x==<==x
+      //     /     /           |     |
+      //    ^     v            v     ^
+      //   /     /             |     |
+      //  x     x      +       x     x
+      //  |     |             /     /
+      //  ^     v            v     ^
+      //  |     |           /     /
+      //  x==<==x          x-->--x
       #ifdef SYMANZIK_ONE_LOOP
-      int rho ;
+      size_t rho ;
       for( rho = 0 ; rho < dir ; rho++ ) {
 	if( rho != mu && rho != nu ) {
 	  // include the term (nu,rho,mu,-\rho,-\nu)
 	  //top staple
-	  int temp = lat[i].neighbor[nu] ; 
+	  size_t temp = lat[i].neighbor[nu] ; 
 	  multab_suNC( a , lat[i].O[nu] , lat[temp].O[rho] ) ; 
 	  temp = lat[temp].neighbor[rho] ; 
 	  multab_suNC( b , a , lat[temp].O[mu] ) ; 
 	  // halfway there ...
-	  int temp2 = lat[ i ].neighbor[ mu ] ; 
+	  size_t temp2 = lat[ i ].neighbor[ mu ] ; 
 	  temp = lat[ temp2 ].neighbor[ rho ] ; 
 	  multab_dag_suNC( a , b , lat[ temp ].O[ nu ] ) ; 
 	  multab_dag_suNC( b , a , lat[ temp2 ].O[ rho ] ) ; 
@@ -378,7 +366,6 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
   const GLU_real c0_multiplier = IWA_WEIGHT1 ; 
   const GLU_real c1_multiplier = IWA_WEIGHT2 ; 
   #endif
-
   #if NC == 3
   if( type == SM_LOG ) {
       stap[0] = c0_multiplier * c0_stap[0] + c1_multiplier * c1_stap[0] ;

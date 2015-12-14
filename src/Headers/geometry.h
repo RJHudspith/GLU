@@ -34,27 +34,27 @@ int
 gen_site( const int x[ ND ] ) ;
 
 /**
-   @fn int get_site_2piBZ( int x[ ND ] , const int DIMS )
+   @fn size_t get_site_2piBZ( int x[ ND ] , const size_t DIMS )
    @brief Returns our location when given momenta in the \f$ 0 \rightarrow 2\pi \f$ BZ.
    @param x :: Momentum vector
    @param DIMS :: maximum dimension of the problem
- **/
-int
+**/
+size_t
 get_site_2piBZ( int x[ ND ] , 
-		const int DIMS ) ;
+		const size_t DIMS ) ;
 
 /**
-   @fn int get_site_pipiBZ( int x[ ND ] , const int DIMS )
+   @fn size_t get_site_pipiBZ( int x[ ND ] , const int DIMS )
    @brief Returns our location when given momenta in the  \f$ -\frac{L_\mu}{2} \rightarrow ( \frac{L_\mu}{2} - 1 ) \f$ BZ.
    @param x :: Momenta
    @param DIMS :: Maximum number of directions of momenta
  **/
-int
+size_t
 get_site_pipiBZ( int x[ ND ] , 
-		 const int DIMS ) ;
+		 const size_t DIMS ) ;
 
 /**
-   @fn void get_mom_2piBZ( int x[ ND ] , const int i , const int DIMS )
+   @fn void get_mom_2piBZ( int x[ ND ] , const size_t i , const size_t DIMS )
    @brief Gives the ND-momentum "x" in the \f$ 0 \rightarrow L_\mu \f$ BZ definition when given a lattice index. 
    @param x :: Momenta
    @param i :: Lattice index
@@ -63,11 +63,11 @@ get_site_pipiBZ( int x[ ND ] ,
  **/
 void 
 get_mom_2piBZ( int x[ ND ] , 
-	       const int i , 
-	       const int DIMS ) ;
+	       const size_t i , 
+	       const size_t DIMS ) ;
 
 /**
-   @fn void get_mom_pipi( int x[ ND ] , const int i , const int DIMS )
+   @fn void get_mom_pipi( int x[ ND ] , const size_t i , const size_t DIMS )
    @brief Gives the ND-momentum "x" in the \f$ -\frac{L_\mu}{2} \rightarrow ( \frac{L_\mu}{2} - 1 )  \f$ BZ definition. 
    @param x :: Momenta
    @param i :: Lattice index
@@ -76,11 +76,11 @@ get_mom_2piBZ( int x[ ND ] ,
  **/
 void
 get_mom_pipi( int x[ ND ] , 
-	      const int i , 
-	      const int DIMS ) ;
+	      const size_t i , 
+	      const size_t DIMS ) ;
 
 /**
-   @fn void get_mom_2piBZ_hirep2( int x[ ND ] , const int i )
+   @fn void get_mom_2piBZ_hirep2( int x[ ND ] , const size_t i )
    @brief ND - generic code to calculate the lattice position vector in the HiRep geometry t,x,y,z. 
    @param x :: ND-momentum
    @param i :: Lattice index
@@ -88,7 +88,7 @@ get_mom_pipi( int x[ ND ] ,
  **/
 void 
 get_mom_2piBZ_hirep2( int x[ ND ] , 
-		      const int i ) ;
+		      const size_t i ) ;
 
 /**
    @fn void compute_p( GLU_real p[ ND ] , const int n[ ND ] , const int DIMS )
@@ -100,10 +100,10 @@ get_mom_2piBZ_hirep2( int x[ ND ] ,
 void
 compute_p( GLU_real p[ ND ] ,
 	   const int n[ ND ] ,
-	   const int DIMS ) ;
+	   const size_t DIMS ) ;
 
 /**
-   @fn GLU_real gen_p_sq( const int i , const int DIMS )
+   @fn GLU_real gen_p_sq( const size_t i , const size_t DIMS )
    @brief Returns the momentum-squared of the site using the momentum definition for links:
    @param i :: lattice index
    @param DIMS :: Maximum number of dimensions
@@ -113,11 +113,11 @@ compute_p( GLU_real p[ ND ] ,
    integer operations.
  **/
 GLU_real 
-gen_p_sq( const int i , 
-	  const int DIMS ) ;
+gen_p_sq( const size_t i , 
+	  const size_t DIMS ) ;
 
 /**
-   @fn GLU_real gen_p_sq_imp( const int i , const int DIMS )
+   @fn GLU_real gen_p_sq_imp( const size_t i , const size_t DIMS )
    @brief Returns the momentum-squared of the site using the momentum definition for links:
    @param i :: lattice index
    @param DIMS :: Maximum number of dimensions
@@ -128,11 +128,11 @@ gen_p_sq( const int i ,
    integer operations.
  **/
 GLU_real 
-gen_p_sq_imp( const int i , 
-	      const int DIMS ) ;
+gen_p_sq_imp( const size_t i , 
+	      const size_t DIMS ) ;
 
 /**
-   @fn GLU_real gen_p_sq_feyn( const int i , int *flag )
+   @fn GLU_real gen_p_sq_feyn( const size_t i , int *flag )
    @brief Returns the \f$ p^2 \f$ of a site "i"
 
    @param i :: lattice index
@@ -141,11 +141,11 @@ gen_p_sq_imp( const int i ,
    With the caveat that the momenta also satisfy the Feynman gauge condition in momentum space. Used in the U(1)-ification.
  **/
 GLU_real 
-gen_p_sq_feyn( const int i , 
+gen_p_sq_feyn( const size_t i , 
 	       int *flag ) ;
 
 /**
-   @fn void gen_get_p( GLU_real p[ ND ] , const int i , const int DIMS )
+   @fn void gen_get_p( GLU_real p[ ND ] , const size_t i , const size_t DIMS )
    @brief writes into "p" the lattice momentum
 
    @param p :: momentum vector
@@ -155,8 +155,8 @@ gen_p_sq_feyn( const int i ,
 **/
 void 
 gen_get_p( GLU_real p[ ND ] , 
-	   const int i , 
-	   const int DIMS ) ;
+	   const size_t i , 
+	   const size_t DIMS ) ;
 
 /**
    @fn void get_vec_from_origin( int n[ ND ] , const int i , const int DIMS )
@@ -167,19 +167,19 @@ gen_get_p( GLU_real p[ ND ] ,
  */
 void
 get_vec_from_origin( int n[ ND ] , 
-		     const int i , 
-		     const int DIMS ) ;
+		     const size_t i , 
+		     const size_t DIMS ) ;
 
 /**
-   @fn int compute_rsq( const int site , const int dir )
+   @fn size_t compute_rsq( const size_t site , const size_t dir )
    @brief given a lattice site, returns distance from origin (0,0,0,..,0)
    @param site :: lexicographical site index
    @param DIMS :: maximum number of dimensions, i.e. ND-1 would be in the spatial subcube
    @return the integer valued r-squared
  */
-int
-compute_rsq( const int site , 
-	     const int dir ) ;
+size_t
+compute_rsq( const size_t site , 
+	     const size_t dir ) ;
 
 /**
    @fn int compute_spacing( const int separation[ ND ] , const int k , const int DIMS )
@@ -191,17 +191,17 @@ compute_rsq( const int site ,
  */
 int
 compute_spacing( const int separation[ ND ] ,
-		 const int k ,
-		 const int DIMS ) ;
+		 const size_t k ,
+		 const size_t DIMS ) ;
 
 /**
-   @fn int gen_shift( const int i , const int dir )
+   @fn size_t gen_shift( const size_t i , const int dir )
    @brief Returns a site index shifted by one in the direction "dir"
    @param i :: lattice index
-   @param dir :: direction of the shift
+   @param dir :: direction of the shift can be negative i.e. backward 
  **/
-int
-gen_shift( const int i , 
+size_t
+gen_shift( const size_t i , 
 	   const int dir ) ;
 
 /**
@@ -213,8 +213,8 @@ gen_shift( const int i ,
 */
 void
 TwoPI_mpipi_momconv( int MOM[ ND ] , 
-		     const int i , 
-		     const int DIR ) ;
+		     const size_t i , 
+		     const size_t DIR ) ;
 
 /**
    @fn void init_navig( struct site *__restrict lat )

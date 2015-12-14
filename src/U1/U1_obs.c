@@ -28,22 +28,20 @@
 
 // calculation of the non-compact U(1) plaquette
 static double 
-non_plaquette( plaq , O )
-     double *__restrict plaq ; // passes the compact one by reference
-     const GLU_real *__restrict *__restrict O ;
+non_plaquette( double *__restrict plaq ,
+	       const GLU_real *__restrict *__restrict O )
 {
-  const double denom = 2. / ( LVOLUME * ND * ( ND - 1 ) ) ;
-  int i ;
+  const double denom = 1. / (double)( LVOLUME * ND * ( ND - 1 ) ) ;
+  size_t i ;
   double plaquette = 0. , sum = 0. ;
 #pragma omp parallel for private(i) reduction(+:sum) reduction(+:plaquette) 
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    double loc_sum = 0.0 , loc_plaq = 0.0 ;
-    int mu ;
+    register double loc_sum = 0.0 , loc_plaq = 0.0 ;
+    size_t mu , nu , s , t ;
     for( mu = 0 ; mu < ND ; mu++ ) {
-      const int s = gen_shift( i , mu ) ;
-      int nu ;
+      s = gen_shift( i , mu ) ;
       for( nu = 0 ; nu < mu ; nu++ ) {
-	const int t = gen_shift( i , nu ) ;
+	t = gen_shift( i , nu ) ;
 	register const double temp = (double)O[mu][i] + \
 	  (double)O[nu][s] -				\
 	  (double)O[mu][t] -				\
@@ -56,32 +54,30 @@ non_plaquette( plaq , O )
     sum = sum + (double)loc_sum ;
   }
   *plaq = sum * denom ;
-  return plaquette * denom * 0.5 ;
+  return plaquette * denom ;
 }
 
 // computation of the U1 rectangle
 static double
-U1_rectangle( U1REC , O )
-     double *__restrict U1REC ;
-     const GLU_real *__restrict *__restrict O ;
+U1_rectangle( double *__restrict U1REC ,
+	      const GLU_real *__restrict *__restrict O )
 {
-  const double denom = 2. / ( LVOLUME * ND * ( ND - 1 ) ) ;
-  int i ;
+  const double denom = 1. / ( LVOLUME * ND * ( ND - 1 ) ) ;
+  size_t i ;
 
   double sum_nc = 0. , sum = 0. ;
 #pragma omp parallel for private(i) reduction(+:sum) reduction(+:sum_nc)
   for( i = 0 ; i < LVOLUME ; i++ ) {
 
     double loc_rec = 0. , loc_ncrec = 0. ;
-    int mu ;
+    size_t mu , nu , s , t , u , v ;
     // first one is the (2x1) rectangle
     for( mu = 0 ; mu < ND ; mu++ ) {
-      int nu ;
-      const int s = gen_shift( i , mu ) ;
-      const int t = gen_shift( s , mu ) ;
+      s = gen_shift( i , mu ) ;
+      t = gen_shift( s , mu ) ;
       for( nu = 0 ; nu < mu ; nu++ ) {
-	const int v = gen_shift( i , nu ) ;
-	const int u = gen_shift( v , mu ) ;
+	v = gen_shift( i , nu ) ;
+	u = gen_shift( v , mu ) ;
 	register const double cache = (double)O[mu][i] +		\
 	  (double)O[mu][s] +						\
 	  (double)O[nu][t] -						\
@@ -94,12 +90,11 @@ U1_rectangle( U1REC , O )
     }
     // second one is the (1x2) rectangle
     for( mu = 0 ; mu < ND ; mu++ ) {
-      int nu ;
-      const int s = gen_shift( i , mu ) ;
+      s = gen_shift( i , mu ) ;
       for( nu = 0 ; nu < mu ; nu++ ) {
-	const int t = gen_shift( s , nu ) ;
-	const int v = gen_shift( i , nu ) ;
-	const int u = gen_shift( v , nu ) ;
+	t = gen_shift( s , nu ) ;
+	v = gen_shift( i , nu ) ;
+	u = gen_shift( v , nu ) ;
 	register const double cache = (double)O[mu][i] + (double)O[nu][s] + \
 	  (double)O[nu][t] - (double)O[mu][u] -\
 	  (double)O[mu][v] - (double)O[nu][i] ;
@@ -112,7 +107,7 @@ U1_rectangle( U1REC , O )
     sum_nc = sum_nc + (double)( loc_ncrec * 0.5 ) ;
   }
   *U1REC = sum * denom ;
-  return sum_nc * denom * 0.5 ;
+  return sum_nc * denom ;
 }
 
 // wrapper for the U1 configurations

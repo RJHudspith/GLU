@@ -66,19 +66,19 @@ compute_Qsusc( struct site *__restrict lat ,
 
   // set up the matrix-valued array of the topological charge
   GLU_complex *qtop = malloc( LVOLUME * sizeof( GLU_complex ) ) ;
-  int i ;
+  size_t i ;
 
   // precompute all of charge densities q(x)
   compute_Gmunu_array( qtop , lat ) ;
 
-  #ifdef verbose
+#ifdef verbose
   register double sum = 0.0 , sumsq = 0.0 ;
   for( i = 0 ; i < LVOLUME ; i++ ) {
     sum += creal( qtop[i] ) ;
     sumsq += creal( qtop[i] * qtop[i] ) ;
   }
   printf( "\nQTOP %f %f \n" , sum * NORM , sumsq * NORMSQ ) ;
-  #endif
+#endif
 
   // allocate the results
   double *qcorr = malloc( size[0] * sizeof( double ) ) ; 
@@ -144,10 +144,10 @@ compute_Qsusc( struct site *__restrict lat ,
     get_mom_2piBZ( separation , list[i].idx , ND ) ;
 
     // loop the lattice varying source and sink with the correct separation
-    int source = 0 ;
+    size_t source = 0 ;
     for( source = 0 ; source < LVOLUME ; source++ ) {
       // translate the source from k by a vector separation
-      const int sink = compute_spacing( separation , source , ND ) ;
+      const size_t sink = compute_spacing( separation , source , ND ) ;
       //trace of the products
       sumqq += creal( qtop[source] * qtop[sink] ) ;
     }

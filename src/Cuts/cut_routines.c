@@ -494,7 +494,7 @@ compute_veclist( int *__restrict list_size ,
   struct veclist *list = NULL ;
 
   // loop up to DIMS
-  int LOOP = 1 , i ;
+  size_t LOOP = 1 , i ;
   for( i = 0 ; i < DIMS ; i++ ) {
     LOOP *= Latt.dims[ i ] ;
   }
@@ -508,14 +508,14 @@ compute_veclist( int *__restrict list_size ,
   sprintf( str , "%s/Local/Moments/" , HAVE_PREFIX ) ;
 
   // write its dimensions
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < DIMS - 1 ; mu++ ) {
-    sprintf( str , "%s%dx" , str , Latt.dims[ mu ] ) ;
+    sprintf( str , "%s%zux" , str , Latt.dims[ mu ] ) ;
   }
-  sprintf( str , "%s%d" , str , Latt.dims[ DIMS - 1 ] ) ;
+  sprintf( str , "%s%zu" , str , Latt.dims[ DIMS - 1 ] ) ;
 
   // whether we use the sin-mom or the psq mom for our configs
-  sprintf( str , "%s_nn%d_%d_%d_%1.2f" ,
+  sprintf( str , "%s_nn%zu_%d_%zu_%1.2f" ,
 	   str , CUTINFO.max_mom , CUTINFO.type , 
 	   CUTINFO.angle , CUTINFO.cyl_width ) ;
 

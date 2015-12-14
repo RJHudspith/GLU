@@ -22,8 +22,6 @@
 
    @warning I have added the generic code for this using tail recursion. It is now ND-generic for what it is worth.
  */
-
-
 #include "Mainfile.h"
 
 #include "cut_routines.h" // for simorb ratios
@@ -31,15 +29,13 @@
 
 // get a position of a possible momentum
 static int
-get_posit( p , momentum , nmom )
-     const int *p ;
-     const int *__restrict *__restrict momentum ;
-     const int nmom ;
+get_posit( const int *p ,
+	   const int *__restrict *__restrict momentum ,
+	   const int nmom )
 {
-  int check ;
+  size_t check , nu , flag = 0 ;
   // loop momentum list
   for( check = 0 ; check < nmom ; check ++ ) {
-    int nu , flag = 0 ;
     for( nu = 0 ; nu < ND ; nu++ ) {
       if( momentum[ check ][nu] != p[nu] ) {
 	flag = 1 ;
@@ -48,7 +44,6 @@ get_posit( p , momentum , nmom )
     }
     if( flag == 0 ) { return check ; }
   }
-  int nu ;
   printf( "404 ! MOMENTUM NOT FOUND :( NMOM :: %d ( " , nmom ) ;
   for( nu = 0 ; nu < ND ; nu++ ) {
     printf( "%d " , p[nu] ) ;
@@ -60,15 +55,15 @@ get_posit( p , momentum , nmom )
 ///// EXPERIMENTAL CUTS /////
 #ifdef CUTS_EXPERIMENT
 // put in a cutting routine ...
-static int count_zeros( const int p[ ND ] ) 
+static size_t count_zeros( const int p[ ND ] ) 
 {
-  int mu , count = 0 ;
+  size_t mu , count = 0 ;
   for( mu = 0 ; mu < ND ; mu++ ) { if( p[mu] == 0 ) { count++ ; } } return count ;
 }
 // have a look to see if one of the momenta are over a value too .
-static int over_val( const int p[ ND ] , const int val ) 
+static size_t over_val( const int p[ ND ] , const int val ) 
 {
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) { if( p[mu] > ( val*(double)Latt.dims[mu]/(double)Latt.dims[ND-1] ) ) return GLU_FAILURE ; }
   return GLU_SUCCESS ;   
 }
@@ -77,7 +72,8 @@ static int over_val( const int p[ ND ] , const int val )
 static int
 momcut( int p1[ ND ] , int p2[ ND ] )
 {
-  int mu , p3[ ND ] ;
+  size_t mu ;
+  int p3[ ND ] ;
   for( mu = 0 ; mu < ND ; mu++ ) { p3[mu] = -( p1[mu] + p2[mu] ) ; }
   if( count_zeros( p1 ) > NZEROS || over_val( p1 , Latt.dims[ND-1]/2 ) == GLU_FAILURE ) { return GLU_FAILURE ; }
   if( count_zeros( p2 ) > NZEROS || over_val( p2 , Latt.dims[ND-1]/2 ) == GLU_FAILURE ) { return GLU_FAILURE ; }
@@ -89,10 +85,9 @@ momcut( int p1[ ND ] , int p2[ ND ] )
 
 // return the lattice momentum from the points in the BZ
 static inline double
-get_psq( p )
-     const int *p ;
+get_psq( const int *p )
 { 
-  int nu ;
+  size_t nu ;
   register double psq = 0.0 ;
   for( nu = 0 ; nu < ND ; nu++ ) {
     const double cache = p[ nu ] * Latt.twiddles[ nu ] ;
@@ -104,10 +99,10 @@ get_psq( p )
 // generic delta function
 static double **d ;
 static void
-init_delta( )
+init_delta( void )
 {
   d = (double**)malloc( ND * sizeof( double* ) ) ;
-  int i , j ;
+  size_t i , j ;
   for( i = 0 ; i < ND ; i++ ) {
     d[i] = (double*)malloc( ND * sizeof( double ) ) ;
     for( j = 0 ; j < ND ; j++ ) {
@@ -116,10 +111,11 @@ init_delta( )
   }
   return ;
 }
+
 static void
-free_delta( )
+free_delta( void )
 {
-  int i ;
+  size_t i ;
   for( i = 0 ; i < ND ; i++ ) {
     free( d[i] ) ;
   }
@@ -127,24 +123,25 @@ free_delta( )
   return ;
 }
 
-/*
-  Recurse the second looking for again equivalent psq's and finally the 
-  third triplet. If we are setting the values of the triplet we do a check
-  with the lattice momentum.
+//  Recurse the second looking for again equivalent psq's and finally the 
+//  third triplet. If we are setting the values of the triplet we do a check
+//  with the lattice momentum.
 
-  It turns out I was stack-smashing pretty badly here, I think it is fixed.
-  Actually it looks like the scoping in the openmp'd bit was killing us
-*/
+//  It turns out I was stack-smashing pretty badly here, I think it is fixed.
+//  Actually it looks like the scoping in the openmp'd bit was killing us
 static int
-recurse_p2( int *__restrict *__restrict triplet ,
+recurse_p2( size_t *__restrict *__restrict triplet ,
 	    int *__restrict *__restrict momentum , 
-	    int *p1 , int *p2 , 
-	    const int nn , const int r_nn , 
-	    const int nmom ,
-	    int count , int check , 
+	    int *p1 , 
+	    int *p2 , 
+	    const size_t nn , 
+	    const size_t r_nn , 
+	    const size_t nmom ,
+	    const size_t count , 
+	    const size_t check , 
 	    const int FIRST_PASS )
 { 
-  int mu , sum = 0 ; 
+  size_t mu , sum = 0 ; 
   for( mu = 0 ; mu < ND ; mu++ ) {
     sum += p2[mu] * p2[mu] ;
   }
@@ -158,9 +155,7 @@ recurse_p2( int *__restrict *__restrict triplet ,
     }
 
     // if we have a final triplet we equate all the triplets
-    if( test == nn ) 
-      //if( && momcut( p1 , p2 ) == GLU_SUCCESS ) 
-      {
+    if( test == nn ) {
 
 	// if we are not doing a first pass, we actually compute something
 	if( FIRST_PASS != GLU_TRUE ) {
@@ -176,11 +171,6 @@ recurse_p2( int *__restrict *__restrict triplet ,
 	    adp3[mu] = -(int)rats[mu] * ( p1[mu] + p2[mu] ) ;
 	  }   
 	  
-	  // printf( "%d %d %d %d \n" , adp1[0] , adp1[1] , adp1[2] , adp1[3] ) ;
-	  // printf( "%d %d %d %d \n" , adp2[0] , adp2[1] , adp2[2] , adp2[3] ) ;
-	  // printf( "%d %d %d %d \n" , adp3[0] , adp3[1] , adp3[2] , adp3[3] ) ;
-	  // printf( "%d %d :: %d \n" , count+check , count , nmom ) ;
-
 	  const int trip_idx = count + check ;
 
 	  triplet[ trip_idx ][0] = get_posit( adp1 , (const int**)momentum , nmom ) ;
@@ -208,7 +198,7 @@ recurse_p2( int *__restrict *__restrict triplet ,
   }
 
   // loop the smallest first
-  for( mu = ND - 1 ; mu >= 0 ; mu-- ) {
+  for( mu = ND - 1 ; mu != 0 ; mu-- ) {
     if( p2[mu] < r_nn ) {
       p2[mu]++ ;
       return recurse_p2( triplet , momentum , p1 , p2 , 
@@ -224,19 +214,20 @@ recurse_p2( int *__restrict *__restrict triplet ,
 
 // recurse the first level and look for equivalent psq's
 static int
-recurse_p( int *__restrict *__restrict triplet ,
+recurse_p( size_t *__restrict *__restrict triplet ,
 	   int *__restrict *__restrict momentum , 
 	   int *p1 , 
-	   const int nn , const int r_nn ,
-	   const int nmom , 
-	   int count ,
+	   const size_t nn , 
+	   const size_t r_nn ,
+	   const size_t nmom , 
+	   const size_t count ,
 	   const int FIRST_PASS )
 { 
-  int mu , sum = 0 ; 
+  size_t mu , sum = 0 ; 
   for( mu = 0 ; mu < ND ; mu++ ) {
     sum += p1[mu] * p1[mu] ;
   }
-  int check = 0 ;
+  size_t check = 0 ;
   // if we have a hit we recurse down a level
   if( sum == nn ) {
     //int p2[ ND ] ;
@@ -250,7 +241,7 @@ recurse_p( int *__restrict *__restrict triplet ,
     free( p2 ) ;
   }
   // loop the smallest first
-  for( mu = ND-1 ; mu >= 0 ; mu-- ) {
+  for( mu = ND-1 ; mu != 0 ; mu-- ) {
     if( p1[mu] < r_nn ) {
       p1[mu]++ ;
       return recurse_p( triplet , momentum , p1 , 
@@ -275,16 +266,16 @@ recurse_p( int *__restrict *__restrict triplet ,
    @return #GLU_SUCCESS or #GLU_FAILURE
  **/
 static void
-get_triplet( int *__restrict *__restrict triplet , 
+get_triplet( size_t *__restrict *__restrict triplet , 
 	     int *__restrict *__restrict momentum , 
-	     const int nnmax , 
-	     const int nmom )
+	     const size_t nnmax , 
+	     const size_t nmom )
 {
-  int nn ;
+  size_t nn ;
   simorb_ratios( ND ) ;
   for( nn = 0 ; nn < ND ; nn++ ) { rats[ nn ] = 1. / rats[nn] ; }
 
-  int count = 0 ;
+  size_t count = 0 ;
   // loop the nn's
   for( nn = 0 ; nn < nnmax ; nn += 2 ) {
     const int root_nn = (int)sqrt( nn ) ;
@@ -299,14 +290,14 @@ get_triplet( int *__restrict *__restrict triplet ,
 		       nn , root_nn , nmom , 
 		       count , GLU_FALSE ) ;
 
-    printf( "Checking mom-conservation orbit :: %d \n" , nn ) ; 
+    printf( "Checking mom-conservation orbit :: %zu \n" , nn ) ; 
     free( p ) ;
   }
   return ;
 }
 
 /**
-   @fn static void get_trip( int *__restrict trip , const int nnmax )
+   @fn static void get_trip( size_t *__restrict trip , const size_t nnmax )
    @brief calculates the size of each triplet and checks once again for conservation of lattice momentum.
    @param trip :: the momentum list after cutting
    @param nnmax :: maximum \f$ p^2 \f$
@@ -315,18 +306,18 @@ get_triplet( int *__restrict *__restrict triplet ,
    @return #GLU_SUCCESS or #GLU_FAILURE
  **/
 static void
-get_trip( int *__restrict trip , 
-	  const int nnmax )
+get_trip( size_t *__restrict trip , 
+	  const size_t nnmax )
 {
   // unused variables ...
-  int **triplet = malloc( sizeof( int* ) ) ;
+  size_t **triplet = malloc( sizeof( int* ) ) ;
   int **momentum = malloc( sizeof( int* ) ) ;
-  int nmom = 0 ;
+  size_t nmom = 0 ;
 
   // feel dirty just doing this
-  int nn ;
+  size_t nn ;
   for( nn = 0 ; nn < 1 ; nn++ ) {
-    triplet[nn] = (int*) malloc( sizeof( int ) ) ;
+    triplet[nn] = (size_t*) malloc( sizeof( size_t ) ) ;
     momentum[nn] = (int*) malloc( sizeof( int ) ) ;
   }
 
@@ -335,26 +326,26 @@ get_trip( int *__restrict trip ,
   for( nn = 0 ; nn < ND ; nn++ ) { rats[ nn ] = 1. / rats[nn] ; }
 
   // finally loop our triples
-  int count = 0 ;
+  size_t count = 0 ;
   // loop the nn's
   for( nn = 0 ; nn < nnmax ; nn += 2 ) {
 
-    const int root_nn = (int)sqrt( nn ) ;
+    const size_t root_nn = (int)sqrt( nn ) ;
     //int p[ ND ] , mu ;
     int *p = malloc( ND * sizeof( int ) ) , mu ;
     for( mu = 0 ; mu < ND ; mu ++ ) {
       p[mu] = ( fabs( rats[mu] - (int)rats[mu] ) < PREC_TOL ) ? -root_nn : 0.0 ;
     }
 
-    int check = count ;
-    int this = recurse_p( triplet , momentum , p , 
-			  nn , root_nn , nmom , 
-			  count , GLU_TRUE ) ;
-
+    size_t check = count ;
+    size_t this = recurse_p( triplet , momentum , p , 
+			     nn , root_nn , nmom , 
+			     count , GLU_TRUE ) ;
+    
     free( p ) ;
     count = this ;
     trip[nn/2] = count - check ;
-    printf( "[CUTS] %d :: %d \n" , nn/2 , trip[nn/2] ) ;
+    printf( "[CUTS] %zu :: %zu \n" , nn/2 , trip[nn/2] ) ;
   }
 
   // free this crap
@@ -372,11 +363,14 @@ get_trip( int *__restrict trip ,
 #ifndef PROJ_GRACEY
 
 static double
-get_proj( p1 , p2 , p3 , mu , nu , rho )
-     const double p1[ ND ] , p2[ ND ] , p3[ ND ] ;
-     const int mu , nu , rho ;
+get_proj( const double p1[ ND ] , 
+	  const double p2[ ND ] , 
+	  const double p3[ ND ] ;
+	  const size_t mu , 
+	  const size_t nu , 
+	  const size_t rho )
 {
-  int mup , nup ,rhop ;
+  size_t mup , nup ,rhop ;
   double psq = 0. ;
   for( mup = 0 ; mup < ND ; mup++ )  {
     const double mom = p1[mup] ;
@@ -446,20 +440,20 @@ get_proj( p1 , p2 , p3 , mu , nu , rho )
 
 /// This is the projector defined from the gracey paper...
 static inline double
-get_proj_gracey( p , q , mu , nu , sigma )
-     const double p[ ND ] , q[ ND ] ;
-     const int mu , nu , sigma ;
+get_proj_gracey( const double p[ ND ] , 
+		 const double q[ ND ] ,
+		 const size_t mu , 
+		 const size_t nu , 
+		 const size_t sigma )
 {
   double psq = 0. ;
-  int mup ;
+  size_t mup ;
   for( mup = 0 ; mup < ND ; mup++ ) {
     psq += p[mup] * p[mup] ;
   }
   psq = ( psq < PREC_TOL ) ? 1.0 : 1.0/psq ;
 
-  /*
-    Vaguely mathematica-generated output...
-   */
+  // Vaguely mathematica-generated output...
 #if PROJ_GRACEY == 1
   return DENOM*(-6.*(6.*p1 - 4.*p10 - 2.*p11 - 2.*p12 - 8.*p13 - 4.*p14 + 3.*p4 - 4.*(2.*p7 + p8 + p9))) ;
 #elif PROJ_GRACEY == 2
@@ -499,24 +493,22 @@ get_proj_gracey( p , q , mu , nu , sigma )
 #else
   return DENOM*(3.*(-2.*p1 + 4.*p10 + 2.*p11 - 4.*p12 + 2.*p13 - 4.*p14 - 5.*p2 + 4.*p3 + 2.*p4 - 4.*p5 + 5.*p6 + 4.*p7 - 2.*(p8 + p9)))/2. ;
 #endif
-
   return GLU_FAILURE ;
 }
 
 // computes the projector is a [i][ND*ND*ND] array
 static void
-compute_projector( int *__restrict *__restrict triplet , 
+compute_projector( size_t *__restrict *__restrict triplet , 
 		   double *__restrict *__restrict proj , 
 		   int *__restrict *__restrict momentum , 
-		   const int count )
+		   const size_t count )
 {
   // precompute the projector
-  int i ;
+  size_t i ;
   #pragma omp parallel for private(i)
   for( i = 0 ; i < count ; i++ ) {
     double mom[ 3 ][ ND ] ;
-    int mu ;
-
+    size_t mu ;
     for( mu = 0 ; mu < ND ; mu ++ ) {
       #ifdef PSQ_MOM
       // PSQ variant
@@ -531,11 +523,11 @@ compute_projector( int *__restrict *__restrict triplet ,
       #endif
     }
 
-    int nu , rho ;
+    size_t nu , rho ;
     for( mu = 0 ; mu < ND ; mu ++ ) {
       for( nu = 0 ; nu < ND ; nu ++ ) {
 	for( rho = 0 ; rho < ND ; rho ++ ) {
-	  const int z = rho + ND * ( nu + ND * mu ) ; 
+	  const size_t z = rho + ND * ( nu + ND * mu ) ; 
 	  // counter for our projector
           #ifdef PROJ_GRACEY
 	  proj[i][z] = get_proj_gracey( mom[ 0 ] ,\
@@ -554,11 +546,11 @@ compute_projector( int *__restrict *__restrict triplet ,
 
 ////// Read the triplet //////////
 int
-read_trip( int *__restrict trip ,
+read_trip( size_t *__restrict trip ,
 	   const int nnmax )
 {
 #ifdef NOT_CONDOR_MODE
-  const int nn = nnmax / 2 ;
+  const size_t nn = nnmax / 2 ;
   char str[256] ;
   sprintf( str , "%s/Local/Moments/TRIP_%d.config" ,
 	   HAVE_PREFIX ,
@@ -581,12 +573,12 @@ read_trip( int *__restrict trip ,
     printf("[CUTS] Storing Trip list @@@ ...\n%s\n",str) ;
     // write to a file 
     FILE *tripfile2 = fopen( str , "wb" ) ;
-    fwrite( trip , sizeof(int) , nn , tripfile2 ) ;
+    fwrite( trip , sizeof( size_t ) , nn , tripfile2 ) ;
     fclose( tripfile2 ) ;
   }
   // otherwise we read it in ...
   tripfile = fopen( str , "rb" ) ;
-  if( fread( trip , sizeof( int ) , nn , tripfile ) != nn ) return GLU_FAILURE ; 
+  if( fread( trip , sizeof( size_t ) , nn , tripfile ) != nn ) return GLU_FAILURE ; 
   fclose( tripfile) ;
 
 #else
@@ -597,13 +589,13 @@ read_trip( int *__restrict trip ,
 
 
 // Reader of files and computer of the projector ...
-short int
-read_triplet_and_proj( int *__restrict *__restrict triplet , 
+int
+read_triplet_and_proj( size_t *__restrict *__restrict triplet , 
 		       double *__restrict *__restrict proj , 
 		       int *__restrict *__restrict momentum , 
-		       const int nnmax , 
-		       const int count ,
-		       const int nmom )
+		       const size_t nnmax , 
+		       const size_t count ,
+		       const size_t nmom )
 {
 #ifdef NOT_CONDOR_MODE
 
@@ -618,11 +610,11 @@ read_triplet_and_proj( int *__restrict *__restrict triplet ,
 	   #endif 
 	   ) ;
 
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < ND - 1 ; mu++ ) {
-    sprintf( str , "%s%dx" , str , Latt.dims[mu] ) ;
+    sprintf( str , "%s%zux" , str , Latt.dims[mu] ) ;
   }
-  sprintf( str , "%s%d_%d.config" , str , Latt.dims[ ND - 1 ] , nnmax ) ;
+  sprintf( str , "%s%zu_%zu.config" , str , Latt.dims[ ND - 1 ] , nnmax ) ;
 
   FILE *config = fopen( str , "rb" ) ;
   int flag = 0 ;
@@ -634,7 +626,7 @@ read_triplet_and_proj( int *__restrict *__restrict triplet ,
   }
 
   // create a file
-  int i ;
+  size_t i ;
   if( unlikely( flag == 1 ) ) {
     init_delta( ) ;
     // open a temporary file
@@ -643,17 +635,17 @@ read_triplet_and_proj( int *__restrict *__restrict triplet ,
     printf("[CUTS] Storing Triplet and Proj list @@@ ...\n%s\n" , str ) ;
 
     // allocate our triplet 
-    int **triple = ( int **) malloc( count * sizeof( int* ) ) ;
+    size_t **triple = ( size_t** )malloc( count * sizeof( size_t* ) ) ;
     #pragma omp parallel for private(i)
     PFOR( i = 0 ; i < count ; i++ ) {
-      triple[i] = (int*) malloc( 3 *  sizeof (int ) ) ;
+      triple[i] = ( size_t* ) malloc( 3 *  sizeof ( size_t ) ) ;
     }
     printf( "[CUTS] Precomputing triplet \n" ) ;
     // compute the triplet in the stupidest manner possible
     get_triplet( triple , momentum , nnmax , nmom ) ;
     // write out "triple" our triplet
     for( i = 0 ; i < count ; i++ ) {
-      fwrite( triple[i] , sizeof(int) , 3 , config2 ) ;
+      fwrite( triple[i] , sizeof( size_t ) , 3 , config2 ) ;
     }
     printf( "Computing projector ... \n" ) ;
     // compute our projector 
@@ -676,7 +668,7 @@ read_triplet_and_proj( int *__restrict *__restrict triplet ,
   // (re)open the file to read the triplet and the projector 
   config = fopen( str , "rb" ) ;
   for( i = 0 ; i < count ; i++ ) {
-    if( fread( triplet[i] , sizeof( int ) , 3 , config ) != 3 ) { 
+    if( fread( triplet[i] , sizeof( size_t ) , 3 , config ) != 3 ) { 
       return GLU_FAILURE ; 
     }
   }

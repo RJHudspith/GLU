@@ -36,7 +36,8 @@ double
 psq_calc( double mom[ ND ] ,
 	  const int posit )
 {
-  int k[ ND ] , mu ;
+  size_t mu ;
+  int k[ ND ] ;
   TwoPI_mpipi_momconv( k , posit , ND ) ;
   register double tspsq = 0. ;
   for( mu = 0 ; mu < ND ; mu++ ) {
@@ -74,7 +75,7 @@ project_trans_long( double *transverse ,
   double mom[ ND ] , common ;
   // make this a constant
   const double spsq = 1.0 / psq_calc( mom , posit ) ;
-  int mu , nu ;
+  size_t mu , nu ;
   *transverse = *longitudinal = 0.0 ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     for( nu = 0 ; nu < ND ; nu++ ) {
@@ -112,7 +113,7 @@ compute_gluon_prop( FILE *__restrict Ap ,
   const int zero_mom = list[ zero_pos ].idx ; // ist das wahr?
 
   // obviously only need to compute num_mom[0]/2 of these due to symmetry
-  int i ;
+  size_t i ;
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < zero_pos ; i++ ) {
     // uses p of list -p contrib IS the hermitian conjugate.

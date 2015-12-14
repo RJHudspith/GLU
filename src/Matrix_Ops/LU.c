@@ -24,7 +24,7 @@ LU_det( const int N , const GLU_complex U[ N*N ] )
 double complex
 LU_det_overwrite( const int N , GLU_complex U[ N*N ] )
 {
-  int i , j , l , piv , perms = 0 ;
+  size_t i , j , l , piv , perms = 0 ;
   double complex dt , determinant = 1. ;
 
   double attempt , best ; 
@@ -50,7 +50,7 @@ LU_det_overwrite( const int N , GLU_complex U[ N*N ] )
       // unlike what I am told, I physically swap rows
       // this is measured to be faster than saving the permutations
       // which I find quite weird, must be a caching thing
-      for( l = 0 ; l < N ; l++ ) {
+      for( l = i ; l < N ; l++ ) {
 	dt         = U[l+i*N] ;
 	U[l+i*N]   = U[l+piv*N] ;
 	U[l+piv*N] = dt ;

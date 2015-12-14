@@ -41,32 +41,35 @@
 
 #ifdef HAVE_FFTW3_H
 
-static short int
-mom_gauge_spatial( A , def )
-     struct site *__restrict A ; 
-     const lie_field_def def ; 
+static int
+mom_gauge_spatial( struct site *__restrict A ,
+		   const lie_field_def def )
 {
-  int i ; 
+  size_t i ; 
+
+  // callback for the log definition
+  void (*log)( GLU_complex Q[ NCNC ] ,
+	       const GLU_complex U[ NCNC ] ) ;
+  switch( def ) {
+  case LINEAR_DEF :
+    log = Hermitian_proj ;
+    break ;
+  case LOG_DEF : 
+    log = exact_log_slow ; 
+    break ;
+  }
+
 #pragma omp parallel for private(i) shared(A)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
     GLU_complex temp[ NCNC ] ;
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
-      switch( def )
-	{
-	case LINEAR_DEF :
-	  Hermitian_proj( temp , A[i].O[mu] ) ;
-	  break ;
-	case LOG_DEF :
-	  exact_log_slow( temp , A[i].O[mu] ) ;
-	  break ;
-	}	  
+      log( temp , A[i].O[mu] ) ;
       equiv( A[i].O[mu] , temp ) ;
     }
   }
 
   // FFTW routines
-
   GLU_complex *out = fftw_malloc( LCU * sizeof( GLU_complex ) ) ; 
   GLU_complex *in = fftw_malloc( LCU * sizeof( GLU_complex ) ) ; 
 
@@ -76,40 +79,38 @@ mom_gauge_spatial( A , def )
   //// End of the search for Wisdom /////
   
   //3D complex fourier transform each time-slice
-  int t ;
-  for( t = 0 ; t < Latt.dims[ ND - 1 ] ; t++ )
-    {
-      const int slice = LCU *t ;
-      int mu , j ; 
-      // Loop directions and elements of the matrix
-      for( mu = 0 ; mu < ND ; mu++ )
-	for( j = 0 ; j < NCNC ; j++ ) {
-	    int i ;
-	    // FORWARDS
-	    #ifdef CUT_FORWARD
-            #pragma omp parallel for private(i)
-	    PFOR( i = 0 ; i < LCU ; i++ ) {
-	      in[i] = A[ slice + i ].O[mu][j] ; 
-	    }
-	    fftw_execute( forward ) ; 
-            #pragma omp parallel for private(i)
-	    PFOR( i = 0 ; i < LCU ; i++ ) {
-	      A[ slice + i ].O[mu][j] = out[i] ; 
-	    }
-	    #else
-	    // backwards
-            #pragma omp parallel for private(i)
-	    PFOR( i = 0 ; i < LCU ; i++ ) {
-	      out[i] = A[ slice + i ].O[mu][j] ; 
-	    }
-	    fftw_execute( backward ) ; 
-            #pragma omp parallel for private(i)
-	    PFOR( i = 0 ; i < LCU ; i++ ) {
-	      A[ slice + i ].O[mu][j] = in[i] ; 
-	    }
-	    #endif
+  size_t t ;
+  for( t = 0 ; t < Latt.dims[ ND - 1 ] ; t++ )  {
+    const size_t slice = LCU *t ;
+    size_t mu , i , j ; 
+    // Loop directions and elements of the matrix
+    for( mu = 0 ; mu < ND ; mu++ )
+      for( j = 0 ; j < NCNC ; j++ ) {
+	// FORWARDS
+#ifdef CUT_FORWARD
+        #pragma omp parallel for private(i)
+	PFOR( i = 0 ; i < LCU ; i++ ) {
+	  in[i] = A[ slice + i ].O[mu][j] ; 
 	}
-    }
+	fftw_execute( forward ) ; 
+        #pragma omp parallel for private(i)
+	PFOR( i = 0 ; i < LCU ; i++ ) {
+	  A[ slice + i ].O[mu][j] = out[i] ; 
+	}
+#else
+	// backwards
+        #pragma omp parallel for private(i)
+	PFOR( i = 0 ; i < LCU ; i++ ) {
+	  out[i] = A[ slice + i ].O[mu][j] ; 
+	}
+	fftw_execute( backward ) ; 
+        #pragma omp parallel for private(i)
+	PFOR( i = 0 ; i < LCU ; i++ ) {
+	  A[ slice + i ].O[mu][j] = in[i] ; 
+	}
+#endif
+      }
+  }
 
   //average into one sp_site size field
   // et voila! we have our fourier-transformed links in 0-2Pi BZ
@@ -128,9 +129,8 @@ mom_gauge_spatial( A , def )
 #else
 
 static short int
-mom_gauge_spatial( A , def )
-     struct site *__restrict A ; 
-     const lie_field_def def ; 
+mom_gauge_spatial( struct site *__restrict A ,
+		   const lie_field_def def )
 {
   printf( "[CUTS] WARNING! No FFT of the fields \n" ) ;
   return GLU_FAILURE ;
@@ -194,44 +194,39 @@ g( p ) =   ----------    >    Tr < A_( ND - 1 )( p ) . A_( ND - 1 )( -p ) >
   const double g0_norm = ND > 1 ? 2.0 / ( ( NCNC - 1 ) * ( ND - 1 ) * LVOLUME ) : 2.0 / ( ( NCNC - 1 ) * LVOLUME ) ; 
 
   // logically this is the zero momentum position as our list is symmetric
-  const int midpoint = ( num_mom[0] - 1 ) >> 1 ;
+  const size_t midpoint = ( num_mom[0] - 1 ) >> 1 ;
 
-  int i ;
+  size_t i ;
 #pragma omp parallel for private(i) 
   PFOR( i = 0  ;  i < num_mom[0]  ;  i++  ) {
-      double sum_spatial = 0. ; 
-      double sum_temporal = 0. ;
-
-      int t ;
-      for( t = 0 ;  t < Latt.dims[ ND - 1 ]  ;  t++ ) {
-	const int mom = LCU * t + list[ i ].idx ;  
-	const int cnj = LCU * t + list[ num_mom[0] - i - 1 ].idx ;  
-
-	int mu ;
-	// prod all spatial directions
-	for( mu = 0 ; mu < ND - 1 ; mu++ ) {      
-	  GLU_complex tr = 0. ;
-	  trace_ab( &tr , A[ mom ].O[mu] , A[ cnj ].O[mu] ) ;
-	  sum_spatial += (double)creal( tr ) ;
-	}
-
-	GLU_complex tr = 0. ;
-	trace_ab( &tr , A[ mom ].O[ ND - 1 ] , A[ cnj ].O[ ND - 1 ] ) ;
-	sum_temporal += (double)creal( tr ) ;
+    double sum_spatial = 0. ; 
+    double sum_temporal = 0. ;
+    GLU_complex tr ;
+    size_t t , mu , mom , cnj ;
+    for( t = 0 ;  t < Latt.dims[ ND - 1 ]  ;  t++ ) {
+      mom = LCU * t + list[ i ].idx ;  
+      cnj = LCU * t + list[ num_mom[0] - i - 1 ].idx ;  
+      // prod all spatial directions
+      for( mu = 0 ; mu < ND - 1 ; mu++ ) {      
+	trace_ab( &tr , A[ mom ].O[mu] , A[ cnj ].O[mu] ) ;
+	sum_spatial += (double)creal( tr ) ;
       }
+      trace_ab( &tr , A[ mom ].O[ ND - 1 ] , A[ cnj ].O[ ND - 1 ] ) ;
+      sum_temporal += (double)creal( tr ) ;
+    }
       
-      if( likely( i != midpoint ) ) {
-	sum_spatial *= g2_norm ; 
-	sum_temporal *= g2_norm ; 
-      } else {	  
-	sum_spatial *= g0_norm ; 
-	sum_temporal *= g0_norm ; 
-      }     
-
-      g2_spatial[i] = sum_spatial ; 
-      g2_temporal[i] = sum_temporal ; 
+    if( likely( i != midpoint ) ) {
+      sum_spatial *= g2_norm ; 
+      sum_temporal *= g2_norm ; 
+    } else {	  
+      sum_spatial *= g0_norm ; 
+      sum_temporal *= g0_norm ; 
+    }     
+    
+    g2_spatial[i] = sum_spatial ; 
+    g2_temporal[i] = sum_temporal ; 
   }
-
+  
   // write our fields to the file
   write_g2g3_to_list( Aps , g2_spatial , g2_temporal , num_mom ) ;
   

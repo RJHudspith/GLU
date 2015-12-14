@@ -25,41 +25,41 @@
 #define GLU_WFLOW_H
 
 /**
-   @fn void flow4d_RK_fast( struct site *__restrict lat , const int smiters , const int DIR , const int SIGN , const int SM_TYPE )
+   @fn int flow4d_RK_fast( struct site *__restrict lat , const size_t smiters , const size_t DIR , const size_t SIGN , const size_t SM_TYPE )
    @brief wilson flow using the Runge-Kutta used in Luescher's follow up paper and by BMW.
    @param lat :: lattice gauge field
    @param lat :: lattice gauge fields 
    @param smiters :: number of smearing iterations
    @param DIR :: maximum direction of the smearing #GLU_smeardir
    @param SIGN :: of type #GLU_direction
-   @param SM_TYPE :: will accept SM_APE , SM_STOUT or SM_LOG from #smearing_types
+   @param SM_TYPE :: will accept SM_STOUT or SM_LOG from #smearing_types
    @warning this one is the fastest but also the most memory expensive this is checked in the functions defined in GLU_memcheck.h
  **/
-void 
+int
 flow4d_RK_fast( struct site *__restrict lat , 
-		const int smiters ,
-		const int DIR ,
-		const int SIGN ,
-		const int SM_TYPE ) ;
+		const size_t smiters ,
+		const size_t DIR ,
+		const size_t SIGN ,
+		const size_t SM_TYPE ) ;
 
 /**
-   \fn void flow4d_RK_slow( struct site *__restrict lat , const int smiters , const int DIR , const int SIGN , const int SM_TYPE )
+   \fn int flow4d_RK_slow( struct site *__restrict lat , const size_t smiters , const size_t DIR , const size_t SIGN , const size_t SM_TYPE )
    \brief the terms slow and fast are really a matter of opinion, the slow one has fewer temporaries for the cost of (many) more memcpy's.
    @param lat :: lattice gauge field
    @param lat :: lattice gauge fields 
    @param smiters :: number of smearing iterations
    @param DIR :: maximum direction of the smearing #GLU_smeardir
    @param SIGN :: of type #GLU_direction
-   @param SM_TYPE :: will accept SM_APE , SM_STOUT or SM_LOG from #smearing_types
+   @param SM_TYPE :: will accept SM_STOUT or SM_LOG from #smearing_types
    @warning selected depending on results in GLU_memcheck.h
 
    Uses the fact that we can iterate the smearing on a time-slice by time-slice basis just as we did in the 4D Hyp smearing codes (HYP_4D.h,4D_fast.h and New_HYP.h)
  **/
-void 
+int
 flow4d_RK_slow( struct site *__restrict lat , 
-		const int smiters ,
-		const int DIR ,
-		const int SIGN ,
-		const int SM_TYPE ) ;
+		const size_t smiters ,
+		const size_t DIR ,
+		const size_t SIGN ,
+		const size_t SM_TYPE ) ;
 
 #endif

@@ -19,8 +19,7 @@
 /**
    @file smear.c 
    @brief wanted to include both spatial and all dimensional smearing types and we do
-   
-   ND- generic
+   #ND- generic
  */
 
 #include "Mainfile.h"
@@ -42,7 +41,7 @@
 //////////////////////////////////////////////////////////
 void 
 smear3D( struct site *__restrict lat , 
-	 const int smiters , 
+	 const size_t smiters , 
 	 const smearing_types type )
 {
 #if ND < 3
@@ -72,7 +71,29 @@ smear3D( struct site *__restrict lat ,
     return ;
   }
 
-  int count = 0 ; 
+  // callback for the projections
+  void (*project) ( GLU_complex smeared_link[ NCNC ] , 
+		    const GLU_complex staple[ NCNC ] , 
+		    const GLU_complex link[ NCNC ] , 
+		    const double smear_alpha , 	     
+		    const double al ) ;
+
+  project = project_APE ;
+  switch( type ) {
+  case SM_APE :
+    project = project_APE ;
+    break ;
+  case SM_STOUT :
+    project = project_STOUT ;
+    break ;
+  case SM_LOG :
+    project = project_LOG ;
+    break ;
+  default :
+    return ;
+  }
+
+  size_t count = 0 ; 
   for( count = 1 ; count <= smiters ; count++ ) {
     #ifdef SYMANZIK_ONE_LOOP
     improve = av_plaquette( lat ) ;
@@ -80,16 +101,13 @@ smear3D( struct site *__restrict lat ,
     /////////////////////
     //loop time slices
     /////////////////////
-    int t ;
+    size_t i , t ;
     for( t = 0 ; t < Latt.dims[ ND -1 ] ; t++ ) {
-      const int slice = LCU * t ;
-      int i ;
-	  
+      const size_t slice = LCU * t ;
       #pragma omp parallel for private(i) SCHED
       PFOR( i = 0 ; i < LCU ; i++ ) {
-	const int it = slice + i ; 
-	int mu ;
-
+	const size_t it = slice + i ; 
+	size_t mu ;
 	for( mu = 0 ; mu < ND - 1 ; mu++ ) {
 	  GLU_complex stap[ NCNC ] ;
 	  zero_mat( stap ) ;
@@ -98,29 +116,14 @@ smear3D( struct site *__restrict lat ,
           #else
 	  all_staples( stap , lat , it , mu , ND - 1 , type ) ; 
           #endif
-		  
-	  switch( type ) {
-	  case SM_APE:
-	    project_APE( lat2[ i ].O[ mu ] , stap , 
-			 lat[ it ].O[ mu ] , alpha1 , 
-			 one_min_a1 ) ; 
-	    break ; 
-	  case SM_STOUT:
-	    project_STOUT_short( lat2[ i ].O[ mu ] , stap , 
-				 lat[ it ].O[ mu ] , alpha1 ) ; 
-	    break ; 
-	  case SM_LOG:
-	    project_LOG_short( lat2[ i ].O[ mu ] , stap , 
-			       lat[ it ].O[ mu ] , alpha1 ) ; 
-	    break ; 
-	  default : break ;
-	  }
+	  project( lat2[ i ].O[ mu ] , stap , lat[ it ].O[ mu ] , alpha1 , 
+		   one_min_a1 ) ; 
 	}
       }
 	  
       #pragma omp parallel for private(i) 
       PFOR( i = 0 ; i < LCU ; i++ )  {
-	const int it = slice + i ;
+	const size_t it = slice + i ;
 	memcpy( &lat[ it ] , &lat2[ i ] , sizeof( struct sp_site ) ) ;
       }
     }
@@ -160,7 +163,7 @@ smear3D( struct site *__restrict lat ,
 // General ALL-dimensional smearing routines ...
 void 
 smear4D( struct site *__restrict lat ,
-	 const int smiters , 
+	 const size_t smiters , 
 	 const smearing_types type )
 {
   if( unlikely( smiters == 0 ) ) { return ; }
@@ -179,6 +182,27 @@ smear4D( struct site *__restrict lat ,
   double qtop_new , qtop_old = 0. ;
   #endif
 
+  // callback for the projections
+  void (*project) ( GLU_complex smeared_link[ NCNC ] , 
+		    const GLU_complex staple[ NCNC ] , 
+		    const GLU_complex link[ NCNC ] , 
+		    const double smear_alpha , 	     
+		    const double al ) ;
+  project = project_APE ;
+  switch( type ) {
+  case SM_APE :
+    project = project_APE ;
+    break ;
+  case SM_STOUT :
+    project = project_STOUT ;
+    break ;
+  case SM_LOG :
+    project = project_LOG ;
+    break ;
+  default :
+    return ;
+  }
+
   struct spt_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
   if( GLU_malloc( (void**)&lat2 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ) {
     printf( "[SMEARING] field allocation failure\n" ) ;
@@ -195,32 +219,30 @@ smear4D( struct site *__restrict lat ,
   }
   #endif
   
-  int count = 0 ; 
-
+  size_t count = 0 ;
   for( count = 1 ; count <= smiters ; count++ ) {
 
     #ifdef SYMANZIK_ONE_LOOP
     improve = av_plaquette( lat ) ;
     #endif
 
-    int i ;
     //this bit initialises the calculation by working out the staples for the last time slice first
     #ifdef IMPROVED_SMEARING
-    const int back = lat[ lat[0].back[ ND-1 ] ].back[ ND-1 ] ;
+    const size_t back = lat[ lat[0].back[ ND-1 ] ].back[ ND-1 ] ;
     #else
-    const int back = lat[0].back[ ND - 1 ] ;
+    const size_t back = lat[ 0 ].back[ ND - 1 ] ;
     #endif
 
+    size_t i , t ;
     #pragma omp parallel for private(i) SCHED
     #ifdef IMPROVED_SMEARING
     PFOR( i = 0 ; i < 2*LCU ; i++ ) {
     #else
     PFOR( i = 0 ; i < LCU ; i++ ) {
     #endif
-      const int bck = back + i ;
-      int mu ;
-
-      for( mu = 0 ; mu < ND ; mu++ )   { 
+      const size_t bck = back + i ;
+      size_t mu ;
+      for( mu = 0 ; mu < ND ; mu++ ) { 
 	GLU_complex stap[ NCNC ] ;
 	zero_mat( stap ) ;
         #ifdef IMPROVED_SMEARING
@@ -228,39 +250,21 @@ smear4D( struct site *__restrict lat ,
         #else
 	all_staples( stap , lat , bck , mu , ND , type ) ;
         #endif
-
-	switch( type ) {
-	case SM_APE:
-	  project_APE( lat4[ i ].O[ mu ] , stap , 
-		       lat[ bck ].O[ mu ] , alpha1 ,
-		       one_min_a1 ) ; 
-	  break ; 
-	case SM_STOUT:
-	  project_STOUT_short( lat4[ i ].O[ mu ] , stap ,
-			       lat[ bck ].O[ mu ] , alpha1 ) ; 
-	  break ; 
-	case SM_LOG:
-	  project_LOG_short( lat4[ i ].O[ mu ] , stap ,
-			     lat[ bck ].O[ mu ] , alpha1 ) ; 
-	  break ; 
-	default : break ;
-	}
+	project( lat4[ i ].O[ mu ] , stap , lat[ bck ].O[ mu ] , alpha1 ,
+		 one_min_a1 ) ; 
       }
     }
-      
-    int t ;
     #ifdef IMPROVED_SMEARING
     for( t = 0 ; t < Latt.dims[ ND - 1 ] - 2 ; t++ ) {
     #else
     for( t = 0 ; t < Latt.dims[ ND - 1 ] - 1 ; t++ ) {
     #endif
-      const int slice = LCU * t ; 
+      const size_t slice = LCU * t ; 
 
       #pragma omp parallel for private(i) SCHED
       PFOR( i = 0 ; i < LCU ; i++ ) {
-	const int it = slice + i ;
-	int mu ;
-
+	const size_t it = slice + i ;
+	size_t mu ;
 	for( mu = 0 ; mu < ND ; mu++ ) {
 	  GLU_complex stap[ NCNC ] ;
 	  zero_mat( stap ) ;
@@ -269,43 +273,27 @@ smear4D( struct site *__restrict lat ,
           #else
 	  all_staples( stap , lat , it , mu , ND , type ) ;
           #endif
-		
-	  switch( type )
-	    {
-	    case SM_APE:
-	      project_APE( lat2[ i ].O[ mu ] , stap ,
-			   lat[ it ].O[ mu ] , alpha1 ,
-			   one_min_a1 ) ; 
-	      break ; 
-	    case SM_STOUT:
-	      project_STOUT_short( lat2[ i ].O[ mu ] , stap ,
-				   lat[ it ].O[ mu ] , alpha1 ) ; 
-	      break ; 
-	    case SM_LOG:
-	      project_LOG_short( lat2[ i ].O[ mu ] , stap , 
-				 lat[ it ].O[ mu ] , alpha1 ) ; 
-	      break ; 
-	    default : break ;
-	    }
+	  project( lat2[ i ].O[ mu ] , stap , lat[ it ].O[ mu ] , alpha1 ,
+		   one_min_a1 ) ; 
 	}
       }
 
       #ifdef IMPROVED_SMEARING
-      const int bck = lat[ lat[ slice ].back[ ND-1 ] ].back[ ND-1 ] ;
+      const size_t bck = lat[ lat[ slice ].back[ ND-1 ] ].back[ ND-1 ] ;
       #else
-      const int bck = lat[ slice ].back[ ND -1 ] ;
+      const size_t bck = lat[ slice ].back[ ND -1 ] ;
       #endif
 
       #pragma omp parallel for private(i)
       PFOR( i = 0 ; i < LCU ; i++ ) {
         #ifdef IMPROVED_SMEARING
 	if( likely( t > 1 ) ) { 
-	  register const int back = bck + i ;
+	  register const size_t back = bck + i ;
 	  memcpy( &lat[back] , &lat3[i] , sizeof( struct spt_site ) ) ;
 	}
 	#else
 	if( likely( t != 0 ) ) { 
-	  register const int back = bck + i ;
+	  register const size_t back = bck + i ;
 	  memcpy( &lat[back] , &lat3[i] , sizeof( struct spt_site ) ) ;
 	}
 	#endif
@@ -323,16 +311,16 @@ smear4D( struct site *__restrict lat ,
     }
  
     // put the last couple back in ....
-    const int slice = LCU * t ;
-    const int behind = lat[ slice ].back[ ND - 1 ] ;
+    const size_t slice = LCU * t ;
+    const size_t behind = lat[ slice ].back[ ND - 1 ] ;
     #ifdef IMPROVED_SMEARING
-    const int behind2 = lat[ behind ].back[ ND-1 ] ;
+    const size_t behind2 = lat[ behind ].back[ ND-1 ] ;
     #endif
 
     #pragma omp parallel for private(i)
     PFOR( i = 0 ; i < LCU ; i++ ) {
-      register const int back = behind + i ;
-      register const int it = slice + i ; 
+      register const size_t back = behind + i ;
+      register const size_t it = slice + i ; 
       #ifdef IMPROVED_SMEARING
       memcpy( &lat[behind2+i] , &lat3[i] , sizeof( struct spt_site ) ) ; 
       memcpy( &lat[back] , &lat3[i+LCU] , sizeof( struct spt_site ) ) ; 

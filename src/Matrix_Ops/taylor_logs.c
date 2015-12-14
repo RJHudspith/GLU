@@ -32,7 +32,7 @@
    @param NMAX
    @brief maximum number of log iterations
  */
-static const int NMAX = 25 ; // set this quite high to give it a chance
+static const size_t NMAX = 25 ; // set this quite high to give it a chance
 
 /**
    @param TAYLOR_SET
@@ -53,7 +53,7 @@ static void
 denman_rootY( GLU_complex Y[ NCNC ] )
 {
   GLU_complex M[ NCNC ] , INVM[ NCNC ] ;
-  int i ;
+  size_t i ;
   for( i = 0 ; i < NCNC ; i++ ) { M[i] = Y[i] ; }
   // lets see if the other one makes more sense
   GLU_real tol = 1.0 ;
@@ -64,7 +64,6 @@ denman_rootY( GLU_complex Y[ NCNC ] )
     inverse( INVM , M ) ;
 
     // M^-1 -> ( 1 + M^-1 )
-    int i ;
     for( i = 0 ; i < NC ; i++ ) {
       INVM[ i*(NC+1) ] += 1.0 ;
     }
@@ -104,21 +103,19 @@ static void
 denman_rootZ( GLU_complex *__restrict Z )
 {
   GLU_complex M[ NCNC ] , INVM[ NCNC ] ;
-  int i ;
+  GLU_real tol = 1.0 ;
+  size_t i ,iters = 0 ;
   for( i = 0 ; i < NCNC ; i++ ) {
     M[i] = Z[i] ;
     Z[i] = ( i%(NC+1) ) ? 0.0 : 1.0 ;
   }
   // computes the inverse square root of A (Z), and the square root Y.
-  GLU_real tol = 1.0 ;
-  int iters = 0 ;
   while( tol > PREC_TOL && iters < 25 ) {
 
     // invert M into INVM
     inverse( INVM , M ) ;
 
     // add the identity
-    int i ;
     for( i = 0 ; i < NC ; i++ ) {
       INVM[ i*(NC+1) ] += 1.0 ;
     }
@@ -168,10 +165,12 @@ asinh_log( GLU_complex *__restrict Q ,
 {
   // should I allocate these?, possibly
   GLU_complex y[ NCNC ] , z[ NCNC ] , zz[ NCNC ] ;
+  const size_t NROOTS = 2 ;
+  size_t roots , i ;
+
+  // y is our workspace
   equiv( y , U ) ;
 
-  const int NROOTS = 3 ;
-  int roots , i ;
   // do 3 some rootings
   for( roots = 0 ; roots < NROOTS ; roots++ ) {
     denman_rootY( y ) ;
@@ -184,36 +183,29 @@ asinh_log( GLU_complex *__restrict Q ,
   // use pade approximation for asinh
   GLU_complex numerator[ NCNC ] , denominator[ NCNC ] ;
 
-  // asinh order could be four but I prefer five, it 
-  // almost allows us to reduce the rootings to 2
-  #if 0
-  const double num[ 4 ] = { -0.166666666666667 ,  
-			    -0.248680701061979 ,
-			    -0.102674860281026 , 
-			    -0.010064013171361 } ;
-  const double dum[ 4 ] = { 1.942084206371874 , 
-			    1.222129911696356 ,
-			    0.272433079251442 ,
-			    0.015031471556997 } ;
-  #endif
-  const double num[ 5 ] = { -0.166666666666667 ,
-			    -0.331918710383403 ,
-			    -0.216426024716025 ,
-			    -0.050968522959400 ,
-			    -0.003111318437640 } ;
-  const double dum[ 5 ] = { 2.441512262300421 ,
-			    2.129379523474199 ,
-			    0.792347091155989 ,
-			    0.115688971366126 ,
-			    0.004377533437037 } ;
+  // asinh using the 6,6 pade
+  const int NPADE = 6 ;
+  const double num[ 6 ] = { -0.166666666666667 ,  
+			    -0.415188764046858 , 
+			    -0.371823456681141 ,
+			    -0.143528120068249 ,
+			    -0.022147200233084 ,
+			    -0.000924315649343 } ;
+  const double dum[ 6 ] = { 2.941132584281149 ,
+			    3.286593260156224 ,
+			    1.734623983356869 ,
+			    0.435037519640900 ,
+			    0.045119586710825 ,
+			    0.001245902971704 } ;
+
   // compute the last term
   for( i = 0 ; i < NCNC ; i++ ) {
-    numerator[ i ]   = num[ 4 ] * zz[ i ] ;
-    denominator[ i ] = dum[ 4 ] * zz[ i ] ;
+    numerator[ i ]   = num[ NPADE-1 ] * zz[ i ] ;
+    denominator[ i ] = dum[ NPADE-1 ] * zz[ i ] ;
   }
   // horner's rule for the series of numerator 
   // and denominator
-  for( roots = 3 ; roots > -1 ; roots-- ) {
+  for( roots = NPADE-2 ; roots > -1 ; roots-- ) {
     for( i = 0 ; i < NC ; i++ ) {
       numerator[i*(NC+1)]   += num[roots] ;
       denominator[i*(NC+1)] += dum[roots] ;
@@ -242,6 +234,9 @@ asinh_log( GLU_complex *__restrict Q ,
   for( i = 0 ; i < NCNC ; i++ ) {
     Q[i] = SCALE * numerator[i] ;
   }
+
+  // consider fixing up the error cascade here?
+
   return ;
 }
 
@@ -290,7 +285,7 @@ brute_force_log( GLU_complex *__restrict Q ,
   GLU_complex y[ NCNC ] , yy[ NCNC ] , pert[ NCNC ] ;
   equiv( y , U ) ;
 
-  int roots , i ;
+  size_t roots , i ;
   // do some rootings ... bit
 #if NC < 10
   for( roots = 0 ; roots < NROOTS ; roots++ ) {
@@ -336,7 +331,7 @@ brute_force_log( GLU_complex *__restrict Q ,
   for( i = 0 ; i < NCNC ; i++ ) { y[i] *= 2.0 ; }
 
   double err = 1.0 ;
-  int n = 4 , j ;
+  size_t n = 4 , j ;
   // use an estimate for the convergence as the last term in the series
   while( n <= NMAX ) {
     // power of the yy matrix
@@ -431,7 +426,7 @@ nape_reunit( GLU_complex *__restrict U )
   // compute determinant shifts
   const GLU_complex dtvvd = cpow( det( Z ) , -1./(double)NC ) ;
   const GLU_complex dtv = cpow( det( U ) , -1./(double)NC ) ;
-  int i ;
+  size_t i ;
   for( i = 0 ; i < NCNC ; i++ ) { 
     Z[i] *= dtvvd ;
     U[i] *= dtv ;

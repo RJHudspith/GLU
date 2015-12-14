@@ -49,7 +49,7 @@ multab_dag( GLU_complex a[ NCNC ] ,
   a[3] = b[2] * conj( c[2] ) + b[3] * conj( c[3] ) ;
 #else // instead of inlining we have a function call
   #if NC%2==0
-  int i , j , m ;
+  size_t i , j , m ;
   const GLU_complex *pB = b , *pC ;
   register GLU_complex sum , sum2 ;
   register GLU_real REB , IMB , REC , IMC ;
@@ -74,7 +74,7 @@ multab_dag( GLU_complex a[ NCNC ] ,
     pB += NC ; 
   }
   #else
-  int i , j , m ;
+  size_t i , j , m ;
   register GLU_complex sum ;
   register GLU_real REB , IMB , REC , IMC ;
   for( i = 0 ; i < NC ; i++ ) {

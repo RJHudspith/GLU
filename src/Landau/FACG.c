@@ -51,11 +51,6 @@
 static const double al[LINE_NSTEPS] = { 0.0 , 0.2 , 0.4 } ;
 #endif
 
-#ifdef GLU_FR_CG
-  // minimum conjugate gradient step allowed
-  const static double spmin = 0.05 ;
-#endif
-
 // zero alpha can be roughly computed in step
 static double zero_alpha ;
 
@@ -67,11 +62,11 @@ check_info1( const struct site *__restrict lat ,
 	     double *link ,
 	     const double newlink ,
 	     const double theta , 
-	     const int iters ) 
+	     const size_t iters ) 
 {
   if( iters % CAREFUL == 0 ) {
     *link = ( newlink == 0. ? 1. : newlink ) ; 
-    printf( "[GF] ACC after %d iterations :: %1.5e \n" , iters , theta ) ;
+    printf( "[GF] ACC after %zu iterations :: %1.5e \n" , iters , theta ) ;
     printf( "[GF] Link :: %1.15f || Plaq :: %1.15f \n" , 
 	    *link , av_plaquette( lat ) ) ; 
   }
@@ -85,7 +80,7 @@ check_info2( const struct site *__restrict lat ,
 	     const double link ,
 	     double *newlink ,
 	     const double theta ,
-	     const int iters )
+	     const size_t iters )
 {
   if( iters % CAREFUL == 0 ) {
     *newlink = links( lat ) ;
@@ -144,12 +139,10 @@ FA_deriv(  GLU_complex *__restrict *__restrict in ,
       #endif
     // nearest neighbour version
     #elif defined deriv_fulln    
-    const double deriv = *tr > 0.1 ? \
-      approx_log_deriv_nn( sum , lat , i , ND ) : log_deriv_nn( sum , lat , i , ND ) ; 
+    const double deriv = log_deriv_nn( sum , lat , i , ND ) ; 
     // next nearest neighbour version
     #elif defined deriv_fullnn
-    const double deriv = *tr > 0.1 ? \
-      approx_log_deriv_nnn( sum , lat , i , ND ) : log_deriv_nnn( sum , lat , i , ND ) ;
+    const double deriv = *tr > 0.1 ? log_deriv_nnn( sum , lat , i , ND ) ;
     #endif
 
     // reductions
@@ -165,7 +158,7 @@ FA_deriv(  GLU_complex *__restrict *__restrict in ,
     in[2][i] = I * sum[2] ;
     in[3][i] = I * sum[4] ;
     #else
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
       in[mu][i] = I * sum[mu] ;
     }
@@ -198,7 +191,7 @@ exponentiate_gauge( GLU_complex *__restrict *__restrict gauge ,
 		    const GLU_complex *__restrict *__restrict in ,
 		    const double alpha )
 {
-  int i ;
+  size_t i ;
   // the derivative in this form is antihermitian i.e -> i.dA
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
@@ -216,7 +209,7 @@ line_search( GLU_complex *__restrict *__restrict gauge ,
 	     const struct site *__restrict lat ,
 	     const GLU_complex *__restrict *__restrict in )
 {
-  int counter = 0 ;
+  size_t counter = 0 ;
   double val[LINE_NSTEPS] ;
   val[0] = zero_alpha ; // 0 is a freebie
 #ifdef verbose
@@ -273,93 +266,6 @@ steep_Landau_FA( GLU_complex *__restrict *__restrict gauge ,
   return ;
 }
 
-#ifdef GLU_FR_CG
-/**
-   @fn static int steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge , struct site *__restrict lat , const void forward[ HERMSIZE ] , const void backward[ HERMSIZE ] , GLU_complex *__restrict *__restrict out , GLU_complex *__restrict *__restrict in , const GLU_real *psq , double *tr , const double acc )
-   @brief Fourier accelerated conjugate gradient method (Fletcher Reeves)
- */
-static int
-steep_Landau_FACG_FR( GLU_complex *__restrict *__restrict gauge , 
-		      struct site *__restrict lat ,
-		      const void *__restrict forward , 
-		      const void *__restrict backward , 
-		      GLU_complex *__restrict *__restrict out , 
-		      GLU_complex *__restrict *__restrict in , 
-		      GLU_complex *__restrict *__restrict in_old , 
-		      GLU_complex *__restrict *__restrict sn ,
-		      const GLU_real *psq , 
-		      double *tr ,
-		      const double acc )
-{
-  // perform an SD start
-  steep_Landau_FA( gauge , lat , forward , backward , out , in , psq , tr ) ;
-
-  int i ;
-  #pragma omp parallel for private(i)
-  for( i = 0 ; i < TRUE_HERM ; i++ ) {
-    // copy sn to be "in" the FA derivative
-    memcpy( sn[i] , in[i] , LVOLUME * sizeof( GLU_complex ) ) ;
-  }
-
-  // compute the quantity Tr( dA dA )
-  double in_old_sum = sum_deriv( (const GLU_complex**)in , LVOLUME ) ;
-
-  // initialise this to the one provided in the input file
-  double spline_min = Latt.gf_alpha ;
-
-  // loop a set number of CG-iterations
-  int iters = 0 ;
-  while( ( *tr > acc ) && ( iters > CG_MAXITERS ) && ( spline_min > spmin ) ) {
-
-    // this ONLY works with out and in, make sure that is what we use
-    FA_deriv( in , lat , psq , tr ) ;
-
-    // and FA
-    FOURIER_ACCELERATE( in , out , forward , backward ,
-			psq , LVOLUME ) ;
-
-    // summations for computing the scaling parameter
-    const double insum = sum_deriv( (const GLU_complex**)in , LVOLUME ) ;
-
-    // like the Fletcher-Reeves I suppose
-    const double beta = in_old_sum > 0.0 ? insum / in_old_sum : 0.0 ; 
-    in_old_sum = insum ;
-
-    // compute sn, the conjugate matrix in FFTW's order
-    #pragma omp parallel for private(i)
-    for( i = 0 ; i < TRUE_HERM ; i++ ) {
-      int j ;
-      for( j = 0 ; j < LVOLUME ; j++ ) {
-	sn[i][j] = in[i][j] + beta * ( sn[i][j] ) ;
-      }
-    }
-
-    // do a line search
-    if( *tr > PREC_TOL ) {
-      spline_min = line_search( gauge , lat , (const GLU_complex**)sn ) ;
-    } else {
-      spline_min = Latt.gf_alpha ;
-    }
-
-    #ifdef verbose
-    printf( "[GF] %d BETA %f \n" , iters , beta ) ;
-    printf( "[GF] %d SPLINE2 :: %f \n" , iters , spline_min ) ;
-    printf( "[GF] cgacc %e \n" , *tr ) ;
-    #endif
-
-    // and step the optimal amount
-    exponentiate_gauge( gauge , (const GLU_complex**)sn , spline_min ) ;
-
-    // do the gauge transform here
-    gtransform( lat , ( const GLU_complex **)gauge ) ;
-
-    // increment
-    iters++ ;
-  }
-  return iters ;
-}
-#endif
-
 /**
    @fn static int steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge , struct site *__restrict lat , const void forward[ HERMSIZE ] , const void backward[ HERMSIZE ] , GLU_complex *__restrict *__restrict out , GLU_complex *__restrict *__restrict in , const GLU_real *psq , double *tr , const double acc )
    @brief Fourier accelerated conjugate gradient method
@@ -381,11 +287,11 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
   // perform an SD start
   steep_Landau_FA( gauge , lat , forward , backward , out , in , psq , tr ) ;
 
-  int i ;
+  size_t i ;
   #pragma omp parallel for private(i)
   for( i = 0 ; i < TRUE_HERM ; i++ ) {
     // copy sn to be "in" the FA derivative
-    int j ;
+    size_t j ;
     for( j = 0 ; j < LVOLUME ; j++ ) {
       sn[i][j] = in_old[i][j] = in[i][j] ;
     }
@@ -395,7 +301,7 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
   double in_old_sum = sum_deriv( (const GLU_complex**)in , LVOLUME ) ;
 
   // loop a set number of CG-iterations
-  int iters = 0 ;
+  size_t iters = 0 ;
   while( ( *tr > acc ) && ( iters < max_iters ) ) {
 
     // this ONLY works with out and in, make sure that is what we use
@@ -424,7 +330,7 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
     // compute sn, the conjugate matrix in FFTW's order
     #pragma omp parallel for private(i)
     for( i = 0 ; i < TRUE_HERM ; i++ ) {
-      int j ;
+      size_t j ;
       for( j = 0 ; j < LVOLUME ; j++ ) {
 	sn[i][j] = in[i][j] + beta * ( sn[i][j] ) ;
 	in_old[i][j] = in[i][j] ;
@@ -461,7 +367,7 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
 }
 
 // overwrites the lattice links in lat to Landau gauge fixed links using CG
-int 
+size_t
 FACG( struct site *__restrict lat , 
       GLU_complex *__restrict *__restrict gauge , 
       GLU_complex *__restrict *__restrict out ,
@@ -471,25 +377,31 @@ FACG( struct site *__restrict lat ,
       const GLU_real *__restrict p_sq , 
       double *th ,
       const double acc ,
-      const int max_iters )
+      const size_t max_iters )
 {
   // set up the maximum and what have you
   GLU_real max ; 
   *th = theta_test_lin( lat , &max , ND ) ; 
-  int iters = 0 ;
+  size_t iters = 0 ;
 
   // have the option to leave early before allocations
   if( *th < acc ) return iters ;
 
+  // allocate the conjugate matrices
+  GLU_complex **sn     = NULL ;
+  GLU_complex **in_old = NULL ;
+
+  if( GLU_malloc( (void**)&sn     , 16 , TRUE_HERM * sizeof( GLU_complex* ) ) != 0 ||
+      GLU_malloc( (void**)&in_old , 16 , TRUE_HERM * sizeof( GLU_complex* ) ) != 0 ) {
+    printf( "[GF] FACG failed to allocate CG temporaries\n" ) ;
+    return GLU_FAILURE ;
+  }
+
   // allocate the "traces" array
   allocate_traces( LVOLUME ) ;
 
-  // allocate the conjugate matrix
-  GLU_complex **sn = malloc( TRUE_HERM * sizeof(GLU_complex*) ) ;
-  GLU_complex **in_old = malloc( TRUE_HERM * sizeof( GLU_complex* ) ) ;
-
   // allocate the conjugate directions
-  int i ;
+  size_t i ;
   #pragma omp parallel for private(i)
   for( i = 0 ; i < TRUE_HERM ; i++ ) {
     GLU_malloc( (void**)&sn[i]     , 16 , LVOLUME * sizeof( GLU_complex ) ) ;
@@ -507,7 +419,7 @@ FACG( struct site *__restrict lat ,
     #ifdef CAREFUL
     check_info1( lat , &link , newlink , *th , iters ) ;
     #endif
-    int loc_iters = 1 ;
+    size_t loc_iters = 1 ;
     
     // if the spline just keeps giving zeros we switch to the SD
     // stopping this method wasting its time doing meaningless line searches
@@ -545,11 +457,9 @@ FACG( struct site *__restrict lat ,
       // otherwise we sum up the total iters
       iters += sumiters ;
     } else {
-      iters = GLU_FAILURE ;
+      iters = 0 ;
     }
   } 
-  //////////////////////////////////
-
 
   // free the traces array
   free_traces( ) ;
@@ -567,21 +477,21 @@ FACG( struct site *__restrict lat ,
 }
 
 //returns the global gauge transform on lat
-int 
-FASD( struct site *__restrict lat , 
-      GLU_complex *__restrict *__restrict gauge , 
+size_t
+FASD( struct site *__restrict lat ,
+      GLU_complex *__restrict *__restrict gauge ,
       GLU_complex *__restrict *__restrict out ,
       GLU_complex *__restrict *__restrict in ,
-      const void *__restrict forward , 
-      const void *__restrict backward , 
-      const GLU_real *__restrict p_sq , 
+      const void *__restrict forward ,
+      const void *__restrict backward ,
+      const GLU_real *__restrict p_sq ,
       double *th ,
       const double acc ,
-      const int max_iters )
+      const size_t max_iters )
 {
   GLU_real max ; 
   *th = theta_test_lin( lat , &max , ND ) ; 
-  int iters = 0 ; 
+  size_t iters = 0 ; 
 
   // have a reference for the plaquette to check convergence
   const double ref_plaquette = av_plaquette( lat ) ;
@@ -623,7 +533,7 @@ FASD( struct site *__restrict lat ,
       return iters + FASD( lat , gauge , out , in , forward , backward , 
 			   p_sq , th , acc , max_iters ) ;
     } else {
-      return GLU_FAILURE ;
+      return 0 ;
     }
   }
 
@@ -635,27 +545,31 @@ FASD( struct site *__restrict lat ,
 }
 
 // Fourier accelerated Steepest descents for the smeared fields
-int 
-FASD_SMEAR( struct site *__restrict lat , 
-	    GLU_complex *__restrict *__restrict gauge , 
+size_t
+FASD_SMEAR( struct site *__restrict lat ,
+	    GLU_complex *__restrict *__restrict gauge ,
 	    GLU_complex *__restrict *__restrict out ,
 	    GLU_complex *__restrict *__restrict in ,
-	    const void *__restrict forward , 
-	    const void *__restrict backward , 
-	    const GLU_real *__restrict p_sq , 
+	    const void *__restrict forward ,
+	    const void *__restrict backward ,
+	    const GLU_real *__restrict p_sq ,
 	    double *th ,
 	    const double acc ,
-	    const int max_iters )
+	    const size_t max_iters )
 {
   GLU_real max = 0. ; 
   *th = theta_test_lin( lat , &max , ND ) ; 
-  int iters = 0 , i ; 
+  size_t iters = 0 , i ; 
   
   //malloc temporary gauge
-  GLU_complex **gauge2 = malloc( LVOLUME * sizeof( GLU_complex* ) ) ;
+  GLU_complex **gauge2 = NULL ;
+  if( GLU_malloc( (void**)&gauge2 , 16 , LVOLUME * sizeof( GLU_complex* ) ) != 0 ) {
+    printf( "[GF] FASD_SMEAR failed to allocate temporary gauge\n" ) ;
+    return GLU_FAILURE ;
+  }
+
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-    //gauge2[i] = ( GLU_complex* )malloc( NCNC * sizeof( GLU_complex ) ) ; 
     GLU_malloc( (void**)&gauge2[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
     identity( gauge2[i] ) ;
   }
@@ -694,9 +608,9 @@ FASD_SMEAR( struct site *__restrict lat ,
 void
 query_probes_Landau( void ) {
   printf( "[GF] Using the following probes for the CG \n" ) ;
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < LINE_NSTEPS ; mu++ ) {
-    printf( "[GF] probe-%d %f \n" , mu , al[mu] ) ; 
+    printf( "[GF] probe-%zu %f \n" , mu , al[mu] ) ; 
   }
   return ;
 }

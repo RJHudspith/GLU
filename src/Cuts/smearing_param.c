@@ -41,30 +41,33 @@
 
 //def = 0 "lin" def = 1 "log"
 static volatile int
-mom_gauge( A , def )
-     struct site *__restrict A ;
-     const lie_field_def def ;
+mom_gauge( struct site *__restrict A ,
+	   const lie_field_def def )
 {
   if( parallel_ffts( ) == GLU_FAILURE ) {
     printf( "[PAR] Problem with initialising the OpenMP FFTW routines \n" ) ;
     return GLU_FAILURE ;
   }
 
-  int i ;
+  // callback for the log definition
+  void (*log)( GLU_complex Q[ NCNC ] ,
+	       const GLU_complex U[ NCNC ] ) ;
+  switch( def ) {
+  case LINEAR_DEF :
+    log = Hermitian_proj ;
+    break ;
+  case LOG_DEF : 
+    log = exact_log_slow ; 
+    break ;
+  }
+
+  size_t i ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) { 
     GLU_complex temp[ NCNC ] ;
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
-      switch( def )
-	{
-	case LINEAR_DEF :
-	  Hermitian_proj( temp , A[i].O[mu] ) ;
-	  break ;
-	case LOG_DEF :
-	  exact_log_slow( temp , A[i].O[mu] ) ;
-	  break ;
-	}
+      log( temp , A[i].O[mu] ) ;
       equiv( A[i].O[mu] , temp ) ;
     }
   }
@@ -79,9 +82,8 @@ mom_gauge( A , def )
   ////// End of the search for Wisdom /////
 
   //forward transform
-  int mu ;
+  size_t mu , j ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    int j ;
     for( j = 0 ; j < NCNC ; j++ ) {
       // forwards transform
       #ifdef CUT_FORWARD
@@ -125,9 +127,8 @@ mom_gauge( A , def )
 #else
 
 static int
-mom_gauge( A , def )
-     struct site *__restrict A ;
-     const lie_field_def def ;
+mom_gauge( struct site *__restrict A ,
+	   const lie_field_def def )
 {
   printf( "[CUTS] WARNING! Not performing an FFT \n" ) ;
   return GLU_FAILURE ;
@@ -138,9 +139,10 @@ mom_gauge( A , def )
 // compute psq using the momentum lattice coordinates
 static inline double
 psq_calc( double mom[ ND ] ,
-	  const int posit )
+	  const size_t posit )
 {
-  int k[ ND ] , mu ;
+  size_t mu ;
+  int k[ ND ] ;
   TwoPI_mpipi_momconv( k , posit , ND ) ;
   register double tspsq = 0. ;
   for( mu = 0 ; mu < ND ; mu++ ) {
@@ -172,13 +174,13 @@ static void
 project_trans_long( double *transverse ,
 		    double *longitudinal ,
 		    const struct site *__restrict A ,
-		    const int posit ) 
+		    const size_t posit ) 
 {
   GLU_complex tr ;
   double mom[ ND ] , common ;
   // make this a constant
   const double spsq = 1.0 / psq_calc( mom , posit ) ;
-  int mu , nu ;
+  size_t mu , nu ;
   *transverse = *longitudinal = 0.0 ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     for( nu = 0 ; nu < ND ; nu++ ) {
@@ -198,15 +200,13 @@ project_trans_long( double *transverse ,
 static void
 create_weak_field( struct site *__restrict A ) 
 {
-  int j ; 
+  size_t j ; 
 #pragma omp parallel for private(j)
   for( j = 0 ; j < LVOLUME ; j++ ) {
     GLU_complex temp[ NCNC ] ;
-    int mu ;
+    size_t mu , k ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       exact_log_slow( temp , A[j].O[mu] ) ;
-      //Hermitian_proj( temp , A[j].O[mu] ) ;
-      int k ;
       for( k = 0 ; k < NCNC ; k++ ) {
 	temp[k] *= 0.01 ;
       }
@@ -238,7 +238,7 @@ cuts_struct_smeared( struct site *__restrict A ,
   create_weak_field( A ) ;
 #endif
 
-  int j ; 
+  size_t j ; 
 #pragma omp parallel for private(j)
   for( j = 0 ; j < LVOLUME ; j++ ) {
     memcpy( &SM_A[j] , &A[j] , sizeof( struct site ) ) ; 
@@ -278,12 +278,12 @@ cuts_struct_smeared( struct site *__restrict A ,
   double *g2 = malloc( in[0] * sizeof( double ) ) ;
   double *g2_SM = malloc( in[0] * sizeof( double ) ) ;
 
-  int i ;
+  size_t i ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < in[0] ; i++ ) {
     // these require that this list is p -> -p symmetric, it is
-    const int posit = list[i].idx ;
-    const int conj  = list[ in[0] - i - 1 ].idx ;
+    const size_t posit = list[i].idx ;
+    const size_t conj  = list[ in[0] - i - 1 ].idx ;
     double trans , longitudinal ;
 
     // project out the transverse and longitudinal for the unsmeared case ...

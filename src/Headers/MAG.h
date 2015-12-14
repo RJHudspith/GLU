@@ -24,7 +24,7 @@
 #define GLU_MAG_H
 
 /**
-   @fn void axial_gauge( struct site *__restrict lat , GLU_complex *__restrict *__restrict gauge , const int DIR )
+   @fn void axial_gauge( struct site *__restrict lat , GLU_complex *__restrict *__restrict gauge , const size_t DIR )
    @brief Fixes to the axial gauge i.e \f$ A_{DIR} = 0. \f$
    @param lat :: lattice fields
    @param gauge :: gauge transformation matrices
@@ -37,7 +37,7 @@
 void
 axial_gauge( struct site *__restrict lat , 
 	     GLU_complex *__restrict *__restrict gauge , 
-	     const int DIR ) ;
+	     const size_t DIR ) ;
 
 /**
    @fn void mag( struct site *__restrict lat , GLU_complex *__restrict *__restrict gauge )

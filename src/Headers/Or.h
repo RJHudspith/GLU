@@ -24,7 +24,7 @@
 #define ORLANDAU_H
 
 /**
-   @fn int OrCoulomb( struct site *__restrict lat , double *theta , const int MAX_ITERS , const double ACC , const double OrParam )
+   @fn size_t OrCoulomb( struct site *__restrict lat , double *theta , const size_t MAX_ITERS , const double ACC , const double OrParam )
    @brief Over-relaxation Coulomb gauge fixing code
    @param lat :: lattice gauge fields
    @param theta :: gauge fixing accuracy attained
@@ -32,15 +32,15 @@
    @param ACC :: accuracy intended to be fixed to
    @param OrParam :: Over-relaxation parameter
  */
-int
+size_t
 OrCoulomb( struct site *__restrict lat ,
 	   double *theta ,
-	   const int MAX_ITERS , 
+	   const size_t MAX_ITERS , 
 	   const double ACC ,
 	   const double OrParam ) ;
 
 /**
-   @fn int OrLandau( struct site *__restrict lat , double *theta , const int MAX_ITERS , const double ACC , const double OrParam )
+   @fn size_t OrLandau( struct site *__restrict lat , double *theta , const size_t MAX_ITERS , const double ACC , const double OrParam )
    @brief Over-relaxation Landau gauge fixing code
    @param lat :: lattice gauge fields
    @param theta :: gauge fixing accuracy attained
@@ -48,10 +48,10 @@ OrCoulomb( struct site *__restrict lat ,
    @param ACC :: accuracy intended to be fixed to
    @param OrParam :: Over-relaxation parameter
  */
-int
+size_t
 OrLandau( struct site *__restrict lat ,
 	  double *theta ,
-	  const int MAX_ITERS , 
+	  const size_t MAX_ITERS , 
 	  const double ACC ,
 	  const double OrParam ) ;
 

@@ -41,7 +41,7 @@ eliminate_column( double complex *__restrict a ,
 {
   const double complex fac1 = a[ i + j*NC ] / a[ i*(NC+1) ] ;  
   double complex *pA = a + i*NC ;
-  int k ;
+  size_t k ;
   // such a pattern elimintates cancelling zeros
   for( k = i + 1 ; k < NC ; k++ ) {
     a[ k + j*NC ] -= creal( fac1 ) * creal( pA[k] ) - cimag( fac1 ) * cimag( pA[k] ) 
@@ -63,7 +63,7 @@ swap_cols( double complex *__restrict a ,
 	   const int col_idx , 
 	   const int piv )
 {
-  int l ;
+  size_t l ;
   for( l = 0 ; l < NC ; l++ ) {
     register double complex tmp = a[col_idx+l*NC] ;
     a[col_idx+l*NC] = a[piv+l*NC] ;
@@ -77,10 +77,10 @@ swap_cols( double complex *__restrict a ,
 static void
 swap_rows( double complex *__restrict a , 
 	   double complex *__restrict inverse , 
-	   const int row_idx , 
-	   const int piv )
+	   const size_t row_idx , 
+	   const size_t piv )
 {
-  int l ;
+  size_t l ;
   for( l = 0 ; l < NC ; l++ ) {
     register double complex tmp = a[l+row_idx*NC] ;
     a[l+row_idx*NC] = a[l+piv*NC] ;
@@ -98,9 +98,8 @@ gauss_jordan( GLU_complex M_1[ NCNC ] ,
 	      const GLU_complex M[ NCNC ] )
 {
   double complex a[ NCNC ] , ainv[ NCNC ] ;
-
   double row_best , col_best ;
-  int i, j , col_piv ;
+  size_t i, j , col_piv ;
 
   // equate the necessary parts into double complex precision
   for( i = 0 ; i < NCNC ; i++ ) {
@@ -112,12 +111,12 @@ gauss_jordan( GLU_complex M_1[ NCNC ] ,
   }
 
 #ifdef FULL_PIVOT
-  int col_idx[ NC ] = {} , row_piv ;
+  size_t col_idx[ NC ] = {} , row_piv ;
 #endif
 
   for( i = 0 ; i < NC-1 ; i++ ) {
 
-    const int piv_idx = i*(NC+1) ;
+    const size_t piv_idx = i*(NC+1) ;
 
     const double pivot = creal( a[piv_idx] ) * creal ( a[piv_idx] ) 
       +  cimag( a[piv_idx] ) * cimag( a[piv_idx] ) ;
@@ -129,7 +128,7 @@ gauss_jordan( GLU_complex M_1[ NCNC ] ,
     col_idx[i] = i ;
     #endif
  
-    int j ;
+    size_t j ;
     for( j = i+1 ; j < NC ; j++ ) {
       #ifdef FULL_PIVOT
       const double row_attempt = creal( a[j+i*NC] ) * creal ( a[j+i*NC] ) 
@@ -232,7 +231,7 @@ inverse( GLU_complex M_1[ NCNC ] ,
     return GLU_FAILURE ; 
   }
   // obtain inverse of M from 1/( detM )*adj( M ) //
-  int i ;
+  size_t i ;
   deter = 1.0 / deter ;
   for( i = 0 ; i < NCNC ; i++ ) { M_1[i] = adjunct[i] * deter ; }
   return GLU_SUCCESS ;
@@ -258,18 +257,14 @@ newton_approx_inverse( GLU_complex Zinv[ NCNC ] , // is Z_{k-1}^{-1}
 		       const GLU_complex Z[ NCNC ] )
 {
   GLU_complex BX[ NCNC ] ;
-
-  int iters ;
+  size_t iters , j ;
   for( iters = 0 ; iters < 10 ; iters++ ) {
     multab( BX , Z , Zinv ) ;
-
     // should be the identity
     if( fabs( creal( trace( BX ) ) - NC ) < PREC_TOL ) {
       break ;
     }
-
     multab_atomic_left( BX , Zinv ) ;
-    int j ;
     for( j = 0 ; j < NCNC ; j++ ) {
       Zinv[ j ] = 2.0 * Zinv[ j ] - BX[ j ] ;
     }

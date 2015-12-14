@@ -65,17 +65,16 @@ hyp_chooser( lat , SMINFO , meminfo )
       if( SMINFO.type == SM_WFLOW_LOG ) {
 	GENTYPE = SM_LOG ;
       }
-      switch( meminfo )
-	{
-	case FAST :
-	  flow4d_RK_fast( lat , SMINFO.smiters , ND , 
-			  GLU_FORWARD , GENTYPE ) ;
-	  return ;
-	case MODERATE :
-	  flow4d_RK_slow( lat , SMINFO.smiters , ND , 
-			  GLU_FORWARD , GENTYPE ) ;
-	  return ;
-	}
+      switch( meminfo ){
+      case FAST :
+	flow4d_RK_fast( lat , SMINFO.smiters , ND , 
+			GLU_FORWARD , GENTYPE ) ;
+	return ;
+      case MODERATE :
+	flow4d_RK_slow( lat , SMINFO.smiters , ND , 
+			GLU_FORWARD , GENTYPE ) ;
+	return ;
+      }
     }
   // The original decision for the smearing methods
   const int GENTYPE = ( SMINFO.type - 1 ) % 3 + 1 ;
@@ -95,18 +94,17 @@ hyp_chooser( lat , SMINFO , meminfo )
       HYPSLsmear3D( lat , SMINFO.smiters , GENTYPE ) ; 
       return ;
     } else {
-      switch( meminfo )
-	{
-	case FAST :
-	  HYPSLsmear4D_expensive( lat , SMINFO.smiters , GENTYPE ) ;
-	  return ;
-	case MODERATE :
-	  HYPSLsmear4D( lat , SMINFO.smiters , GENTYPE ) ;  
-	  return ;
-	case SLOW :
-	  HYsmearND( lat , SMINFO.smiters , GENTYPE , SMINFO.dir ) ;
-	  return ;
-	}
+      switch( meminfo ) {
+      case FAST :
+	HYPSLsmear4D_expensive( lat , SMINFO.smiters , GENTYPE ) ;
+	return ;
+      case MODERATE :
+	HYPSLsmear4D( lat , SMINFO.smiters , GENTYPE ) ;  
+	return ;
+      case SLOW :
+	HYsmearND( lat , SMINFO.smiters , GENTYPE , SMINFO.dir ) ;
+	return ;
+      }
     }
     #endif
   }
@@ -144,32 +142,31 @@ print_smearinfo( const struct sm_info SMINFO )
   printf( "Numerically unstable, but fast, routines being used\n" ) ;
   #endif
   smear_or_wflow( SMINFO.type ) ;
-  switch( SMINFO.type ) 
-    {
-    case SM_APE : 
-      #ifdef N_APE
-      printf( "APE smearing (n-APE determinant-rescaled projection)\n" ) ; 
-      #else
-      printf( "APE smearing (Cabbibo-Marinari updates) \n" ) ; 
-      #endif
-      break ;
-    case SM_LOG : printf( "Log smearing\n" ) ; break ;
-    case SM_STOUT : printf( "STOUT smearing\n" ) ; break ;
-    case SM_HYP : 
-      #ifdef N_APE
-      printf( "HYP smearing (n-APE det rescaled projection)\n" ) ; 
-      #else
-      printf( "HYP smearing (Cabbibo-Marinari updates) \n" ) ; 
-      #endif
-      break ;
-    case SM_HEX : printf( "HEX smearing\n" ) ; break ;
-    case SM_HYL : printf( "HYL smearing\n" ) ; break ;
-    case SM_WFLOW_LOG : printf( "RK3-Wilson flow Log\n" ) ; break ;
-    case SM_WFLOW_STOUT : printf( "RK3-Wilson flow STOUT\n" ) ; break ;
-    case SM_ADAPTWFLOW_LOG : printf( "Adaptive RK3-Wilson flow Log\n" ) ; break ;
-    case SM_ADAPTWFLOW_STOUT : printf( "Adaptive R3-Wilson flow STOUT\n" ) ; break ;
-    default : printf( "No smearing\n" ) ;
-    }
+  switch( SMINFO.type ) {
+  case SM_APE : 
+#ifdef N_APE
+    printf( "APE smearing (n-APE determinant-rescaled projection)\n" ) ; 
+#else
+    printf( "APE smearing (Cabbibo-Marinari updates) \n" ) ; 
+#endif
+    break ;
+  case SM_LOG : printf( "Log smearing\n" ) ; break ;
+  case SM_STOUT : printf( "STOUT smearing\n" ) ; break ;
+  case SM_HYP : 
+#ifdef N_APE
+    printf( "HYP smearing (n-APE det rescaled projection)\n" ) ; 
+#else
+    printf( "HYP smearing (Cabbibo-Marinari updates) \n" ) ; 
+#endif
+    break ;
+  case SM_HEX : printf( "HEX smearing\n" ) ; break ;
+  case SM_HYL : printf( "HYL smearing\n" ) ; break ;
+  case SM_WFLOW_LOG : printf( "RK3-Wilson flow Log\n" ) ; break ;
+  case SM_WFLOW_STOUT : printf( "RK3-Wilson flow STOUT\n" ) ; break ;
+  case SM_ADAPTWFLOW_LOG : printf( "Adaptive RK3-Wilson flow Log\n" ) ; break ;
+  case SM_ADAPTWFLOW_STOUT : printf( "Adaptive R3-Wilson flow STOUT\n" ) ; break ;
+  default : printf( "No smearing\n" ) ;
+  }
   // wilson flow information about the clover terms and what have you
   if( smear_or_wflow( SMINFO.type ) == GLU_FALSE ) {
   #ifdef CLOVER_IMPROVE
@@ -193,12 +190,14 @@ print_smearinfo( const struct sm_info SMINFO )
   } else {
     printf( "Smearing Alpha(s) used:\n" ) ;
     if( SMINFO.type == SM_HYP || SMINFO.type == SM_HEX || SMINFO.type == SM_HYL ) {
-      int i ;
+      size_t i ;
       for( i = 0 ; i < ND-1 ; i++ ) {
-	printf( "             (alpha%d) %f\n" , i+1 , Latt.sm_alpha[i]/( ( ND-i-1 ) * ( ND-2 ) ) ) ;
+	printf( "             (alpha%zu) %f\n" , i+1 , 
+		Latt.sm_alpha[i]/( ( ND-i-1 ) * ( ND-2 ) ) ) ;
       }
     } else { 
-      printf( "             (alpha) %f \n" , Latt.sm_alpha[0]/(2.*(ND-1)) ) ; 
+      printf( "             (alpha) %f \n" , 
+	      Latt.sm_alpha[0]/(2.*(ND-1)) ) ; 
     }
   }
   // rectangle improvement is not implemented for hypercubic smearing ...
@@ -218,7 +217,7 @@ print_smearinfo( const struct sm_info SMINFO )
   #endif
 #endif
   smear_or_wflow( SMINFO.type ) ;
-  printf( "With a MAXIMUM of %d iterations \n\n" , SMINFO.smiters ) ;
+  printf( "With a MAXIMUM of %zu iterations \n\n" , SMINFO.smiters ) ;
   return ;
 }
 

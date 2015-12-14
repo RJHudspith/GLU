@@ -43,7 +43,7 @@ const_time( const struct site *__restrict lat ,
   zero_mat( sum1 ) ; zero_mat( sum1_log ) ;
 
   // initialise the first layer
-  int j ;
+  size_t j ;
   for( j = 0 ; j < LCU ; j++ ) {
     GLU_complex A[ NCNC ] ;
     Hermitian_proj( A , lat[j].O[ ND - 1 ] ) ; 
@@ -56,7 +56,7 @@ const_time( const struct site *__restrict lat ,
 
   //loop time slices
   double log_average = 0. , average = 0. ;
-  int t ;
+  size_t t ;
 #pragma omp parallel for private(t) reduction(+:log_average) reduction(+:average)
   for( t = 1 ; t < Latt.dims[ ND - 1 ] ; t++ ) {  
 
@@ -65,7 +65,7 @@ const_time( const struct site *__restrict lat ,
       GLU_complex sum2[ NCNC ] , sum2_log[ NCNC ] ;
       zero_mat( sum2 ) ; zero_mat( sum2_log ) ;
       //loop inner cube
-      int i ;
+      size_t i ;
       for( i = LCU * t ; i < LCU * t + LCU ; i++ ) {
 	GLU_complex A[ NCNC ] ;
 	Hermitian_proj( A , lat[i].O[ ND - 1 ] ) ; 
@@ -135,7 +135,7 @@ double
 gauge_functional( const struct site *__restrict lat )
 {
   // for the log defs the functional is actually Re(Tr(A*A)) so we do this
-  int i ;
+  size_t i ;
   double trAA = 0.0 ;
   #pragma omp parallel for private(i) reduction(+:trAA)
   for( i = 0 ; i < LVOLUME ; i++ ) {
@@ -145,7 +145,7 @@ gauge_functional( const struct site *__restrict lat )
     #endif
     GLU_real tr ;
     register double loc_tr = 0.0 ;
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       #if ( defined deriv_linn ) || ( defined deriv_lin ) 
       tr = (GLU_real)creal( trace( lat[i].O[mu] ) ) ;
@@ -166,8 +166,8 @@ gauge_functional( const struct site *__restrict lat )
 double
 gauge_test( const GLU_complex *__restrict *__restrict gauge ) 
 {
-  double sum = 0.0 ; 
-  int i ; 
+  register double sum = 0.0 ; 
+  size_t i ; 
 #pragma omp parallel for private(i) reduction(+:sum) 
   for( i = 0 ; i < LVOLUME ; i++ ) {
     double tr ; 
@@ -182,16 +182,16 @@ gauge_test( const GLU_complex *__restrict *__restrict gauge )
 double
 gtrans_functional( const struct site *__restrict lat ,
 		   const GLU_complex *__restrict *__restrict slice_gauge ,
-		   const int t )
+		   const size_t t )
 {
-  const int slice_idx = LCU * t ;
-  int i ;
-  double tr = 0. ;
+  const size_t slice_idx = LCU * t ;
+  size_t i ;
+  register double tr = 0. ;
 #if ( defined deriv_lin ) || ( defined deriv_linn )
   #pragma omp parallel for private(i) reduction(+:tr)
   for( i = 0 ; i < LCU ; i++ ) {
-    const int j = slice_idx + i ;
-    int mu ;
+    const size_t j = slice_idx + i ;
+    size_t mu ;
     double loc_tr = 0. ;
     GLU_complex trabc ;
     for( mu = 0 ; mu < ND - 1 ; mu ++  ){
@@ -209,10 +209,10 @@ gtrans_functional( const struct site *__restrict lat ,
     GLU_complex A[ NCNC ] , temp[ NCNC ] , temp2[ NCNC ] ;
     GLU_real trAA ;
     double loc_tr = 0. ;
-    const int j = slice_idx + i ;
-    int mu ;
+    const size_t j = slice_idx + i ;
+    size_t mu ;
     for( mu = 0 ; mu < ND - 1 ; mu ++  ){
-      const int it = lat[i].neighbor[mu] ;
+      const size_t it = lat[i].neighbor[mu] ;
       // gauge transform
       multab_dag_suNC( temp2 , lat[j].O[mu] , slice_gauge[it] ) ; 
       multab_suNC( temp , slice_gauge[i] , temp2 ) ; 
@@ -230,7 +230,7 @@ gtrans_functional( const struct site *__restrict lat ,
 double
 theta_test_lin( const struct site *__restrict lat , 
 		GLU_real *max ,
-		const int MAX_DIR ) 
+		const size_t MAX_DIR ) 
 {
   double tr = 0. ; 
   size_t i ; 
@@ -269,10 +269,10 @@ theta_test_lin( const struct site *__restrict lat ,
 double
 theta_test_log( const struct site *__restrict lat , 
 		GLU_real *max ,
-		const int MAX_DIR )
+		const size_t MAX_DIR )
 {
   double tr = 0. ; 
-  int i ; 
+  size_t i ; 
   *max = 0. ; 
   #ifdef GLU_OMP_MEAS
   omp_lock_t writelock ;

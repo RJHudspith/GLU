@@ -59,9 +59,9 @@ shortened_su2_multiply( GLU_complex *w ,
 			const int su2_index )
 {
   GLU_complex W1 , W2 ; // temporaries
-  const int row_a = NC * (int)( su2_data[ su2_index ].idx_a / NC ) ;
-  const int row_c = NC * (int)( su2_data[ su2_index ].idx_c / NC ) ;
-  int i ;
+  const size_t row_a = NC * (int)( su2_data[ su2_index ].idx_a / NC ) ;
+  const size_t row_c = NC * (int)( su2_data[ su2_index ].idx_c / NC ) ;
+  size_t i ;
   for( i = 0 ; i < NC ; i++ ) {
     W1 = w[ row_a + i ] ;
     W2 = w[ row_c + i ] ;
@@ -86,9 +86,9 @@ shortened_su2_multiply_dag( GLU_complex *U ,
 			    const int su2_index )
 {
   GLU_complex U1 , U2 ; // temporaries for caching
-  const int col_a = (int)( su2_data[ su2_index ].idx_a % NC ) ;
-  const int col_b = (int)( su2_data[ su2_index ].idx_b % NC ) ;
-  int i ;
+  const size_t col_a = (int)( su2_data[ su2_index ].idx_a % NC ) ;
+  const size_t col_b = (int)( su2_data[ su2_index ].idx_b % NC ) ;
+  size_t i ;
   for( i = 0 ; i < NC ; i++ ) {
     U1 = U[ col_a + i*NC ] ;
     U2 = U[ col_b + i*NC ] ;
@@ -124,9 +124,9 @@ overrelax( GLU_complex *s0 ,
 //  | -s1*  s0* 0 |
 //  |  0     0  1 |
 //
-static inline void
-rotation1( U , w )
-     GLU_complex U[ NCNC ] , w[ NCNC ] ;
+static void
+rotation1( GLU_complex U[ NCNC ] , 
+	   GLU_complex w[ NCNC ] )
 {
   register GLU_complex s0 = U[0] + conj( U[4] ) ;
   register GLU_complex s1 = U[1] - conj( U[3] ) ;
@@ -173,9 +173,9 @@ rotation1( U , w )
 //  |  0   s0  s1  |
 //  |  0  -s1* s0* |
 //
-static inline void
-rotation2( U , w )
-     GLU_complex U[ NCNC ] , w[ NCNC ] ;
+static void
+rotation2( GLU_complex U[ NCNC ] ,
+	   GLU_complex w[ NCNC ] )
 {
   register GLU_complex s0 = U[4] + conj( U[8] ) ;
   register GLU_complex s1 = U[5] - conj( U[7] ) ;
@@ -222,9 +222,9 @@ rotation2( U , w )
 //  |  0  1  0    |
 //  | -s1* 0  s0* |
 //
-static inline void
-rotation3( U , w )
-     GLU_complex U[ NCNC ] , w[ NCNC ] ;
+static void
+rotation3( GLU_complex U[ NCNC ] ,
+	   GLU_complex w[ NCNC ] )
 {
   register GLU_complex s0 = U[8] + conj( U[0] ) ;
   register GLU_complex s1 = U[6] - conj( U[2] ) ;
@@ -267,14 +267,14 @@ rotation3( U , w )
 
 // NC generic givens rotations
 static void
-rotation( U , w , su2_index )
-     GLU_complex U[ NCNC ] , w[ NCNC ] ;
-     const int su2_index ;
+rotation( GLU_complex U[ NCNC ] , 
+	  GLU_complex w[ NCNC ] ,
+	  const size_t su2_index )
 {
-  const int a = su2_data[ su2_index ].idx_a ;
-  const int b = su2_data[ su2_index ].idx_b ;
-  const int c = su2_data[ su2_index ].idx_c ;
-  const int d = su2_data[ su2_index ].idx_d ;
+  const size_t a = su2_data[ su2_index ].idx_a ;
+  const size_t b = su2_data[ su2_index ].idx_b ;
+  const size_t c = su2_data[ su2_index ].idx_c ;
+  const size_t d = su2_data[ su2_index ].idx_d ;
 
   register GLU_complex s0 = U[a] + conj( U[d] ) ;
   register GLU_complex s1 = U[b] - conj( U[c] ) ;
@@ -297,30 +297,28 @@ rotation( U , w , su2_index )
 }
 #endif
 
-// compute the relevant su2 indices
+// compute the relevant su2 indices IIRC shamelessly stolen from chroma
 void
 compute_pertinent_indices( void )
 {
   su2_data = (struct su2_subgroups*)malloc( NSU2SUBGROUPS * sizeof( struct su2_subgroups ) ) ;
-  int su2_index ;
+  size_t su2_index ;
   for( su2_index = 0 ; su2_index < NSU2SUBGROUPS ; su2_index ++ ) {
-    int i1, i2 ;
-    int found = 0 ;
-    int del_i = 0 ;
-    int index = -1 ;
-    
+    size_t i1, i2 ;
+    size_t found = 0 ;
+    size_t del_i = 0 ;
+    size_t index = 0 ;
     while ( del_i < (NC-1) && found == 0 ) {
       del_i++;
       for ( i1 = 0; i1 < (NC-del_i); i1++ ) {
-	index++;
 	if ( index == su2_index ) {
 	  found = 1;
 	  break;
 	}
+	index++;
       }
     }
-    i2 = i1 + del_i;
-    
+    i2 = i1 + del_i ;
     su2_data[ su2_index ].idx_a = i1 + NC * i1 ;
     su2_data[ su2_index ].idx_b = i2 + NC * i1 ;
     su2_data[ su2_index ].idx_c = i1 + NC * i2 ;
@@ -362,7 +360,7 @@ givens_reunit( GLU_complex U[ NCNC ] )
 
   speed_trace_Re( &trace_old , U ) ;
 
-  int i ;
+  size_t i ;
   // seventy five iterations is quite high no? Code overwrites
   // U with the product U.W^\dagger
   for( i = 0 ; i < 75 ; i++ ) {
@@ -394,15 +392,13 @@ givens_reunit( GLU_complex U[ NCNC ] )
     equiv( w , tmp ) ;
     multab_dag( tmp , U , rot ) ; // is not
     equiv( U , tmp ) ;
-    trace_new = (double)creal( U[0] ) + (double)creal( U[3] ) ;
-
     // su2 only ever needs one update ...                                       
     break ;
 
     #else
 
     // NC-generic cabbibo-marinari update over the su2 subgroups
-    int su2_index ;
+    size_t su2_index ;
     for( su2_index = 0 ; su2_index < NSU2SUBGROUPS ; su2_index++ ) {
       rotation( U , w , su2_index ) ;
     }      
@@ -441,4 +437,3 @@ OrRotation( const GLU_complex U[ NCNC ] ,
 #ifdef GIVE_PRECOND
   #undef GIVE_PRECOND
 #endif
-

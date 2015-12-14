@@ -32,9 +32,10 @@
 
 //// My plaquette code, uses expressions for the trace of four matrices 
 static double
-complete_plaquette( a , b , c , d )
-     const GLU_complex *__restrict a , *__restrict b ;
-     const GLU_complex *__restrict c , *__restrict d ;
+complete_plaquette( const GLU_complex *__restrict a ,
+		    const GLU_complex *__restrict b ,
+		    const GLU_complex *__restrict c , 
+		    const GLU_complex *__restrict d )
 {
 #if NC == 3
   register double complex tra1 = (a[0]*b[0]+a[1]*b[3]+a[2]*b[6]) ;
@@ -93,11 +94,11 @@ all_plaquettes( const struct site *__restrict lat ,
 		double *__restrict t_plaq )
 {
   double spplaq = 0. , tplaq = 0.0 ;
-  int i ; 
+  size_t i ; 
 #pragma omp parallel for private(i) reduction(+:spplaq) reduction(+:tplaq) 
   for( i = 0 ; i < LVOLUME ; i++ ) {
     double p = 0. , face ;
-    int mu , nu , s , t ;
+    size_t mu , nu , s , t ;
     for( mu = 0 ; mu < ND-1 ; mu++ ) {
       t = lat[i].neighbor[mu] ; 
       for( nu = 0 ; nu < mu ; nu++ ) {
@@ -129,20 +130,19 @@ double
 av_plaquette( const struct site *__restrict lat )
 {
   double plaq = 0. ;
-  int i ; 
+  size_t i ; 
 #pragma omp parallel for private(i) reduction(+:plaq) 
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    double p = 0. ;
-    int mu ;
+    register double p = 0. , face ;
+    size_t mu , nu , t , s ;
     for( mu = 0 ; mu < ND ; mu++ ) {
-      register const int t = lat[i].neighbor[mu] ; 
-      int nu ;
+      t = lat[i].neighbor[mu] ; 
       for( nu = 0 ; nu < mu ; nu++ ) {
-	register const int s = lat[i].neighbor[nu] ;
-	const double face = complete_plaquette( lat[ i ].O[mu] , 
-						lat[ t ].O[nu] , 
-						lat[ s ].O[mu] , 
-						lat[ i ].O[nu] ) ; 
+	s = lat[i].neighbor[nu] ;
+	face = complete_plaquette( lat[ i ].O[mu] , 
+				   lat[ t ].O[nu] , 
+				   lat[ s ].O[mu] , 
+				   lat[ i ].O[nu] ) ; 
 	p = p + (double)face ;
       }
     }
@@ -156,20 +156,19 @@ double
 s_plaq( const struct site *__restrict lat )
 {
   double plaq = 0. ;
-  int i ; 
+  size_t i ; 
 #pragma omp parallel for private(i) reduction(+:plaq) 
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    double p = 0. ;
-    int mu ;
+    register double p = 0. , face ;
+    size_t mu , nu , t , s ;
     for( mu = 0 ; mu < ND - 1 ; mu++ ) {
-      register const int t = lat[i].neighbor[mu] ; 
-      int nu ;
+      t = lat[i].neighbor[mu] ; 
       for( nu = 0 ; nu < mu ; nu++ ) {
-	register const int s = lat[i].neighbor[nu] ;
-	const double face = complete_plaquette( lat[ i ].O[mu] , 
-						lat[ t ].O[nu] , 
-						lat[ s ].O[mu] , 
-						lat[ i ].O[nu] ) ; 
+	s = lat[i].neighbor[nu] ;
+	face = complete_plaquette( lat[ i ].O[mu] , 
+				   lat[ t ].O[nu] , 
+				   lat[ s ].O[mu] , 
+				   lat[ i ].O[nu] ) ; 
 	p = p + (double)face ;
       }
     }
@@ -183,19 +182,18 @@ double
 t_plaq( const struct site *__restrict lat )
 {
   double plaq = 0. ;
-  int i ; 
-  const int mu = ND - 1 ;
+  size_t i ; 
+  const size_t mu = ND - 1 ;
 #pragma omp parallel for private(i) reduction(+:plaq) 
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    double p = 0. ;
-    register const int t = lat[i].neighbor[mu] ; 
-    int nu ;
+    register double p = 0. , face ;
+    size_t nu , t = lat[i].neighbor[mu] , s ; 
     for( nu = 0 ; nu < mu ; nu++ ) {
-      register const int s = lat[i].neighbor[nu] ;
-      const double face = complete_plaquette( lat[ i ].O[mu] , 
-					      lat[ t ].O[nu] , 
-					      lat[ s ].O[mu] , 
-					      lat[ i ].O[nu] ) ; 
+      s = lat[i].neighbor[nu] ;
+      face = complete_plaquette( lat[ i ].O[mu] , 
+				 lat[ t ].O[nu] , 
+				 lat[ s ].O[mu] , 
+				 lat[ i ].O[nu] ) ; 
       p = p + (double)face ;
     }
     plaq = plaq + (double)p ;
@@ -246,7 +244,7 @@ gauge_topological_meas( const struct site *__restrict lat ,
   // off by a little bit more. This is certainly a heuristic measure!
   if( fabs( *qtop_old - *qtop_new ) < QTOP_TOL &&
       fabs( qint - *qtop_new ) < ( 3 * QTOP_TOL ) ) {
-    printf( "\n{CONFIG} %d {QTOP} %d \n\n" , Latt.flow , qint ) ;
+    printf( "\n{CONFIG} %zu {QTOP} %d \n\n" , Latt.flow , qint ) ;
     return GLU_SUCCESS ;
   }
   *qtop_old = *qtop_new ;
@@ -262,11 +260,11 @@ all_links( const struct site *__restrict lat ,
 	   double *__restrict t_link )
 {
   double splink = 0.0 , tlink = 0.0 ; 
-  int i ; 
+  size_t i ; 
 #pragma omp parallel for private(i) reduction(+:splink) reduction(+:tlink)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     double p = 0. , res ;
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND-1 ; mu++ ) {
       speed_trace_Re( &res , lat[i].O[mu] ) ; 
       p = p + (double)res ; 
@@ -287,7 +285,7 @@ indivlinks( const struct site *__restrict lat , GLU_real *max )
 {
   double link = 0.0 ;
   *max = 0.0 ;
-  int i ; 
+  size_t i ; 
   #ifdef GLU_OMP_MEAS
   omp_lock_t writelock ;
   omp_init_lock( &writelock ) ;
@@ -296,7 +294,7 @@ indivlinks( const struct site *__restrict lat , GLU_real *max )
 #pragma omp parallel for private(i) reduction(+:link)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     double loc_link = 0. , res ;
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       speed_trace_Re( &res , lat[i].O[mu] ) ;
       loc_link += res ; 
@@ -325,11 +323,11 @@ double
 links( const struct site *__restrict lat )
 {
   double link = 0.0 ; 
-  int i ; 
+  size_t i ; 
 #pragma omp parallel for private(i) reduction(+:link)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     double p = 0. , res ;
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       speed_trace_Re( &res , lat[i].O[mu] ) ; 
       p = p + (double)res ; 
@@ -363,7 +361,7 @@ double
 t_links( const struct site *__restrict lat )
 {    
   double link = 0.0 ; 
-  int i ; 
+  size_t i ; 
 #pragma omp parallel for private(i) reduction(+:link)
   for( i = 0 ; i < LVOLUME ; i++ ) { 
     double res = 0. ; 

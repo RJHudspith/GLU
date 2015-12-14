@@ -182,28 +182,29 @@ get_header_data_NERSC( FILE *__restrict CONFIG ,
  
   // Look for basic info, reporting if avalailable
   get_string( "ENSEMBLE_LABEL" , hdr , &str ) ; 
-  if (str == NULL) { str = "(not specified)" ; }
+  if( str == NULL ) { str = "(not specified)" ; }
 
   get_string( "ENSEMBLE_ID" , hdr , &str ) ; 
-  if (str == NULL) { str = "(not specified)" ; }
+  if( str == NULL ) { str = "(not specified)" ; }
 
-  int i = get_int( "SEQUENCE_NUMBER" , hdr , &Latt.flow ) ; 
+  int i = get_size_t( "SEQUENCE_NUMBER" , hdr , &Latt.flow ) ; 
   // Should be able to rip out a Latt.flow-value from the config ... ? TODO //
   if ( i == GLU_FAILURE || Latt.flow == 0 ) {
     printf( "[IO] Unknown sequence number.... \n" ) ; 
   }
 
+  // print the config number from the NERSC header
   if( VERB == GLU_TRUE ) {
-    printf( "[IO] Configuration number :: %d \n" , Latt.flow ) ; 
+    printf( "[IO] Configuration number :: %zu \n" , Latt.flow ) ; 
   }
 
-  /* Get dimensions */
-  int mu ;
+  // Get dimensions 
+  size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     char str[ 64 ] ;
-    sprintf( str , "DIMENSION_%d" , mu + 1 ) ; 
-    if ( get_int( str , hdr , Latt.dims+mu ) == GLU_FAILURE ) {
-      printf( "[IO] DIMENSION_%d not present\n" , mu ) ; 
+    sprintf( str , "DIMENSION_%zu" , mu + 1 ) ; 
+    if( get_size_t( str , hdr , Latt.dims+mu ) == GLU_FAILURE ) {
+      printf( "[IO] DIMENSION_%zu not present\n" , mu ) ; 
       return GLU_FAILURE ;
     }
   }

@@ -33,11 +33,10 @@
 
 // gramschmidt projection V = V - V.U^{\dagger}
 static void
-project( V , U )
-     GLU_complex *__restrict V ;
-     const GLU_complex *__restrict U ;
+project( GLU_complex *__restrict V ,
+	 const GLU_complex *__restrict U )
 {
-  int i ;
+  size_t i ;
   register double projRE = 0.0 , projIM = 0.0 ;
   for( i = 0 ; i < NC ; i ++ ) {
     projRE += ( double )( creal( V[i] ) * creal( U[i] ) ) ;
@@ -53,11 +52,10 @@ project( V , U )
 }
 
 // normalize a vector //
-INLINE_STATIC_VOID
-vect_norm2( a )
-     GLU_complex *__restrict a ;
+static void
+vect_norm2( GLU_complex *__restrict a )
 {
-  int mu ;
+  size_t mu ;
   register double norm = 0.0 ;
   for( mu = 0 ; mu < NC ; mu++ ) {
     norm += (double)( creal( a[mu] ) * creal( a[mu] ) ) +	\
@@ -73,10 +71,9 @@ vect_norm2( a )
 
 //reunitarise an SU(3) matrix sped up for our requirements
 void 
-reunit2( GLU_complex *__restrict U)
+reunit2( GLU_complex *__restrict U )
 {
 #if NC==3
-
   GLU_real *uu = (GLU_real*)U ;
   double v00R = *( uu + 0 ) ;
   double v00I = *( uu + 1 ) ;
@@ -90,17 +87,14 @@ reunit2( GLU_complex *__restrict U)
   double v02I = *( uu + 13 ) ;
   double v12R = *( uu + 14 ) ;
   double v12I = *( uu + 15 ) ;
-
   double v20R , v20I , v21R , v21I , v22R , v22I ;
   double cR , cI , norm ;
-  
   //the procedure i use is a gram schmidt orthogonalization with a cross product
   //the first column is normalized and invariant second orthogonal third cross product
   norm = ( v00R * v00R + v00I * v00I ) ;
   norm = ( v01R * v01R + v01I * v01I ) + norm ;
   norm = ( v02R * v02R + v02I * v02I ) + norm ;	
   norm = 1. / sqrt( norm ) ;
-
   v00R *= norm ;
   v00I *= norm ;
   v01R *= norm ;
@@ -112,7 +106,6 @@ reunit2( GLU_complex *__restrict U)
   cR = ( v10R * v00R ) + ( v10I * v00I ) ;
   cR = ( v11R * v01R ) + ( v12R * v02R ) + cR ;
   cR = ( v12I * v02I ) + ( v11I * v01I ) + cR ;
-
   cI = ( v00R * v10I - v10R * v00I ) ;
   cI = ( v01R * v11I - v11R * v01I ) + cI ;
   cI = ( v02R * v12I - v12R * v02I ) + cI ;
@@ -124,7 +117,6 @@ reunit2( GLU_complex *__restrict U)
   v11I -= ( cR * v01I + cI * v01R ) ; 
   v12R -= ( cR * v02R - cI * v02I ) ; 
   v12I -= ( cR * v02I + cI * v02R ) ; 
-
   norm = v10R * v10R + v10I * v10I ;
   norm = v11R * v11R + v11I * v11I + norm ;
   norm = v12R * v12R + v12I * v12I + norm ;	
@@ -173,36 +165,30 @@ reunit2( GLU_complex *__restrict U)
   *( ( (GLU_real*) U + 17 ) ) = v22I ;
  
 #elif NC == 2
-
   GLU_real *uu = (GLU_real*)U ;
   const double v00R = *( uu + 0 ) ;
   const double v00I = *( uu + 1 ) ;
   const double v01R = *( uu + 4 ) ;
   const double v01I = *( uu + 5 ) ;
-
+  // should really be a hypot
   double norm = sqrt( v00R * v00R + v00I * v00I + v01R * v01R + v01I * v01I ) ;
   norm = 1. / norm ;
-
   U[0] = ( v00R * norm + I * v00I * norm ); 
   U[1] = -( v01R * norm - I * v01I * norm ) ; 
   U[2] = ( v01R * norm + I * v01I * norm ) ; 
   U[3] = ( v00R * norm - I * v00I * norm ); 
-
 #else
   // need a modified gram-schmidt process, leaves the
   // bottom row untouched
-  int i , j ;
+  size_t i , j , k ;
   GLU_complex v[ NC - 1 ][ NC ] ;
-
   // equate our vector to our matrix , parallelism here is a bit extreme
   for( i = 0 ; i < NC-1 ; i++ ) {
     for( j = 0 ; j < NC ; j++ ) {
       v[i][j] = U[ j + ( NC * i ) ] ;
     }
   }
-
-  // perform the modified gram schmidt
-  int k ;
+  // perform the modified gram-schmidt
   for( k = 0 ; k < NC-1 ; k++ ) {
     for( i = 0 ; i < k ; i++ ) { 
       project( v[k] , v[i] ) ;      
@@ -214,11 +200,10 @@ reunit2( GLU_complex *__restrict U)
       U[ j + ( NC * i ) ] = v[i][j] ;
     }
   }
-
   // OK so this process leaves the bottom row as was, need to complete
   GLU_complex *array = malloc( ( NC - 1 ) * ( NC - 1 ) * sizeof( GLU_complex ) ) ;
   for( i = (NCNC-NC) ; i < NCNC ; i++ ) { // our bona-fide minor index loops the bottom row
-    int idx = 0 ;
+    size_t idx = 0 ;
     for( j = 0 ; j < ( NCNC - NC ) ; j++ ) {
       if( ( j%NC != i%NC ) ) { // remove columns  ( j/NC != i/NC ) is implicit!!
 	// pack array

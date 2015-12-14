@@ -36,7 +36,6 @@
 #endif
 
 // global maximum smearing direction ( ND-1 == SPATIAL , ND == ALL_DIRECTIONS )
-static int MAXDIR = 0 ;
 static GLU_real smear_alphas[ ND ] , one_minus_smalpha[ ND ] ;
 
 // just for simplicity
@@ -44,16 +43,16 @@ enum{ NOT_ORTHOGONAL , ORTHOGONAL } ;
 
 // initialise the smoothing alphas
 static void
-init_smearing_alphas( )
+init_smearing_alphas( const size_t MAXDIR )
 {
 #if ND < 3
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < MAXDIR-1 ; mu++ ) {
     smear_alphas[ mu+1 ] = Latt.sm_alpha[mu] ;
     one_minus_smalpha[ mu+1 ] = ( 1.0 - Latt.sm_alpha[mu] ) ;
   }
 #else
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < MAXDIR-1 ; mu++ ) {
     smear_alphas[ mu+1 ] = Latt.sm_alpha[mu] / ( ( ND-mu-1 ) * ( ND-2 ) ) ;
     one_minus_smalpha[ mu+1 ] = ( 1.0 - Latt.sm_alpha[mu] ) ;
@@ -64,10 +63,11 @@ init_smearing_alphas( )
 
 // is the direction orthogonal?
 static int
-is_orthogonal( jj , size , list_dirs ) 
-     const int jj , size , list_dirs[ size ] ;
+is_orthogonal( const size_t jj , 
+	       const size_t size , 
+	       const size_t list_dirs[ size ] ) 
 {
-  int nu ;
+  size_t nu ;
   for( nu = 0 ; nu < size ; nu++ ) {
     if( list_dirs[nu] == jj ) {
       return NOT_ORTHOGONAL ;
@@ -78,26 +78,32 @@ is_orthogonal( jj , size , list_dirs )
 
 // passes link by reference
 static void
-recurse_staples( link , lat , i , lev , list_dirs , type )
-     GLU_complex *__restrict link ; 
-     const struct site *__restrict lat ; 
-     int i , lev ;
-     const int list_dirs[ MAXDIR - lev ] ; 
-     const int type ;
+recurse_staples( GLU_complex *__restrict link ,
+		 const struct site *__restrict lat ,
+		 const size_t i , 
+		 const size_t lev ,
+		 const size_t MAXDIR ,
+		 const size_t list_dirs[ MAXDIR - lev ] ,
+		 const int type ,
+		 void (*project) ( GLU_complex smeared_link[ NCNC ] , 
+				   const GLU_complex staple[ NCNC ] , 
+				   const GLU_complex link[ NCNC ] , 
+				   const double smear_alpha , 	     
+				   const double al )  )
 {
   // the last index is our rho plane
-  const int rho = list_dirs[ MAXDIR - lev - 1 ] ;
+  const size_t rho = list_dirs[ MAXDIR - lev - 1 ] ;
   // generic storage and stuff
   GLU_complex stap[ NCNC ] , a[ NCNC ] , b[ NCNC ] ;
   zero_mat( stap ) ;
 
   if( lev == 1 ) { 
     // this is the final one
-    int jj ;
+    size_t jj ;
     for( jj = 0 ; jj < MAXDIR ; jj++ ) {
       if( is_orthogonal( jj , MAXDIR-lev , list_dirs ) == ORTHOGONAL ) { 
 	//jj is our orthogonal direction
-	int temp = lat[i].neighbor[jj] ; 
+	size_t temp = lat[i].neighbor[jj] ; 
 
 	multab_suNC( a , lat[i].O[jj] , lat[temp].O[rho] ) ; 
 	temp = lat[i].neighbor[rho] ; 
@@ -135,12 +141,13 @@ recurse_staples( link , lat , i , lev , list_dirs , type )
 
     // allocate these two temporaries
     GLU_complex temp[ NCNC ] , temp2[ NCNC ] ;
-    int new_list_dirs[ MAXDIR - lev + 1 ] , orthogonal_dirs[ MAXDIR - lev + 1 ] , jj ;
+    size_t new_list_dirs[ MAXDIR - lev + 1 ] ;
+    size_t orthogonal_dirs[ MAXDIR - lev + 1 ] , jj ;
     for( jj = 0 ; jj < MAXDIR ; jj++ ) {
       if( is_orthogonal( jj , MAXDIR-lev , list_dirs ) == ORTHOGONAL ) { 
 
  	// add direction to the list and recurse
-	int nu ;
+	size_t nu ;
 	for( nu = 0 ; nu < MAXDIR-lev ; nu++ ) {
 	  new_list_dirs[nu] = list_dirs[nu] ;
 	  orthogonal_dirs[nu] = list_dirs[nu] ;
@@ -149,14 +156,14 @@ recurse_staples( link , lat , i , lev , list_dirs , type )
 	orthogonal_dirs[nu] = rho ; 
 	new_list_dirs[nu] = jj ;
 
-	int dir = lat[i].neighbor[jj] ; 
+	size_t dir = lat[i].neighbor[jj] ; 
 	// first element of the staple is in the jj - rho direction
-	recurse_staples( temp , lat , i , lev-1 , new_list_dirs , type ) ; 
-	recurse_staples( temp2 , lat , dir , lev-1 , orthogonal_dirs , type ) ; 
+	recurse_staples( temp , lat , i , lev-1 , MAXDIR , new_list_dirs , type , project ) ; 
+	recurse_staples( temp2 , lat , dir , lev-1 , MAXDIR , orthogonal_dirs , type , project ) ; 
 	multab_suNC( a , temp , temp2 ) ; 
 
 	dir = lat[i].neighbor[rho] ;
-	recurse_staples( temp , lat , dir , lev-1 , new_list_dirs , type ) ; 
+	recurse_staples( temp , lat , dir , lev-1 , MAXDIR ,new_list_dirs , type , project ) ; 
 	multab_dag_suNC( b , a , temp ) ; 
 
 	if( type == SM_LOG ) {
@@ -171,12 +178,12 @@ recurse_staples( link , lat , i , lev , list_dirs , type )
 	// end of top staple ...
 
 	dir = lat[i].back[jj] ; 
-	recurse_staples( temp , lat , dir , lev-1 , new_list_dirs , type ) ; 
-	recurse_staples( temp2 , lat , dir , lev-1 , orthogonal_dirs , type ) ;
+	recurse_staples( temp , lat , dir , lev-1 , MAXDIR , new_list_dirs , type , project ) ; 
+	recurse_staples( temp2 , lat , dir , lev-1 , MAXDIR , orthogonal_dirs , type , project ) ;
 	multabdag_suNC( a , temp , temp2 ) ; 
 
 	dir = lat[dir].neighbor[rho] ; 
-	recurse_staples( temp , lat , dir , lev-1 , new_list_dirs , type ) ;
+	recurse_staples( temp , lat , dir , lev-1 , MAXDIR , new_list_dirs , type , project ) ;
 	multab_suNC( b , a , temp ) ; 
 
 	if( type == SM_LOG ) {
@@ -194,29 +201,18 @@ recurse_staples( link , lat , i , lev , list_dirs , type )
     // and so it should recurse inside this
   }
   // OK and we now project the fields 
-  switch( type ) {
-  case SM_APE :
-    project_APE( link , stap , lat[i].O[rho] , 
-		 smear_alphas[ MAXDIR-lev ] , one_minus_smalpha[ MAXDIR-lev ] ) ; 
-    break ; 
-  case SM_STOUT :
-    project_STOUT_short( link , stap , lat[i].O[rho] , 
-			 smear_alphas[ MAXDIR-lev ] ) ; 
-    break ; 
-  case SM_LOG :
-    project_LOG_short( link , stap , lat[i].O[rho] , 
-		       smear_alphas[ MAXDIR-lev ] ) ; 
-    break ; 
-  }
+  project( link , stap , lat[i].O[rho] , 
+	   smear_alphas[ MAXDIR-lev ] , 
+	   one_minus_smalpha[ MAXDIR-lev ] ) ;
   return ;
 }
 
 // slow, recursive ND-Generic smearing routine
 void 
 HYsmearND( struct site *__restrict lat , 
-	   const int smiters , 
+	   const size_t smiters , 
 	   const int type ,
-	   const int directions )
+	   const size_t directions )
 {
   if( unlikely( smiters == 0 ) ) { return ; }
 
@@ -230,11 +226,29 @@ HYsmearND( struct site *__restrict lat ,
   double qtop_new , qtop_old = 0.0 ;
 #endif
 
-  // globalise the smearing directions
-  MAXDIR = directions ;
+  // callback for the projections
+  void (*project) ( GLU_complex smeared_link[ NCNC ] , 
+		    const GLU_complex staple[ NCNC ] , 
+		    const GLU_complex link[ NCNC ] , 
+		    const double smear_alpha , 	     
+		    const double al ) ;
+  project = project_APE ;
+  switch( type ) {
+  case SM_APE :
+    project = project_APE ;
+    break ;
+  case SM_STOUT :
+    project = project_STOUT ;
+    break ;
+  case SM_LOG :
+    project = project_LOG ;
+    break ;
+  default :
+    return ;
+  }
 
   // initialise our smearing parameters and print their values to the screen
-  init_smearing_alphas( ) ;
+  init_smearing_alphas( directions ) ;
 
   // allocate temporaries
   struct spt_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
@@ -242,21 +256,23 @@ HYsmearND( struct site *__restrict lat ,
       GLU_malloc( (void**)lat3 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ||
       GLU_malloc( (void**)lat4 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ) {
     printf( "[SMEARING] field allocation failure\n" ) ;
+    return ;
   }
 
-  const int lev = MAXDIR - 1 ;
-  int count = 0 ; 
+  const size_t lev = directions - 1 ;
+  size_t count = 0 ; 
+  size_t i ;
   for( count = 1 ; count <= smiters ; count++ ) {
-    const int back = lat[ 0 ].back[ ND - 1 ] ;
-    int i ;
+    const size_t back = lat[ 0 ].back[ ND - 1 ] ;
     #pragma omp parallel for private(i) SCHED
     PFOR( i = 0 ; i < LCU ; i++ ) {
       const int bck = back + i ;
-      int mu , list_dirs[ MAXDIR - lev ] ;
-      for( mu = 0 ; mu < MAXDIR ; mu++ ) {
+      size_t mu , list_dirs[ directions - lev ] ;
+      for( mu = 0 ; mu < directions ; mu++ ) {
 	int d = 0 ;
-	for( d = 0 ; d < MAXDIR-lev ; d++ ) { list_dirs[d] = mu ; }
-	recurse_staples( lat4[i].O[mu] , lat , bck , lev , list_dirs , type ) ; 
+	for( d = 0 ; d < directions-lev ; d++ ) { list_dirs[d] = mu ; }
+	recurse_staples( lat4[i].O[mu] , lat , bck , lev ,
+			 directions , list_dirs , type , project ) ; 
       }
     }
 
@@ -269,41 +285,41 @@ HYsmearND( struct site *__restrict lat ,
       #pragma omp parallel for private(i) SCHED
       PFOR( i = 0 ; i < LCU ; i++ ) {
 	const int it = slice + i ; 
-	int mu , list_dirs[ MAXDIR - lev ] ;
-	for( mu = 0 ; mu < MAXDIR ; mu++ ) {
-	  int d = 0 ;
-	  for( d = 0 ; d < MAXDIR-lev ; d++ ) { list_dirs[d] = mu ; }
-	  recurse_staples( lat2[i].O[mu] , lat , it , lev , list_dirs , type ) ; 
+	size_t mu , list_dirs[ directions - lev ] , d ;
+	for( mu = 0 ; mu < directions ; mu++ ) {
+	  for( d = 0 ; d < directions-lev ; d++ ) { list_dirs[d] = mu ; }
+	  recurse_staples( lat2[i].O[mu] , lat , it , lev , 
+			   directions , list_dirs , type , project ) ; 
 	}
       }
 	  
-      const int bck = lat[slice].back[ ND - 1 ] ;
+      const size_t bck = lat[slice].back[ ND - 1 ] ;
       #pragma omp parallel for private(i)
       PFOR( i = 0 ; i < LCU ; i++ ) {
-	int mu ;
+	size_t mu ;
 	//put temp into the previous time-slice 
 	if( likely( t != 0 ) ) { 
-	  register const int back = bck + i ;
-	  for( mu = 0 ; mu < MAXDIR ; mu++ ) {
+	  register const size_t back = bck + i ;
+	  for( mu = 0 ; mu < directions ; mu++ ) {
 	    equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
 	  }
 	}
 	//make temporary lat3 lat2 again and repeat
-	for( mu = 0 ; mu < MAXDIR ; mu++ ) {
+	for( mu = 0 ; mu < directions ; mu++ ) {
 	  equiv( lat3[i].O[mu] , lat2[i].O[mu] ) ;
 	}
       }
     }
     //put last and last but one time slice in
     ////////////////////////////////////////////
-    const int slice = LCU * t ;    
-    const int behind = lat[ slice ].back[ ND - 1 ] ;
+    const size_t slice = LCU * t ;    
+    const size_t behind = lat[ slice ].back[ ND - 1 ] ;
     #pragma omp parallel for private(i) 
     PFOR( i = 0 ; i < LCU ; i++ ) {
-      int mu ;
-      register const int back = behind + i ; 
-      register const int it = slice + i ; 
-      for( mu = 0 ; mu < MAXDIR ; mu++ ) {
+      size_t mu ;
+      register const size_t back = behind + i ; 
+      register const size_t it = slice + i ; 
+      for( mu = 0 ; mu < directions ; mu++ ) {
 	equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
 	equiv( lat[it].O[mu] , lat4[i].O[mu] ) ;
       }

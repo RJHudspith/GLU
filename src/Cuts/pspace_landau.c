@@ -30,20 +30,20 @@ void
 correct_pspace_landau( struct site *__restrict A ,
 		       const struct veclist *__restrict list ,
 		       const int *__restrict in ,
-		       const int DIMS )
+		       const size_t DIMS )
 {
   double ave_err = 0. ;
-  int i ;
+  size_t i ;
   #pragma omp parallel for private(i) reduction(+:ave_err)
   PFOR( i = 0 ; i < in[0] ; i++ ) {
 
-    const int list_idx = list[ i ].idx ;
+    const size_t list_idx = list[ i ].idx ;
 
     // this is for the p-space test
     register double sum = 0.0 ;
 
     // Loop over polarisations ...
-    int mu ;
+    size_t mu , j ;
     for( mu = 0 ; mu < DIMS ; mu++ ) {
 
       const double cache = 0.5 * list[i].MOM[ mu ] * Latt.twiddles[ mu ] ;
@@ -63,7 +63,6 @@ correct_pspace_landau( struct site *__restrict A ,
       #endif
       
       // write over every element of A with this extra factor
-      int j ;
       for( j = 0 ; j < NCNC ; j++ ) {
 	A[ list_idx ].O[ mu ][ j ] *= exp_cache ;
         #if ( defined deriv_linn ) || ( defined deriv_fulln ) || ( defined deriv_fullnn )

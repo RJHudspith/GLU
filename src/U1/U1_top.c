@@ -26,10 +26,9 @@
 
 // compute the dirac current
 static int 
-current( M )
-     const int *__restrict *__restrict M ;
+current( const int *__restrict *__restrict M )
 {
-  int mu , monopole = 0 ;
+  size_t mu , monopole = 0 ;
 #pragma omp parallel for private(mu) reduction(+:monopole)
   for( mu = 0 ; mu < ND ; mu++ ) {
     int loc_monopole = 0 , i ;
@@ -43,8 +42,7 @@ current( M )
 
 // the mod 2pi bit to get the number of windings
 static inline int 
-mod_2pi( theta )
-     const GLU_real theta;
+mod_2pi( const GLU_real theta )
 {
   return (int)theta / TWOPI ; 
 }
@@ -52,12 +50,12 @@ mod_2pi( theta )
 // the noncompact face of the plaquette
 static GLU_real
 noncompact_face( const GLU_real *__restrict *__restrict O , 
-		 const int i , 
-		 const int mu , 
-		 const int nu )
+		 const size_t i , 
+		 const size_t mu , 
+		 const size_t nu )
 {
   const GLU_real a = O[mu][i];
-  int temp = gen_shift( i , mu ) ;
+  size_t temp = gen_shift( i , mu ) ;
   const GLU_real b = O[nu][temp] ;
   const GLU_real d = O[nu][i] ;
   temp = gen_shift( i , nu ) ;
@@ -67,9 +65,10 @@ noncompact_face( const GLU_real *__restrict *__restrict O ,
 
 // calculates the "s", the winding per face of the plaquette
 inline static int 
-obtain_S( O , i , mu , nu )
-     const GLU_real *__restrict *__restrict O ;
-     const int i , mu , nu ;
+obtain_S( const GLU_real *__restrict *__restrict O ,
+	  const size_t i , 
+	  const size_t mu , 
+	  const size_t nu )
 {
   const GLU_real theta = noncompact_face( O , i , mu , nu ) ;
   return mod_2pi( theta ) ;
@@ -77,13 +76,14 @@ obtain_S( O , i , mu , nu )
 
 // compute the "dirac sheet" from the noncompact plaquette
 static int 
-dirac_sheet( O )
-     const GLU_real *__restrict *__restrict O ;
+dirac_sheet( const GLU_real *__restrict *__restrict O )
 {
-  int i , sheet = 0 ;
+  size_t i ;
+  int sheet = 0 ;
 #pragma omp parallel for private(i) reduction(+:sheet)
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    int mu , nu , loc_sheet = 0 ;
+    size_t mu , nu ; 
+    int loc_sheet = 0 ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       for( nu = 0 ; nu < mu ; nu++ )	  {
 	const int temp = obtain_S( O , i , mu , nu ) ;
@@ -97,19 +97,16 @@ dirac_sheet( O )
 
 // computes the dirac observable "M"
 static void 
-dirac( M , O )
-     int *__restrict *__restrict M ;
-     const GLU_real *__restrict *__restrict O ;
+dirac( int *__restrict *__restrict M ,
+       const GLU_real *__restrict *__restrict O )
 {
-  int i ;
+  size_t i ;
 #pragma omp parallel for private(i) 
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {// is this OK?
-    int mu ;
+    size_t mu , nu , rho , sigma;
     for( mu = 0 ; mu < ND ; mu++ ) {
-      int nu ;
       for( nu = 0 ; nu < ND ; nu++ ) {
 	if(nu != mu)  {
-	  int rho , sigma ;
 	  for( rho = 0 ; rho < ND ; rho++ ) {
 	    for( sigma = 0 ; sigma < rho ; sigma++ ) {
 	      if( sigma == mu || rho == mu || sigma == nu || rho == nu ) {
@@ -119,7 +116,7 @@ dirac( M , O )
 		if( ( nu % 2 ) == 1 ) {
 		  factor = 1 ;
 		}
-		const int temp = gen_shift( i , nu ) ;
+		const size_t temp = gen_shift( i , nu ) ;
 		M[ mu ][ i ] = M[ mu ][ i ] + factor * ( obtain_S( O , temp , rho , sigma )
 							 - obtain_S( O , i , rho , sigma ) ) ;
 	      }
@@ -135,21 +132,19 @@ dirac( M , O )
 // very naive topological charge using the noncompact plaquettes 
 // e_\mu\nu\rho\eta G_\mu\nu G_\rho\eta 
 static double 
-non_Qtop( O )
-     const GLU_real *__restrict *__restrict O ;
+non_Qtop( const GLU_real *__restrict *__restrict O )
 {
   double charge = 0.0 ;
-  int i;
+  size_t i;
 #pragma omp parallel for private(i) reduction(+:charge)
-  for( i = 0 ; i < LVOLUME ; i++ )
-    {
-      double qtemp = (double)noncompact_face( O , i , 0 , 1 ) * (double)noncompact_face( O , i , 2 , 3 ) ;
-      qtemp += (double)noncompact_face( O , i , 0 , 2 ) * (double)noncompact_face( O , i , 3 , 1 ) ; 
-      qtemp += (double)noncompact_face( O , i , 0 , 3 ) * (double)noncompact_face( O , i , 1 , 2 ) ; 
-
-      // parallel reduction on charge
-      charge = charge + (double)qtemp ;
-    }
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    double qtemp = (double)noncompact_face( O , i , 0 , 1 ) * (double)noncompact_face( O , i , 2 , 3 ) ;
+    qtemp += (double)noncompact_face( O , i , 0 , 2 ) * (double)noncompact_face( O , i , 3 , 1 ) ; 
+    qtemp += (double)noncompact_face( O , i , 0 , 3 ) * (double)noncompact_face( O , i , 1 , 2 ) ; 
+    
+    // parallel reduction on charge
+    charge = charge + (double)qtemp ;
+  }
   return charge * 0.001583143494411527678811 ;
 }
 
@@ -161,7 +156,7 @@ U1_topological( int *__restrict monopole ,
 		const GLU_real *__restrict *__restrict O  )
 {
   int **M = calloc( ND , sizeof( int * ) ) ;
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     M[ mu ] = ( int* )calloc( LVOLUME , sizeof( int ) ) ; 
   }

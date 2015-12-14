@@ -24,14 +24,14 @@
 #define GLU_CG_H
 
 /**
-   @fn void allocate_traces( const int LENGTH )
+   @fn void allocate_traces( const size_t LENGTH )
    @brief allocate the traces array that is used in the average
    @param LENGTH :: the length of the traces array you want to allocate
  */
-void allocate_traces( const int LENGTH ) ;
+void allocate_traces( const size_t LENGTH ) ;
 
 /**
-   @fn double approx_minimum( const int nmeas , const double alphas[ nmeas ] , const double functional[ nmeas ] )
+   @fn double approx_minimum( const size_t nmeas , const double alphas[ nmeas ] , const double functional[ nmeas ] )
    @brief finds the approximate minimum of alphas using GLU-bic splines
    @param nmeas :: number of measurements made
    @param alphas :: alphas tested
@@ -40,12 +40,12 @@ void allocate_traces( const int LENGTH ) ;
    @return the alpha that approximately minimises the functional, or 0 
  */
 double
-approx_minimum( const int nmeas , 
+approx_minimum( const size_t nmeas , 
 		const double alphas[ nmeas ] ,
 		const double functional[ nmeas ] ) ;
 
 /**
-   @fn double coul_gtrans_fields( struct sp_site_herm *__restrict rotato , const struct site *__restrict lat , const GLU_complex *__restrict *__restrict slice_gauge , const int t , const double acc )
+   @fn double coul_gtrans_fields( struct sp_site_herm *__restrict rotato , const struct site *__restrict lat , const GLU_complex *__restrict *__restrict slice_gauge , const size_t t , const double acc )
    @brief computes the gauge transformed Lie fields
    @param rotato :: (Coulomb) gauge rotated Lie fields
    @param lat :: link matrices
@@ -57,15 +57,15 @@ double
 coul_gtrans_fields( struct sp_site_herm *__restrict rotato ,
 		    const struct site *__restrict lat ,
 		    const GLU_complex *__restrict *__restrict slice_gauge ,
-		    const int t ,
+		    const size_t t ,
 		    const double acc ) ;
 
 /**
-   @fn double evaluate_alpha( const GLU_complex *__restrict *__restrict gauge ,	const struct site *__restrict lat , const int DIR ,	const int LENGTH , const int t ) 
+   @fn double evaluate_alpha( const GLU_complex *__restrict *__restrict gauge ,	const struct site *__restrict lat , const size_t DIR ,	const size_t LENGTH , const size_t t ) 
    @brief evaluate the functional for a test expansion parameter alpha
    @param gauge :: gauge transformation matrices
    @param lat :: lattice links
-   @param DIR :: (ND-1) Coulomb or (ND) for Landau
+   @param DIR :: (#ND-1) Coulomb or (#ND) for Landau
    @param LENGTH :: the length of the gauge transformation array
    @param t :: the timeslice index (set to 0 for Landau)
    @return the average functional
@@ -73,12 +73,12 @@ coul_gtrans_fields( struct sp_site_herm *__restrict rotato ,
 double
 evaluate_alpha( const GLU_complex *__restrict *__restrict gauge , 
 		const struct site *__restrict lat ,
-		const int DIR ,
-		const int LENGTH ,
-		const int t ) ;
+		const size_t DIR ,
+		const size_t LENGTH ,
+		const size_t t ) ;
 
 /**
-   @fn void FOURIER_ACCELERATE( GLU_complex *__restrict *__restrict in , GLU_complex *__restrict *__restrict out , const void *__restrict forward , const void *__restrict backward , const double *__restrict psq , const int LENGTH )
+   @fn void FOURIER_ACCELERATE( GLU_complex *__restrict *__restrict in , GLU_complex *__restrict *__restrict out , const void *__restrict forward , const void *__restrict backward , const double *__restrict psq , const size_t LENGTH )
    @brief perform a Fourier Acceleration correction to the derivative in
    @param in :: derivative of the lie fields
    @param out :: FFT storage
@@ -93,7 +93,7 @@ FOURIER_ACCELERATE( GLU_complex *__restrict *__restrict in ,
 		    const void *__restrict forward ,
 		    const void *__restrict backward ,
 		    const GLU_real *__restrict psq ,
-		    const int LENGTH ) ;
+		    const size_t LENGTH ) ;
 
 /**
    @fn free_traces( )
@@ -119,7 +119,7 @@ PRfmax( const double a ,
 	const double b ) ;
 
 /**
-   @fn void set_gauge_matrix( GLU_complex *__restrict gx , const GLU_complex *__restrict *__restrict in , const double alpha , const int i ) 
+   @fn void set_gauge_matrix( GLU_complex *__restrict gx , const GLU_complex *__restrict *__restrict in , const double alpha , const size_t i ) 
    @brief unpacks and exponentiates the derivative into the array gx at site i
    @param gx :: gauge transformation matrix
    @param in :: derivative at site i
@@ -129,10 +129,10 @@ void
 set_gauge_matrix( GLU_complex *__restrict gx ,
 		  const GLU_complex *__restrict *__restrict in ,
 		  const double alpha ,
-		  const int i ) ;
+		  const size_t i ) ;
 
 /**
-   @fn double sum_deriv( const GLU_complex *__restrict *__restrict in , const int LENGTH )
+   @fn double sum_deriv( const GLU_complex *__restrict *__restrict in , const size_t LENGTH )
    @brief computes the sum of the trace of the product of the derivative matrices
    @param in :: derivative matrix
    @param LENGTH :: length of the array in
@@ -141,10 +141,10 @@ set_gauge_matrix( GLU_complex *__restrict gx ,
  */
 double
 sum_deriv( const GLU_complex *__restrict *__restrict in , 
-	   const int LENGTH ) ;
+	   const size_t LENGTH ) ;
 
 /**
-   @fn double sum_PR_numerator( const GLU_complex *__restrict *__restrict in , const GLU_complex *__restrict *__restrict in_old , const int LENGTH )
+   @fn double sum_PR_numerator( const GLU_complex *__restrict *__restrict in , const GLU_complex *__restrict *__restrict in_old , const size_t LENGTH )
    @brief the sum in * ( in - in_old ), is the Polak-Ribiere numerator
    @param in :: the derivative at this step
    @param in_old :: the previous derivative
@@ -154,6 +154,6 @@ sum_deriv( const GLU_complex *__restrict *__restrict in ,
 double
 sum_PR_numerator( const GLU_complex *__restrict *__restrict in , 
 		  const GLU_complex *__restrict *__restrict in_old ,
-		  const int LENGTH ) ;
+		  const size_t LENGTH ) ;
 
 #endif

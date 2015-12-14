@@ -30,12 +30,12 @@
 // use a multiple of the array length for the size value
 static void
 FWRITE( void *arr ,
-	const int size , // MUST BE sizeof(int) or sizeof(double)
-	const int stride ,
+	const size_t size , // MUST BE sizeof(int) or sizeof(double)
+	const size_t stride ,
 	FILE *__restrict file )
 {
   // I enforce the re byte-swap in case we want to look at the data again
-  if( size == sizeof(int) ) {
+  if( size == sizeof( int ) ) {
     if( !WORDS_BIGENDIAN ) { bswap_32( stride , arr ) ; }
     fwrite( arr , size , stride , file ) ;
     if( !WORDS_BIGENDIAN ) { bswap_32( stride , arr ) ; }
@@ -44,7 +44,7 @@ FWRITE( void *arr ,
     fwrite( arr , size , stride , file ) ;
     if( !WORDS_BIGENDIAN ) { bswap_64( stride , arr ) ; }
   } else {
-    printf( "[CUT] I do not understand your byte-swapping size %d \n" , size ) ;
+    printf( "[CUT] I do not understand your byte-swapping size %zu \n" , size ) ;
   }
   return ;
 }
@@ -53,8 +53,8 @@ FWRITE( void *arr ,
 int
 check_psq( const struct cut_info CUTINFO )
 {
-  int small = Latt.dims[0] ;
-  int i ;
+  size_t small = Latt.dims[0] ;
+  size_t i ;
   for( i = 1 ; i < ND ; i++ ) {
     if( Latt.dims[i] < small ) {
       small = Latt.dims[i] ;
@@ -71,31 +71,30 @@ check_psq( const struct cut_info CUTINFO )
   if( CUTINFO.dir == NONEXCEPTIONAL ) {
     printf( "PSQ Cutting Procedure \n" ) ;
   } else {
-    switch( CUTINFO.type ) 
-      {
-      case HYPERCUBIC_CUT :
-	printf( "HYPERCUBIC Cutting Procedure \n" ) ;
-	break ;
-      case PSQ_CUT :
-	printf( "PSQ Cutting Procedure \n" ) ;
-	break ;
-      case CYLINDER_CUT :
-	printf( "Cylinder Cutting Procedure \n" ) ;
-	printf( "[CUTS] Cylinder Width in Lattice units :: %g \n" , CUTINFO.cyl_width ) ; 
-	printf( "[CUTS] Physical Momentum Cap :: %g \n" , TWOPI*CUTINFO.cyl_width/small  ) ; 
-	break ;
-      case CYLINDER_AND_CONICAL_CUT :
-	printf( "Cylinder and Conical Cutting Procedure \n" ) ;
-	printf( "[CUTS] Cylinder Radius in Lattice units :: %g \n" , CUTINFO.cyl_width ) ; 
-	printf( "[CUTS] Physical Momentum Cap :: %g \n" , TWOPI*CUTINFO.cyl_width/small ) ; 
-	printf( "[CUTS] Cone Angle :: %g \n" , (double)CUTINFO.angle ) ; 
-	break ;
-      default:
-	printf( "I don't recognise the type.. Leaving \n" ) ;
-	return GLU_FAILURE ;
-      }
+    switch( CUTINFO.type ) {
+    case HYPERCUBIC_CUT :
+      printf( "HYPERCUBIC Cutting Procedure \n" ) ;
+      break ;
+    case PSQ_CUT :
+      printf( "PSQ Cutting Procedure \n" ) ;
+      break ;
+    case CYLINDER_CUT :
+      printf( "Cylinder Cutting Procedure \n" ) ;
+      printf( "[CUTS] Cylinder Width in Lattice units :: %g \n" , CUTINFO.cyl_width ) ; 
+      printf( "[CUTS] Physical Momentum Cap :: %g \n" , TWOPI*CUTINFO.cyl_width/small  ) ; 
+      break ;
+    case CYLINDER_AND_CONICAL_CUT :
+      printf( "Cylinder and Conical Cutting Procedure \n" ) ;
+      printf( "[CUTS] Cylinder Radius in Lattice units :: %g \n" , CUTINFO.cyl_width ) ; 
+      printf( "[CUTS] Physical Momentum Cap :: %g \n" , TWOPI*CUTINFO.cyl_width/small ) ; 
+      printf( "[CUTS] Cone Angle :: %g \n" , (double)CUTINFO.angle ) ; 
+      break ;
+    default:
+      printf( "I don't recognise the type.. Leaving \n" ) ;
+      return GLU_FAILURE ;
+    }
   }
-  printf( "[CUTS] Maximum p^2 :: %d \n\n" , CUTINFO.max_mom ) ;
+  printf( "[CUTS] Maximum p^2 :: %zu \n\n" , CUTINFO.max_mom ) ;
   if( CUTINFO.definition == LOG_DEF ) {
     printf( "[CUTS] Using the LOGARITHMIC field definition \n" ) ;
   } else {
@@ -163,25 +162,25 @@ output_str_struct( const struct cut_info CUTINFO )
   // print out the dimensions of the lattice used for the cut
   int mu ;
   for( mu = 0 ; mu < ND - 1 ; mu++ ) {
-    sprintf( str , "%s%dx" , str , Latt.dims[mu] ) ;
+    sprintf( str , "%s%zux" , str , Latt.dims[mu] ) ;
   }
-  sprintf( str , "%s%d_" , str , Latt.dims[ ND - 1 ] ) ;
+  sprintf( str , "%s%zu_" , str , Latt.dims[ ND - 1 ] ) ;
 
   if( CUTINFO.dir == CONFIGSPACE_GLUONS ) {
     if( CUTINFO.definition == LOG_DEF ) {
-      sprintf( str , "%sLOG.%d.bin" , str , Latt.flow ) ;
+      sprintf( str , "%sLOG.%zu.bin" , str , Latt.flow ) ;
     } else {
-      sprintf( str , "%sLIN.%d.bin" , str , Latt.flow ) ;
+      sprintf( str , "%sLIN.%zu.bin" , str , Latt.flow ) ;
     }
     return str ;
   }
 
   /////// MOMENTUM SPACE STUFF FROM HERE ///////
-  sprintf( str , "%s%d_" , str , CUTINFO.max_mom ) ;
+  sprintf( str , "%s%zu_" , str , CUTINFO.max_mom ) ;
 
   // static potential measurement has T-detail here
   if( CUTINFO.dir == STATIC_POTENTIAL ) { 
-    sprintf( str , "%sT%d_" , str , CUTINFO.max_t ) ;
+    sprintf( str , "%sT%zu_" , str , CUTINFO.max_t ) ;
   }
 
   // switch on the correct cut, only PSQ is allowed for the non-exceptional
@@ -191,23 +190,22 @@ output_str_struct( const struct cut_info CUTINFO )
   }
 
   // print out the cutting type performed
-  switch( type )
-    {
-    case HYPERCUBIC_CUT :
-      sprintf( str , "%scutHYP" , str ) ;
-      break;
-    case PSQ_CUT :
-      sprintf( str , "%scutPSQ" , str ) ;
-      break;
-    case CYLINDER_CUT :
-      sprintf( str , "%scutCYL_w%g" , str , CUTINFO.cyl_width ) ;
-      break ;
-    case CYLINDER_AND_CONICAL_CUT :
-      sprintf( str , "%scutCON_%d" , str , CUTINFO.angle ) ;
-      break ; 
-    default:
-      break ; 
-    }
+  switch( type ) {
+  case HYPERCUBIC_CUT :
+    sprintf( str , "%scutHYP" , str ) ;
+    break;
+  case PSQ_CUT :
+    sprintf( str , "%scutPSQ" , str ) ;
+    break;
+  case CYLINDER_CUT :
+    sprintf( str , "%scutCYL_w%g" , str , CUTINFO.cyl_width ) ;
+    break ;
+  case CYLINDER_AND_CONICAL_CUT :
+    sprintf( str , "%scutCON_%zu" , str , CUTINFO.angle ) ;
+    break ; 
+  default:
+    break ; 
+  }
 
   // print out the momentum def used for the projectors, only used for
   // the three point functions
@@ -240,7 +238,7 @@ output_str_struct( const struct cut_info CUTINFO )
   }
 
   // and finish up with the configuration number
-  sprintf( str , "%s.%d.bin" , str , Latt.flow ) ;
+  sprintf( str , "%s.%zu.bin" , str , Latt.flow ) ;
 
   return str ;
 }
@@ -320,18 +318,17 @@ write_lattice_fields( FILE *__restrict Ap ,
   FWRITE( num_mom , sizeof(int) , 1 , Ap ) ;
 
   //write lattice fields
-  const int stride = ND * NCNC * 2 ; // the 2 is for the real and imaginary bits
+  const size_t stride = ND * NCNC * 2 ; // the 2 is for the real and imaginary bits
   double *aout = malloc( stride * sizeof( double ) ) ;
 
-  int i ;
+  size_t i ;
   for( i = 0 ; i < num_mom[0] ; i++ ) {
-    int mu ;
-    //int b = 0 ;
+    size_t mu ;
     #pragma omp parallel for private(mu)
     PFOR( mu = 0 ; mu < ND ; mu++ ) {
-      int a ;
+      size_t a , b ;
       for( a = 0 ; a < NCNC ; a++ ) {
-	const int b = 2 * ( a + mu * NCNC ) ;
+	b = 2 * ( a + mu * NCNC ) ;
 	aout[ b ] = (double)creal( A[ list[i].idx ].O[mu][a] ) ;
 	aout[ b + 1 ] = (double)cimag( A[ list[i].idx ].O[mu][a] ) ;
       }
@@ -354,14 +351,14 @@ write_mom_veclist( FILE *__restrict Ap ,
 
   FWRITE( num_mom , sizeof(int) , 1 , Ap ) ;
 
-  int i ;
+  size_t i ;
   //write momenta
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < num_mom[0] ; i++ ) {
-    int n = i * ( DIR + 1 ) ;
+    size_t n = i * ( DIR + 1 ) ;
     kall[ n ] = DIR ; 
     n++ ; 
-    int a ;
+    size_t a ;
     for( a = 0  ;  a < DIR  ;  a++ ) {
       kall[ n ] = list[i].MOM[a] ; 
       n++ ; 
@@ -376,24 +373,24 @@ write_mom_veclist( FILE *__restrict Ap ,
 void
 write_rr_values( FILE *__restrict Ap ,
 		 int size[1] ,
-		 const int *__restrict rsq ,
-		 const int max_r2 ,
-		 const int ARR_SIZE )
+		 const size_t *__restrict rsq ,
+		 const size_t max_r2 ,
+		 const size_t ARR_SIZE )
 {
-  int i ;
+  size_t i ;
 #ifdef ASCII_CHECK
   printf( "%d \n" , size[0] ) ;
   // loop the possible rsq's
   for( i = 0 ; i < ARR_SIZE ; i++ ) {
     if( rsq[i] < max_r2 ) {
-      int rr[1] = { rsq[i] } ;
-      printf( "%d\n" , rr[0] ) ;
+      size_t rr[1] = { rsq[i] } ;
+      printf( "%zu\n" , rr[0] ) ;
     }
   }
 #endif
   // output to a file ... for reading in with UKhadron or something
   // write out the length of the array ...
-  FWRITE( size , sizeof(int) , 1 , Ap ) ;
+  FWRITE( size , sizeof( int ) , 1 , Ap ) ;
   // loop the possible rsq's
   for( i = 0 ; i < ARR_SIZE ; i++ ) {
     if( rsq[i] < max_r2 ) {
@@ -408,27 +405,26 @@ void
 write_triplet_mom_list( FILE *__restrict Ap , 
 			int *__restrict num_mom , 
 			int *__restrict *__restrict momentum ,
-			int *__restrict *__restrict triplet ,
-			const int DIR )
+			size_t *__restrict *__restrict triplet ,
+			const size_t DIR )
 {
-  const int stride = ( ND + 1 ) * num_mom[0] ;
-  int *kall = malloc( stride * sizeof(int) ) ;
+  const size_t stride = ( ND + 1 ) * num_mom[0] ;
+  int *kall = malloc( stride * sizeof( int ) ) ;
 
 #ifdef ASCII_CHECK
-  printf("%d\n", num_mom[0] ) ;
+  printf("%zu\n", num_mom[0] ) ;
 #endif
 
   FWRITE( num_mom , sizeof(int) , 1 , Ap ) ;
 
   // start writing the momenta to the list, we just write the first momentum of the triplet...
-  int i ;
+  size_t i ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < num_mom[0] ; i++ ) {
     //const int trip = i % 3 ;
-    int n = i * ( ND + 1 ) ;
+    size_t n = i * ( ND + 1 ) , mu ;
     kall[ n ] = ND ; 
     n++ ; 
-    int mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       kall[n] = momentum[ triplet[ i ][ 0 ] ][ mu ] ;
       n++ ;
@@ -436,8 +432,7 @@ write_triplet_mom_list( FILE *__restrict Ap ,
   }
 
 #ifdef ASCII_CHECK
-  int mu ;
-  int b = 0 ;
+  size_t mu , b = 0 ;
   for( i = 0 ; i < num_mom[0] ; i++ ) {
     for( mu = 0 ; mu < ND + 1 ; mu++ ) {
       printf("%d ", kall[ b ] ) ; 
@@ -456,9 +451,9 @@ write_triplet_mom_list( FILE *__restrict Ap ,
 // write the timeslices, LT[0] is the size of the array
 void
 write_tslice_list( FILE *__restrict Ap , 
-		   int *__restrict LT )
+		   size_t *__restrict LT )
 {
-  int T[ LT[0] ] , t ;
+  size_t T[ LT[0] ] , t ;
 #ifdef ASCII_CHECK
   printf( "%d \n" , LT[0] ) ;
   for( t = 0 ; t < LT[0] ; t++ ) { printf( "%d \n" , t ) ; }

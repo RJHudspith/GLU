@@ -56,11 +56,11 @@ trace_deriv( GLU_complex *__restrict sum )
 double
 latt_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] , 
 			       const struct site *__restrict lat , 
-			       const int i , 
-			       const int MAX_DIR )
+			       const size_t i , 
+			       const size_t MAX_DIR )
 {
   GLU_complex A[ HERMSIZE ] , shiftA[ HERMSIZE ] ;
-  int mu ; 
+  size_t mu ; 
   for( mu = 0 ; mu < MAX_DIR ; mu++ ) {
     Hermitian_proj_short( A , lat[i].O[mu] ) ; 
     Hermitian_proj_short( shiftA , lat[lat[i].back[mu]].O[mu] ) ; 
@@ -74,11 +74,11 @@ latt_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
 double
 latt_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] , 
 				 const struct site *__restrict lat , 
-				 const int i , 
-				 const int MAX_DIR ) 
+				 const size_t i , 
+				 const size_t MAX_DIR ) 
 {
   GLU_complex shiftA[ HERMSIZE ] , A[ HERMSIZE ] ;
-  int mu ; 
+  size_t mu ; 
   for( mu = 0 ; mu < MAX_DIR ; mu++ ) {
       // first deriv
     Hermitian_proj_short( A , lat[i].O[mu] ) ; 
@@ -99,7 +99,7 @@ double
 fast_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
 			       double *functional ,
 			       const struct site *__restrict lat , 
-			       const int i )
+			       const size_t i )
 {
   *functional = 0.0 ;
 #if NC == 3 
@@ -114,7 +114,7 @@ fast_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
   double Ai0 , Ar1 , Ai1 ;
   double shAi0 , shAr1 , shAi1 ;
 #else
-  int nu ;
+  size_t nu ;
   for( nu = 0 ; nu < HERMSIZE ; nu++ ) {
     sum[ nu ] = 0. ;
   }
@@ -128,7 +128,7 @@ fast_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
   register double loc_sum = 0.0 ;
 
   //calculate the top diagonal for both shift A and A
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     // compute the functional
     #if NC == 3
@@ -243,7 +243,7 @@ fast_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
 double
 fast_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] , 
 				 const struct site *__restrict lat , 
-				 const int i ) 
+				 const size_t i ) 
 {
 #if NC == 3 
   double REsum0 = 0. , REsum1 = 0. , IMsum1 = 0. , REsum2 = 0. , IMsum2 = 0. ;
@@ -261,12 +261,12 @@ fast_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
   double Ai0 , Ar1 , Ai1 ;
   double shAi0 , shAr1 , shAi1 ;
 #else
-  int nu ;
+  size_t nu ;
   for( nu = 0 ; nu < HERMSIZE ; nu++ ) { sum[ nu ] = 0. ; }
   return latt_derivnn_AntiHermitian_proj( sum , lat , i , ND ) ;
 #endif
 
-  int mu ; 
+  size_t mu ; 
   for( mu = 0 ; mu < ND ; mu++ ) {
 #if NC == 3
     // cache some stuff in ....
@@ -282,7 +282,7 @@ fast_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
     Ar7 = *( qq + 14 ) ; Ai7 = *( qq + 15 ) ;
     Ai8 = *( qq + 17 ) ;
 
-    register const int it = lat[i].back[mu] ;
+    register const size_t it = lat[i].back[mu] ;
     const GLU_real *shqq = ( GLU_real* )lat[ it ].O[mu] ;
     shAi0 = *( shqq + 1 )  ;
     shAr1 = *( shqq + 2 )  ; shAi1 = *( shqq + 3 ) ;
@@ -322,7 +322,7 @@ fast_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
     Ar7 = *( qq2 + 14 ) ; Ai7 = *( qq2 + 15 ) ;
     Ai8 = *( qq2 + 17 ) ;
 
-    register const int it2b = lat[it].back[mu] ;
+    register const size_t it2b = lat[it].back[mu] ;
     GLU_real *shqq2 = ( GLU_real* )lat[it2b].O[mu] ;
     shAi0 = *( shqq2 + 1 )  ;
     shAr1 = *( shqq2 + 2 )  ; shAi1 = *( shqq2 + 3 ) ;
@@ -356,7 +356,7 @@ fast_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
     Ar1 = *( qq + 2 ) ; Ai1 = *( qq + 3 ) ;
  
     // and the backward one
-    const int it = lat[i].back[mu] ;
+    const size_t it = lat[i].back[mu] ;
     const GLU_real *shqq = ( GLU_real* )lat[it].O[mu] ;
     shAi0 = *( shqq + 1 ) ;
     shAr1 = *( shqq + 2 ) ; shAi1 = *( shqq + 3 ) ;
@@ -365,12 +365,12 @@ fast_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
     REsum1 += shAr1 - Ar1 ; 
     IMsum1 += shAi1 - Ai1 ;
 
-    register const int it2f = lat[i].neighbor[mu] ;
+    register const size_t it2f = lat[i].neighbor[mu] ;
     const GLU_real *qq2 = ( GLU_real* )lat[it2f].O[mu] ;
     Ai0 = *( qq2 + 1 ) ;
     Ar1 = *( qq2 + 2 ) ; Ai1 = *( qq2 + 3 ) ;
 
-    register const int it2b = lat[it].back[mu] ;
+    register const size_t it2b = lat[it].back[mu] ;
     const GLU_real *shqq2 = ( GLU_real* )lat[it2b].O[mu] ;
     shAi0 = *( shqq2 + 1 ) ;
     shAr1 = *( shqq2 + 2 ) ; shAi1 = *( shqq2 + 3 ) ;
@@ -399,4 +399,3 @@ fast_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
 
   return trace_deriv( sum ) ;
 }
-

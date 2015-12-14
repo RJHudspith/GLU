@@ -49,7 +49,7 @@ multab( GLU_complex a[ NCNC ] ,
   a[3] = b[2] * c[1] + b[3] * c[3] ;		
 #else
   #if (NC%2==0)
-  int i , j , m ;
+  size_t i , j , m ;
   const GLU_complex *pB = b ;
   register GLU_complex sum , sum2 ;
   register GLU_real REB , IMB , REC , IMC ;
@@ -62,26 +62,11 @@ multab( GLU_complex a[ NCNC ] ,
 	sum += REB * REC - IMB * IMC + I * ( REB * IMC + IMB * REC ) ; 
 	REB = creal( pB[m+NC] ) ; IMB = cimag( pB[m+NC] ) ;
 	sum2 += REB * REC - IMB * IMC + I * ( REB * IMC + IMB * REC ) ; 
-
 	REB = creal( pB[m+1] ) ; IMB = cimag( pB[m+1] ) ;
 	REC = creal( c[ j + (m+1)*NC ] ) ; IMC = cimag( c[ j + (m+1)*NC ] ) ;
 	sum += REB * REC - IMB * IMC + I * ( REB * IMC + IMB * REC ) ; 
 	REB = creal( pB[m+1+NC] ) ; IMB = cimag( pB[m+1+NC] ) ;
 	sum2 += REB * REC - IMB * IMC + I * ( REB * IMC + IMB * REC ) ; 
-
-	/* uncomment this and set m+=4 and change to NC%4==0
-	REB = creal( pB[m+2] ) ; IMB = cimag( pB[m+2] ) ;
-	REC = creal( c[ j + (m+2)*NC ] ) ; IMC = cimag( c[ j + (m+2)*NC ] ) ;
-	sum += REB * REC - IMB * IMC + I * ( REB * IMC + IMB * REC ) ; 
-	REB = creal( pB[m+2+NC] ) ; IMB = cimag( pB[m+2+NC] ) ;
-	sum2 += REB * REC - IMB * IMC + I * ( REB * IMC + IMB * REC ) ; 
-
-	REB = creal( pB[m+3] ) ; IMB = cimag( pB[m+3] ) ;
-	REC = creal( c[ j + (m+3)*NC ] ) ; IMC = cimag( c[ j + (m+3)*NC ] ) ;
-	sum += REB * REC - IMB * IMC + I * ( REB * IMC + IMB * REC ) ; 
-	REB = creal( pB[m+3+NC] ) ; IMB = cimag( pB[m+3+NC] ) ;
-	sum2 += REB * REC - IMB * IMC + I * ( REB * IMC + IMB * REC ) ; 
-	*/
       }
       a[ j + NC*i ] = sum ;
       a[ j + NC*i + NC ] = sum2 ;
@@ -91,7 +76,7 @@ multab( GLU_complex a[ NCNC ] ,
   }
   #else
   // slow and stupid version
-  int i , j , m ;
+  size_t i , j , m ;
   register GLU_complex sum ;
   register GLU_real REB , IMB , REC , IMC ;
   for( i = 0 ; i < NC ; i++ ) {
@@ -138,8 +123,8 @@ multab_atomic_left( GLU_complex a[ NCNC ] ,
   C1 = b[2] * a[1] + b[3] * a[3] ;				\
   a[1] = C0 ; a[3] = C1 ;					
 #else
-  // slow and stupid loopy version, memory access pattern is odd
-  int i , j , m ;
+  // standard looped version
+  size_t i , j , m ;
   GLU_complex R[ NC ] ;
   register GLU_complex sum ;
   for( i = 0 ; i < NC ; i++ ) { // loop cols
@@ -188,7 +173,7 @@ multab_atomic_right( GLU_complex a[ NCNC ] ,
   a[2] = R0 ; a[3] = R1 ;				
 #else
   // slow and stupid loopy version
-  int i , j , m ;
+  size_t i , j , m ;
   GLU_complex R[ NC ] ;
   for( i = 0 ; i < NC ; i++ ) {
     for( j = 0 ; j < NC ; j ++ ) {

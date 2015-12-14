@@ -69,7 +69,7 @@ a2_approx_expand( GLU_complex dA[ NCNC ] )
   GLU_complex dAdA[ NCNC ] ;
   register GLU_complex cache ;
   multab( dAdA , dA , dA ) ;
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < NCNC ; mu++ ) {
     cache = dA[mu] - 0.5*dAdA[mu] ;
     dA[mu] = ( mu%( NC+1 ) == 0 ) ? 1.0 + cache : cache ;
@@ -267,7 +267,7 @@ Re_trace_abc_dag_suNC( const GLU_complex a[ NCNC ] ,
 
 // could have several different searches here
 double
-approx_minimum( const int nmeas , 
+approx_minimum( const size_t nmeas , 
 		const double alphas[ nmeas ] ,
 		const double functional[ nmeas ] )
 {
@@ -280,13 +280,13 @@ approx_minimum( const int nmeas ,
   register double sumder = 0.0 ;
 
   // best minimum index
-  int bestmin = 0 ;
+  size_t bestmin = 0 ;
   // best alpha
   double func_min = 2.0 ;
   // number of derivatives with a minus sign
-  int sumneg = 0 ;
+  size_t sumneg = 0 ;
 
-  int i ;
+  size_t i ;
   for( i = 0 ; i < nmeas ; i++ ) {
 
     // sum of the derivatives, if we are too flat
@@ -305,14 +305,14 @@ approx_minimum( const int nmeas ,
     }
 
     #ifdef verbose
-    printf( "[GF] der[%d] %e \n" , i , derivative[i] ) ;
+    printf( "[GF] der[%zu] %e \n" , i , derivative[i] ) ;
     #endif
   }
 
   #ifdef verbose
-  printf( "[GF] sumneg  :: %d \n" , sumneg ) ;
-  printf( "[GF] bestmin :: %d \n" , bestmin ) ;
-  printf( "[GF] sumder  :: %e \n" , sumder ) ;
+  printf( "[GF] sumneg  :: %zu \n" , sumneg ) ;
+  printf( "[GF] bestmin :: %zu \n" , bestmin ) ;
+  printf( "[GF] sumder  :: %zu \n" , sumder ) ;
   #endif
 
   // if we are at the limit of precision we leave
@@ -355,19 +355,19 @@ double
 coul_gtrans_fields( struct sp_site_herm *__restrict rotato ,
 		    const struct site *__restrict lat ,
 		    const GLU_complex *__restrict *__restrict slice_gauge ,
-		    const int t ,
+		    const size_t t ,
 		    const double acc )
 {
   const double fact = 1.0 / (double)( ( ND - 1 ) * NC ) ;
-  int i ;
+  size_t i ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LCU ; i ++ ) {
     GLU_complex temp[ NCNC ] ;
     #ifdef deriv_lin
     double loc_sum = 0.0 ;
     #endif
-    const int j = i + LCU * t ;
-    int mu ;
+    const size_t j = i + LCU * t ;
+    size_t mu ;
     for( mu = 0 ; mu < ND-1 ; mu++ ) {
       const int it = lat[i].neighbor[mu] ;
       equiv( temp , lat[j].O[mu] ) ;
@@ -402,7 +402,7 @@ coul_gtrans_fields( struct sp_site_herm *__restrict rotato ,
   PFOR( i = 0 ; i < LCU ; i ++ ) {
     GLU_real tr ;
     register double loc_sum = 0.0 ;
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND-1 ; mu++ ) {
       trace_ab_herm_short( &tr , rotato[i].O[mu] , rotato[i].O[mu] ) ;
       loc_sum += (double)tr ;
@@ -437,7 +437,7 @@ evaluate_alpha( const GLU_complex *__restrict *__restrict gauge ,
 
   // gauge transform to check the functional, this is the expensive bit, it is worth
   // really considering if there is something cheaper out there for us
-  int i ;
+  size_t i ;
   #pragma omp parallel for private(i)
   for( i = 0 ; i < LENGTH ; i++ ) {
     // some stacked allocations
@@ -445,15 +445,12 @@ evaluate_alpha( const GLU_complex *__restrict *__restrict gauge ,
     GLU_complex A[ NCNC ] ;
     GLU_real trAA ;
     #endif
-
     // and compute the relevant slice
-    const int j = LENGTH * t + i ;
-
+    const size_t j = LENGTH * t + i ;
     // gauge transform on site fields
     register double loc_sum = 0.0 ;
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < DIR ; mu++ ) {
-
       // give it the right functional
       #if ( defined deriv_lin )
       // trace identity used here
@@ -535,7 +532,7 @@ double
 gauge_functional_fast( const struct site *__restrict lat )
 {
   const double fact = 1.0 / (double)( NC * ND ) ;
-  int i ;
+  size_t i ;
   #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     #if (defined deriv_full) || (defined deriv_fulln) || (defined deriv_fullnn)
@@ -544,7 +541,7 @@ gauge_functional_fast( const struct site *__restrict lat )
     GLU_real trAA ;
     #endif
     register double loc_sum = 0.0 ;
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       #if ( defined deriv_lin )
         #if NC == 3
@@ -583,7 +580,7 @@ void
 set_gauge_matrix( GLU_complex *__restrict gx ,
 		  const GLU_complex *__restrict *__restrict in ,
 		  const double alpha ,
-		  const int i )
+		  const size_t i )
 {
 #ifdef exp_exact
   GLU_complex short_gauge[ HERMSIZE ] ;
@@ -619,7 +616,7 @@ set_gauge_matrix( GLU_complex *__restrict gx ,
   #else
   GLU_complex short_gauge[ HERMSIZE ] ;
   // this makes it antihermitian
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
     short_gauge[mu] = alpha * in[ mu ][ i ] ;
   }
@@ -654,7 +651,7 @@ sum_deriv( const GLU_complex *__restrict *__restrict in ,
     loc_sum += creal(in[1][i]) * creal(in[1][i]) + cimag(in[1][i])*cimag(in[1][i]) ;
     #else
     GLU_complex temp[ HERMSIZE ] ;
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
       temp[mu] = in[mu][i] ;
     }
@@ -707,4 +704,3 @@ sum_PR_numerator( const GLU_complex *__restrict *__restrict in ,
   }
   return kahan_summation( traces , LENGTH ) ;
 }
-

@@ -48,7 +48,7 @@ multab_dagdag( GLU_complex a[ NCNC ] ,
   a[2] = conj( b[1] ) * conj( c[0] ) + conj( b[3] ) * conj( c[1] )  ;	\
   a[3] = conj( b[1] ) * conj( c[2] ) + conj( b[3] ) * conj( c[3] )  ; 
 #else
-  int i , j , m ;
+  size_t i , j , m ;
   register GLU_complex sumr = 0.0 , sumi = 0.0 ;
   register GLU_real REB , IMB , REC , IMC ;
   const GLU_complex *pC , *pB ;

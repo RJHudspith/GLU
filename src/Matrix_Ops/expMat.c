@@ -106,11 +106,10 @@ free_factorial( void )
 #ifdef USE_PADE
 // 5,5 pade approximation for the exponential
 static void
-horners_pade( a , b )
-     GLU_complex a[ NCNC ] ;
-     const GLU_complex b[ NCNC ] ;
+horners_pade( GLU_complex a[ NCNC ] ,
+	      const GLU_complex b[ NCNC ] )
 {
-  int i ;
+  size_t i ;
   for( i = 0 ; i < NCNC ; i++ ) { a[i] = b[i] * pade[5] ; } 
   for( i = 4 ; i > 0 ; i-- ) {    
     add_constant( a , pade[i] ) ; 
@@ -122,22 +121,20 @@ horners_pade( a , b )
 #else
 // horner's expansion for the exponential
 static void
-horners_exp( a , b , n )
-     GLU_complex a[ NCNC ] ;
-     const GLU_complex b[ NCNC ] ;
-     const int n ;
+horners_exp( GLU_complex a[ NCNC ] ,
+	     const GLU_complex b[ NCNC ] ,
+	     const size_t n )
 {
+  size_t i ;
   // I use max iterations 13 for double prec and 8 for single it was before
   // this selection was borne out of heavy testing I would urge you to keep it
   #ifndef SINGLE_PREC
-  int i ;
   for( i = 0 ; i < NCNC ; i++ ) { a[i] = b[i] * factorial[13] ; } 
   for( i = 12 ; i > 0 ; i-- ) {
     add_constant( a , factorial[i] ) ; 
     multab_atomic_left( a , b ) ;    
   }
   #else
-  int i ;
   for( i = 0 ; i < NCNC ; i++ ) { a[i] = b[i] * factorial[9] ; } 
   for( i = 8 ; i > 0 ; i-- ) {    
     add_constant( a , factorial[i] ) ; 
@@ -312,7 +309,7 @@ exponentiate( GLU_complex U[ NCNC ] ,
   // set up the divisor and the minimum 
   double sum ;
   const int DIV = 2 , nmin = 3 ;
-  int j , n ;
+  size_t j , n ;
 
   // use precomputed factorials  
   for( n = nmin ; n < 10 ; n++ ) {
@@ -354,7 +351,7 @@ exponentiate( GLU_complex U[ NCNC ] ,
     if( sum < PREC_TOL ) { break ; } 
     // warning for non-convergence ..
     if( n >= ( MAX_FACTORIAL - 1 ) ) { 
-      printf( "[EXPONENTIAL] not converging .. %d %e \n" , n , sum ) ; 
+      printf( "[EXPONENTIAL] not converging .. %zu %e \n" , n , sum ) ; 
       break ;
     }
   }
@@ -508,272 +505,6 @@ exponentiate_short( GLU_complex U[ NCNC ] ,
   GLU_complex temp[ NCNC ] ;
   rebuild_hermitian( temp , Q ) ;
   exponentiate( U , temp ) ;
-#endif
-  return ;
-}
-
-// Taylor-expanded approximations ..
-void
-approx_exp( GLU_complex U[ NCNC ] ,
-	    const GLU_complex Q[ NCNC ] ) 
-{
-#if NC == 3
-  GLU_real *qq = ( GLU_real* )Q ;
-  const double REQ0 = *( qq + 0 ) ;
-  const double REQ1 = *( qq + 2 ) ;
-  const double IMQ1 = *( qq + 3 ) ;
-  const double REQ2 = *( qq + 4 ) ;
-  const double IMQ2 = *( qq + 5 ) ;
-  const double REQ4 = *( qq + 8 ) ;
-  const double REQ5 = *( qq + 10 ) ;
-  const double IMQ5 = *( qq + 11 ) ;
-  const double REQ8 = *( qq + 16 ) ;
-  const double c1 = ( REQ0 * REQ0 + REQ0 * REQ4 + REQ4 * REQ4		\
-		      + REQ1 * REQ1 + IMQ1 * IMQ1			\
-		      + REQ2 * REQ2 + IMQ2 * IMQ2			\
-		      + REQ5 * REQ5 + IMQ5 * IMQ5 ) * OneO3 ; 
- 
-  //Iff c0_max < ( smallest representable double) the matrix Q is zero and its
-  //exponential is the identity matrix ..
-  if( unlikely( c1 < DBL_MIN ) ) {
-    *( U + 0 ) = 1. ; 
-    *( U + 1 ) = 0. ; 
-    *( U + 2 ) = 0. ; 
-    *( U + 3 ) = 0. ; 
-    *( U + 4 ) = 1. ; 
-    *( U + 5 ) = 0. ; 
-    *( U + 6 ) = 0. ; 
-    *( U + 7 ) = 0. ; 
-    *( U + 8 ) = 1. ; 
-    return ;
-  }
-
-  // will write this out as it can be done cheaper
-  // 1/3 * tr AAA is just det( A ) 
-  // Below is a quickened determinant
-  double c0 =  REQ0  * ( REQ4 * REQ8				\
-			 - REQ5  * REQ5  - IMQ5  * IMQ5  ) ;
-  // from the middle
-  c0 -= REQ1  * ( REQ1 * REQ8 		\
-		  - REQ5  * REQ2  - IMQ5  * IMQ2  ) ;
-  c0 += IMQ1  * ( - IMQ1 * REQ8		\
-		  + REQ5  * IMQ2  - IMQ5  * REQ2 ) ;
-  // final column
-  c0 += REQ2  * ( - REQ4  * REQ2			\
-		  + REQ1 * REQ5  - IMQ1 * IMQ5  ) ;
-  c0 -= IMQ2  * ( REQ4  * IMQ2				\
-		  - REQ1 * IMQ5  - IMQ1 * REQ5 ) ;
-
-  // so if c0 is negative we flip the sign ...
-  int flag = 0 ;
-  if( c0 < 0 ) {
-    c0 = -c0 ; 
-    flag = 1 ;
-  }
-
-  const double rc1 = sqrt( c1 ) ;
-  const double c0_max = 2. * rc1 * c1 ; 
-  // Taylor expand the living these values.
-  double series = c0 / c0_max ;   
-  const double sseries = series * series ; 
-  const double theta = PIOtwo - series * (  1 + sseries / 6. * (  1 + sseries * 9 / 20.  ) ) * OneO3 ; 
-
-  series = theta * theta ;
-  const double u = rc1 * (  1 - series * (  0.5 - series / 12. * ( 0.5 - series / 60.  ) ) ) ; 
-  const double w = rc1 * r3 * ( theta * ( 1 - series / 6. * (  1 - series / 26. ) ) ) ; 
-  const double uu = u * u  ,  ww = w * w  ;
-  const double cw = 1 - ww * (  0.5 - ww / 12. * ( 0.5 - ww / 60. ) )  ; 
-  const double denom = 1.0 / ( 9. * uu - ww ) ;
-  const double E0 = 1 - ww / 6. * ( 1 - ww / 20. * ( 1 - ww / 42. ) ) ; 
-  //cos( u ) - i*sin( u )
-  const double cu = 1 - uu * ( 0.5 - uu / 6. * ( 0.5 - uu / 15. ) ) ;
-  const double su = u * (  1 - uu / 6. * (  1 - uu / 20. * ( 1 - uu / 42. ) ) ) ; 
-  const double complex one = cu - I * su ;
-  double complex two = cu + I * su ;
-  two *= two ;
-  
-  double complex f0 = ( uu - ww ) * two + one * ( 8. * uu * cw + 2. * I * u * ( 3. * uu + ww ) * E0 ) ; 
-  double complex f1 = 2. * u * two - one * ( 2. * u * cw - I * ( 3. * uu - ww ) * E0 ) ; 
-  double complex f2 = two - one * ( cw + 3. * I * u * E0 ) ; 
-
-  if( flag == 1 ) {
-    f0 =  conj( f0 ) ;
-    f1 = -conj( f1 ) ;
-    f2 =  conj( f2 ) ;
-  }
-
-  f0 *= denom ; 
-  f1 *= denom ; 
-  f2 *= denom ; 
-
-  // QQ[0].
-  const double temp0 = REQ0 * REQ0 + REQ1 * REQ1 +	\
-    IMQ1 * IMQ1 + REQ2 * REQ2 + IMQ2 * IMQ2 ;
-  // QQ[1]
-  const double complex temp1 = Q[1] * ( REQ0 + REQ4 ) + Q[2] * Q[7] ;
-  // QQ[2]
-  const double complex temp2 = Q[1] * Q[5] - Q[2] * REQ4 ;
-  // QQ[4]
-  const double temp3 = REQ4 * REQ4 + REQ1 * REQ1	\
-    + IMQ1 * IMQ1 + REQ5 * REQ5 + IMQ5 * IMQ5 ;
-  // QQ[5]
-  const double complex temp4 = Q[3] * Q[2] - REQ0 * Q[5] ;
-  // QQ[8]
-  const double temp5 = REQ8 * REQ8 + REQ2 * REQ2 +	\
-    IMQ2 * IMQ2 + REQ5 * REQ5 + IMQ5 * IMQ5 ;
-
-  //can really speed this up
-  // U = f0I + f1 Q + f2 QQ 
-  *( U + 0 ) = f0 + f1 * REQ0 + f2 * temp0  ; 
-  *( U + 1 ) = f1 * Q[1] + f2 * temp1 ; 
-  *( U + 2 ) = f1 * Q[2] + f2 * temp2 ; 
-  //
-  *( U + 3 ) = f1 * Q[3] + f2 * conj( temp1 ) ; 
-  *( U + 4 ) = f0 + f1 * REQ4 + f2 * temp3 ; 
-  *( U + 5 ) = f1 * Q[5] + f2 * temp4 ; 
-  //
-  *( U + 6 ) = f1 * Q[6] + f2 * conj( temp2 ) ; 
-  *( U + 7 ) = f1 * Q[7] + f2 * conj( temp4 ) ; 
-  *( U + 8 ) = f0 + f1 * REQ8 + f2 * temp5 ; 
-
-#else
-  // everything else goes to the other exponentiate
-  exponentiate( U , Q ) ;
-#endif
-  return ;
-}
-
-// Taylor-expanded approximations ..
-void
-approx_exp_short( GLU_complex U[ NCNC ] ,
-		  const GLU_complex Q[ HERMSIZE ] ) 
-{
-#if NC == 3
-  GLU_real *qq = ( GLU_real* )Q ;
-  const double REQ0 = *( qq + 0 ) ;
-  const double REQ1 = *( qq + 2 ) ;
-  const double IMQ1 = *( qq + 3 ) ;
-  const double REQ2 = *( qq + 4 ) ;
-  const double IMQ2 = *( qq + 5 ) ;
-  const double REQ4 = *( qq + 6 ) ;
-  const double REQ5 = *( qq + 8 ) ;
-  const double IMQ5 = *( qq + 9 ) ;
-  const double REQ8 = -( REQ0 + REQ4 ) ;
-  const double c1 = ( REQ0 * -REQ8 + REQ4 * REQ4			\
-		      + REQ1 * REQ1 + IMQ1 * IMQ1			\
-		      + REQ2 * REQ2 + IMQ2 * IMQ2			\
-		      + REQ5 * REQ5 + IMQ5 * IMQ5 ) * OneO3 ;
-  /*
-    Iff c0_max < ( smallest representable double) the matrix Q is zero and its
-    exponential is the identity matrix ..
-   */
-  if( unlikely( c1 < DBL_MIN ) ) {
-    *( U + 0 ) = 1. ; 
-    *( U + 1 ) = 0. ; 
-    *( U + 2 ) = 0. ; 
-    //
-    *( U + 3 ) = 0. ; 
-    *( U + 4 ) = 1. ; 
-    *( U + 5 ) = 0. ; 
-    //
-    *( U + 6 ) = 0. ; 
-    *( U + 7 ) = 0. ; 
-    *( U + 8 ) = 1. ; 
-    return ;
-  }
-
-  // 1/3 * tr AAA is just det( A )
-  // Below is a quickened determinant
-  double c0 =  REQ0  * ( REQ4 * REQ8				\
-			 - REQ5  * REQ5  - IMQ5  * IMQ5  ) ;
-  // from the middle
-  c0 -= REQ1  * ( REQ1 * REQ8 		\
-		  - REQ5  * REQ2  - IMQ5  * IMQ2  ) ;
-  c0 += IMQ1  * ( - IMQ1 * REQ8		\
-		  + REQ5  * IMQ2  - IMQ5  * REQ2 ) ;
-  // final column
-  c0 += REQ2  * ( - REQ4  * REQ2			\
-		  + REQ1 * REQ5  - IMQ1 * IMQ5  ) ;
-  c0 -= IMQ2  * ( REQ4  * IMQ2				\
-		  - REQ1 * IMQ5  - IMQ1 * REQ5 ) ;
-  // so if c0 is negative we flip the sign ...
-  int flag = 0 ;
-  if( c0 < 0 ) {
-    c0 = -c0 ; 
-    flag = 1 ;
-  }
-  // compute the constants c0_max and the root of c1 ...
-  const double rc1 = sqrt( c1 ) ;
-  const double c0_max = 2. * rc1 * c1 ; 
-  // Taylor expand these values as much as we can
-  double series = c0 / c0_max ;   
-  const double sseries = series * series ; 
-  const double theta = PIOtwo - series * (  1 + sseries / 6. * (  1 + sseries * 9./20.  ) ) / 3. ; 
-
-  series = theta * theta ;
-  const double u = rc1 * (  1 - series * (  0.5 - series/12. * ( 0.5 - series /60.  ) ) ) ; 
-  const double w = rc1 * r3 * ( theta * ( 1 - series/6. * (  1 - series /26. ) ) ) ; 
-  const double uu = u * u  ,  ww = w * w  ;
-  const double cw = 1 - ww * (  0.5 - ww/12. * ( 0.5 - ww/60. ) )  ; 
-  const double denom = 1.0 / ( 9. * uu - ww ) ;
-  const double E0 = 1 - ww/6. * ( 1 - ww/20. * ( 1 - ww/42. ) ) ; 
-  //cos( u ) - i*sin( u )
-  const double cu = 1 - uu * ( 0.5 - uu/6. * ( 0.5 - uu/15. ) ) ;
-  const double su = u * (  1 - uu/6. * (  1 - uu/20. * ( 1 - uu/42. ) ) ) ; 
-  const double complex one = cu - I * su ;
-  double complex two = cu + I * su ;
-  two *= two ;
-  
-  double complex f0 = ( uu - ww ) * two + one * ( 8. * uu * cw + 2. * I * u * ( 3. * uu + ww ) * E0 ) ; 
-  double complex f1 = 2. * u * two - one * ( 2. * u * cw - I * ( 3. * uu - ww ) * E0 ) ; 
-  double complex f2 = two - one * ( cw + 3. * I * u * E0 ) ; 
-
-  if( flag == 1 ) {
-    f0 = conj( f0 ) ;
-    f1 = -conj( f1 ) ;
-    f2 = conj( f2 ) ;
-  }
-
-  f0 *= denom ; 
-  f1 *= denom ; 
-  f2 *= denom ; 
-
-  // QQ[0].
-  const double temp0 = REQ0 * REQ0 + REQ1 * REQ1 +	\
-    IMQ1 * IMQ1 + REQ2 * REQ2 + IMQ2 * IMQ2 ;
-  // QQ[1]
-  const double complex temp1 = Q[1] * ( REQ0 + REQ4 ) + Q[2] * Q[7] ;
-  // QQ[2]
-  const double complex temp2 = Q[1] * Q[5] - Q[2] * REQ4 ;
-  // QQ[4]
-  const double temp3 = REQ4 * REQ4 + REQ1 * REQ1	\
-    + IMQ1 * IMQ1 + REQ5 * REQ5 + IMQ5 * IMQ5 ;
-  // QQ[5]
-  const double complex temp4 = Q[3] * Q[2] - REQ0 * Q[5] ;
-  // QQ[8]
-  const double temp5 = REQ8 * REQ8 + REQ2 * REQ2 +	\
-    IMQ2 * IMQ2 + REQ5 * REQ5 + IMQ5 * IMQ5 ;
-
-  //can really speed this up
-  // U = f0I + f1 Q + f2 QQ 
-  *( U + 0 ) = f0 + f1 * REQ0 + f2 * temp0  ; 
-  *( U + 1 ) = f1 * Q[1] + f2 * temp1 ; 
-  *( U + 2 ) = f1 * Q[2] + f2 * temp2 ; 
-  //
-  *( U + 3 ) = f1 * Q[3] + f2 * conj( temp1 ) ; 
-  *( U + 4 ) = f0 + f1 * REQ4 + f2 * temp3 ; 
-  *( U + 5 ) = f1 * Q[5] + f2 * temp4 ; 
-  //
-  *( U + 6 ) = f1 * Q[6] + f2 * conj( temp2 ) ; 
-  *( U + 7 ) = f1 * Q[7] + f2 * conj( temp4 ) ; 
-  *( U + 8 ) = f0 + f1 * REQ8 + f2 * temp5 ; 
-
-#else
-  // everything else goes to the other, expensive exponentiate
-  // could compute Hermitian Eigenvalues if we have GSL and then
-  // compute the f's from the generic vandermonde and exponentiate
-  // using a horner's. Is probably very fast.
-  exponentiate_short( U , Q ) ;
 #endif
   return ;
 }

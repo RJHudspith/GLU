@@ -108,7 +108,7 @@ multab_atomic_right( GLU_complex a[ NCNC ] ,
   a[2] = R0 ; a[3] = R1 ;				
 #else
   // slow and stupid loopy version
-  int i , j , m ;
+  size_t i , j , m ;
   GLU_complex R[ NC ] ;
   for( i = 0 ; i < NC ; i++ ) {
     for( j = 0 ; j < NC ; j ++ ) {

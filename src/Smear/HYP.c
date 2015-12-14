@@ -40,33 +40,32 @@
 #if ND == 4
 // 3D level-1 staples for timeslice t
 static void 
-get_spatial_lv1( lev1 , lat , t , type )
-     struct spatial_lv1 *__restrict lev1 ; 
-     const struct site *__restrict lat ; 
-     const int t , type ; 
+get_spatial_lv1( struct spatial_lv1 *__restrict lev1 ,
+		 const struct site *__restrict lat ,
+		 const size_t t ,
+		 const int type ,
+		 void (*project) ( GLU_complex smeared_link[ NCNC ] , 
+				   const GLU_complex staple[ NCNC ] , 
+				   const GLU_complex link[ NCNC ] , 
+				   const double smear_alpha , 	     
+				   const double al ) ) 
 {
-  int it ; 
-  const int slice = LCU * t ; 
+  size_t it ; 
+  const size_t slice = LCU * t ; 
   //do a slice
 #pragma omp parallel for private(it) SCHED
   PFOR( it = 0  ;  it < LCU  ;  it++ )  {
-
     GLU_complex a[ NCNC ] ;
     GLU_complex c[ NCNC ] ;
-    const int i = slice + it ;
-    int j = -1 ; 
-    int mu ;
-    int nu ;
-
+    const size_t i = slice + it ;
+    size_t j = 0 , mu , nu ; 
     //calculate the level1 staples
     for( mu = 0 ; mu < ND - 1 ; mu++ ) {
       for( nu = 0 ; nu < ND - 1 ; nu++ ) {
 	if( likely( nu != mu ) ) {
 	  // b is our staple
 	  GLU_complex b[ NCNC ] ;
-	  // j is our staple counter
-	  j ++ ; 
-	    
+	  // j is our staple counter	    
 	  int temp = lat[i].neighbor[nu] ; 
 	  multab_suNC( a , lat[i].O[nu] , lat[temp].O[mu] ) ; 
 	  temp = lat[i].neighbor[mu] ; 
@@ -79,7 +78,6 @@ get_spatial_lv1( lev1 , lat , t , type )
 	    exact_log_fast( b , a ) ; 
             #endif
 	  }
-
 	  // put the bottom staple in "c"
 	  //bottom staple
 	  temp = lat[i].back[nu] ; 
@@ -95,21 +93,8 @@ get_spatial_lv1( lev1 , lat , t , type )
             #endif	      
 	  }
 	  a_plus_b( b , c ) ; 
-	  
-	  switch( type )
-	    {
-	    case SM_APE :
-	      project_APE( lev1[it].O[j] , b , 
-			   lat[i].O[mu] , alpha2 , 
-			   one_min_a2 ) ; 
-	      break ; 
-	    case SM_STOUT :
-	      project_STOUT_short( lev1[it].O[j] , b , lat[i].O[mu] , alpha2 ) ;  
-	      break ; 
-	    case SM_LOG :
-	      project_LOG_short( lev1[it].O[j] , b , lat[i].O[mu] , alpha2 ) ; 
-	      break ; 
-	    }
+	  project( lev1[it].O[j] , b , lat[i].O[mu] , alpha2 , one_min_a2 ) ; 
+	  j++ ; 
 	}
       }
     }
@@ -118,20 +103,22 @@ get_spatial_lv1( lev1 , lat , t , type )
 }
 
 static void 
-staples3D( stap , lat , lev1 , i , mu , t , type )
-     struct site *__restrict lat ; 
-     const struct spatial_lv1 *__restrict lev1 ; 
-     GLU_complex stap[ NCNC ] ; 
-     const int i , mu , t , type ; 
+staples3D( GLU_complex stap[ NCNC ] ,
+	   const struct spatial_lv1 *__restrict lev1 ,
+	   const struct site *__restrict lat , 
+	   const size_t i , 
+	   const size_t mu , 
+	   const size_t t , 
+	   const size_t type ) 
 { 
   GLU_complex a[ NCNC ] , b[ NCNC ] ;
-  int nu ;
-  const int it = LCU * t + i ; 
+  size_t nu ;
+  const size_t it = LCU * t + i ; 
 
   //calculate the staples using the dressed links
   for( nu = 0 ;  nu < ND - 1 ;  ++nu ) {
     if ( likely( nu != mu ) ) {		   
-      int jj = -1 , rho = -1 ;
+      size_t jj = 0 , rho = 0 ;
       /* 3rd orthogonal direction: rho */
       for( jj = 0 ;  jj < ND - 1 ;  ++jj ) {
 	if( jj != mu && jj != nu ) {
@@ -142,15 +129,13 @@ staples3D( stap , lat , lev1 , i , mu , t , type )
       jj = ( ND - 2 ) * mu + rho ; 
       if( rho > mu  ) { jj-- ; } 
 
-      int kk = ( ND - 2 ) * nu + rho ; 
-      if( rho > nu  ) { kk-- ; } 
-	
+      size_t kk = ( ND - 2 ) * nu + rho ; 
+      if( rho > nu  ) { kk-- ; }
       //kk , jj , kk are the correct steps for the staples
-      int temp = lat[i].neighbor[nu] ; 
+      size_t temp = lat[i].neighbor[nu] ; 
       multab_suNC( a , lev1[i].O[kk] , lev1[temp].O[jj] ) ; 
       temp = lat[i].neighbor[mu] ; 
       multab_dag_suNC( b , a , lev1[temp].O[kk] ) ; 
-
       if( type == SM_LOG ) {
 	multab_dag_suNC( a , b , lat[it].O[mu] ) ; 
         #ifdef SLOW_SMEAR
@@ -159,14 +144,12 @@ staples3D( stap , lat , lev1 , i , mu , t , type )
 	exact_log_fast( b , a ) ; 
         #endif
       }
-      a_plus_b( stap , b ) ; 
-	
+      a_plus_b( stap , b ) ;
       //bottom staple
       temp = lat[i].back[nu] ; 
       multabdag_suNC( a , lev1[temp].O[kk] , lev1[temp].O[jj] ) ;
       temp = lat[temp].neighbor[mu] ; 
       multab_suNC( b , a , lev1[temp].O[kk] ) ; 
-      
       if( type == SM_LOG ) {
 	multab_dag_suNC( a , b , lat[it].O[mu] ) ; 
         #ifdef SLOW_SMEAR
@@ -185,7 +168,7 @@ staples3D( stap , lat , lev1 , i , mu , t , type )
 // spatial only smearing
 void 
 HYPSLsmear3D( struct site *__restrict lat , 
-	      const int smiters , 
+	      const size_t smiters , 
 	      const int type ) 
 {
   if( unlikely( smiters == 0 ) ) { return ; }
@@ -200,6 +183,28 @@ HYPSLsmear3D( struct site *__restrict lat ,
     return ; 
   }
 
+  // callback for the projections
+  void (*project) ( GLU_complex smeared_link[ NCNC ] , 
+		    const GLU_complex staple[ NCNC ] , 
+		    const GLU_complex link[ NCNC ] , 
+		    const double smear_alpha , 	     
+		    const double al ) ;
+
+  project = project_APE ;
+  switch( type ) {
+  case SM_APE :
+    project = project_APE ;
+    break ;
+  case SM_STOUT :
+    project = project_STOUT ;
+    break ;
+  case SM_LOG :
+    project = project_LOG ;
+    break ;
+  default :
+    return ;
+  }
+
   struct spatial_lv1 *lev1 = NULL ;
   struct sp_site *lat2 = NULL ;
   if( GLU_malloc( (void**)&lev1 , 16 , LCU * sizeof( struct spatial_lv1 ) ) != 0 || 
@@ -208,41 +213,28 @@ HYPSLsmear3D( struct site *__restrict lat ,
     return ;
   }
  
-  int count = 0 ; 
+  // iteration counter
+  size_t count = 0 ; 
 
   for( count = 1 ; count <= smiters ; count++ )   {
-    int t ;
+    size_t t ;
     //loop time slices
     for( t = 0 ; t < Latt.dims[ ND - 1 ] ; t++ ) {
       // get the level 1 links for this slice
-      get_spatial_lv1(  lev1  ,  lat  ,  t  ,  type ) ; 
+      get_spatial_lv1( lev1  ,  lat  ,  t  ,  type , project ) ; 
   
-      const int slice = LCU * t ; 
-      int i ;
+      const size_t slice = LCU * t ; 
+      size_t i ;
       #pragma omp parallel for private(i) SCHED
       PFOR( i = 0 ; i < LCU ; i++ )  {
-	const int it = slice + i ;
-	int mu ;
+	const size_t it = slice + i ;
+	size_t mu ;
 	for( mu = 0 ; mu < ND - 1 ; mu++ ) {
 	  GLU_complex stap[ NCNC ] ;
 	  zero_mat( stap ) ;
-	  staples3D( stap , lat , lev1 , i , mu , t , type ) ; 
-
-	  switch( type ) {
-	  case SM_APE :
-	    project_APE( lat2[ i ].O[ mu ] , stap , 
-			 lat[ it ].O[ mu ] , alpha1 , 
-			 one_min_a1 ) ; 
-	    break ; 
-	  case SM_STOUT :
-	    project_STOUT_short( lat2[ i ].O[ mu ] , stap , 
-				 lat[ it ].O[ mu ] , alpha1 ) ; 
-	    break ; 
-	  case SM_LOG :
-	    project_LOG_short( lat2[ i ].O[ mu ] , stap , 
-			       lat[ it ].O[ mu ] , alpha1 ) ; 
-	    break ; 
-	  }
+	  staples3D( stap , lev1 , lat , i , mu , t , type ) ; 
+	  project( lat2[ i ].O[ mu ] , stap , lat[ it ].O[ mu ] , 
+		   alpha1 , one_min_a1 ) ; 
 	}
 	// swap these round using memcpy
 	memcpy( &lat[it] , &lat2[i] , sizeof( struct sp_site ) ) ;

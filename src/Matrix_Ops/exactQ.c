@@ -36,20 +36,19 @@
 
 // compute eigenvectors from s ,  put into v ,  need eigenvalues z//
 static void 
-vectors( v , U , z )
-     GLU_complex *__restrict v ;
-     const GLU_complex *__restrict U ;
-     const double complex *__restrict z ; 
+vectors( GLU_complex *__restrict v ,
+	 const GLU_complex *__restrict U ,
+	 const double complex *__restrict z )
 {
   GLU_complex S[ NCNC ] , B[ NCNC ] ; 
-  int j ; 
+  size_t j , k , l ; 
   for( j = 0 ; j < NC ; j++ ) { // loop eigenvalues
     #if NC == 3
     S[0] = U[0] - (GLU_complex)z[j] ; S[1] = U[1] ; S[2] = U[2] ;
     S[3] = U[3] ; S[4] = U[4] - (GLU_complex)z[j] ; S[5] = U[5] ;
     S[6] = U[6] ; S[7] = U[7] ; S[8] = U[8] - (GLU_complex)z[j] ;
     #else
-    int i ;
+    size_t i ;
     for( i = 0 ; i < NCNC ; i++ ) {
       S[i] = ( i%( NC+1 ) == 0 ) ? U[i] - (GLU_complex)z[j] : U[i] ;
     }
@@ -57,11 +56,10 @@ vectors( v , U , z )
     // computes the adjunct of S //
     cofactor_transpose( B , S ) ; 
     //loop through B //
-    int k , l ;
     for( k = 0 ; k < NC ; k++ ) {
       register GLU_real norm = 0. ;
       for( l = 0 ; l < NC ; l++ ) {
-	const int place = k + NC * l ;
+	const size_t place = k + NC * l ;
 	norm += creal( B[place] ) * creal( B[place] ) +	\
 	  cimag( B[place] ) * cimag( B[place] ) ;
       }
@@ -103,7 +101,7 @@ AntiHermitian_proj( GLU_complex Q[ NCNC ] ,
   *( Q + 2 ) = -conj( Q[1] )  ; 
   *( Q + 3 ) = I * cimU3 ;  
 #else
-  int i , j ;
+  size_t i , j ;
   for( i = 0 ; i < NC ; i++ ) {
     for( j = 0 ; j < NC ; j++ ) {
       Q[ j+i*NC ] = ( U[ j+i*NC ] - conj( U[ i+j*NC ] ) ) * 0.5 ;
@@ -113,9 +111,7 @@ AntiHermitian_proj( GLU_complex Q[ NCNC ] ,
   return ;
 }
 
-/*
-  Same as above but puts into the shortened hermitian form
- */
+// Same as above but puts into the shortened hermitian form
 INLINE_VOID
 AntiHermitian_proj_short( GLU_complex Q[ HERMSIZE ] , 
 			  const GLU_complex U[ NCNC ] ) 
@@ -134,14 +130,13 @@ AntiHermitian_proj_short( GLU_complex Q[ HERMSIZE ] ,
   *( Q + 0 ) = I * cimU0 ;
   *( Q + 1 ) = U[1] ; //0.5 * ( U[1] - conj( U[2] ) ) ;  
 #else
-  int i ;
+  size_t i , j , idx = 0 ;
   GLU_complex tr = 0. ;
   // compute the trace first
   for( i = 0 ; i < NC ; i++ ) {
     tr += cimag( U[ i*(NC+1) ] ) ;
   }
   tr /= (GLU_real)NC ;
-  int j , idx = 0 ;
   for( i = 0 ; i < NC-1 ; i++ ) {
     for( j = i ; j < NC ; j++ ) { 
       Q[idx] = ( i != j ) ? ( U[ j + NC * i ] - conj( U[ i + NC * j ] ) ) * 0.5 : I * cimag( U[ j + NC * i ] ) - tr ;
@@ -152,100 +147,18 @@ AntiHermitian_proj_short( GLU_complex Q[ HERMSIZE ] ,
   return ;
 }
 
-// Exact logarithm with the generic VDM solver it is justified in some cases
-// it is actually not that much faster for su(3) and is slower for su(2) 
-INLINE_VOID
-exact_log_fast( GLU_complex Q[ NCNC ] ,
-		const GLU_complex U[ NCNC ] )
-{
-#if NC < 4
-  double complex f[ NC ] , z[ NC ] ;
-  Eigenvalues_suNC( z , U ) ; 
-  calculate_effs_VDM_suNC( f , z ) ;   
-#endif
-#if NC == 3
-  // this needs some help when z's become almost degenerate
-  const double complex con = conj( f[2] ) ; 
-  const double mod = 1.0 / cimag( con * f[1] ) ;
-  const double imf = cimag( f[0] * con ) * mod ; 
-  const double complex trce =  mod * OneOI2 ; 
-  *( Q + 0 ) = trce * ( con * U[0] - f[2] * conj( U[0] ) ) - imf ; 
-  *( Q + 1 ) = trce * ( con * U[1] - f[2] * conj( U[3] ) ) ;  
-  *( Q + 2 ) = trce * ( con * U[2] - f[2] * conj( U[6] ) ) ; 
-  *( Q + 3 ) = conj( Q[1] ) ;  
-  *( Q + 4 ) = trce * ( con * U[4] - f[2] * conj( U[4] ) ) - imf ; 
-  *( Q + 5 ) = trce * ( con * U[5] - f[2] * conj( U[7] ) ) ; 
-  *( Q + 6 ) = conj( Q[2] ) ; 
-  *( Q + 7 ) = conj( Q[5] ) ;  
-  *( Q + 8 ) = -( Q[0] + Q[4] ) ; 
-#elif NC == 2
-  // use Cayley-Hamilton again A = ( U - f0 ) / f1 //
-  register const double complex oneOf1 = 1. / f[1] ;
-  *( Q + 0 ) = ( U[0] - f[0] ) * oneOf1 ;
-  *( Q + 1 ) = ( U[1] ) * oneOf1 ;
-  *( Q + 2 ) = conj( Q[1] ) ;
-  *( Q + 3 ) = -Q[0] ;
-#else
-  // can't
-  exact_log_slow( Q , U ) ;
-#endif
-  return ;
-}
-
-// fast, short version
-INLINE_VOID
-exact_log_fast_short( GLU_complex Q[ HERMSIZE ] ,
-		      const GLU_complex U[ NCNC ] )
-{
-#if NC < 4
-  double complex f[ NC ] , z[ NC ] ;
-  Eigenvalues_suNC( z , U ) ; 
-#endif
-#if NC == 3
-  // again this has issues when z's become almost degenerate
-  calculate_effs_VDM_suNC( f , z ) ;   
-  const double complex con = conj( f[2] ) ; 
-  const double mod = 1.0 / cimag( con * f[1] ) ;
-  const double imf = cimag( f[0] * con ) * mod ; 
-  const double complex trce =  mod * OneOI2 ; 
-  // complete the resulting hermitian matrix, 
-  // "forcing" it slightly to be hermitian
-  // to alleviate any resulting round-off errors.
-  *( Q + 0 ) = trce * ( con * U[0] - f[2] * conj( U[0] ) ) - imf ; 
-  *( Q + 1 ) = trce * ( con * U[1] - f[2] * conj( U[3] ) ) ; 
-  *( Q + 2 ) = trce * ( con * U[2] - f[2] * conj( U[6] ) ) ; 
-  *( Q + 3 ) = trce * ( con * U[4] - f[2] * conj( U[4] ) ) - imf ;  
-  *( Q + 4 ) = trce * ( con * U[5] - f[2] * conj( U[7] ) ) ; 
-#elif NC == 2
-  const double herm_z = carg( z[0] ) ;
-  f_hermitian_log_suNC( f , herm_z ) ;
-  // use Cayley-Hamilton again A = ( U - f0 ) / f1 //
-  // for su2 this is nice as they both tend to 1
-  // this of course pushes the value of A -> 0
-  register double complex oneOf1 = 1.0 / f[ 1 ] ;
-  *( Q + 0 ) = ( U[0] - f[ 0 ] ) * oneOf1 ;
-  *( Q + 1 ) = ( U[1] ) * oneOf1 ;
-#else
-  // not implemented ...
-  GLU_complex QP[ NCNC ] ;
-  exact_log_slow( QP , U ) ;
-  pack_hermitian( Q , QP ) ;
-#endif
-  return ;
-}
-
 // compute the exact value of Q from principal log of e^( iQ ) from stefan
 // durr's paper
 void 
 get_iQ( GLU_complex Q[ NCNC ] ,
 	const GLU_complex U[ NCNC ] )
 {
+  size_t i , j ;
   double complex z[ NC ] ; 
   GLU_complex v[ NCNC ] , delta[ NCNC ] ; 
   Eigenvalues_suNC( z , U ) ; 
   vectors( v , U , z ) ; 
   // Finally compute V.Delta.V^{\dagger} //
-  int i , j ;
   for( i = 0 ; i < NC ; i++ ) {
     const register double Z = carg( z[i] ) ;
     for( j = 0 ; j < NC ; j++ ) {
@@ -253,7 +166,6 @@ get_iQ( GLU_complex Q[ NCNC ] ,
     }
   }
   multab( Q , v , delta ) ; 
- 
   // test for problems with the trace being off by 2Pi
   #if NC == 3
   const GLU_real tr = creal( Q[0] ) + creal( Q[4] ) + creal( Q[8] ) ; 
@@ -262,7 +174,6 @@ get_iQ( GLU_complex Q[ NCNC ] ,
   #else
   const GLU_real tr = creal( trace ( Q ) ) ;
   #endif
-
   // recompute with a shifted evalue
   if( tr > PREC_TOL ) { // this one has tr = +2Pi
     register const double Z = carg( z[0] ) - TWOPI ;
@@ -277,7 +188,6 @@ get_iQ( GLU_complex Q[ NCNC ] ,
     }
     multab( Q , v , delta ) ; 
   }
-
   return ;
 }
 
@@ -340,19 +250,19 @@ exact_log_slow( GLU_complex Q[ NCNC ] ,
   #ifdef HAVE_LAPACKE_H
   GLU_complex b[ NCNC ] , evalues[ NC ] , *vl , vr[ NCNC ] ;
   memcpy( b , U , NCNC * sizeof( GLU_complex ) ) ;
-  const int n = NC , lda = NC  , ldvl = NC , ldvr = NC ;
+  const size_t n = NC , lda = NC  , ldvl = NC , ldvr = NC ;
   int info = LAPACKE_zgeev( LAPACK_ROW_MAJOR , 'N' , 'V' ,
 			    n , b , lda , evalues , 
 			    vl, ldvl, 
 			    vr, ldvr ) ;
-  // balls
+  // something broke here
   if( info != 0 ) { 
     printf( "Oh dear! info :: %d \n" , info ) ;
-    int i ;
+    size_t i ;
     for( i = 0 ; i < NC ; i++ ) { printcomplex( evalues[i] ) ; }
   }
   // complete with V.D.V^{\dagger}
-  int i , j ;
+  size_t i , j ;
   for( i = 0 ; i < NC ; i++ ) {
     register const GLU_real zi = carg( evalues[i] ) ;
     for( j = 0 ; j < NC ; j++ ) {
@@ -361,9 +271,14 @@ exact_log_slow( GLU_complex Q[ NCNC ] ,
   }
   multab( Q , vr , b ) ;
   #else
-  // get desperate and call the series log
+  // get desperate and call the series log or our own asinh def
+  #ifdef SERIES_LOG
   brute_force_log( Q , U , NC ) ;
+  #else 
+  asinh_log( Q , U ) ;
   #endif
+  // 
+#endif
 #endif
   return ;
 }
@@ -385,35 +300,28 @@ exact_log_slow_short( GLU_complex Q[ HERMSIZE ] ,
   const double u = a ;
   register const double w = creal( z[1] ) + a ;
   const double cw = cos( w ) ;
-
   register const double cu = cos( u ) ;
   register const double su = sin( u ) ; //sin( u ) ;
   const double complex one1 = cu - I * su ;
   double complex two1 = conj( one1 ) ; //cu + I * su ;
-  two1 *= two1 ;  
-
+  two1 *= two1 ;
   const double uu = u * u ;
   const double ww = w * w ; 
-
   // control for degeneracies, if we are degenerate the solution is basically
   // the identity matrix, is definitely an ad hoc solution
-
   const double denom = 1.0 / ( 9. * uu - ww ) ;
   //double E0 = 0. ; 
   // we only allow the taylor expansion at a very low acc to allow the 3D
   // hyl smearing to not get stuck, this is similar to the problem I saw with
   // the su2 log and stout expansions
   const double E0 = fabs( w ) < STOL ? 1 - ww / 6. * ( 1 - ww / 20. * ( 1 - ww / 42. ) ) : sin( w ) / w ; 
-  
   //const register double twou = 2. * u ;
   f[0] = ( uu - ww ) * two1 + one1 * ( 8 * uu * cw + I * 2 * u * ( 3 * uu + ww ) * E0 ) ; 
   f[1] = 2 * u * two1 - one1 * ( 2 * u * cw - I * ( 3 * uu - ww ) * E0 ) ; 
   f[2] = two1 - one1 * ( cw + 3 * I * u * E0 ) ; 
-
   f[0] *= denom ; 
   f[1] *= denom ; 
   f[2] *= denom ; 
-
   const double complex con = conj( f[2] ) ;
   const double mod = 1.0 / cimag( f[1] * con ) ;
   const double imf = cimag( f[0] * con ) * mod ; 
@@ -506,7 +414,7 @@ Hermitian_proj_short( GLU_complex Q[ HERMSIZE ] ,
   *( Q + 0 ) = cimag( U[0] ) ;
   *( Q + 1 ) = -I * U[1] ; //OneOI2 * ( U[1] - conj( U[2] ) ) ;  
 #else
-  int i ;
+  size_t i , j , idx = 0 ;
   register double tr = 0. ;
   // compute the trace first
   for( i = 0 ; i < NC ; i++ ) {
@@ -514,7 +422,6 @@ Hermitian_proj_short( GLU_complex Q[ HERMSIZE ] ,
   }
   tr /= (double)NC ;
   // fill up "Q"
-  int j , idx = 0 ;
   for( i = 0 ; i < NC-1 ; i++ ) {
     Q[idx] = cimag( U[ i*(NC+1) ] ) - tr ;
     idx++ ;
@@ -553,7 +460,7 @@ trf_AntiHermitian_proj( GLU_complex Q[ NCNC ] ,
   *( Q + 2 ) = -conj( Q[1] )  ; 
   *( Q + 3 ) = I * cimU3 ;  
 #else
-  int i , j ;
+  size_t i , j ;
   for( i = 0 ; i < NC ; i++ ) {
     for( j = 0 ; j < NC ; j++ ) {
       Q[ j+i*NC ] = ( U[ j+i*NC ] - conj( U[ i+j*NC ] ) ) * 0.5 ;
@@ -566,8 +473,3 @@ trf_AntiHermitian_proj( GLU_complex Q[ NCNC ] ,
 #endif
   return ;
 }
-
-
-
-
-

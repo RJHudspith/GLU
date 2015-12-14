@@ -48,21 +48,21 @@ check_links( lat )
      const struct site *__restrict lat ;
 {
   const GLU_bool FUCKED = GLU_TRUE ;
-  int i , NBADLINKS = 0 ;
+  size_t i , NBADLINKS = 0 ;
   printf( "\n[UNITARY] Checking for Unitarity of link matrices ...\n" ) ;
   #pragma omp parallel for private(i) reduction(+:NBADLINKS)
-  for( i = 0 ; i < Latt.Volume ; i++ ) {
-    int mu ; 
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    size_t mu ; 
     for( mu = 0 ; mu < ND ; mu++ ) {
       if( unlikely( is_unitary( lat[i].O[mu] ) == FUCKED ) ) {
-	printf( "BAD LINK site :: %d mu:: %d \n", i , mu ) ;
+	printf( "BAD LINK site :: %zu mu:: %zu \n", i , mu ) ;
 	printf( "Determinant :: " ) ;
 	printcomplex( det( lat[i].O[mu] ) ) ;
 	NBADLINKS = NBADLINKS + (int)1 ;
       }
     }
   }
-  printf( "[UNITARY] BADLINKS :: %d out of %d \n\n", 
+  printf( "[UNITARY] BADLINKS :: %zu out of %zu \n\n", 
 	  NBADLINKS , LVOLUME * ND ) ;
   return ;
 }
@@ -122,14 +122,13 @@ static void
 print_invariant_loops( lat )
      const struct site *__restrict lat ;
 {
-  int i ; 
+  size_t i ; 
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    int mu ;
+    size_t mu , nu , t , s ;
     for( mu = 1 ; mu < ND ; mu++ ) {
-      register const int t = lat[i].neighbor[mu] ; 
-      int nu ;
+      t = lat[i].neighbor[mu] ; 
       for( nu = 0 ; nu < mu ; nu++ ) {
-	register const int s = lat[i].neighbor[nu] ;
+	s = lat[i].neighbor[nu] ;
 	const double face = complete_plaquette( lat[ i ].O[mu] , 
 						lat[ t ].O[nu] , 
 						lat[ s ].O[mu] , 
@@ -149,7 +148,7 @@ static void
 average( double *ave , double *err , 
 	 const double *data , const int N )
 {
-  int i ;
+  size_t i ;
   *err = *ave = 0.0 ;
   for( i = 0 ; i < N ; i++ ) {
     const double delta = data[i] - *ave ;
@@ -165,12 +164,12 @@ test_log_speed( const struct site *__restrict lat ,
 		const log_type log )
 {
   GLU_complex temp2[ NCNC ] ;
-  int maxstress = 250 , stress , elements ;
+  size_t maxstress = 250 , stress , elements ;
   double times[ maxstress ] ;
   double sum = 0.0 ;
+  size_t mu , i ;
   // stress loops
   for( stress = 0 ; stress < maxstress ; stress++ ) {
-    int mu , i ;
     #ifdef TIME_GF
     start_timer() ;
     #endif
@@ -405,5 +404,5 @@ gauge( const struct site *__restrict lat )
 #endif
 
 #ifdef GLU_TEST_PRODS
-  #undef GLU_TEST_MULS
+  #undef GLU_TEST_PRODS
 #endif

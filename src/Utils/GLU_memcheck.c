@@ -39,7 +39,7 @@ static int HYP = -1 , WF = -1 , LGF = -1 , IO = -1 , GFIELDS = -1 , CGF = -1 ;
 
 // call to the OS to request what memory size we have
 static void
-check_mem( ) 
+check_mem( void ) 
 {
   const double GLU_size = sizeof( GLU_complex ) ;
   page_size = (double)sysconf( _SC_PAGESIZE ) ; 
@@ -56,11 +56,10 @@ check_mem( )
 }
 // and print out the standard message
 static void
-print_info( info , free_memory , expensive_more , expensive_less )
-     const char *info ;
-     const double free_memory ;
-     const double expensive_more ;
-     const double expensive_less ;
+print_info( const char *info ,
+	    const double free_memory ,
+	    const double expensive_more ,
+	    const double expensive_less )
 {
   printf( "[%s] Page size is :: %f, Total malloc [More] %f  [Less] %f \n" , 
 	  info , ( double )free_memory , expensive_more , expensive_less ) ; 

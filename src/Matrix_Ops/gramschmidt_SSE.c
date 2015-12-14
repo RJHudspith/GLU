@@ -19,6 +19,8 @@
 /**
    @file gramschmidt.c
    @brief reunitarisation procedures SSEd for SU(3) and SU(2)
+
+   TODO :: speed up NC-generic gram-schmidt
  */
 
 #include "Mainfile.h"
@@ -37,11 +39,10 @@
 
 // gramschmidt projection V = V - V.U^{\dagger}
 static void
-project( V , U )
-     GLU_complex *__restrict V ;
-     const GLU_complex *__restrict U ;
+project( GLU_complex *__restrict V ,
+	 const GLU_complex *__restrict U )
 {
-  int i ;
+  size_t i ;
   register double projRE = 0.0 , projIM = 0.0 ;
   for( i = 0 ; i < NC ; i ++ ) {
     projRE += ( double )( creal( V[i] ) * creal( U[i] ) ) ;
@@ -57,11 +58,10 @@ project( V , U )
 }
 
 // normalize a vector //
-INLINE_STATIC_VOID
-vect_norm2( a )
-     GLU_complex *__restrict a ;
+static void
+vect_norm2( GLU_complex *__restrict a )
 {
-  int mu ;
+  size_t mu ;
   register double norm = 0.0 ;
   for( mu = 0 ; mu < NC ; mu++ ) {
     norm += (double)( creal( a[mu] ) * creal( a[mu] ) ) +	\
@@ -141,7 +141,7 @@ reunit2( GLU_complex *__restrict U)
 #else
   // need a modified gram-schmidt process, leaves the
   // bottom row untouched
-  int i , j ;
+  size_t i , j , k ;
   GLU_complex v[ NC - 1 ][ NC ] ;
 
   // equate our vector to our matrix , parallelism here is a bit extreme
@@ -152,7 +152,6 @@ reunit2( GLU_complex *__restrict U)
   }
 
   // perform the modified gram schmidt
-  int k ;
   for( k = 0 ; k < NC-1 ; k++ ) {
     for( i = 0 ; i < k ; i++ ) { 
       project( v[k] , v[i] ) ;      
@@ -170,7 +169,7 @@ reunit2( GLU_complex *__restrict U)
   GLU_malloc( (void**)&array , 16 , ( NC - 1 ) * ( NC - 1 ) * sizeof( GLU_complex ) ) ;
 
   for( i = (NCNC-NC) ; i < NCNC ; i++ ) { // our bona-fide minor index loops the bottom row
-    int idx = 0 ;
+    size_t idx = 0 ;
     for( j = 0 ; j < ( NCNC - NC ) ; j++ ) {
       if( ( j%NC != i%NC ) ) { // remove columns  ( j/NC != i/NC ) is implicit!!
 	// pack array
@@ -216,4 +215,3 @@ Sunitary_gen( GLU_complex Z[ NCNC ] )
 }
 
 #endif // <immintrin.h>
-

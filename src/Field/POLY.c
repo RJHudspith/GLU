@@ -38,11 +38,13 @@
 static void
 small_poly( GLU_complex poly[ NCNC ] ,
 	    const struct site *__restrict lat ,
-	    const int site , const int dir , const int length )
+	    const size_t site , 
+	    const size_t dir , 
+	    const size_t length )
 {
   equiv( poly , lat[site].O[dir] ) ;
   // poly loop calculation ...
-  int next = site , t ; 
+  size_t next = site , t ; 
   for( t = 1 ; t < length ; t++ ) {
     next = lat[next].neighbor[dir] ; 
     multab_atomic_right( poly , lat[next].O[dir] ) ;
@@ -53,20 +55,20 @@ small_poly( GLU_complex poly[ NCNC ] ,
 // computes a polyakov line, looping around the dimension "dir"
 double complex
 poly( const struct site *__restrict lat , 
-      int dir )
+      size_t dir )
 {
   // if you have stupidly set the dimension to something unreasonable
   // default the direction to ND
-  if( dir > ND || dir < 0 ) { dir = ND ; }
+  if( dir > ND ) { dir = ND ; }
   double complex sum = 0 ;
-  int i ; 
+  size_t i ; 
 #pragma omp parallel for private(i) reduction(+:sum)
   for( i = 0 ; i < LCU ; i++ ) {
     GLU_complex poly[ NCNC ] ;
     // use the correct site for one of the hypercubes ...
     int x[ ND ] ;
     get_mom_2piBZ( x , i , dir ) ;
-    const int k = gen_site( x ) ;
+    const size_t k = gen_site( x ) ;
     small_poly( poly , lat , k , dir , Latt.dims[dir] ) ;
     sum = sum + (double complex)trace( poly ) ;
   }
@@ -86,28 +88,23 @@ compute_trtr( double complex *__restrict trtr ,
 	      const struct veclist *__restrict list ,
 	      const fftw_plan forward ,
 	      const fftw_plan backward ,
-	      const int rsq_count ,
-	      const int t )
+	      const size_t rsq_count ,
+	      const size_t t )
 {
-  int i ;
-  // hmmm , trace-trace is simplest
+  size_t i ;
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LCU ; i++ ) {
     in[ i ] = trace( poly[ i + LCU*t ] ) ;
   }
-  
   // FFT
   fftw_execute( forward ) ;
-
   // convolve
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LCU ; i++ ) {
     out[i] *= conj( out[i] ) ;
   }
-
   // FFT
   fftw_execute( backward ) ;
-
   // and set the trace-trace
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < rsq_count ; i++ ) {
@@ -127,48 +124,41 @@ compute_tr( double complex *__restrict tr ,
 	    const struct veclist *__restrict list ,
 	    const fftw_plan forward ,
 	    const fftw_plan backward ,
-	    const int rsq_count ,
-	    const int t )
+	    const size_t rsq_count ,
+	    const size_t t )
 {
   // index by index FFTs into a temporary
-  int i ;
+  size_t i ;
 #pragma omp parallel for private(i)
   for( i = 0 ; i < LCU ; i++ ) {
     equiv( slice_poly[ i ] , poly[ i + LCU * t ] ) ; 
   }
-
   // FFT all indices
-  int j ;
+  size_t j ;
   for( j = 0 ; j < NCNC ; j++ ) {
     // set in 
     #pragma omp parallel for private(i)
     PFOR( i = 0 ; i < LCU ; i++ ) {
       in[ i ] = slice_poly[ i ][ j ] ;
     }
-
     fftw_execute( forward ) ;
-
     // store the result in slice_poly again
     #pragma omp parallel for private(i)
     PFOR( i = 0 ; i < LCU ; i++ ) {
       slice_poly[ i ][ j ] = out[ i ] ;
     }
   }
-
   // now we can contract
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LCU ; i++ ) {
     trace_ab_dag( &out[ i ] , slice_poly[ i ] , slice_poly[ i ] ) ;
   }
-
   fftw_execute( backward ) ;
-
   // and set tr
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < rsq_count ; i++ ) {
     tr[ i ] += in[ list[ i ].idx ] ;
   }
-
   return ;
 }
 
@@ -178,34 +168,34 @@ static_quark_correlator( double complex *__restrict result ,
 			 double complex *__restrict trtr ,
 			 const GLU_complex *__restrict *__restrict poly ,
 			 const struct veclist *__restrict list ,
-			 const int rsq_count )
+			 const size_t rsq_count )
 
 {
   // init parallel threads, maybe
   if( parallel_ffts( ) == GLU_FAILURE ) {
     printf( "[PAR] Problem with initialising the OpenMP FFTW routines \n" ) ;
-    // should clean up the memory here
     return GLU_FAILURE ;
+  }
+
+  GLU_complex **slice_poly = NULL ;
+  if( GLU_malloc( (void**)&slice_poly , 16 , LCU * sizeof( GLU_complex* ) ) != 0 ) {
+    return GLU_FAILURE ;
+  }
+  size_t i ;
+  #pragma omp parallel for private(i)
+  for( i = 0 ; i < LCU ; i++ ) {
+    GLU_malloc( (void**)&slice_poly[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
   }
 
   // FFTW routines
   GLU_complex *in = fftw_malloc( LCU * sizeof( GLU_complex ) ) ;
   GLU_complex *out = fftw_malloc( LCU * sizeof( GLU_complex ) ) ;
-  GLU_complex **slice_poly = NULL ;
-  slice_poly = malloc( LCU * sizeof( GLU_complex* ) ) ;
-
-  int i ;
-#pragma omp parallel for private(i)
-  for( i = 0 ; i < LCU ; i++ ) {
-    slice_poly[i] = NULL ;
-    GLU_malloc( (void**)&slice_poly[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
-  }
 
   // create some plans
   fftw_plan forward , backward ;
   small_create_plans_DFT( &forward , &backward , in , out , ND-1 ) ;
 
-  int t ;
+  size_t t ;
   for( t = 0 ; t < Latt.dims[ ND - 1 ] ; t++ ) {
     // compute the tr tr combination
     compute_trtr( trtr , out , in , poly , list , 
@@ -236,6 +226,7 @@ static_quark_correlator( double complex *__restrict result ,
   fftw_free( out ) ;
 
   // free the temporary polyakov loops
+#pragma omp parallel for private(i)
   for( i = 0 ; i < LCU ; i++ ) {
     free( slice_poly[ i ] ) ;
   }
@@ -253,11 +244,11 @@ static_quark_correlator( double complex *__restrict result ,
 			 double complex *__restrict trtr ,
 			 const GLU_complex *__restrict *__restrict poly ,
 			 const struct veclist *__restrict list ,
-			 const int rsq_count )
+			 const size_t rsq_count )
 
 {
   const double NORM = 1.0 / (double)Latt.dims[ ND - 1 ] ;
-  int i ;
+  size_t i ;
   // now we can loop the triplet computing the correlators ...
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < rsq_count ; i++ ) {
@@ -272,18 +263,18 @@ static_quark_correlator( double complex *__restrict result ,
     get_mom_2piBZ( separation , list[i].idx , ND-1 ) ;
 
     // loop the lattice varying source and sink with the correct separation
-    int k = 0 ;
+    size_t k = 0 ;
     for( k = 0 ; k < LCU ; k++ ) {
       
       // translate the source from k by a vector separation
       const int translate = compute_spacing( separation , k , ND - 1 ) ;
       
-      int t = 0 ;
+      size_t t = 0 ;
       for( t = 0 ; t < Latt.dims[ ND-1 ] ; t++ ) {
 	
 	// compute the source and sink for this time separation
-	const int source = k + LCU * t ;
-	const int sink   = translate + LCU * t ;
+	const size_t source = k + LCU * t ;
+	const size_t sink   = translate + LCU * t ;
 	
 	// trace of the product
 	trace_ab_dag( &res , poly[source] , poly[sink] ) ;
@@ -314,31 +305,33 @@ Coul_staticpot( struct site *__restrict lat ,
   SM_wrap_struct( lat , SMINFO ) ;
 
   // important!! T is the length of the polyakov loop in time direction
-  const int T = CUTINFO.max_t ;
+  const size_t T = CUTINFO.max_t ;
 
+  // leave if the loop arguments make no sense
   if( T < 1 || LVOLUME < 1 ) return GLU_FAILURE ;
 
-  //
-  printf( "\n[STATIC-POTENTIAL] measurements at T = %d\n" , T ) ;
+  printf( "\n[STATIC-POTENTIAL] measurements at T = %zu\n" , T ) ;
 
   // compute the ratios of the dimensions in terms of the smallest
   simorb_ratios( ND ) ;
 
-  // compute the momentum list
-  int size[1] = { 0 } ;
-  struct veclist *list = compute_veclist( size , CUTINFO , ND-1 , GLU_TRUE ) ;
-
   // precompute the correlator
   // compute all of the poly loops, lattice-wide
   GLU_complex **poly = NULL ;
-  poly = malloc( LVOLUME * sizeof( GLU_complex* ) ) ;
+  if( GLU_malloc( (void**)&poly , 16 , LVOLUME * sizeof( GLU_complex* ) ) != 0 ) {
+    return GLU_FAILURE ;
+  }
 
-  int i ;
-#pragma omp parallel for private(i)
+  size_t i ;
+  #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) { 
     GLU_malloc( (void**)&poly[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
     identity( poly[i] ) ;
   }
+
+  // compute the momentum list
+  int size[1] = { 0 } ;
+  struct veclist *list = compute_veclist( size , CUTINFO , ND-1 , GLU_TRUE ) ;
 
   // set up the outputs
   const char *str = output_str_struct( CUTINFO ) ;  
@@ -348,11 +341,11 @@ Coul_staticpot( struct site *__restrict lat ,
   write_mom_veclist( Ap , size , list , ND-1 ) ;
 
   // tell us where it is going
-  printf( "[STATIC-POTENTIAL] writing correlators up to T = %d separation \n" , T ) ;
+  printf( "[STATIC-POTENTIAL] writing correlators up to T = %zu separation \n" , T ) ;
   printf( "[STATIC-POTENTIAL] writing output file to %s \n" , str ) ;
 
   // write out the size of the timeslices we are looking at
-  int Tcorrs[1] = { T-1 } ;
+  size_t Tcorrs[1] = { T-1 } ;
   if( !WORDS_BIGENDIAN ) { bswap_32( 1 , Tcorrs ) ; }
   fwrite( Tcorrs , sizeof(int) , 1 , Ap ) ;
   if( !WORDS_BIGENDIAN ) { bswap_32( 1 , Tcorrs ) ; }  
@@ -362,7 +355,7 @@ Coul_staticpot( struct site *__restrict lat ,
   double complex *trtr   = malloc( size[0] * sizeof( double complex ) ) ; 
 
   // precompute the polyakov loop
-  int t ; // t == 0 term makes no sense ...
+  size_t t ;
   for( t = 1 ; t < T ; t++ ) {
 
     // initialise results 
@@ -379,14 +372,15 @@ Coul_staticpot( struct site *__restrict lat ,
     }
     
     // compute the two quark correlator
-    static_quark_correlator( result , trtr , (const GLU_complex**)poly , 
+    static_quark_correlator( result , trtr , 
+			     (const GLU_complex**)poly , 
 			     list , size[0] ) ;
 
     // write out the result of all that work
     write_complex_g2g3_to_list( Ap , result , trtr , size ) ;
 
     // and tell us which temporal separation has been done
-    printf( "[STATIC-POTENTIAL] T = %d sepation computed and written \n" , t ) ;
+    printf( "[STATIC-POTENTIAL] T = %zu sepation computed and written \n" , t ) ;
   }
 
   // close the file

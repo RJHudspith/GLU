@@ -90,16 +90,15 @@ tag_search( const char *tag )
 
 // I use this pattern quite a bit
 static int
-setint( int *val ,
+setint( size_t *val ,
 	const char *tag )
 {
   char *endptr ;
   errno = 0 ;
   const int idx = tag_search( tag ) ;
   if( idx == GLU_FAILURE ) { return tag_failure( tag ) ; }
-  *val = (int)strtol( INPUT[idx].VALUE , &endptr , 10 ) ;
-  if( endptr == INPUT[idx].VALUE || *val < 0 ||
-      errno == ERANGE ) {
+  *val = (size_t)strtol( INPUT[idx].VALUE , &endptr , 10 ) ;
+  if( endptr == INPUT[idx].VALUE || errno == ERANGE ) {
     return GLU_FAILURE ;
   }
   return GLU_SUCCESS ;
@@ -123,12 +122,12 @@ setdbl( double *val ,
 
 // quickly get the configuration number from the input file
 // must be greater than or equal to zero
-static int
+static size_t
 confno( void )
 {
-  int conf = GLU_FAILURE ;
+  size_t conf = 0 ;
   if( setint( &conf , "CONFNO" ) == GLU_FAILURE ) {
-    printf( "[IO] I do not understand CONFNO %d \n" , conf ) ;
+    printf( "[IO] I do not understand CONFNO %zu \n" , conf ) ;
     printf( "[IO] CONFNO should be greater than 0\n" ) ;
     return GLU_FAILURE ;
   }
@@ -266,38 +265,38 @@ header_type( void )
     } else if( are_equal( INPUT[header_idx].VALUE , "HIREP" ) ) {
       if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return UNSUPPORTED ;
       printf( "[IO] Attempting to read a HIREP file \n" ) ;
-      printf( "[IO] Using sequence number from input file :: %d \n" ,
+      printf( "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       return HIREP_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "MILC" ) ) {
       if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return UNSUPPORTED ;
       printf( "[IO] Attempting to read a MILC file \n" ) ;
-      printf( "[IO] Using sequence number from input file :: %d \n" ,
+      printf( "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       return MILC_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "SCIDAC" ) ) {
       if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return UNSUPPORTED ;
       printf( "[IO] Attempting to read a SCIDAC file \n" ) ;
-      printf( "[IO] Using sequence number from input file :: %d \n" ,
+      printf( "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       return SCIDAC_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "LIME" ) ) {
       if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return UNSUPPORTED ;
       printf( "[IO] Attempting to read an LIME file \n" ) ;
-      printf( "[IO] Using sequence number from input file :: %d \n" ,
+      printf( "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       printf( "[IO] WARNING!! NOT CHECKING ANY CHECKSUMS!! \n" ) ;
       return LIME_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "ILDG_SCIDAC" ) ) {
       if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return UNSUPPORTED ;
       printf( "[IO] Attempting to read an ILDG (Scidac) file \n" ) ;
-      printf( "[IO] Using sequence number from input file :: %d \n" ,
+      printf( "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       return ILDG_SCIDAC_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "ILDG_BQCD" ) ) {
       if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return UNSUPPORTED ;
       printf( "[IO] Attempting to read an ILDG (BQCD) file \n" ) ;
-      printf( "[IO] Using sequence number from input file :: %d \n" ,
+      printf( "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       return ILDG_BQCD_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "RANDOM" ) ) {

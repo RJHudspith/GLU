@@ -37,7 +37,7 @@ add_constant( GLU_complex a[ NCNC ] ,
   a[0] += c ;
   a[3] += c ;
 #else
-  int i ;
+  size_t i ;
   for( i = 0 ; i < NC ; i++ ) {
     a[ i*(NC+1) ] += c ;
   }
@@ -58,7 +58,7 @@ a_plus_b( GLU_complex a[ NCNC ] ,
   a[0] += b[0] ;  a[1] += b[1] ;  
   a[2] += b[2] ;  a[3] += b[3] ; 
 #else
-  int i ;
+  size_t i ;
   for( i = 0 ; i < NCNC ; i++ ) {
     a[i] += b[i] ;
   }
@@ -80,7 +80,7 @@ a_plus_CSxb( GLU_complex a[ NCNC ] ,
   a[0] += S * b[0] ;  a[1] += S * b[1] ;  
   a[2] += S * b[2] ;  a[3] += S * b[3] ; 
 #else
-  int i ;
+  size_t i ;
   for( i = 0 ; i < NCNC ; i++ ) {
     a[i] += S * b[i] ;
   }
@@ -102,7 +102,7 @@ a_plus_Sxb( GLU_complex a[ NCNC ] ,
   a[0] += S * b[0] ;  a[1] += S * b[1] ;  
   a[2] += S * b[2] ;  a[3] += S * b[3] ; 
 #else
-  int i ;
+  size_t i ;
   for( i = 0 ; i < NCNC ; i++ ) {
     a[i] += S * b[i] ;
   }
@@ -127,7 +127,7 @@ a_plus_Sxbminc_short( GLU_complex a[ HERMSIZE ] ,
   a[0] += S * ( B[ 0 ] - C[ 0 ] ) ;
   a[1] += S * ( B[ 1 ] - C[ 1 ] ) ;
 #else
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
     a[ mu ] += S * ( B[ mu ] - C[ mu ] ) ;
   }
@@ -150,7 +150,7 @@ b_min_c( GLU_complex a[ NCNC ] ,
   a[0] = b[0] - c[0] ;  a[1] = b[1] - c[1] ;  
   a[2] = b[2] - c[2] ;  a[3] = b[3] - c[3] ;  
 #else
-  int i ;
+  size_t i ;
   for( i = 0 ; i < NCNC ; i++ ) {
     a[i] = b[i] - c[i] ;
   }
@@ -183,9 +183,9 @@ cofactor_transpose( GLU_complex a[ NCNC ] ,
 #else
   // compute the cofactor matrix
   GLU_complex array[ ( NC - 1 ) * ( NC - 1 ) ] , temp[ NCNC ] ;
-  int i , j ;
+  size_t i , j ;
   for( i = 0 ; i < NCNC ; i++ ) { // our bona-fide minor index
-    int idx = 0 ;
+    size_t idx = 0 ;
     for( j = 0 ; j < ( NC * NC ) ; j++ ) {
       if( ( j%NC != i%NC ) && ( j/NC != i/NC ) ) { // remove columns and rows
 	// pack array
@@ -221,7 +221,7 @@ dagger( GLU_complex b[ NCNC ] ,
   b[0] = conj( a[0] )  ;  b[1] = conj( a[2] ) ; 
   b[2] = conj( a[1] )  ;  b[3] = conj( a[3] ) ;  
 #else
-  int i , j ;
+  size_t i , j ;
   for( i = 0 ; i < NC ; i++ ) {
     for( j = 0 ; j < NC ; j++ ) {
       b[ j + i * NC ] = conj( a[ i + j * NC ] ) ;
@@ -259,7 +259,7 @@ diag( GLU_complex M[ NCNC ] ,
   M[0] = c  ; M[1] = 0. ; 
   M[2] = 0. ; M[3] = c  ;
 #else
-  int i , j ;
+  size_t i , j ;
   for( i = 0 ; i < NC ; i++ ) {
     for( j = 0 ; j < NC ; j++ ) {
       M[ j + NC * i ] = ( i != j ) ? 0.0 : c ;
@@ -282,7 +282,7 @@ diag_vect( GLU_complex M[ NCNC ] ,
   M[0] = c[ 0 ] ; M[1] = 0.     ; 
   M[2] = 0.     ; M[3] = c[ 1 ] ;
 #else
-  int i , j ;
+  size_t i , j ;
   for( i = 0 ; i < NC ; i++ ) {
     for( j = i+1 ; j < NC ; j++ ) {
       M[ j + i * NC ] = M[ i + j * NC ] = 0.0 ;
@@ -306,7 +306,7 @@ equiv( GLU_complex a[ NCNC ] ,
   a[0] = b[0] ;  a[1] = b[1] ;  
   a[2] = b[2] ;  a[3] = b[3] ;  
 #else
-  int i ;
+  size_t i ;
   for( i = 0 ; i < NCNC ; i++ ) {
     a[ i ] = b[ i ] ;
   }
@@ -326,7 +326,7 @@ identity( GLU_complex ident[ NCNC ] )
   ident[0] = 1.0  ;  ident[1] = 0. ; 
   ident[2] = 0.0  ;  ident[3] = 1.0 ; 
 #else
-  int i , j ;
+  size_t i , j ;
   for( i = 0 ; i < NC ; i++ ){
     for( j = 0 ; j < NC ; j++ ) {
       ident[ j + NC * i ] = ( i != j ) ? 0.0 : 1.0 ;
@@ -341,37 +341,41 @@ GLU_bool
 is_unitary( const GLU_complex U[ NCNC ] ) 
 {
   GLU_complex temp[ NCNC ] ; 
+  GLU_real vv = 0. ; 
+  GLU_bool problem = GLU_FALSE ;
+  size_t i , j ; 
+
+  // check U.U^{dag} = I
   multab_dag( temp , U , U ) ; 
 
-  GLU_bool problem = GLU_FALSE ;
-  int i ; 
   //first do U.U^{dagger} and check it is unitary
   for( i = 0 ; i < NCNC ; i++ ) {
-    const GLU_real check = !( i%(NC+1) ) ? cabs( temp[i] ) - 1.0 : cabs( temp[i] ) ; 
+    const GLU_real check = !( i%(NC+1) ) ? cabs( temp[i] ) - 1.0 :\
+      cabs( temp[i] ) ; 
     //printf( "%e \n" , check ) ; 
     if( fabs( check ) > PREC_TOL ) {
       problem = GLU_TRUE ;
-      printf( "* flag seen * element -> %d :: %1.8e\n" , i , check ) ;
+      printf( "* flag seen * element -> %zu :: %1.8e\n" , i , check ) ;
       printf( "%1.15f %1.15f \n" , creal( temp[i] ) , cimag( temp[i] ) ) ;
     }
     // same as isnan()
     if( U[i] != U[i] ) {
       problem = GLU_TRUE ;
-      printf( "* We have a NaN here * element %d %f %f\n" , i , creal( U[i] ) , cimag( U[i] ) ) ;
+      printf( "* We have a NaN here * element %zu %f %f\n" , 
+	      i , creal( U[i] ) , cimag( U[i] ) ) ;
     }
   }
 
   //also check orthogonality of columns and rows
   //columns
-  int j ; 
-  GLU_real vv = 0. ; 
   for( j = 0 ; j < NC ; j++ ) {
     for( i = 0 ; i < NC ; i++ ) {
       vv += creal( U[ NC * i ] * conj( U[ NC * i + j ] ) ) ; 
     }
     if( fabs( vv - 1.0 )/NC > PREC_TOL ) {
       problem = GLU_TRUE ;
-      printf( "[column %d] not orthogonal!!!\n MUST REUNITARIZE [reunit( Z , U )] vv %1.8f" , j , vv ) ; 
+      printf( "[column %zu] not orthogonal!!!\n"
+	      "MUST REUNITARIZE [reunit( Z , U )] vv %1.8f" , j , vv ) ; 
       break ;
     }
   }
@@ -384,7 +388,8 @@ is_unitary( const GLU_complex U[ NCNC ] )
     }
     if( fabs( vv - 1.0 )/NC > PREC_TOL ) {
       problem = GLU_TRUE ;
-      printf( "[row %d] not orthogonal!!!\n MUST REUNITARIZE [reunit( Z , U )] vv %1.8f" , j , vv ) ; 
+      printf( "[row %zu] not orthogonal!!!\nMUST REUNITARIZE"
+	      " [reunit( Z , U )] vv %1.8f" , j , vv ) ; 
       break ;
     }
   }
@@ -409,7 +414,7 @@ mat_mult_vec( GLU_complex vect[ NC ] ,
   vect[0] = S[ 0 ] * v[ 0 ] + S[ 1 ] * v[ 1 ] ;
   vect[1] = S[ 2 ] * v[ 0 ] + S[ 3 ] * v[ 1 ] ;
 #else
-  int i , j ;
+  size_t i , j ;
   for( i = 0 ; i < NC ; i++ ) {
     vect[ i ] = 0. ;
     for( j = 0 ; j < NC ; j++ ) {
@@ -433,7 +438,7 @@ M_times_c( GLU_complex M[ NCNC ] ,
   M[0] *= c ; M[1] *= c ; 
   M[2] *= c ; M[3] *= c ; 
 #else
-  int i ;
+  size_t i ;
   for( i = 0 ; i < NCNC ; i++ ) {
     M[ i ] *= c ;
   }
@@ -459,7 +464,7 @@ matrix_power( GLU_complex a[ NCNC ] ,
   else {
     // generate our linked list
     struct node *head = NULL , *curr ;
-    int nn = n , length = 0 , i ;
+    size_t nn = n , length = 0 , i ;
     // compute the list, and its length
     while( nn > 2 ) {
       curr = (struct node*)malloc( sizeof( struct node ) ) ;
@@ -510,7 +515,7 @@ outerproduct( GLU_complex Q[ NCNC ] ,
   Q[0] = a[0] * conj( b[0] ) ; Q[1] = a[0] * conj( b[1] ) ; 
   Q[2] = a[1] * conj( b[0] ) ; Q[3] = a[1] * conj( b[1] ) ; 
 #else
-  int i , j ;
+  size_t i , j ;
   for( i = 0 ; i < NC ; i++ ) {
     for( j = 0 ; j < NC ; j++ ) {
       Q[ j + i * NC ] = a[ i ] * conj( b[ j ] ) ;
@@ -526,7 +531,7 @@ pack_hermitian( GLU_complex a[ HERMSIZE ] ,
 		const GLU_complex b[ NCNC ] )
 {
   // pack into hermsize
-  int i , j , idx = 0 ;
+  size_t i , j , idx = 0 ;
   for( i = 0 ; i < NC-1 ; i++ ) {
     for( j = i ; j < NC ; j++ ) {
       a[ idx ] = b[ j + i*NC ] ;
@@ -617,7 +622,8 @@ rebuild_antihermitian( GLU_complex a[ NCNC ] ,
   a[2] = -conj( a[1] ) ;
   a[3] = -a[0] ;
 #else
-  int i , j , idx = 0 ;
+  GLU_complex res = 0.0 ;
+  size_t i , j , k , idx = 0 ;
   for( i = 0 ; i < NC-1 ; i++ ) {
     for( j = i ; j < NC ; j++ ) {
       // match up the conjugates
@@ -628,8 +634,6 @@ rebuild_antihermitian( GLU_complex a[ NCNC ] ,
   }
   // OK so we complete the last term as minus the sum of the diagonal
   // assuring tracelessness
-  GLU_complex res = 0.0 ;
-  int k ;
   for( k = 0 ; k < NC-1 ; k++ ) {
     res += a[ k*(NC+1) ] ;
   }
@@ -659,7 +663,8 @@ rebuild_hermitian( GLU_complex a[ NCNC ] ,
   a[2] = conj( a[1] ) ;
   a[3] = -a[0] ;
 #else
-  int i , j , idx = 0 ;
+  GLU_complex res = 0.0 ;
+  int i , j , k , idx = 0 ;
   for( i = 0 ; i < NC-1 ; i++ ) {
     for( j = i ; j < NC ; j++ ) {
       // match up the conjugates
@@ -670,8 +675,6 @@ rebuild_hermitian( GLU_complex a[ NCNC ] ,
   }
   // OK so we complete the last term as minus the sum of the diagonal
   // assuring tracelessness
-  GLU_complex res = 0.0 ;
-  int k ;
   for( k = 0 ; k < NC-1 ; k++ ) {
     res += a[ k*(NC+1) ] ;
   }
@@ -729,9 +732,9 @@ speed_trace( GLU_complex *res ,
 #elif NC == 2
   *res = ( U[0] + U[3] )  ;
 #else
-  int i ;
   const GLU_real *pU = (const GLU_real*)U ;
   register double sumr = 0.0 , sumi = 0.0 ;
+  size_t i ;
   for( i = 0 ; i < NC ; i++ ) { 
     sumr += ( *(pU++) ) ;
     sumi += ( *(pU++) ) ;
@@ -753,9 +756,9 @@ speed_trace_Re( double *__restrict res ,
 #elif NC == 2
   *res = (double)creal( U[0] ) + (double)creal( U[3] ) ;
 #else
-  int i ;
   const GLU_real *pU = (const GLU_real*)U ;
   register double sumr = 0.0 ;
+  size_t i ;
   for( i = 0 ; i < NC ; i++ ) { 
     sumr += (double)( *(pU) ) ;
     pU += 2*( NC + 1 ) ;
@@ -774,9 +777,9 @@ trace( const GLU_complex U[ NCNC ] )
 #elif NC == 2
   return U[0] + U[3] ;
 #else
-  int i ;
   const GLU_real *pU = (const GLU_real*)U ;
   register double sumr = 0.0 , sumi = 0.0 ;
+  size_t i ;
   for( i = 0 ; i < NC ; i++ ) { 
     sumr += ( *(pU++) ) ;
     sumi += ( *(pU++) ) ;
@@ -801,7 +804,7 @@ trace_ab( GLU_complex *__restrict tr ,
     a[1] * b[2] + a[3] * b[3] ;
 #else
   register GLU_real sumr = 0.0 , sumi = 0.0 ;
-  int i, j ;
+  size_t i, j ;
   for( i = 0 ; i < NC ; i++ ) {
     for( j = 0 ; j < NC ; j++ ) {
       sumr += creal( a[ j + NC * i ] ) * creal( b[ i + NC * j ] ) -
@@ -841,7 +844,7 @@ trace_abc( GLU_complex *__restrict tr ,
   const GLU_complex *pB , *pA ;
   register GLU_real sumr = 0.0 , sumi = 0.0 ;
   GLU_real insumr = 0.0 , insumi = 0.0 ;
-  int i , j , k ;
+  size_t i , j , k ;
   for( i = 0 ; i < NC ; i++ ) {
     pA = a ;
     for( j = 0 ; j < NC ; j++ ) {
@@ -891,7 +894,7 @@ trace_abc_dag( GLU_complex *__restrict tr ,
   const GLU_complex *pB , *pA ;
   register GLU_real sumr = 0.0 , sumi = 0.0 ;
   GLU_real insumr = 0.0 , insumi = 0.0 ;
-  int i , j , k ;
+  size_t i , j , k ;
   for( i = 0 ; i < NC ; i++ ) {
     pA = a ;
     for( j = 0 ; j < NC ; j++ ) {
@@ -941,7 +944,7 @@ trace_abc_dag_Re( GLU_real *__restrict tr ,
   const GLU_complex *pB , *pA ;
   register double sumr = 0.0 ;
   double insumr = 0.0 , insumi = 0.0 ;
-  int i , j , k ;
+  size_t i , j , k ;
   for( i = 0 ; i < NC ; i++ ) {
     pA = a ;
     for( j = 0 ; j < NC ; j++ ) {
@@ -978,8 +981,8 @@ trace_ab_dag( GLU_complex *__restrict tr ,
   *tr = a[0] * conj( b[0] ) + a[1] * conj( b[1] ) + a[2] * conj( b[2] ) + \
     a[3] * conj( b[3] ) ;
 #else
-  int i ;
   register GLU_real sumr = 0.0 , sumi = 0.0 ;
+  size_t i ;
   #if NC%2==0
   for( i = 0 ; i < NCNC ; i+=2 ) {
     sumr += creal( a[i] ) * creal( b[i] ) + cimag( a[i] ) * cimag( b[i] ) ;
@@ -1020,8 +1023,8 @@ trace_ab_dag_Re( GLU_real*__restrict tr ,
   *tr += creal( a[2] ) * creal( b[2] ) + cimag( a[2] ) * cimag( b[2] ) ;
   *tr += creal( a[3] ) * creal( b[3] ) + cimag( a[3] ) * cimag( b[3] ) ;
 #else
-  int i ;
   register GLU_real sumr = 0.0 ;
+  size_t i ;
   #if NC%2==0
   for( i = 0 ; i < NCNC ; i+=2 ) {
     sumr += creal( a[i] ) * creal( b[i] ) + cimag( a[i] ) * cimag( b[i] ) ;
@@ -1056,7 +1059,7 @@ trace_ab_herm( GLU_real *__restrict tr ,
   // loop over upper triangular taking the product
   *tr = 0.0 ;
   register double sum = 0.0 ;
-  int i , j ;
+  size_t i , j ;
   for( i = 0 ; i < NC ; i++ ) {
     sum += creal( a[ i + NC *i ] ) * creal( b[ i + NC *i ] ) ;
     for( j = i + 1 ; j < NC ; j++ ) {
@@ -1088,7 +1091,7 @@ trace_ab_herm_short( GLU_real *__restrict tr ,
   // loop over upper triangular taking the product
   *tr = 0.0 ;
   register double suma = 0.0 , sumb = 0.0 , sum = 0.0 ;
-  int i , j , idx = 0 ;
+  size_t i , j , idx = 0 ;
   for( i = 0 ; i < NC-1 ; i++ ) {
     sum += creal( a[idx] ) * creal( b[idx] ) ;
     suma += creal( a[idx] ) ;
@@ -1124,7 +1127,7 @@ trace_prod_herm( GLU_real *__restrict tr ,
   // dependent
   const GLU_complex *pA = a ;
   register double sum = 0.0 ;
-  int i , j ;
+  size_t i , j ;
   for( i = 0 ; i < NC ; i++ ) {
     sum += creal( *pA ) * creal( *pA ) ;
     pA++ ;
@@ -1153,7 +1156,7 @@ transpose( GLU_complex a[ NCNC ] ,
   a[0] = b[0] ; a[1] = b[2] ; 
   a[2] = b[1] ; a[3] = b[3] ;
 #else
-  int i , j ;
+  size_t i , j ;
   for( i = 0 ; i < NC ; i++ ) {
     for( j = 0 ; j < NC ; j++ ) {
       a[ j + i * NC ] = b[ i + j * NC ] ;
@@ -1167,7 +1170,7 @@ transpose( GLU_complex a[ NCNC ] ,
 void 
 write_matrix( const GLU_complex U[ NCNC ] )
 {
-  int i ; 
+  size_t i ; 
   for( i = 0 ; i < NCNC ; i++ ) {
     if( i % NC == 0 ) {
       printf( "\n" ) ;
@@ -1182,7 +1185,7 @@ write_matrix( const GLU_complex U[ NCNC ] )
 void 
 write_matrix_cform( const GLU_complex U[ NCNC ] )
 {
-  int i ; 
+  size_t i ; 
   printf("\n{") ;
   for( i = 0 ; i < NCNC ; i++ ) {
     printf( " %f + I*%f " , creal( U[i] ) , cimag( U[i] ) ) ;
@@ -1196,7 +1199,7 @@ write_matrix_cform( const GLU_complex U[ NCNC ] )
 void 
 write_matrix_mathematica( const GLU_complex U[ NCNC ] ) 
 {
-  int i ; 
+  size_t i ; 
   printf( "\n{{" ) ; 
   for( i = 0 ; i < NCNC ; i++ ) {
     if( ( i%NC == 0 ) && ( i != 0 ) ) {
@@ -1226,7 +1229,8 @@ zero_mat( GLU_complex a[ NCNC ] )
   a[0] = 0. ;  a[1] = 0. ;  
   a[2] = 0. ;  a[3] = 0. ;  
 #else
-  int i ;
+  // should call to memset here?
+  size_t i ;
   for( i = 0 ; i < NCNC ; i++ ) {
     a[ i ] = 0. ;
   }

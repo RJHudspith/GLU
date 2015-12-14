@@ -31,8 +31,8 @@
 #include "random_config.h"  // latt reunitisation
 
 // inits for the draughtboard
-static int *redsites , *blacksites ;
-static int NRED = 0 , NBLACK = 0 ;
+static size_t *redsites , *blacksites ;
+static size_t NRED = 0 , NBLACK = 0 ;
 
 // free the draughtboard
 static void
@@ -46,10 +46,11 @@ free_cb( void )
 static void
 init_cb( const int LENGTH ) 
 {
-  int i , n[ ND ] ;
+  size_t i ;
+  int n[ ND ] ;
   for( i = 0 ; i < LENGTH ; i++ ) {
     get_mom_2piBZ( n , i , ND ) ;
-    int mu , mode_sum = 0 ;
+    size_t mu , mode_sum = 0 ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       mode_sum += n[ mu ] ;
     }
@@ -60,13 +61,13 @@ init_cb( const int LENGTH )
     }
   }
   // malloc and set
-  redsites = malloc( NRED * sizeof( int ) ) ;
-  blacksites = malloc( NBLACK * sizeof( int ) ) ;
+  redsites   = malloc( NRED   * sizeof( size_t ) ) ;
+  blacksites = malloc( NBLACK * sizeof( size_t ) ) ;
   // set back to zero
   NRED = NBLACK = 0 ;
   for( i = 0 ; i < LENGTH ; i++ ) {
     get_mom_2piBZ( n , i , ND ) ;
-    int mu , mode_sum = 0 ;
+    size_t mu , mode_sum = 0 ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       mode_sum += n[ mu ] ;
     }
@@ -84,18 +85,18 @@ init_cb( const int LENGTH )
 // a single iteration of the overrelaxed gauge fixing
 static void
 OR_single( struct site *__restrict lat ,
-	   const int su2_index ,
+	   const size_t su2_index ,
 	   const double OrParam ,
-	   const int i ,
-	   const int DIMS )
+	   const size_t i ,
+	   const size_t DIMS )
 {
   GLU_complex L[ NCNC ] ;
   zero_mat( L ) ;
-  int mu , j , k ;
+  size_t mu , j , k ;
   // loop directions summing into L
   for( mu = 0 ; mu < DIMS ; mu++ ) {
     // compute U(x+\mu/2) + U^{dagger}(x-\mu/2)
-    const int back = lat[i].back[mu] ;
+    const size_t back = lat[i].back[mu] ;
     for( j = 0 ; j < NC ; j++ ) {
       for( k = 0 ; k < NC ; k++ ) {
 	L[ k + j * NC ] += conj( lat[i].O[mu][j+k*NC] ) +
@@ -110,7 +111,7 @@ OR_single( struct site *__restrict lat ,
 
   // gauge rotate
   for( mu = 0 ; mu < ND ; mu++ ) {
-    const int back = lat[i].back[mu] ;
+    const size_t back = lat[i].back[mu] ;
     shortened_su2_multiply( lat[i].O[mu] , s0 , s1 , 
 			    -conj(s1) , conj(s0) , su2_index ) ;
     shortened_su2_multiply_dag( lat[back].O[mu] , s0 , s1 , 
@@ -123,13 +124,13 @@ OR_single( struct site *__restrict lat ,
 // perform one iteration of the overrelaxed gauge fixing routine
 static void
 OR_iteration( struct site *__restrict lat ,
-	      const int su2_index ,
+	      const size_t su2_index ,
 	      const double OrParam ,
-	      const int t ,
-	      const int DIMS )
+	      const size_t t ,
+	      const size_t DIMS )
 {
   // perform an overrelaxation step
-  int i ;
+  size_t i ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < NRED ; i++ ) {  
     OR_single( lat , su2_index  , OrParam , 
@@ -145,36 +146,34 @@ OR_iteration( struct site *__restrict lat ,
 
 // output the data, pass lat for the plaquette
 static void
-output_fixing_info( lat , theta , iters )
-     struct site *__restrict lat ;
-     const double theta ;
-     const int iters ;
+output_fixing_info( struct site *__restrict lat ,
+		    const double theta ,
+		    const size_t iters )
 {
   // reunitarise just to limit the damage from round-off
   latt_reunitU( lat ) ;
 
   ////////// Print out the Gauge Fixing information /////////////
-
   printf( "[GF] Plaquette :: %1.15f \n[GF] Accuracy :: %1.4e\n" , 
 	  av_plaquette( lat ) , theta ) ;
   GLU_real tr ;
   const double link = indivlinks( lat , &tr ) ;
-  printf( "[GF] Iters :: %d\n[GF] Link trace :: %1.15f || Maximum :: %1.15f\n" , iters , link , tr / NC ) ; 
+  printf( "[GF] Iters :: %zu\n[GF] Link trace :: %1.15f ||"
+	  "Maximum :: %1.15f\n" , iters , link , tr / NC ) ; 
   double lin , log ;
   const_time( lat , &lin , &log ) ; 
   printf( "[GF] Temporal constance || Lin %e || Log %e \n" , lin , log ) ;
   gauge_functional( lat ) ;
   printf( "[GF] Functional :: %1.15f\n" , gauge_functional( lat ) ) ;
-
   ///////////////////////////////////////////////////////////////
   return ;
 }
 
 // gauge fix
-int
+size_t
 OrLandau( struct site *__restrict lat ,
 	  double *theta ,
-	  const int MAX_ITERS , 
+	  const size_t MAX_ITERS , 
 	  const double ACC ,
 	  const double OrParam )
 {
@@ -187,13 +186,13 @@ OrLandau( struct site *__restrict lat ,
   printf( "[GF] Over-Relaxation parameter %f \n" , OrParam ) ;
 
   // iterations
-  int iters = 0 ;
+  size_t iters = 0 ;
   while( iters < MAX_ITERS && fabs( *theta ) > ACC ) {
 
     oldlink = newlink ;
 
     // loop su2 indices
-    int su2_index ;
+    size_t su2_index ;
     for( su2_index = 0 ; su2_index < NSU2SUBGROUPS ; su2_index++ ) {
       OR_iteration( lat , su2_index , OrParam , 0 , ND ) ;
     }
@@ -208,8 +207,6 @@ OrLandau( struct site *__restrict lat ,
     iters++ ;
   }
 
-  // if not completed, grab file and redo
-
   // and print it out
   output_fixing_info( lat , *theta , iters ) ;
 
@@ -222,14 +219,14 @@ OrLandau( struct site *__restrict lat ,
 // gauge fixing code
 static double
 slice_spatial_links( const struct site *__restrict lat ,
-		     const int t )
+		     const size_t t )
 {
   double sum = 0.0 ;
-  int i ;
+  size_t i ;
   #pragma omp parallel for private(i) reduction(+:sum)
   for( i = LCU*t ; i < LCU*(t+1) ; i++ ) {
     register double loc_sum = 0.0 ;
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND-1 ; mu++ ) {
       loc_sum += (double)creal( trace( lat[i].O[mu] ) ) ;
     }
@@ -239,10 +236,10 @@ slice_spatial_links( const struct site *__restrict lat ,
 }
 
 // Coulomb gauge fix -> need to think about restarting this
-int
+size_t
 OrCoulomb( struct site *__restrict lat ,
 	   double *theta ,
-	   const int MAX_ITERS , 
+	   const size_t MAX_ITERS , 
 	   const double ACC ,
 	   const double OrParam )
 {
@@ -251,11 +248,11 @@ OrCoulomb( struct site *__restrict lat ,
 
   printf( "[GF] Over-Relaxation parameter %f \n\n" , OrParam ) ;
 
-  int t , iters = 0 ;
+  size_t t , iters = 0 ;
   for( t = 0 ; t < Latt.dims[ND-1] ; t++ ) {
 
     double newlink = slice_spatial_links( lat , t ) , oldlink ;
-    int loc_iters = 0 ;
+    size_t loc_iters = 0 ;
     *theta = 1.0 ;
 
     // iterations
@@ -264,7 +261,7 @@ OrCoulomb( struct site *__restrict lat ,
       oldlink = newlink ;
 
       // loop su2 indices
-      int su2_index ;
+      size_t su2_index ;
       for( su2_index = 0 ; su2_index < NSU2SUBGROUPS ; su2_index++ ) {
 	OR_iteration( lat , su2_index , OrParam , t , ND-1 ) ;
       }
@@ -277,8 +274,8 @@ OrCoulomb( struct site *__restrict lat ,
       loc_iters++ ;
     }
 
-    printf( "[GF] Slice :: %d {Stopped by convergence} \n[GF] Accuracy :: %1.5e"
-	    " || Iterations :: %d\n[GF] Failures :: %d\n\n" , 
+    printf( "[GF] Slice :: %zu {Stopped by convergence} \n[GF] Accuracy :: %1.5e"
+	    " || Iterations :: %zu\n[GF] Failures :: %d\n\n" , 
 	    t , *theta , loc_iters , 0 ) ; 
     iters += loc_iters ;
   }
@@ -286,7 +283,7 @@ OrCoulomb( struct site *__restrict lat ,
   // and print it out
   double splink , tlink ;
   all_links( lat , &splink , &tlink ) ;
-  printf( "[GF] Tuning :: %f || Iterations :: %d ||\n[GF] Final Tlink :: %1.15f "
+  printf( "[GF] Tuning :: %f || Iterations :: %zu ||\n[GF] Final Tlink :: %1.15f "
 	  "|| Slink :: %1.15f \n[GF] Plaquette :: %1.15f \n" , 
 	  Latt.gf_alpha , iters , tlink , splink , av_plaquette( lat ) ) ; 
   

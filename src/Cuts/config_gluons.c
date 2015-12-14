@@ -37,26 +37,30 @@
 
 // compute the log fields, overwrite the link matrices!
 static int
-Amu_fields( A , def )
-     struct site *__restrict A ;
-     const lie_field_def def ;
+Amu_fields( struct site *__restrict A ,
+	    const lie_field_def def )
 {
-  int i ;
+  size_t i ;
+
+  // callback for the log definition
+  void (*log)( GLU_complex Q[ NCNC ] ,
+	       const GLU_complex U[ NCNC ] ) ;
+  switch( def ) {
+  case LINEAR_DEF :
+    log = Hermitian_proj ;
+    break ;
+  case LOG_DEF : 
+    log = exact_log_slow ; 
+    break ;
+  }
+
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) { 
     struct spt_site temp ;
-    int mu ;
-    switch( def )
-      {
-      case LINEAR_DEF :
-	for( mu = 0 ; mu < ND ; mu++ ) 
-	  Hermitian_proj( temp.O[mu] , A[i].O[mu] ) ;
-	break ;
-      case LOG_DEF :
-	for( mu = 0 ; mu < ND ; mu++ ) 
-	  exact_log_slow( temp.O[mu] , A[i].O[mu] ) ;
-	break ;
-      }
+    size_t mu ;
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      log( temp.O[mu] , A[i].O[mu] ) ;
+    }
     memcpy( &A[i] , &temp , sizeof( struct spt_site ) ) ;
   }
   return GLU_SUCCESS ;
@@ -68,15 +72,15 @@ check_landau_condition( const struct site *__restrict A )
 {
   // compute the gauge fixing accuracy Tr( dA dA )
   double sum = 0.0 ;
-  int i ;
+  size_t i ;
 #pragma omp parallel for private(i) reduction(+:sum)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     GLU_complex dA[ NCNC ] ;
     zero_mat( dA ) ;
-    int mu ;
+    size_t mu , elem , back ;
     for( mu = 0 ; mu < ND ; mu++ ) {
-      const int back = gen_shift( i , -mu - 1 ) ; 
-      int elem ;
+      // can we not use navigation here?
+      back = gen_shift( i , -mu - 1 ) ; 
       for( elem = 0 ; elem < NCNC ; elem++ ) {
 	dA[ elem ] += A[i].O[mu][elem] - A[back].O[mu][elem] ;
       }
@@ -114,9 +118,8 @@ spatial_correlator( struct site *__restrict A ,
   small_create_plans_DFT( &forward , &backward , in , out , ND ) ;
 
   //forward transform
-  int mu , i ;
+  size_t mu , i , j ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    int j ;
     for( j = 0 ; j < NCNC ; j++ ) {
       // FORWARD ONE
       #ifdef CUT_FORWARD
@@ -168,7 +171,7 @@ spatial_correlator( struct site *__restrict A ,
 #endif
 
   // compute the sum
-  int t ;
+  size_t t ;
 #pragma omp parallel for private(i)
   for( t = 0 ; t < Latt.dims[ND-1] ; t++ ) {
     #ifdef CUT_FORWARD
@@ -201,16 +204,15 @@ spatial_correlator( struct site *__restrict A ,
 
 // contract = Tr( A_\mu(x) A_\mu(y) ) ( for \mu < ND )
 static double
-contract_slices( A , x , t_ref )
-     const struct site *__restrict A ;
-     const int x ;
-     const int t_ref ;
+contract_slices( const struct site *__restrict A ,
+		 const size_t x ,
+		 const size_t t_ref )
 {
   GLU_real tr ;
   register double loc_tr = 0.0 ;
-  int j ;
+  size_t j ;
   for( j = 0 ; j < LCU ; j++ ) {
-    const int y = j + t_ref ;
+    const size_t y = j + t_ref ;
     #if ND == 4
     trace_ab_herm( &tr , A[x].O[0] , A[y].O[0] ) ;
     loc_tr += (double)tr ;
@@ -218,10 +220,10 @@ contract_slices( A , x , t_ref )
     loc_tr += (double)tr ;
     trace_ab_herm( &tr , A[x].O[2] , A[y].O[2] ) ;
     loc_tr += (double)tr ;
-    //trace_ab_herm( &tr , A[x].O[3] , A[y].O[3] ) ;
-    //loc_tr += (double)tr ;
+    trace_ab_herm( &tr , A[x].O[3] , A[y].O[3] ) ;
+    loc_tr += (double)tr ;
     #else
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND-1 ; mu++ ) {
       trace_ab_herm( &tr , A[x].O[mu] , A[y].O[mu] ) ;
       loc_tr += (double)tr ;
@@ -234,18 +236,21 @@ contract_slices( A , x , t_ref )
 // recursion for the sum on a sparse wall type thing
 static double
 recurse_sum( const struct site *__restrict A ,
-	     const int idx1 , const int idx2 ,
-	     const int spacing ,
-	     int vec[ ND ] , int mu , int *norm ) 
+	     const size_t idx1 , 
+	     const size_t idx2 ,
+	     const size_t spacing ,
+	     int vec[ ND ] , 
+	     const size_t mu , 
+	     size_t *norm ) 
 {
   if( mu > ND-2 ) { 
-    const int xidx = idx1 + gen_site( vec ) ;
+    const size_t xidx = idx1 + gen_site( vec ) ;
     *norm = *norm + 1 ;
     return contract_slices( A , xidx , idx2 ) ;
   }
 
   double sum = 0.0 ;
-  int nu ;
+  size_t nu ;
   int loc_vec[ ND ] = {} ; 
   for( nu = 0 ; nu < ND ; nu++ ) {
     loc_vec[ nu ] = vec[ nu ] ;
@@ -260,13 +265,12 @@ recurse_sum( const struct site *__restrict A ,
 
 /////////// spatial-spatial point sources over the whole lattice  ////////
 static int
-spatial_pointsource( A , gs , gsnorm )
-     const struct site *__restrict A ;
-     double *__restrict gs ;
-     const double gsnorm ;
+spatial_pointsource( const struct site *__restrict A ,
+		     double *__restrict gs ,
+		     const double gsnorm )
 {
   // loop time 
-  int t ;
+  size_t t ;
 #pragma omp parallel for private(t)
   for( t = 0 ; t < LT/2+1 ; t++ ) { // is exactly symmetric around LT/2
     // local trace
@@ -274,15 +278,15 @@ spatial_pointsource( A , gs , gsnorm )
     // temporary trace
     GLU_real tr ;
     // loop separations tau
-    int tau , i , j ;
+    size_t tau , i , j ;
     for( tau = 0 ; tau < LT ; tau++ ) {
-      const int idx1 = LCU * tau ;
-      const int idx2 = LCU * ( ( tau + t ) % LT ) ;
+      const size_t idx1 = LCU * tau ;
+      const size_t idx2 = LCU * ( ( tau + t ) % LT ) ;
       // loop spatial hypercube index i
       for( i = 0 ; i < LCU ; i++ ) {
-	const int x = i + idx1 ;
+	const size_t x = i + idx1 ;
 	for( j = 0 ; j < LCU ; j++ ) {
-	  const int y = j + idx2 ;
+	  const size_t y = j + idx2 ;
 	  #if ND == 4
 	  trace_ab_herm( &tr , A[x].O[0] , A[y].O[0] ) ;
 	  loc_tr += (double)tr ;
@@ -293,7 +297,7 @@ spatial_pointsource( A , gs , gsnorm )
 	  //trace_ab_herm( &tr , A[x].O[3] , A[y].O[3] ) ;
 	  //loc_tr += (double)tr ;
 	  #else
-	  int mu ;
+	  size_t mu ;
 	  for( mu = 0 ; mu < ND-1 ; mu++ ) {
 	    trace_ab_herm( &tr , A[x].O[mu] , A[y].O[mu] ) ;
 	    loc_tr += (double)tr ;
@@ -314,29 +318,27 @@ spatial_pointsource( A , gs , gsnorm )
 
 // compute the correlator from a specific point "x"
 static int
-spatial_correlator( A , gs , gsnorm , spacing )
-     const struct site *__restrict A ;
-     double *__restrict gs ;
-     const double gsnorm ;
-     const int spacing ;
+spatial_correlator( const struct site *__restrict A ,
+		    double *__restrict gs ,
+		    const double gsnorm ,
+		    const int spacing )
 {
   // this one is more effective
   if( spacing == 1 ) {
     return spatial_pointsource( A , gs , gsnorm ) ;
   }
   // this one is more general
-  int t ;
+  size_t t ;
 #pragma omp parallel for private(t)
   for( t = 0 ; t < LT ; t++ ) { 
     // local trace
     double loc_tr = 0.0 ;
-    int norm = 0 ;
-    // loop separations tau
-    int tau ;
+    size_t norm = 0 , tau , mu ;
     for( tau = 0 ; tau < LT ; tau++ ) {
-      const int idx1 = LCU * tau ;
-      const int idx2 = LCU * ( ( tau + t ) % LT ) ;
-      int x[ ND ] = {} ;
+      const size_t idx1 = LCU * tau ;
+      const size_t idx2 = LCU * ( ( tau + t ) % LT ) ;
+      int x[ ND ] ;
+      for( mu = 0 ; mu < ND ; mu++ ) { x[mu] = 0 ; }
       loc_tr += recurse_sum( A , idx1 , idx2 , spacing , 
 			     x , 0 , &norm ) ;
     }

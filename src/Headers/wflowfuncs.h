@@ -57,7 +57,7 @@ void
 set_TMEAS_STOP( const double c0 ) ;
 
 /**
-   @fn const double evaluate_scale( double *der , const double *x , const double *meas , const int Nmeas , const double scale ,	const char *message )
+   @fn const double evaluate_scale( double *der , const double *x , const double *meas , const size_t Nmeas , const double scale ,	const char *message )
    @brief evaluate the flow at scale via its cubic spline
    @param der :: high-order finite difference in GLU_splines.h
    @param x :: flow time
@@ -71,7 +71,7 @@ const double
 evaluate_scale( double *der , 
 		const double *x ,
 		const double *meas ,
-		const int Nmeas ,
+		const size_t Nmeas ,
 		const double scale ,
 		const char *message ) ;
 
@@ -86,7 +86,7 @@ print_GG_info( const int SM_TYPE ,
 	       const wflow_type WFLOW_TYPE ) ;
 
 /**
-   @fn void scaleset( struct wfmeas *curr , const double W0 , const double T0 , const int count ) 
+   @fn void scaleset( struct wfmeas *curr , const double W0 , const double T0 , const size_t count ) 
    @brief computes the flow in curr for T0 and W0
    @param curr :: measurement list
    @param T_0 :: wilson flow scale G(t) = W_0
@@ -97,7 +97,7 @@ void
 scaleset( struct wfmeas *curr , 
 	  const double T_0 ,
 	  const double W_0 ,
-	  const int count ) ;
+	  const size_t count ) ;
 
 /**
    @fn void second_deriv( const double flow_prev , const double flow , const double flow_next , const double t , const double delta_t )
@@ -140,8 +140,12 @@ step_distance( struct site *__restrict lat ,
 	       struct spt_site_herm *__restrict Z ,
 	       const double rk1 ,
 	       const double rk2 , 
-	       const double rk3 , 
-	       const int SM_TYPE ) ;
+	       const double rk3 ,
+	       const int SM_TYPE ,  
+	       void (*project)( GLU_complex log[ NCNC ] , 
+					 GLU_complex *__restrict staple , 
+					 const GLU_complex link[ NCNC ] , 
+					 const double smear_alpha ) ) ;
 
 /**
    @fn void step_distance_memcheap( struct site *__restrict lat , struct spt_site *__restrict lat2 , struct spt_site *__restrict lat3 , struct spt_site *__restrict lat4 , struct spt_site_herm *__restrict Z , const double rk1 , const double rk2 , const double rk3 , const int SM_TYPE )
@@ -170,6 +174,10 @@ step_distance_memcheap( struct site *__restrict lat ,
 			const double rk1 ,
 			const double rk2 , 
 			const double rk3 , 
-			const int SM_TYPE ) ;
+			const int SM_TYPE ,
+			void (*project)( GLU_complex log[ NCNC ] , 
+					 GLU_complex *__restrict staple , 
+					 const GLU_complex link[ NCNC ] , 
+					 const double smear_alpha ) ) ;
 
 #endif

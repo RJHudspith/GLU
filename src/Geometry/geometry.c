@@ -24,11 +24,12 @@
 #include "Mainfile.h"
 
 // computes the lexicographical site index from the position vector in x
-int
+// expects x to be positive
+size_t
 gen_site( const int x[ ND ] )
 {
-  int res = x[ ND - 1 ] ;
-  int mu ;
+  size_t res = x[ ND - 1 ] ;
+  size_t mu ;
   for( mu = ND - 1 ; mu > 0 ; mu-- ) {
     res = Latt.dims[ mu - 1 ] * res + x[ mu - 1 ] ;
   }
@@ -38,18 +39,20 @@ gen_site( const int x[ ND ] )
 // up to the dimension DIMS, allowing for spatial hypercubes and whatever
 // returns the site on the -pi to pi momentum space lattice from a momenta
 // defined in the 0 -> 2pi BZ.
-int
+size_t
 get_site_2piBZ( int x[ ND ] , 
 		const int DIMS )
 {
-  int temp[ND] , mu ;
+  int temp[ND] , mu , L_2 = 1 ;
   for( mu = 0 ; mu < ND ; mu ++ ) {
+    L_2 = Latt.dims[ mu ] >> 1 ;
     temp[mu] = x[mu] ;
     if( mu != DIMS ) {
-      if( temp[ mu ] >= ( Latt.dims[ mu ] >> 1 ) ) {
-	temp [ mu ] -= Latt.dims[ mu ] ;
-      } if( temp[ mu ] < ( Latt.dims[ mu ] >> 1 ) ) {
-	temp [ mu ] += ( Latt.dims[ mu ] >> 1 ) ;
+      if( temp[ mu ] >= L_2 ) {
+	temp [ mu ] -= (int)Latt.dims[ mu ] ;
+      } 
+      if( temp[ mu ] < L_2 ) {
+	temp [ mu ] += (int)L_2 ;
       }
     } else { // fill the rest with 0's
       temp[ mu ] = 0 ;
@@ -64,7 +67,8 @@ int
 get_site_pipiBZ( int x[ ND ] , 
 		 const int DIMS )
 {
-  int temp[ND] , mu ;
+  int temp[ ND ] ;
+  size_t mu ;
   for( mu = 0 ; mu < ND ; mu ++ ) {
     temp[mu] = x[mu] ; 
     if( mu != DIMS ) {
@@ -81,13 +85,13 @@ get_site_pipiBZ( int x[ ND ] ,
 // gets the momentum in the -Pi -> Pi BZ in terms of the momentum space lattice
 void 
 get_mom_pipi( int x[ ND ] , 
-	      const int i , 
-	      const int DIMS )
+	      const size_t i , 
+	      const size_t DIMS )
 {
-  int mu , subvol = 1 ;
+  size_t mu , subvol = 1 ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     if( mu != DIMS ) {
-      x[ mu ] = ( ( i - i % subvol ) / subvol ) % Latt.dims[ mu ] - ( Latt.dims[ mu ] >> 1 ) ;
+      x[ mu ] = ( ( i - i % subvol ) / subvol ) % Latt.dims[ mu ] - (int)( Latt.dims[ mu ] >> 1 ) ;
       subvol *= Latt.dims[ mu ] ;
     } else {
       x[ mu ] = 0 ;
@@ -96,11 +100,11 @@ get_mom_pipi( int x[ ND ] ,
   return ;
 }
 
-// generic version of the below
+// given a lexicographical site, returns the ND-coordinates
 void 
 get_mom_2piBZ( int x[ ND ] , 
-	       const int i , 
-	       const int DIMS )
+	       const size_t i , 
+	       const size_t DIMS )
 {
   int mu , subvol = 1 ;
   for( mu = 0 ; mu < ND ; mu++ ) {
@@ -117,11 +121,11 @@ get_mom_2piBZ( int x[ ND ] ,
 // inline for the conversion between 2pi and -pi,pi BZ's
 void
 TwoPI_mpipi_momconv( int MOM[ ND ] , 
-		     const int i , 
-		     const int DIR )
+		     const size_t i , 
+		     const size_t DIR )
 {
   get_mom_2piBZ( MOM , i , DIR ) ; 
-  const int newi = get_site_2piBZ( MOM , DIR ) ;
+  const size_t newi = get_site_2piBZ( MOM , DIR ) ;
   get_mom_pipi( MOM , newi , DIR ) ; 
   return ;
 }
@@ -129,9 +133,9 @@ TwoPI_mpipi_momconv( int MOM[ ND ] ,
 // translator for the HiRep geometry ...
 void 
 get_mom_2piBZ_hirep2( int x[ ND ] , 
-		      const int i )
+		      const size_t i )
 {
-  int mu , subvol = 1 ;
+  size_t mu , subvol = 1 ;
   for( mu = ND - 1 ; mu > 0 ; mu-- ) {
     x[ mu - 1 ] = ( ( i - i % subvol ) / subvol ) % Latt.dims[ mu - 1 ] ;
     subvol *= Latt.dims[ mu - 1 ] ;
@@ -144,9 +148,9 @@ get_mom_2piBZ_hirep2( int x[ ND ] ,
 void
 compute_p( GLU_real p[ ND ] ,
 	   const int n[ ND ] ,
-	   const int DIMS )
+	   const size_t DIMS )
 {
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     p[ mu ] = n[mu] * Latt.twiddles[mu] ; 
     #ifdef SIN_MOM
@@ -158,12 +162,12 @@ compute_p( GLU_real p[ ND ] ,
 
 // returns the psq ...
 GLU_real 
-gen_p_sq( const int i , 
-	  const int DIMS )
+gen_p_sq( const size_t i , 
+	  const size_t DIMS )
 {
   int n[ ND ] ;
   GLU_real kcos = 0. ; 
-  int mu ;
+  size_t mu ;
   //mapped between 0 to 2Pi -> Quicker and for cos does not matter p^2 symmetric
   get_mom_2piBZ( n , i , DIMS ) ; 
   for( mu = 0 ; mu < DIMS ; mu++ ) {
@@ -180,15 +184,15 @@ gen_p_sq( const int i ,
 // p_mu = 2.0 * ( nn1 * sin( p_mu / 2.0 ) + nn2 * sin( 3.0*p_mu/2.0 ) )
 // if we defined fullnn then I use the three-derivative improved version
 GLU_real 
-gen_p_sq_imp( const int i , 
-	      const int DIMS )
+gen_p_sq_imp( const size_t i , 
+	      const size_t DIMS )
 {
   int n[ ND ] ;
   //mapped between 0 to 2Pi
   get_mom_2piBZ( n , i , DIMS ) ; 
   GLU_real psq = 0.0 ;
   register GLU_real twiddle ;
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     twiddle = 0.5 * n[mu] * Latt.twiddles[mu] ; 
     #ifdef deriv_fullnn
@@ -203,7 +207,7 @@ gen_p_sq_imp( const int i ,
 
 // feynman gauge psq thing
 GLU_real 
-gen_p_sq_feyn( const int i , 
+gen_p_sq_feyn( const size_t i , 
 	       int *flag )
 {
   int n[ ND ] ; 
@@ -211,11 +215,13 @@ gen_p_sq_feyn( const int i ,
   get_mom_2piBZ( n , i , ND ) ; 
   *flag = 1 ;
   GLU_real kcos = 0. ;
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     kcos += cos( n[mu] * Latt.twiddles[mu] ) ; 
     // if all the spatial terms are zero set the flag to zero
-    if( ( *flag != 0 ) && ( mu < ( ND-1 ) ) ) { *flag = ( abs( n[mu] ) > 0 ) ? 0 : 1 ; }
+    if( ( *flag != 0 ) && ( mu < ( ND-1 ) ) ) { 
+      *flag = ( abs( n[mu] ) > 0 ) ? 0 : 1 ; 
+    }
   }
   if( unlikely( kcos == (GLU_real)ND ) ) {
     return 1.0 ;
@@ -227,10 +233,11 @@ gen_p_sq_feyn( const int i ,
 // ND - generic momentum getter for lattice momentum
 void 
 gen_get_p( GLU_real p[ ND ] , 
-	   const int i , 
-	   const int DIMS )
+	   const size_t i , 
+	   const size_t DIMS )
 {
-  int n[ ND ] , mu ;
+  int n[ ND ] ;
+  size_t mu ;
   //mapped between 0 to 2Pi
   get_mom_pipi( n , i , DIMS ) ; 
   for( mu = 0 ; mu < ND ; mu++ ) {
@@ -248,31 +255,29 @@ gen_get_p( GLU_real p[ ND ] ,
 // assumes periodicity
 void
 get_vec_from_origin( int n[ ND ] , 
-		     const int i , 
-		     const int DIMS )
+		     const size_t i , 
+		     const size_t DIMS )
 {
   get_mom_2piBZ( n , i , DIMS ) ;
-
   // periodicity enforcement
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < DIMS ; mu++ ) {
-    if( n[mu] > ( Latt.dims[mu]>>1 ) ) {
-      n[mu] -= ( Latt.dims[mu] ) ;
+    if( n[mu] > ( Latt.dims[mu] >> 1 ) ) {
+      n[mu] -= (int)( Latt.dims[mu] ) ;
     }
   }
-
   return ;
 }
 
 // compute radial separation squared in configuration space
-int
-compute_rsq( const int site , 
-	     const int DIMS )
+size_t
+compute_rsq( const size_t site , 
+	     const size_t DIMS )
 {
   // compute "r^2"
   int r[ ND ] ;
   get_vec_from_origin( r , site , DIMS ) ;
-  register int sumsq = 0 , mu ;
+  register size_t sumsq = 0 , mu ;
   for( mu = 0 ; mu < DIMS ; mu++ ) {
     sumsq += r[mu] * r[mu] ;
   }
@@ -280,13 +285,14 @@ compute_rsq( const int site ,
 }
 
 // computes the lattice index of the spatial hypercube of a
-// point that is separation away from k
-int
+// point that is separation away from site k
+size_t
 compute_spacing( const int separation[ ND ] ,
-		 const int k ,
-		 const int DIMS )
+		 const size_t k ,
+		 const size_t DIMS )
 {
-  int n[ ND ] , mu ;
+  int n[ ND ] ;
+  size_t mu ;
   get_mom_2piBZ( n , k , DIMS ) ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     if( mu < DIMS ) {
@@ -299,9 +305,9 @@ compute_spacing( const int separation[ ND ] ,
 }
 
 // This is the new bona-fide generic shifting code
-int 
-gen_shift( const int i , 
-	   const int dir )
+size_t
+gen_shift( const size_t i , 
+	   const int dir ) // dir can be negative
 {
   int x[ ND ] ; 
   get_mom_2piBZ( x , i , ND ) ;
@@ -322,11 +328,11 @@ gen_shift( const int i ,
 void 
 init_navig( struct site *__restrict lat )
 {
-  int i ; 
+  size_t i ; 
 #pragma omp parallel for private(i)
-  for(  i = 0 ; i < LVOLUME ; i++  )  {
-    int mu ;
-    for(  mu = 0 ; mu < ND ; mu++  )	{
+  for(  i = 0 ; i < LVOLUME ; i++ ) {
+    size_t mu ;
+    for(  mu = 0 ; mu < ND ; mu++ ) {
       lat[i].neighbor[mu] = gen_shift( i , mu ) ; 
       lat[i].back[mu] = gen_shift( i , -mu - 1 ) ;  
     }
@@ -339,22 +345,22 @@ void
 init_geom( void )
 {
   // these are neccessary for geometry and stuff ::  x,y,z,t geometry
-  printf( "\n[DIMENSIONS] ( %d x" , Latt.dims[0] ) ;
+  printf( "\n[DIMENSIONS] ( %zu x" , Latt.dims[0] ) ;
 #if ND == 2
   Latt.Lcu = Latt.dims[0] ;
   Latt.Volume = Latt.Lcu * Latt.dims[1] ;
-  printf( " %d )\n\n" , Latt.dims[1] ) ; 
+  printf( " %zu )\n\n" , Latt.dims[1] ) ; 
   return ;
 #else
   int mu ;
   Latt.Lsq = Latt.dims[0] ; // defined :: LSQ
   for( mu = 1 ; mu < ND-2 ; mu++ ) {
-    printf( " %d x" , Latt.dims[ mu ] ) ;
+    printf( " %zu x" , Latt.dims[ mu ] ) ;
     Latt.Lsq *= Latt.dims[mu] ;
   } 
   Latt.Lcu = Latt.Lsq * Latt.dims[ ND - 2 ] ;     // defined :: LCU
   Latt.Volume = Latt.Lcu * Latt.dims[ ND - 1 ] ;  // defined :: LVOLUME
-  printf( " %d x %d )\n\n" , Latt.dims[mu] , Latt.dims[ mu+1 ] ) ; 
+  printf( " %zu x %zu )\n\n" , Latt.dims[mu] , Latt.dims[ mu+1 ] ) ; 
 #endif
   // precompute the twiddle factors
   for( mu = 0 ; mu < ND ; mu++ ) {

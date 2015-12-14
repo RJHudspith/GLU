@@ -38,7 +38,7 @@ grab_file( struct site *__restrict lat ,
 	   const char *__restrict infile ) ;
 
 /**
-   @fn int Landau_4smear( struct site *__restrict lat , GLU_complex *__restrict *__restrict gauge , const double accuracy , const int iter )
+   @fn size_t Landau_4smear( struct site *__restrict lat , GLU_complex *__restrict *__restrict gauge , const double accuracy , const size_t iter )
    @brief landau gauge fixing of the smeared links
    @param lat :: gauge field
    @param gauge :: gauge transformation matrices
@@ -48,14 +48,14 @@ grab_file( struct site *__restrict lat ,
    @warning only fixes up to the precision of #SMACC
    @return the number of iterations the routine took
  **/
-int 
+size_t
 Landau_4smear( struct site *__restrict lat ,
 	       GLU_complex *__restrict *__restrict gauge , 
 	       const double accuracy , 
-	       const int iter ) ;
+	       const size_t iter ) ;
 
 /**
-   @fn int Landau( struct site *__restrict lat , GLU_complex *__restrict *__restrict gauge , const double accuracy , const int iter , FILE *__restrict infile , const GF_improvements improvement )
+   @fn size_t Landau( struct site *__restrict lat , GLU_complex *__restrict *__restrict gauge , const double accuracy , const size_t iter , FILE *__restrict infile , const GF_improvements improvement )
    @brief fast landau gauge fixing
    @param lat :: gauge field
    @param gauge :: gauge transformation matrices
@@ -66,11 +66,11 @@ Landau_4smear( struct site *__restrict lat ,
    our fastest smearing routine, memory expensive
    @return the number of iterations the routine took
  **/
-int 
+size_t
 Landau( struct site *__restrict lat ,
 	GLU_complex *__restrict *__restrict gauge ,
 	const double accuracy ,
-	const int iter ,
+	const size_t iter ,
 	const char *__restrict infile ,
 	const GF_improvements improvement ) ; 
 

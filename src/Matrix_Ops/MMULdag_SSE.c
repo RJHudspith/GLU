@@ -91,7 +91,7 @@ multabdag( GLU_complex a[ NCNC ] ,
   *( A + 3 ) = _mm_add_pd( SSE2_MULCONJ( *( B + 1 ) , *( C + 1 ) ) ,
 			   SSE2_MULCONJ( *( B + 3 ) , *( C + 3 ) ) ) ;
 #else
-  int i , j , m ;
+  size_t i , j , m ;
   register __m128d sum ;
   for( i = 0 ; i < NC ; i++ ) {
     for( j = 0 ; j < NC ; j++ ) {

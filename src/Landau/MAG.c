@@ -38,17 +38,17 @@
 
 //calculate gauge transform matrices along one line in one direction
 static void 
-gauge_set( lat , mu , i , gauge )
-     struct site *__restrict lat ; 
-     GLU_complex *__restrict *__restrict gauge ; 
-     const int i  ,  mu ; 
+gauge_set( GLU_complex *__restrict *__restrict gauge ,
+	   const struct site *__restrict lat , 
+	   const size_t mu , 
+	   const size_t i )
 {  
-  int left = i ; 
-  int next = lat[i].neighbor[mu] ; 
+  size_t left = i ; 
+  size_t next = lat[i].neighbor[mu] ; 
   // set origin to identity
   identity( gauge[i] ) ; 
   //loop along the lattice
-  int j ; 
+  size_t j ; 
   for( j = 0 ; j < ( Latt.dims[ mu ]-1 ) ; j++ ) {
     multab_suNC( gauge[ next ] , gauge[left] , lat[left].O[mu] ) ; 
     left = next ; 
@@ -63,16 +63,16 @@ MAG_fix( struct site *__restrict lat ,
 	 GLU_complex *__restrict *__restrict gauge )
 {
   // just in case set gauge to identity //
-  int i ;
+  size_t i ;
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
     identity( gauge[i] ) ; 
   }
-  int subvol = 1 , mu ;
+  size_t subvol = 1 , mu ;
   for( mu = 0 ; mu < ND ; mu ++ ) {
     #pragma omp parallel for private(i)
     PFOR( i =  0 ; i < subvol ; i++ ) {
-      gauge_set( lat , mu , i , gauge ) ;
+      gauge_set( gauge , lat , mu , i ) ;
     } 
     gtransform( lat , ( const GLU_complex ** )gauge ) ;
     subvol *= Latt.dims[ mu ] ;
@@ -84,16 +84,16 @@ MAG_fix( struct site *__restrict lat ,
 void
 axial_gauge( struct site *__restrict lat , 
 	     GLU_complex *__restrict *__restrict gauge , 
-	     const int DIR )
+	     const size_t DIR )
 {
-  int i ;
+  size_t i ;
 #pragma omp parallel for private(i)
   PFOR( i =  0 ; i < LCU ; i++ ) {// loop the ND - 1, subvolume
     // x is the ND dimensional vector describing the position
     int x[ ND ] ;
     get_mom_2piBZ( x , i , DIR ) ;
     const int k = gen_site( x ) ;
-    gauge_set( lat , DIR , k , gauge ) ; 
+    gauge_set( gauge , lat , DIR , k ) ; 
   }
   gtransform( lat , ( const GLU_complex ** )gauge ) ;
   return ;
@@ -115,20 +115,28 @@ mag( struct site *__restrict lat ,
 void
 residual_fix( struct site *__restrict lat )
 {
-  int i ;
+  size_t i ;
 
   // temporal gauge transformation matrices
   GLU_complex **gauge = NULL ;
   
   // set these
-  gauge = malloc( Latt.dims[ND-1] * sizeof( GLU_complex* ) ) ;
+  if( GLU_malloc( (void**)&gauge , 16 , Latt.dims[ND-1] * sizeof( GLU_complex* ) ) != 0 ) {
+    printf( "[RESFIX] temporary gauge allocation failure\n" ) ;
+    return ;
+  }
+
   for( i = 0 ; i < Latt.dims[ND-1] ; i++ ) {
-    GLU_malloc( (void**)&gauge[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
+    if( GLU_malloc( (void**)&gauge[i] , 16 , NCNC * sizeof( GLU_complex ) ) != 0 ) {
+      printf( "[RESFIX] temporary gauge allocation failure\n" ) ;
+      free( gauge ) ;
+      return ;
+    }
     if( i == 0 ) identity( gauge[0] ) ;
   } 
 
   const GLU_real one_LCU = 1.0 / LCU ; 
-  int t ;
+  size_t t ;
   for( t = 0 ; t < Latt.dims[ND-1]-1 ; t++ ) {
     GLU_complex sum[ NCNC ] ;
     zero_mat( sum ) ;
@@ -157,14 +165,14 @@ residual_fix( struct site *__restrict lat )
 #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     GLU_complex temp[ NCNC ] ;
-    const int t = (int)( i / LCU ) ;
-    const int tup = ( t == Latt.dims[ND-1]-1 ) ? 0 : t+1 ;
+    const size_t t = (int)( i / LCU ) ;
+    const size_t tup = ( t == Latt.dims[ND-1]-1 ) ? 0 : t+1 ;
     multab_dag_suNC( temp , lat[i].O[ND-1] , gauge[tup] ) ;
     multab_suNC( lat[i].O[ND-1] , gauge[t] , temp ) ; 
     #ifdef SINGLE_PREC
     reunit2( lat[i].O[ND-1] ) ;
     #endif
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND-1 ; mu ++ ) {
       multab_dag_suNC( temp , lat[i].O[mu] , gauge[t] ) ;
       multab_suNC( lat[i].O[mu] , gauge[t] , temp ) ; 

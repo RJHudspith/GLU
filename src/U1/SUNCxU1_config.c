@@ -32,31 +32,31 @@
 #include "plan_ffts.h"
 #include "U1_obs.h"
 
+//#define U1_DHT
+
 // just to make it clear what we are doing
 enum{ CONJUGATE_NOT_IN_LIST , CONJUGATE_IN_LIST } ;
 
 #ifdef HAVE_FFTW3_H
 
 // little inline for the ( 0 , 0 , .. , 0 ) point in the -Pi -> Pi BZ
-static int
+static size_t
 compute_zeropoint( void )
 {
 #if ND == 4
   return ( Latt.dims[0] * ( 1 + Latt.dims[1] * ( 1 + Latt.dims[2] * ( 1 + Latt.dims[3] ) ) ) ) >> 1 ;
 #else
-  int check = Latt.dims[ ND-1 ] ;
-  int mu ;
-  for( mu = ND-2 ; mu > -1 ; mu-- ) {
+  size_t check = Latt.dims[ ND-1 ] , mu ;
+  for( mu = ND-2 ; mu != 0 ; mu-- ) {
     check = Latt.dims[ mu ] * ( 1 + check ) ;
-  } 
+  }
   return check >> 1 ;
 #endif
 }
 
 // compute the conjugate site to "i"
-const static int
-conjugate_site( i )
-     const int i ;
+const static size_t
+conjugate_site( const size_t i )
 {
   int x[ ND ] ;
   get_mom_pipi( x , i , ND ) ;
@@ -66,14 +66,12 @@ conjugate_site( i )
   x[2] = -x[2] ;
   x[3] = -x[3] ;
   #else
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) { x[mu] = -x[mu] ; }
   #endif
-  /*      
-    contrary to what its name may suggest get_site_2piBZ translates
-    the -pi to pi BZ coordinates to a site in the 0->2Pi lattice
-    which is what the FFT uses
-  */
+  //  contrary to what its name may suggest get_site_2piBZ translates
+  //  the -pi to pi BZ coordinates to a site in the 0->2Pi lattice
+  //  which is what the FFT uses
   return get_site_2piBZ( x , ND ) ;
 }
 
@@ -82,33 +80,31 @@ conjugate_site( i )
 // periodic fields using the DFT
 
 static void 
-periodic_dft( fields )
-     GLU_complex *__restrict *__restrict fields ;
+periodic_dft( GLU_complex *__restrict *__restrict fields )
 {
   // we know that there are no self-conjugate momenta beyond this point
-  //const int SYMM_POINT = LVOLUME ; // was the old code's version
-  const int SYMM_POINT = compute_zeropoint( ) + 1 ;
-  int *count = calloc( SYMM_POINT , sizeof(int) ) ; // set up a counter
+  const size_t SYMM_POINT = compute_zeropoint( ) + 1 ;
+  int *count = calloc( SYMM_POINT , sizeof( int ) ) ; // set up a counter
 
-  int i ;
+  size_t i ;
   // openmp does not play nice with the rng
   for( i = 0 ; i < SYMM_POINT ; i++ ) {
     if( likely( count[i] == CONJUGATE_NOT_IN_LIST ) ) {
       count[i] = CONJUGATE_IN_LIST; // set the element of the list to 1
-      const int b = conjugate_site( i ) ;
-      int mu ;
+      const size_t b = conjugate_site( i ) ;
+      size_t mu ;
       if( unlikely( i == b ) ) {
         #if ND%2 == 0
 	for( mu = 0 ; mu < ND ; mu+=2 ) {
 	  register const GLU_complex cache = polar_box() ;
-	  fields[mu][i]   = creal( cache ) ;
+	  fields[mu  ][i] = creal( cache ) ;
 	  fields[mu+1][i] = cimag( cache ) ;
 	}
         #else
 	fields[0][i] = creal( polar_box() ) ;
 	for( mu = 1 ; mu < ND ; mu+=2 ) {
 	  register const GLU_complex cache = polar_box() ;
-	  fields[mu][i]   = creal( cache ) ;
+	  fields[mu  ][i] = creal( cache ) ;
 	  fields[mu+1][i] = cimag( cache ) ;
 	}
         #endif
@@ -136,22 +132,21 @@ periodic_dft( fields )
 // The DHT's periodicity requirements are basically the same, just use
 // real fields ...
 static void 
-periodic_dht( fields )
-     GLU_real *__restrict *__restrict fields ;
+periodic_dht( GLU_real *__restrict *__restrict fields )
 {
   // again we know that there are no self-conjugate momenta beyond this point
   //const int SYMM_POINT = LVOLUME ; was basically the old code
   const int SYMM_POINT = compute_zeropoint( ) + 1 ; 
   int *count = calloc( SYMM_POINT , sizeof(int) ) ; // set up a counter
 
-  int i ;
+  size_t i ;
   // openmp does not play nice with rngs so I don't call it here
   for( i = 0 ; i < SYMM_POINT ; i++ ) {
     if( likely( count[i] == CONJUGATE_NOT_IN_LIST ) ) {
       count[i] = CONJUGATE_IN_LIST ; // set the element of the list to 1
       // get the momenta at "i" in the -pi to pi BZ 
-      const int b = conjugate_site( i ) ;
-      int mu ;
+      const size_t b = conjugate_site( i ) ;
+      size_t mu ;
       #if ND%2 == 0
       for( mu = 0 ; mu < ND ; mu += 2 ) {
 	register const GLU_complex cache = r2 * polar_box() ;
@@ -182,9 +177,8 @@ periodic_dht( fields )
 
 // create the U1 fields
 static void
-create_u1( U , alpha )
-     GLU_real *__restrict *__restrict U ;
-     const GLU_real alpha ;
+create_u1( GLU_real *__restrict *__restrict U ,
+	   const GLU_real alpha )
 {
 #ifndef HAVE_FFTW3_H
 
@@ -201,7 +195,7 @@ create_u1( U , alpha )
   const GLU_real Nbeta = LVOLUME / ( ND * MPI * alpha ) ;
   printf( "\n[U(1)] 1/(%d Beta) :: %f \n\n" , ND , ( MPI * alpha ) ) ;
 
-  int i ;
+  size_t i ;
 
   // begin timing
   start_timer( ) ;
@@ -252,14 +246,11 @@ create_u1( U , alpha )
     // these should become SIMD'd or something
     if( unlikely ( flag == 1 ) ) {
       #if ND == 4
-      in[0][i] = 0. + I * 0.0 ;
-      in[1][i] = 0. + I * 0.0 ;
-      in[2][i] = 0. + I * 0.0 ;
-      in[3][i] = 0. + I * 0.0 ;
+      in[0][i] = in[1][i] = in[2][i] = in[3][i] = 0. + I * 0. ; 
       #else
-      int mu ;
+      size_t mu ;
       for( mu = 0 ; mu < ND ; mu++ ) {
-	in[mu][i] = 0. + I * 0.0 ;
+	in[mu][i] = 0. ;
       }
       #endif
     } else {
@@ -269,7 +260,7 @@ create_u1( U , alpha )
       in[2][i] *= f ;
       in[3][i] *= f ;
       #else
-      int mu ;
+      size_t mu ;
       for( mu = 0 ; mu < ND ; mu++ ) {
 	in[mu][i] *= f ;
       }
@@ -279,13 +270,13 @@ create_u1( U , alpha )
 
   // fft the fields allow for the parallel omp-ified fftws
 #ifdef OMP_FFTW
-  static int mu ;
+  static size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     PSPAWN fftw_execute( plan[ mu ] ) ;
   }
   PSYNC ;
 #else
-  static int mu ;
+  static size_t mu ;
 #pragma omp parallel for private(mu) 
   for( mu = 0 ; mu < ND ; mu++ ) {
     PSPAWN fftw_execute( plan[ mu ] ) ;
@@ -296,11 +287,11 @@ create_u1( U , alpha )
   const GLU_real rbeta = 1.0 / (GLU_real)sqrt( Nbeta ) ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ )  {
-    int nu ;
+    size_t nu ;
     for( nu = 0 ; nu < ND ; nu ++ ) {
       U[ nu ][ i ] = out[ nu ][ i ] * rbeta ;
     }
-  }     
+  }
 
   print_time( ) ;
 
@@ -335,7 +326,7 @@ suNC_cross_u1( struct site *__restrict lat ,
   printf( "[U1] Require FFTW to be linked to do quenched U(1)\n" ) ;
   return ;
 #else
-  int i ; 
+  size_t i ; 
   GLU_real **U = malloc( ND * sizeof( GLU_real* ) ) ;
   for( i = 0 ; i < ND ; i++ ) {
     U[i] = ( GLU_real* )malloc( LVOLUME * sizeof( GLU_real ) ) ;
@@ -350,12 +341,12 @@ suNC_cross_u1( struct site *__restrict lat ,
   // multiply the < exponentiated > fields
 #pragma omp parallel for private(i) 
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND ; mu ++ ) {
       // call to cexp is expensive
       register const GLU_real theta = U[mu][i] * U1INFO.charge ;
       const GLU_complex U1 = cos( theta ) + I * sin( theta ) ;
-      int element ;
+      size_t element ;
       for( element = 0 ; element < NCNC ; element++ ) {
 	lat[i].O[mu][element] *= U1 ;
       }
@@ -363,7 +354,7 @@ suNC_cross_u1( struct site *__restrict lat ,
   }
 
   // free memory and stuff
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     free( U[mu] ) ;
   }

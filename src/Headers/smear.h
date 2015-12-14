@@ -24,7 +24,7 @@
 #define GLU_SMEAR_H
 
 /**
-   @fn void smear3D( struct site *__restrict lat , const int smiters , const smearing_types type )
+   @fn void smear3D( struct site *__restrict lat , const size_t smiters , const smearing_types type )
    @brief ND-1 link smearing without blocking transforms
    @param lat :: lattice gauge fields 
    @param smiters :: number of smearing iterations
@@ -34,11 +34,11 @@
  **/
 void 
 smear3D( struct site *__restrict lat , 
-	 const smearing_types smiters , 
-	 const int type ) ;
+	 const size_t smiters , 
+	 const smearing_types type ) ;
 
 /**
-   @fn void smear4D( struct site *__restrict lat , const int smiters , const smearing_types type )
+   @fn void smear4D( struct site *__restrict lat , const size_t smiters , const smearing_types type )
    @brief ND link smearing without blocking transforms
    @param lat :: lattice gauge fields 
    @param smiters :: number of smearing iterations
@@ -48,7 +48,7 @@ smear3D( struct site *__restrict lat ,
  **/
 void 
 smear4D( struct site *__restrict lat ,
-	 const int smiters , 
+	 const size_t smiters , 
 	 const smearing_types type ) ;
 
 #endif

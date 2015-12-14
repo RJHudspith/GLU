@@ -27,29 +27,25 @@
    cheaper version. The adaptive version, which I recommend you use
    can be found in adaptive.c
  */
-
 #include "Mainfile.h"
+
 #include "plaqs_links.h" // for the clover
 #include "projectors.h"
 #include "staples.h"
 #include "wflowfuncs.h"
-
 #ifdef FAST_SMEAR
   #include "random_config.h"
 #endif
 
-// multiplier for the RK4
-static const double mnineOseventeen = -0.52941176470588235294 ; // -9.0/17.0
-
 //#define WFLOW_TIME_ONLY
 
 // 4D wilson flow algorithm ...
-void 
+int
 flow4d_RK_fast( struct site *__restrict lat , 
-		const int smiters ,
-		const int DIR ,
-		const int SIGN ,
-		const int SM_TYPE )
+		const size_t smiters ,
+		const size_t DIR ,
+		const size_t SIGN ,
+		const size_t SM_TYPE )
 {
   /////// Initial information //////////
   print_GG_info( SM_TYPE , RK4_FAST ) ;
@@ -61,7 +57,7 @@ flow4d_RK_fast( struct site *__restrict lat ,
   if( GLU_malloc( (void**)&Z , 16 , LVOLUME * sizeof( struct spt_site_herm ) ) != 0 ||
       GLU_malloc( (void**)&lat2 , 16 , LVOLUME * sizeof( struct spt_site ) ) != 0 ) {
     printf( "[WFLOW] temporary field allocation failure\n" ) ;
-    return ;
+    return GLU_FAILURE ;
   }
 
   const double delta_t = SIGN * Latt.sm_alpha[0] ;
@@ -79,12 +75,29 @@ flow4d_RK_fast( struct site *__restrict lat ,
 
   // counters for the derivative ...
   double flow = 0. , flow_next = 0. ;
-  int count = 0 ; 
+  size_t count = 0 ; 
 
   // forward or backward ?
-  const double rk1 = mnineOseventeen * delta_t ;
+  const double rk1 = -0.52941176470588235294 * delta_t ;
   const double rk2 = delta_t ;
-  const double rk3 = ( -delta_t ) ;  
+  const double rk3 = ( -delta_t ) ;
+
+  void (*project) ( GLU_complex log[ NCNC ] , 
+		    GLU_complex *__restrict staple , 
+		    const GLU_complex link[ NCNC ] , 
+		    const double smear_alpha ) ;
+
+  // stout is the usual
+  project = project_STOUT_wflow_short ;
+  switch( SM_TYPE ) {
+  case SM_STOUT : break ;
+  case SM_LOG :
+    project = project_LOG_wflow_short ;
+    break ;
+  default :
+    printf( "[SMEARING] unrecognised smearing projection \n" ) ;
+    return GLU_FAILURE ;
+  }
 
   // perform the loop over smearing iterations ... We break at the stopping 
   // point anyway.
@@ -95,7 +108,7 @@ flow4d_RK_fast( struct site *__restrict lat ,
     curr -> time = count * delta_t ; // add one time step to the overall time 
 
     // flow forwards using the RK4
-    step_distance( lat , lat2 , Z , rk1 , rk2 , rk3 , SM_TYPE ) ;
+    step_distance( lat , lat2 , Z , rk1 , rk2 , rk3 , SM_TYPE , project ) ;
 
     // update the linked list
     curr -> Gt = curr -> time * curr -> time * 
@@ -125,10 +138,10 @@ flow4d_RK_fast( struct site *__restrict lat ,
       curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
       const double delta_tcorr = TMEAS_STOP - count * delta_t ; 
       curr -> time = TMEAS_STOP ;
-      const double rk1 = mnineOseventeen * delta_tcorr ;
+      const double rk1 = -0.52941176470588235294 * delta_tcorr ;
       const double rk2 = delta_tcorr ;
       const double rk3 = ( -delta_tcorr ) ;  
-      step_distance( lat , lat2 , Z , rk1 , rk2 , rk3 , SM_TYPE ) ;
+      step_distance( lat , lat2 , Z , rk1 , rk2 , rk3 , SM_TYPE , project ) ;
       // update the linked list
       curr -> Gt = curr -> time * curr -> time * 
 	lattice_gmunu( lat , &(curr -> qtop) , &( curr->avplaq ) ) ;
@@ -143,7 +156,7 @@ flow4d_RK_fast( struct site *__restrict lat ,
   }
   curr = head ;  
 
-  if( fabs( curr -> time - TMEAS_STOP ) > PREC_TOL & 
+  if( ( fabs( curr -> time - TMEAS_STOP ) > PREC_TOL ) &&
       count <= smiters ) {
     // set the scale at t_0 and w_0
     scaleset( curr , T0_STOP , W0_STOP , count ) ;
@@ -159,11 +172,11 @@ flow4d_RK_fast( struct site *__restrict lat ,
   free( Z ) ;
   free( lat2 ) ;
    
-  return ;
+  return GLU_SUCCESS ;
 }
 
 // smaller memory footprint one, still quite cheap to use too
-void 
+int
 flow4d_RK_slow( struct site *__restrict lat , 
 		const int smiters ,
 		const int DIR ,
@@ -179,19 +192,19 @@ flow4d_RK_slow( struct site *__restrict lat ,
   if( GLU_malloc( (void**)&Z , 16 , LVOLUME * sizeof( struct spt_site_herm ) ) != 0 ||
       GLU_malloc( (void**)&lat2 , 16 , LVOLUME * sizeof( struct spt_site ) ) != 0 ) {
     printf( "[WFLOW] temporary field allocation failure\n" ) ;
-    return ;
+    return GLU_FAILURE ;
   }
 #ifdef IMPROVED_SMEARING
   if( GLU_malloc( (void**)&lat3 , 16 , 2 * LCU * sizeof( struct spt_site ) ) != 0 ||
       GLU_malloc( (void**)&lat4 , 16 , 2 * LCU * sizeof( struct spt_site ) ) != 0 ) {
     printf( "[WFLOW] temporary field allocation failure\n" ) ;
-    return ;
+    return GLU_FAILURE ;
   }
 #else
   if( GLU_malloc( (void**)&lat3 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ||
       GLU_malloc( (void**)&lat4 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ) {
     printf( "[WFLOW] temporary field allocation failure\n" ) ;
-    return ;
+    return GLU_FAILURE ;
   }
 #endif
 
@@ -210,20 +223,38 @@ flow4d_RK_slow( struct site *__restrict lat ,
 
   // counters for the derivative ...
   double flow = 0. , flow_next = 0. ;
-  int count = 0 ; 
+  size_t count = 0 ; 
 
   // forward or backward ?
-  const double rk1 = mnineOseventeen * delta_t;
+  const double rk1 = -0.52941176470588235294 * delta_t;
   const double rk2 = delta_t ;
   const double rk3 = ( -delta_t ) ;  
 
+  void (*project) ( GLU_complex log[ NCNC ] , 
+		    GLU_complex *__restrict staple , 
+		    const GLU_complex link[ NCNC ] , 
+		    const double smear_alpha ) ;
+
+  // stout is the usual
+  project = project_STOUT_wflow_short ;
+  switch( SM_TYPE ) {
+  case SM_STOUT : break ;
+  case SM_LOG :
+    project = project_LOG_wflow_short ;
+    break ;
+  default :
+    printf( "[SMEARING] unrecognised smearing projection \n" ) ;
+    return GLU_FAILURE ;
+  }
+
+  // loop iterations
   for( count = 1 ; count <= smiters ; count++ )  {
     curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
 
     curr -> time = count * delta_t ; // add one time step to the overall time 
 
     step_distance_memcheap( lat , lat2 , lat3 , lat4 , 
-			    Z , rk1 , rk2 , rk3 , SM_TYPE ) ;
+			    Z , rk1 , rk2 , rk3 , SM_TYPE , project ) ;
 
     curr -> time = count * delta_t ; // add one time step to the overall time 
 
@@ -254,11 +285,11 @@ flow4d_RK_slow( struct site *__restrict lat ,
       curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
       const double delta_tcorr = TMEAS_STOP - count * delta_t ; 
       curr -> time = TMEAS_STOP ;
-      const double rk1 = mnineOseventeen * delta_tcorr ;
+      const double rk1 = -0.52941176470588235294 * delta_tcorr ;
       const double rk2 = delta_tcorr ;
       const double rk3 = ( -delta_tcorr ) ;  
       step_distance_memcheap( lat , lat2 , lat3 , lat4 , 
-			      Z , rk1 , rk2 , rk3 , SM_TYPE ) ;
+			      Z , rk1 , rk2 , rk3 , SM_TYPE , project ) ;
       // update the linked list
       curr -> Gt = curr -> time * curr -> time * 
 	lattice_gmunu( lat , &(curr -> qtop) , &( curr->avplaq ) ) ;
@@ -274,7 +305,7 @@ flow4d_RK_slow( struct site *__restrict lat ,
   curr = head ;  
 
   // set the scales t0 and w0 evaluated by our splines
-  if( fabs( curr -> time - TMEAS_STOP ) > PREC_TOL & 
+  if( ( fabs( curr -> time - TMEAS_STOP ) > PREC_TOL ) && 
       count <= smiters ) {
     // set the scale at t_0 and w_0
     scaleset( curr , T0_STOP , W0_STOP , count ) ;
@@ -292,7 +323,7 @@ flow4d_RK_slow( struct site *__restrict lat ,
   free( lat3 ) ;
   free( lat4 ) ;
    
-  return ;
+  return GLU_SUCCESS ;
 }
 
 // make sure we clean this up

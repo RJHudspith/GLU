@@ -30,6 +30,7 @@
 #include "geometry.h"   // general geometry for a flattened 1D array
 #include "lie_mats.h"   // Lie algebra calculations
 
+// uncomment this if we would like to look at the lie elements
 //#define LIE_PROJECTION
 
 /**
@@ -39,13 +40,12 @@
   G^{(3)} = p_{\rho}/p^2 * ( g_{\mu\nu} - p_{\mu}p_{\nu}/p^2 ) * G_{\mu\nu\rho)(-p,0,p)
  */
 static double complex
-contraction_matrices( A , posit , conj , lzero_mat , mom , spsq )
-     const struct site *__restrict A ;
-     const int posit ; 
-     const int conj ;
-     const int lzero_mat ;
-     const double mom[ ND ] ;
-     const double spsq ;
+contraction_matrices( const struct site *__restrict A ,
+		      const size_t posit ,
+		      const size_t conj , 
+		      const size_t lzero_mat ,
+		      const double mom[ ND ] , 
+		      const double spsq )
 {
   // Zero_Mat all of these matrices
   GLU_complex AA[NCNC] , AM[ NCNC ] ;
@@ -53,7 +53,7 @@ contraction_matrices( A , posit , conj , lzero_mat , mom , spsq )
   GLU_complex temp[ NCNC ] ; 
   zero_mat( AA ) ; zero_mat( AM ) ; zero_mat( Arho ) ;
   zero_mat( AP ) ;
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     // AA is g_{\mu\nu}A_\mu(p) A_\nu(-p)
     multab( temp , A[ posit ].O[mu] , A[ conj ].O[mu] ) ;
@@ -73,16 +73,15 @@ contraction_matrices( A , posit , conj , lzero_mat , mom , spsq )
 
 // contraction using the lie matrices
 static double complex
-contraction_lies( A , posit , conj , lzero_mat , mom , spsq )
-     const struct site *__restrict A ;
-     const int posit ; 
-     const int conj ;
-     const int lzero_mat ;
-     const double mom[ ND ] ;
-     const double spsq ;
+contraction_lies( const struct site *__restrict A ,
+		  const size_t posit ,
+		  const size_t conj ,
+		  const size_t lzero_mat ,
+		  const double mom[ ND ] ,
+		  const double spsq )
 {
   double complex res = 0.0 , tr ;
-  int mu , nu , rho ;
+  size_t mu , nu , rho ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     for( nu = 0 ; nu < ND ; nu++ ) {
       for( rho = 0 ; rho < ND ; rho++ ) {
@@ -101,18 +100,17 @@ contraction_lies( A , posit , conj , lzero_mat , mom , spsq )
 
 // contraction using the trace of three matrices identity
 static double complex
-contraction_traces( A , posit , conj , lzero_mat , mom , spsq )
-     const struct site *__restrict A ;
-     const int posit ; 
-     const int conj ;
-     const int lzero_mat ;
-     const double mom[ ND ] ;
-     const double spsq ;
+contraction_traces( const struct site *__restrict A ,
+		    const size_t posit ,
+		    const size_t conj ,
+		    const size_t lzero_mat ,
+		    const double mom[ ND ] ,
+		    const double spsq )
 {
   const double invspsq = spsq == 0.0 ? 1.0 : 1.0 / spsq ;
   double complex res = 0.0 ;
   GLU_complex tr ;
-  int mu , nu , rho ;
+  size_t mu , nu , rho ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     for( nu = 0 ; nu < ND ; nu++ ) {
       for( rho = 0 ; rho < ND ; rho++ ) {
@@ -128,9 +126,10 @@ contraction_traces( A , posit , conj , lzero_mat , mom , spsq )
 // compute psq
 static double
 psq_calc( double mom[ ND ] ,
-	  const int posit )
+	  const size_t posit )
 {
-  int k[ ND ] , mu ;
+  size_t mu ;
+  int k[ ND ] ;
   TwoPI_mpipi_momconv( k , posit , ND ) ;
   
   register double tspsq = 0. ;
@@ -163,20 +162,20 @@ write_exceptional_g2g3_MOMgg( FILE *__restrict Ap ,
   const double g3_norm = 4.0 / ( 2.0 * NC * ( NCNC - 1 ) * ( ND - 1 ) *	\
 				 LVOLUME ) ;
 
-  const int posit_zero_mat = ( num_mom[0] - 1 ) / 2 ;
-  const int lzero_mat = list [ posit_zero_mat ].idx ;
+  const size_t posit_zero_mat = ( num_mom[0] - 1 ) / 2 ;
+  const size_t lzero_mat = list [ posit_zero_mat ].idx ;
   
   double *g2 = malloc( num_mom[0] * sizeof( double ) ) ;
   double *g3 = malloc( num_mom[0] * sizeof( double ) ) ;
 
-  int i ;
+  size_t i ;
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < num_mom[0] ; i++ ) {
-    const int posit = list[i].idx ;
-    const int conj =  list[ num_mom[0] - i - 1].idx ;
+    const size_t posit = list[i].idx ;
+    const size_t conj =  list[ num_mom[0] - i - 1].idx ;
     
     // Two point function calc
-    int mu ;
+    size_t mu ;
     g2[i] = 0. ;
     for( mu = 0 ; mu < ND ; mu++ ) {	  
       GLU_complex t ;
@@ -204,19 +203,17 @@ write_exceptional_g2g3_MOMgg( FILE *__restrict Ap ,
     //const int contraction = TRACE_CONTRACTION ;
     #endif    
 
-    switch( contraction ) 
-      {
-      case TRACE_CONTRACTION :
-	g3[i] = creal( contraction_traces( A , posit , conj , lzero_mat , mom , spsq ) ) * g3_norm ;
-	break ;
-      case LIE_CONTRACTION :
-	g3[i] = creal( contraction_lies( A , posit , conj , lzero_mat , mom , spsq ) ) * g3_norm ;
-	break ;
-      default :
-	g3[i] = creal( contraction_matrices( A , posit , conj , lzero_mat , mom , spsq ) ) * g3_norm ;
-	break ;
-      }
-        
+    switch( contraction ) {
+    case TRACE_CONTRACTION :
+      g3[i] = creal( contraction_traces( A , posit , conj , lzero_mat , mom , spsq ) ) * g3_norm ;
+      break ;
+    case LIE_CONTRACTION :
+      g3[i] = creal( contraction_lies( A , posit , conj , lzero_mat , mom , spsq ) ) * g3_norm ;
+      break ;
+    default :
+      g3[i] = creal( contraction_matrices( A , posit , conj , lzero_mat , mom , spsq ) ) * g3_norm ;
+      break ;
+    }
     // end of parallel contractions loop
   }
   // call our writer ...

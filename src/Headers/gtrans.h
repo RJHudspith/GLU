@@ -57,7 +57,7 @@ gtransform( struct site *__restrict lat ,
 	    const GLU_complex *__restrict *__restrict gauge ) ;
 
 /**
-   @fn void gtransform_slice( const GLU_complex *__restrict *__restrict gauge , struct site *__restrict lat , const GLU_complex *__restrict *__restrict gauge_up , const int t )
+   @fn void gtransform_slice( const GLU_complex *__restrict *__restrict gauge , struct site *__restrict lat , const GLU_complex *__restrict *__restrict gauge_up , const size_t t )
    @brief The gauge transform routine used in the coulomb gauge fixing routine
    @param gauge :: gauge transformation matrices for this timeslice
    @param lat :: lattice gauge field
@@ -80,6 +80,6 @@ void
 gtransform_slice( const GLU_complex *__restrict *__restrict gauge , 
 		  struct site *__restrict lat , 
 		  const GLU_complex *__restrict *__restrict gauge_up ,
-		  const int t ) ;
+		  const size_t t ) ;
 
 #endif

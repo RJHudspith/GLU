@@ -97,34 +97,6 @@ Hermitian_proj_short( GLU_complex Q[ HERMSIZE ] ,
 		      const GLU_complex U[ NCNC ] ) ;
 
 /**
-    @fn void exact_log_fast( GLU_complex Q[ NCNC ] , const GLU_complex U[ NCNC ] )
-   @brief Fast, numerically unstable method
-   @param Q :: The exact lie-field
-   @param U :: The field we are taking the exact logarithm of
-   @warning rewrites a. <br>
-   uses (rather) numerically unstable vandermonde in vandermonde.h <br>
-   Returns the upper diagonal of the matrix. <br>
-   Uses the vandermonde solver calculate_effs_VDM() instead of the Morningside and Peardon method.
-**/
-void 
-exact_log_fast( GLU_complex Q[ NCNC ] ,
-		const GLU_complex U[ NCNC ] ) ;
-
-/**
-    @fn void exact_log_fast_short( GLU_complex Q[ HERMSIZE ] , const GLU_complex U[ NCNC ] )
-   @brief Fast, numerically unstable method
-   @param Q :: The exact lie-field
-   @param U :: The field we are taking the exact logarithm of
-   @warning rewrites a. <br>
-   uses (rather) numerically unstable vandermonde in vandermonde.h <br>
-   Returns the upper diagonal of the matrix. <br>
-   Uses the vandermonde solver calculate_effs_VDM() instead of the Morningside and Peardon method.
-**/
-void 
-exact_log_fast_short( GLU_complex Q[ HERMSIZE ] ,
-		      const GLU_complex U[ NCNC ] ) ;
-
-/**
    @fn void exact_log_slow( GLU_complex Q[ NCNC ] , const GLU_complex U[ NCNC ] )
    @brief Slow exact logarithm
    @param Q [out] :: The exact lie-field

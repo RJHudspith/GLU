@@ -16,7 +16,6 @@
 ##  		   exact logarithm variations)
 ## --enable-exp_exact :: exact exponentiation into the group being used for the
 ##                       gauge transformation matrices in the gauge fixing
-## --enable-fastsmear :: dangerous, inaccurate but quick smearing
 ## --enable-notcondor :: enable the single-machine cache-ing and architecture
 ##                       dependent optimisations
 ## --with-GRACEY_PROJ= :: MOMggg scheme projection number, 0 is default
@@ -329,7 +328,7 @@ AC_ARG_WITH([deriv],
 	    esac
 	    ],[ AC_MSG_NOTICE([Default deriv : Linear deriv with O(a) approx exponentiation (Fastest).]) ])
 
-## Definitions for the fastsmearing default is the slow(stable) one
+## Use exact exponential in the GF
 AC_ARG_ENABLE([exp_exact],
 	[ --enable-exp_exact Exact exponentiation into the group for the gauge fixing],
 	[case "${enableval}" in
@@ -337,17 +336,6 @@ AC_ARG_ENABLE([exp_exact],
        	     AC_DEFINE([exp_exact],,[Exact exponentiation for the gauge transformation matrices])   
 	     ;;
 	*) AC_MSG_ERROR([bad value ${enableval} for --enable-exp_exact]) ;;
-	esac],[])
-
-## Definitions for the fastsmearing default is the slow(stable) one
-AC_ARG_ENABLE([fastsmear],
-	[ --enable-fastsmear Turn on numerically unstable fast smearing routines],
-	[case "${enableval}" in
-	yes) AC_MSG_NOTICE([fast and unstable routines enabled])
-             AC_DEFINE([FAST_SMEAR],,[Enables faster and innaccurate smearing routines])   
-	     ;;
-	no) AC_MSG_NOTICE([default stable smearing routines used]) ;;
-	*) AC_MSG_ERROR([bad value ${enableval} for --enable-fastsmear]) ;;
 	esac],[])
 
 ## Finally we have routines for this node or many machines

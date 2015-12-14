@@ -39,33 +39,32 @@ cuts_wrap_struct( struct site *__restrict lat ,
   start_timer( ) ;
 
   ///////////// CREATE CUTS ////////////
-  switch( CUTINFO.dir )
-    {
-    case INSTANTANEOUS_GLUONS :
-      cuts_spatial( lat , CUTINFO ) ;
-      break ;
-    case CONFIGSPACE_GLUONS :
-      cuts_struct_configspace( lat , CUTINFO , SMINFO ) ;
-      break ;
-    case SMEARED_GLUONS :
-      cuts_struct_smeared( lat , CUTINFO , SMINFO ) ;
-      break ;
-    case STATIC_POTENTIAL :
-      Coul_staticpot( lat , CUTINFO , SMINFO ) ;
-      break ;
-    case TOPOLOGICAL_SUSCEPTIBILITY :
-      compute_Qsusc( lat , CUTINFO , SMINFO ) ;
-      break ;
-    case GLUON_PROPS :
-    case EXCEPTIONAL :
-    case NONEXCEPTIONAL :
-    case FIELDS :
-      // all of the other momentum space routines are in here
-      cuts_struct( lat , CUTINFO ) ;
-      break ;
-    default :
-      return ;
-    }
+  switch( CUTINFO.dir ) {
+  case INSTANTANEOUS_GLUONS :
+    cuts_spatial( lat , CUTINFO ) ;
+    break ;
+  case CONFIGSPACE_GLUONS :
+    cuts_struct_configspace( lat , CUTINFO , SMINFO ) ;
+    break ;
+  case SMEARED_GLUONS :
+    cuts_struct_smeared( lat , CUTINFO , SMINFO ) ;
+    break ;
+  case STATIC_POTENTIAL :
+    Coul_staticpot( lat , CUTINFO , SMINFO ) ;
+    break ;
+  case TOPOLOGICAL_SUSCEPTIBILITY :
+    compute_Qsusc( lat , CUTINFO , SMINFO ) ;
+    break ;
+  case GLUON_PROPS :
+  case EXCEPTIONAL :
+  case NONEXCEPTIONAL :
+  case FIELDS :
+    // all of the other momentum space routines are in here
+    cuts_struct( lat , CUTINFO ) ;
+    break ;
+  default :
+    return ;
+  }
 
   print_time( ) ;
 

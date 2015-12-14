@@ -29,14 +29,13 @@
 #include "geometry.h"     // init_navig is called for the temporary
 #include "GLU_splines.h"  // cubic_eval and derivative calculation
 #include "plaqs_links.h"  // clover and plaquette measurements
+#include "projectors.h"   // smearing projections
 #include "wflowfuncs.h"   // wilson flow general routines
 
 // enable this if we are doing a straight shot for a specific time
 // to avoid measuring the topological charge and clover and all that,
 // be careful when T > 10, will need to increase ADAPTIVE_EPS
 //#define TIME_ONLY
-
-static const double mnineOseventeen = -0.52941176470588235294 ; // -9.0/17.0
 
 /**
    @fn static inline double adaptfmax( const double a , const double b )
@@ -94,16 +93,20 @@ fine_measurement( struct site *lat ,
 		  double *t , 
 		  const double delta_t ,
 		  const double preverr , 
-		  const int SM_TYPE )
+		  const int SM_TYPE  , 
+		  void (*project)( GLU_complex log[ NCNC ] , 
+				   GLU_complex *__restrict staple , 
+				   const GLU_complex link[ NCNC ] , 
+				   const double smear_alpha )  )
 {
   struct wfmeas *curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
   *t += delta_t ;
   curr -> time = *t ;
-  const double rk1 = mnineOseventeen * delta_t ;
+  const double rk1 =-0.52941176470588235294 * delta_t ;
   const double rk2 = delta_t ;
   const double rk3 = ( -delta_t ) ;  
   step_distance_memcheap( lat , lat2 , lat3 , lat4 , 
-			  Z , rk1 , rk2 , rk3 , SM_TYPE ) ;
+			  Z , rk1 , rk2 , rk3 , SM_TYPE , project ) ;
   // update the linked list
   curr -> Gt = curr -> time * curr -> time * 
     lattice_gmunu( lat , &(curr -> qtop) , &( curr->avplaq ) ) ;
@@ -162,6 +165,23 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   struct spt_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
   struct site *lat_two = NULL ;
 
+  void (*project) ( GLU_complex log[ NCNC ] , 
+		    GLU_complex *__restrict staple , 
+		    const GLU_complex link[ NCNC ] , 
+		    const double smear_alpha ) ;
+  
+  // stout is the usual
+  project = project_STOUT_wflow_short ;
+  switch( SM_TYPE ) {
+  case SM_STOUT : break ;
+  case SM_LOG :
+    project = project_LOG_wflow_short ;
+    break ;
+  default :
+    printf( "[SMEARING] unrecognised smearing projection \n" ) ;
+    return GLU_FAILURE ;
+  }
+
   if( GLU_malloc( (void**)&Z , 16 , LVOLUME * sizeof( struct spt_site_herm ) ) != 0 ||
       GLU_malloc( (void**)&lat2 , 16 , LCU * sizeof( struct spt_site ) )       != 0 ||
       GLU_malloc( (void**)&lat_two , 16 , LVOLUME * sizeof( struct site ) )    != 0 ) {
@@ -198,7 +218,7 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   // counters for the derivative ...
   double yscal = curr -> avplaq , t = 0.0 ;
   double flow = 0. , flow_next = 0. ;
-  int count = 0 , OK_STEPS = 0 , NOTOK_STEPS = 0 ; 
+  size_t count = 0 , OK_STEPS = 0 , NOTOK_STEPS = 0 ; 
 
   // have a flag for whether we mess up
   int FLAG = GLU_FAILURE ;
@@ -206,26 +226,25 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   // loop up to smiters
   for( count = 1 ; count <= smiters ; count++ ) { 
     curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
-    int counter = 0 ;
+    size_t counter = 0 ;
     double errmax = 10. ;
     double new_plaq = 0. ;
-
+    size_t i ;
     // adaptive loop, shrinking or growing the stepsize accordingly
     while( ( errmax > 1.0 ) && ( counter < ADAPTIVE_BIG_NUMBER ) ) {
-      int i ;
       #pragma omp parallel for private(i)
       PFOR( i = 0 ; i < LVOLUME ; i++ ) {
 	memcpy( &lat_two[i] , &lat[i] , sizeof( struct site ) ) ; 
       }
 
       // Step forward in two halves ...
-      const double rk1 = mnineOseventeen * delta_t ;
+      const double rk1 =-0.52941176470588235294 * delta_t ;
       const double rk2 = delta_t ;
       const double rk3 = ( -delta_t ) ;  
 
       // step forward once and write into lat_two
       step_distance_memcheap( lat_two , lat2 , lat3 , lat4 , Z , 
-			      rk1 , rk2 , rk3 , SM_TYPE ) ;
+			      rk1 , rk2 , rk3 , SM_TYPE , project ) ;
       
       // compute the one-step first comparison
       const double old_plaq = av_plaquette( lat_two ) ;
@@ -242,11 +261,11 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
 
       step_distance_memcheap( lat_two , lat2 , lat3 , lat4 , Z , 
 			      half_rk1 , half_rk2 , half_rk3 , 
-			      SM_TYPE ) ;
+			      SM_TYPE , project ) ;
 
       step_distance_memcheap( lat_two , lat2 , lat3 , lat4 , Z , 
 			      half_rk1 , half_rk2 , half_rk3 , 
-			      SM_TYPE ) ;
+			      SM_TYPE , project ) ;
 	  
       // compute the error I will use the average plaquette ...
       new_plaq = (double)av_plaquette( lat_two ) ;
@@ -272,7 +291,7 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
 
       // Print if we are in trouble
       if( counter == ADAPTIVE_BIG_NUMBER - 1 ) {
-	printf( "[WFLOW] Not stepping to required accuracy after < %d > attempts! \n" , counter ) ;
+	printf( "[WFLOW] Not stepping to required accuracy after < %zu > attempts! \n" , counter ) ;
 	goto memfree ;
       }
 
@@ -285,7 +304,6 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
     yscal = 2.0 * yscal_new - yscal ;
 
     // rewrite lat .. 
-    int i ;
     #pragma omp parallel for private(i)
     PFOR( i = 0 ; i < LVOLUME ; i++ ) {
       memcpy( &lat[i] , &lat_two[i] , sizeof( struct site ) ) ; 
@@ -322,7 +340,7 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
       while( fabs( T0_STOP - flow ) <= ( T0_STOP * FINETWIDDLE ) ) {
 	curr = fine_measurement( lat , lat2 , lat3 , lat4 , Z , 
 				 &flow_next , &t , FINESTEP , 
-				 errmax * ADAPTIVE_EPS , SM_TYPE ) ;
+				 errmax * ADAPTIVE_EPS , SM_TYPE , project ) ;
 	wapprox = ( flow_next - flow ) * curr -> time / FINESTEP ;
 	flow = flow_next ;
 	curr -> next = head ;
@@ -336,7 +354,7 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
       while( fabs( W0_STOP - wapprox ) <= ( W0_STOP * FINETWIDDLE ) ) {
 	curr = fine_measurement( lat , lat2 , lat3 , lat4 , Z , 
 				 &flow_next , &t , FINESTEP , 
-				 errmax * ADAPTIVE_EPS , SM_TYPE ) ;
+				 errmax * ADAPTIVE_EPS , SM_TYPE , project ) ;
 	wapprox = ( flow_next - flow ) * curr -> time / FINESTEP ;
 	flow = flow_next ;
 	curr -> next = head ;
@@ -355,7 +373,7 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
       delta_t = TMEAS_STOP - t ;
       curr = fine_measurement( lat , lat2 , lat3 , lat4 , Z , 
 			       &flow_next , &t , delta_t , 
-			       errmax * ADAPTIVE_EPS , SM_TYPE ) ;
+			       errmax * ADAPTIVE_EPS , SM_TYPE , project ) ;
       count++ ;
       curr -> next = head ;
       head = curr ;
@@ -372,8 +390,8 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   curr = head ;
 
   // Print out the stepping information
-  printf( "\n[WFLOW] Inadequate steps :: %d \n" , NOTOK_STEPS ) ;
-  printf( "[WFLOW] Adequate steps :: %d \n" , OK_STEPS ) ;
+  printf( "\n[WFLOW] Inadequate steps :: %zu \n" , NOTOK_STEPS ) ;
+  printf( "[WFLOW] Adequate steps :: %zu \n" , OK_STEPS ) ;
 
   // compute the t_0 and w_0 scales from the measurement
   if( delta_t > 0 ) {

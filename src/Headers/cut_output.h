@@ -130,7 +130,7 @@ write_mom_veclist( FILE *__restrict Ap ,
 		   const int DIR ) ;
 
 /**
-   @fn void write_triplet_mom_list( FILE *__restrict Ap , int *__restrict num_mom , int *__restrict *__restrict momentum , int *__restrict *__restrict triplet , const int DIR )
+   @fn void write_triplet_mom_list( FILE *__restrict Ap , size_t *__restrict num_mom , int *__restrict *__restrict momentum , size_t *__restrict *__restrict triplet , const size_t DIR )
    @brief write out the momentum list for the triplets
 
    @warning I only write out one of the three momenta because after projection the vertex is of p^2  
@@ -139,8 +139,8 @@ void
 write_triplet_mom_list( FILE *__restrict Ap , 
 			int *__restrict num_mom , 
 			int *__restrict *__restrict momentum ,
-			int *__restrict *__restrict triplet ,
-			const int DIR ) ;
+			size_t *__restrict *__restrict triplet ,
+			const size_t DIR ) ;
 
 /**
    @fn void write_rr_values( FILE *__restrict Ap , int size[1] , const int *__restrict rsq , const int max_r2 , const int ARR_SIZE )

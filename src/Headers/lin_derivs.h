@@ -47,7 +47,7 @@ double
 trace_deriv( GLU_complex *__restrict sum ) ;
 
 /**
-   @fn double latt_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] , const struct site *__restrict lat , const int i , const int MAX_DIR )
+   @fn double latt_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] , const struct site *__restrict lat , const size_t i , const size_t MAX_DIR )
    @brief The lattice derivative
    @param sum :: The sum of the derivative \f$ \partial_\mu A_\mu(x) \f$
    @param lat :: The lattice field \f$ U_\mu(x) = e^{iaA_\mu(x)} \f$
@@ -60,11 +60,11 @@ trace_deriv( GLU_complex *__restrict sum ) ;
 double
 latt_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] , 
 			       const struct site *__restrict lat , 
-			       const int i , 
-			       const int MAX_DIR ) ;
+			       const size_t i , 
+			       const size_t MAX_DIR ) ;
 
 /**
-   @fn double fast_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] , const struct site *__restrict lat , const int i )
+   @fn double fast_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] , const struct site *__restrict lat , const size_t i )
    @brief Slightly faster version of the 4D lattice lie field derivative
    @param sum :: The sum of the derivative \f$ \partial_\mu A_\mu(x) \f$
    @param lat :: The lattice field \f$ U_\mu(x) = e^{iaA_\mu(x)} \f$
@@ -80,10 +80,10 @@ double
 fast_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] , 
 			       double *functional ,
 			       const struct site *__restrict lat , 
-			       const int i ) ;
+			       const size_t i ) ;
 
 /**
-   @fn double latt_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] , const struct site *__restrict lat , const int i , const int MAX_DIR )
+   @fn double latt_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] , const struct site *__restrict lat , const size_t i , const size_t MAX_DIR )
    @brief Derivative using the stencil
    @param sum :: The sum of the derivative \f$ \partial_\mu A_\mu(x) \f$
    @param lat :: The lattice field \f$ U_\mu(x) = e^{iaA_\mu(x)} \f$
@@ -96,11 +96,11 @@ fast_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
 double
 latt_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] , 
 				 const struct site *__restrict lat , 
-				 const int i , 
-				 const int MAX_DIR ) ;
+				 const size_t i , 
+				 const size_t MAX_DIR ) ;
 
 /**
-   @fn double fast_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] , const struct site *__restrict lat , const int i )
+   @fn double fast_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] , const struct site *__restrict lat , const size_t i )
    @brief Derivative using the stencil, speed up significantly
    @param sum :: The sum of the derivative \f$ \partial_\mu A_\mu(x) \f$
    @param lat :: The lattice field \f$ U_\mu(x) = e^{iaA_\mu(x)} \f$
@@ -112,6 +112,6 @@ latt_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
 double
 fast_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] , 
 				 const struct site *__restrict lat , 
-				 const int i ) ;
+				 const size_t i ) ;
 
 #endif

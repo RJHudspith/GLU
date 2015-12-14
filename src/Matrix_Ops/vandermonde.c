@@ -30,14 +30,14 @@ solvandermonde( double complex f[ NC ] ,
 		const double x[ NC ] ) 
 {
   /// compute the "newton representation" of interpolating polynomial ///
-  int i , k ;
+  size_t i , k ;
   for( k = 0 ; k < NC - 1 ; k++ ) { 
     for( i = NC - 1 ; i > k ; i-- ) {
       f[i] = ( f[i] - f[i-1] ) / ( x[i] - x[i-k-1] ) ;
     }
   }
   /// plug in values for the interpolator ///
-  for( k = NC - 1 ; k >= 0 ; k-- ) {
+  for( k = NC - 1 ; k != 0 ; k-- ) {
     for(i = k ; i < NC - 1 ; i++ ) {
       f[i] = f[i] - ( f[ i + 1 ] * x[k] ) ;
     }
@@ -62,14 +62,14 @@ solvandermonde_new( const double q[ NC ] ,
 		    double complex f[ NC ] ) 
 {
   /// compute the "newton representation" of interpolating polynomial ///
-  int i , k ;
+  size_t i , k ;
   for( k = 0 ; k < NC - 1 ; k++ ) { 
     for( i = NC - 1 ; i > k ; i-- ) {
       f[i] = ( f[i] - f[i-1] ) / ( q[i] - q[i-k-1] ) ;
     }
   }
   /// plug in values for the interpolator ///
-  for( k = NC - 1 ; k >= 0 ; k-- ) {
+  for( k = NC - 1 ; k != 0 ; k-- ) {
     for(i = k ; i < NC - 1 ; i++ ) {
       f[ i ] -= ( f[ i + 1 ] * q[k] ) ;
     }

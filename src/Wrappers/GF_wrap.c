@@ -106,8 +106,12 @@ GF_wrap_landau( infile , lat , GFINFO , improvement )
 #ifdef OVERRELAXED_GF
   // have to alloc a temporary gauge field for this
   if( GFINFO.improve == MAG_IMPROVE ) {
-    GLU_complex **gauge = malloc( LVOLUME * sizeof( GLU_complex* ) ) ;
-    int i ;
+    GLU_complex **gauge = NULL ;
+    if( GLU_malloc( (void**)&gauge , 16 , LVOLUME * sizeof( GLU_complex* ) ) != 0 ) {
+      printf( "[GF] GF_wrap_landau (overrelaxed-MAG) failed to allocate temporary gauge\n" ) ;
+      return GLU_FAILURE ;
+    }
+    size_t i ;
     #pragma omp parallel for private(i)
     for( i = 0 ; i < LVOLUME ; i++ ) {
       GLU_malloc( (void**)&gauge[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
@@ -126,8 +130,12 @@ GF_wrap_landau( infile , lat , GFINFO , improvement )
   iters = OrLandau( lat , &acc , GFINFO.max_iters ,
 		    GFINFO.accuracy , Latt.gf_alpha ) ;
 #else
-  GLU_complex **gauge = malloc( LVOLUME * sizeof( GLU_complex* ) ) ;
-  int i ;
+  GLU_complex **gauge = NULL ;
+  if( GLU_malloc( (void**)&gauge , 16 , LVOLUME * sizeof( GLU_complex* ) ) != 0 ) {
+    printf( "[GF] GF_wrap_landau failed to allocate temporary gauge\n" ) ;
+    return GLU_FAILURE ;
+  }
+  size_t i ;
   #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     gauge[i] = ( GLU_complex* )malloc( NCNC * sizeof( GLU_complex ) ) ; 
@@ -188,20 +196,19 @@ print_fixing_info( GFINFO , SMINFO )
   #endif
 #endif
 #endif
-  switch( GFINFO.type )
-    {
-    case GLU_LANDAU_FIX :
-      printf( "Fixing to Landau gauge, within an accuracy of %g \n" ,
-	      GFINFO.accuracy ) ; 
-      break ;
-    case GLU_COULOMB_FIX :
-      printf( "Fixing to Coulomb gauge, within an accuracy of %g \n" ,
-	      GFINFO.accuracy ) ; 
-      break ;
-    default : break ;// should never get here
-    }
+  switch( GFINFO.type ) {
+  case GLU_LANDAU_FIX :
+    printf( "Fixing to Landau gauge, within an accuracy of %g \n" ,
+	    GFINFO.accuracy ) ; 
+    break ;
+  case GLU_COULOMB_FIX :
+    printf( "Fixing to Coulomb gauge, within an accuracy of %g \n" ,
+	    GFINFO.accuracy ) ; 
+    break ;
+  default : break ;// should never get here
+  }
   printf( "[GF] Tuning parameter alpha :: %f \n" , Latt.gf_alpha ) ;
-  printf( "[GF] Performing AT MOST %d iterations before randomly restarting ... \n" ,
+  printf( "[GF] Performing AT MOST %zu iterations before randomly restarting ... \n" ,
 	  GFINFO.max_iters ) ;
   printf( "[GF] Allowing for %d restarts before complaint ... \n" , GF_GLU_FAILURES ) ; 
   // derivative routines available
@@ -244,26 +251,25 @@ print_fixing_info( GFINFO , SMINFO )
   #endif
 #endif
   printf( "[GF] " ) ;
-  switch( GFINFO.improve )
-    {
-    case MAG_IMPROVE :
-      printf( "MAG-Preconditioning Improvement.\n" ) ; 
-      break ;
-    case SMPREC_IMPROVE :
-      if( GFINFO.type == GLU_COULOMB_FIX )
-	printf( "Smearing-Preconditioning not implemented.\n" ) ;
-      else
-	printf( "Smearing-Preconditioning Improvement.\n" ) ; 
-      break ;
-    case RESIDUAL_IMPROVE :
-      if( GFINFO.type != GLU_LANDAU_FIX ) {
-	printf( "Residual gauge fixing improvement, after Coulomb fixing.\n" ) ;
-      }
-      break ;
-    default :
-      printf( "No improvement.\n" ) ;
-      break ;
+  switch( GFINFO.improve ) {
+  case MAG_IMPROVE :
+    printf( "MAG-Preconditioning Improvement.\n" ) ; 
+    break ;
+  case SMPREC_IMPROVE :
+    if( GFINFO.type == GLU_COULOMB_FIX )
+      printf( "Smearing-Preconditioning not implemented.\n" ) ;
+    else
+      printf( "Smearing-Preconditioning Improvement.\n" ) ; 
+    break ;
+  case RESIDUAL_IMPROVE :
+    if( GFINFO.type != GLU_LANDAU_FIX ) {
+      printf( "Residual gauge fixing improvement, after Coulomb fixing.\n" ) ;
     }
+    break ;
+  default :
+    printf( "No improvement.\n" ) ;
+    break ;
+  }
   printf( "\n" ) ;
   return ;
 }
@@ -313,11 +319,17 @@ GF_wrap_smprec_luxury( infile , lat , GFINFO , SMINFO , HEAD_DATA )
      const struct head_data HEAD_DATA ;
 {
   // need to allocate a temporary lattice with this one ...
-  struct site *lat_cpy = malloc( LVOLUME * sizeof( struct site ) ) ;
+  struct site *lat_cpy = NULL ;
+  GLU_complex **gauge = NULL ;
+  
+  if( GLU_malloc( (void**)&gauge   , 16 ,  LVOLUME * sizeof( GLU_complex* ) ) != 0 ||
+      GLU_malloc( (void**)&lat_cpy , 16 ,  LVOLUME * sizeof( struct site )  ) != 0 ) {
+    printf( "[GF] GF_wrap_smprec_luxury failed to allocate temporary space\n" ) ;
+    return GLU_FAILURE ;
+  }
   init_navig( lat_cpy ) ;
 
-  GLU_complex **gauge = malloc( LVOLUME * sizeof( GLU_complex* ) ) ;
-  int i ;
+  size_t i ;
 #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     gauge[i] = ( GLU_complex* )malloc( NCNC * sizeof( GLU_complex ) ) ; 
@@ -400,9 +412,11 @@ GF_wrap_smprec( infile , lat , GFINFO , SMINFO , HEAD_DATA , recurses )
      int recurses ;
 {
   GLU_complex **gauge = NULL ;
-
-  gauge = malloc( LVOLUME * sizeof( GLU_complex* ) ) ;
-  int i ;
+  if( GLU_malloc( (void**)&gauge , 16 , LVOLUME*sizeof( GLU_complex ) ) != 0 ) {
+    printf( "[GF] GF_wrap_smprec failed to allocate temporary fields \n" ) ;
+    return GLU_FAILURE ;
+  }
+  size_t i ;
   #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     gauge[i] = ( GLU_complex* )malloc( NCNC * sizeof( GLU_complex ) ) ; 

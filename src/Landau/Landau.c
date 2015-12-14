@@ -41,10 +41,9 @@
 
 // output the data, pass lat for the plaquette
 static void
-output_fixing_info( lat , theta , iters )
-     struct site *__restrict lat ;
-     const double theta ;
-     const int iters ;
+output_fixing_info( struct site *__restrict lat ,
+		    const double theta ,
+		    const size_t iters )
 {
   // reunitarise just to limit the damage from round-off
   latt_reunitU( lat ) ;
@@ -55,7 +54,8 @@ output_fixing_info( lat , theta , iters )
 	  av_plaquette( lat ) , theta ) ;
   GLU_real tr ;
   const double link = indivlinks( lat , &tr ) ;
-  printf( "[GF] Iters :: %d\n[GF] Link trace :: %1.15f || Maximum :: %1.15f\n" , iters , link , tr / NC ) ; 
+  printf( "[GF] Iters :: %zu\n[GF] Link trace :: %1.15f || Maximum :: %1.15f\n" ,
+	  iters , link , tr / NC ) ; 
   double lin , log ;
   const_time( lat , &lin , &log ) ; 
   printf( "[GF] Temporal constance || Lin %e || Log %e \n" , lin , log ) ;
@@ -67,33 +67,35 @@ output_fixing_info( lat , theta , iters )
 }
 // printing helper ...
 static void
-print_failure_info( failure , iters ) 
-     const int failure , iters ;
+print_failure_info( const size_t failure , 
+		    const size_t iters ) 
 {
   if( failure < GF_GLU_FAILURES ) {
-    printf( "\n[GF] Non-convergence ... Randomly-restarting \n\n[GF] Failure :: %d || Iters :: %d \n" 
+    printf( "\n[GF] Non-convergence ... Randomly-restarting \n"
+	    "\n[GF] Failure :: %zu || Iters :: %zu \n" 
 	    , failure , iters ) ; 
   } else {
     printf( "\n[GF] Insufficient Convergence ......\n\n"
-	    "[GF] Failures :: %d || Total iterations :: %d \n\n"
+	    "[GF] Failures :: %zu || Total iterations :: %zu \n\n"
 	    "[GF] -> Try reducing the tuning parameter OR/AND\n"
-	    "increasing the maximum number of iterations -< \n\n" , failure , iters ) ; 
+	    "increasing the maximum number of iterations -< \n\n" , 
+	    failure , iters ) ; 
   }
   return ;
 }
 
 // cute little callback
-static int 
+static size_t
 ( *FA_callback ) ( struct site *__restrict lat ,
-		   GLU_complex *__restrict *__restrict gauge , 
-		   GLU_complex *__restrict *__restrict out , 
-		   GLU_complex *__restrict *__restrict in , 
-		   const void *__restrict forward , 
-		   const void *__restrict backward , 
-		   const GLU_real *psq , 
+		   GLU_complex *__restrict *__restrict gauge ,
+		   GLU_complex *__restrict *__restrict out ,
+		   GLU_complex *__restrict *__restrict in ,
+		   const void *__restrict forward ,
+		   const void *__restrict backward ,
+		   const GLU_real *psq ,
 		   double *tr ,
-		   const double acc , 
-		   const int max_iters ) ;
+		   const double acc ,
+		   const size_t max_iters ) ;
 
 // callback selector
 static void
@@ -127,10 +129,9 @@ select_callback( const int improvement )
 
 // precomputatation of the lattice momentum
 static void
-precompute_momenta( psq ) 
-     GLU_real *__restrict psq ;
+precompute_momenta( GLU_real *__restrict psq )
 {
-  int i ;
+  size_t i ;
   // factor due to the different momentum def 
 #if ( defined deriv_linn ) || ( defined deriv_fulln ) 
   //const GLU_real factor = 1.0 / MAX_LANDAU ; //4.0 / 3.0 *
@@ -152,32 +153,34 @@ precompute_momenta( psq )
 
 // fast routine used here
 static int
-luxury_copy_fast( lat , gauge , out , in , forward , backward , psq , th , accuracy , max_iters )     
-     struct site *__restrict lat ; 
-     GLU_complex *__restrict *__restrict gauge ;
-     GLU_complex *__restrict *__restrict out ;
-     GLU_complex *__restrict *__restrict in ; 
-     const fftw_plan *forward ;
-     const fftw_plan *backward ; 
-     const GLU_real *__restrict psq ; 
-     double *th ; 
-     const double accuracy ;
-     const int max_iters ;
+luxury_copy_fast( struct site *__restrict lat ,
+		  GLU_complex *__restrict *__restrict gauge ,
+		  GLU_complex *__restrict *__restrict out ,
+		  GLU_complex *__restrict *__restrict in ,
+		  const fftw_plan *forward ,
+		  const fftw_plan *backward ,
+		  const GLU_real *__restrict psq ,
+		  double *th ,
+		  const double accuracy ,
+		  const size_t max_iters ) 
 {
-  int i ;
-  struct site *lat_copy = NULL , *lat_best = NULL ;
+  size_t i , iters = 0 , copies ;
 
-  GLU_malloc( (void**)&lat_copy , 16 , LVOLUME * sizeof( struct site ) ) ;
+  struct site *lat_copy = NULL , *lat_best = NULL ;
+  if( GLU_malloc( (void**)&lat_copy , 16 , LVOLUME * sizeof( struct site ) ) != 0 ||
+      GLU_malloc( (void**)&lat_best , 16 , LVOLUME * sizeof( struct site ) ) != 0 ) {
+    printf( "[GF] luxury_copy_fast temporary lattice allocation failure\n" ) ;
+    return iters ;
+  }
+
   init_navig( lat_copy ) ;
-  GLU_malloc( (void**)&lat_best , 16 , LVOLUME * sizeof( struct site ) ) ;
-  init_navig( lat_copy ) ;
+  init_navig( lat_best ) ;
 
 #ifdef BEST_COPY
   double maxlink = 1.0 , newlink ;
 #else
   double maxlink = 0.0 , newlink ;
 #endif
-  int copies , iters = 0 ;
   // loop over the number of gauge copies !
   for( copies = 0 ; copies < LUXURY_GAUGE ; copies++ ) {
     // copy our lattice fields
@@ -273,15 +276,16 @@ grab_file( struct site *__restrict lat ,
 }
 
 // Landau gauge fixing routine uses callbacks
-int 
+size_t 
 Landau( struct site *__restrict lat ,
 	GLU_complex *__restrict *__restrict gauge ,
 	const double accuracy ,
-	const int iter ,
+	const size_t iter ,
 	const char *__restrict infile ,
 	const GF_improvements improvement )
 {
   double theta = 0. ; 
+  size_t i ;
 
 #ifdef HAVE_FFTW3_H
   if( parallel_ffts( ) == GLU_FAILURE ) {
@@ -290,12 +294,11 @@ Landau( struct site *__restrict lat ,
     return GLU_FAILURE ;
   }
 
-  fftw_plan *forward = malloc( ( TRUE_HERM ) * sizeof( fftw_plan ) ) ; 
+  fftw_plan *forward  = malloc( ( TRUE_HERM ) * sizeof( fftw_plan ) ) ; 
   fftw_plan *backward = malloc( ( TRUE_HERM ) * sizeof( fftw_plan ) ) ; 
-  GLU_complex **out = fftw_malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
-  GLU_complex **in = fftw_malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
+  GLU_complex **out   = fftw_malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
+  GLU_complex **in    = fftw_malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
 
-  int i ;
   #pragma omp parallel for private(i)
   PFOR(  i = 0 ; i < TRUE_HERM ; i++  ) {
     out[i] = ( GLU_complex* )fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ; 
@@ -312,7 +315,6 @@ Landau( struct site *__restrict lat ,
   ///////// End of the search for Wisdom //////
 #else 
   GLU_complex **in = malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
-  int i ;
   #pragma omp parallel for private(i)
   PFOR(  i = 0 ; i < TRUE_HERM ; i++  ) {
     GLU_malloc( (void**)&in[i] , 16 , LVOLUME * sizeof( GLU_complex ) ) ;
@@ -326,16 +328,16 @@ Landau( struct site *__restrict lat ,
   // set up the FA method callback
   select_callback( improvement )  ;
 
-  int iters = FA_callback( lat , gauge , 
-			   out , in ,
-			   forward , backward , 
-			   psq , 
-			   &theta , accuracy , iter ) ;
+  size_t iters = FA_callback( lat , gauge , 
+			      out , in ,
+			      forward , backward , 
+			      psq , 
+			      &theta , accuracy , iter ) ;
 
   // random restart portion of the code
   if( unlikely( iters == GLU_FAILURE ) && ( improvement != SMPREC_IMPROVE ) ) {
-    int failure = 0 ; 
-    int iters2 = iters ; 
+    size_t failure = 0 ; 
+    size_t iters2 = iters ; 
     for( failure = 1 ; failure < GF_GLU_FAILURES ; failure++ ) {
       //repeat procedure have to read in the file :( 
       if( grab_file( lat , gauge , infile ) == GLU_FAILURE ) { 
@@ -358,7 +360,7 @@ Landau( struct site *__restrict lat ,
       } else {// print information about the last failure
 	iters2 = failure * iter ;	
 	print_failure_info( failure , iters2 ) ;
-	printf( "\n[GF] Failure :: %d || Accuracy %1.4e\n" , 
+	printf( "\n[GF] Failure :: %zu || Accuracy %1.4e\n" , 
 		failure , theta ) ;
       }
     }

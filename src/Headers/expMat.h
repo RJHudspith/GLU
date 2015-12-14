@@ -62,27 +62,4 @@ void
 exponentiate_short( GLU_complex U[ NCNC ] , 
 		    const GLU_complex Q[ HERMSIZE ] ) ;
 
-/**
-   @fn void approx_exp( GLU_complex U[ NCNC ] , const GLU_complex Q[ NCNC ] )
-   @brief Uses mp-approximations to speed up the exponentiation at the cost of numerical accuracy
-   @param U :: Link matrix
-   @param Q :: Lie matrix being exponentiated into U.
-   @warning numerically quasi-stable, requires unitarisation
- */
-void 
-approx_exp( GLU_complex U[ NCNC ] ,
-	    const GLU_complex Q[ NCNC ] ) ;
-
-
-/**
-   @fn void approx_exp_short( GLU_complex U[ NCNC ] , const GLU_complex Q[ HERMSIZE ] )
-   @brief Uses mp-approximations to speed up the exponentiation at the cost of numerical accuracy
-   @param U :: Link matrix
-   @param Q :: Lie matrix being exponentiated into U.
-   @warning numerically unstable
- */
-void 
-approx_exp_short( GLU_complex U[ NCNC ] ,
-		  const GLU_complex Q[ HERMSIZE ] ) ;
-
 #endif

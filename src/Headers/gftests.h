@@ -77,7 +77,7 @@ double
 gauge_test( const GLU_complex *__restrict *__restrict gauge ) ;
 
 /**
-   @fn double gtrans_functional( const struct site *__restrict lat , const GLU_complex *__restrict *__restrict slice_gauge , const int t )
+   @fn double gtrans_functional( const struct site *__restrict lat , const GLU_complex *__restrict *__restrict slice_gauge , const size_t t )
    @brief computes the SPATIAL functional for a given slice's gauge transformations
    @param lat :: lattice gauge fields
    @param slice_gauge :: slice-wide gauge transformation matrices
@@ -86,10 +86,10 @@ gauge_test( const GLU_complex *__restrict *__restrict gauge ) ;
 double
 gtrans_functional( const struct site *__restrict lat ,
 		   const GLU_complex *__restrict *__restrict slice_gauge ,
-		   const int t ) ;
+		   const size_t t ) ;
 
 /**
-   @fn double theta_test_lin( const struct site *__restrict lat , GLU_real *max , const int MAX_DIR )
+   @fn double theta_test_lin( const struct site *__restrict lat , GLU_real *max , const size_t MAX_DIR )
    @brief Checks the derivative of the AntiHermitian_proj definition of the lie fields
    
    @param lat :: gauge fields
@@ -107,10 +107,10 @@ gtrans_functional( const struct site *__restrict lat ,
 double 
 theta_test_lin( const struct site *__restrict lat , 
 		GLU_real *max ,
-		const int MAX_DIR ) ;
+		const size_t MAX_DIR ) ;
 
 /**
-   @fn double theta_test_log( const struct site *__restrict lat , GLU_real *max , const int MAX_DIR )
+   @fn double theta_test_log( const struct site *__restrict lat , GLU_real *max , const size_t MAX_DIR )
    @brief Checks the derivative of the exact log definition of the lie fields
    
    @param lat :: gauge fields
@@ -128,6 +128,6 @@ theta_test_lin( const struct site *__restrict lat ,
 double 
 theta_test_log( const struct site *__restrict lat , 
 		GLU_real *max ,
-		const int MAX_DIR ) ;
+		const size_t MAX_DIR ) ;
 
 #endif

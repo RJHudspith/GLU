@@ -25,17 +25,17 @@
 #define GLU_PROJECTORS_H
 
 /**
-   @fn void print_smearing_obs( const struct site *__restrict lat , const int type , const int count , const GLU_bool hypercubically_blocked )
+   @fn void print_smearing_obs( const struct site *__restrict lat , const int type , const size_t count , const GLU_bool hypercubically_blocked )
    @brief prints to stdout the links and plaquettes
  */
 void
 print_smearing_obs( const struct site *__restrict lat , 
 		    const int type ,
-		    const int count ,
+		    const size_t count ,
 		    const GLU_bool hypercubically_blocked ) ;
 
 /**
-   @fn void project_APE( GLU_complex ape[ NCNC ] , const GLU_complex staple[ NCNC ] , const GLU_complex link[ NCNC ] , const double smear_alpha , const double al )
+   @fn void project_APE( GLU_complex smeared_link[ NCNC ] , const GLU_complex staple[ NCNC ] , const GLU_complex link[ NCNC ] , const double smear_alpha , const double al )
    @brief d and sped up APE-projection
    @param ape :: the ape-projected link
    @param staple :: the computed staple
@@ -47,14 +47,14 @@ print_smearing_obs( const struct site *__restrict lat ,
    fancy..
  **/
 void
-project_APE( GLU_complex ape[ NCNC ] , 
+project_APE( GLU_complex smeared_link[ NCNC ] , 
 	     const GLU_complex staple[ NCNC ] , 
 	     const GLU_complex link[ NCNC ] , 
 	     const double smear_alpha , 	     
 	     const double al ) ;
 
 /**
-    @fn void project_LOG( GLU_complex log[ NCNC ] , const GLU_complex staple[ NCNC ] , const GLU_complex link[ NCNC ] , const double smear_alpha )
+    @fn void project_LOG( GLU_complex smeared_link[ NCNC ] , const GLU_complex staple[ NCNC ] , const GLU_complex link[ NCNC ] , const double smear_alpha )
    @brief LOG-smearing projection
    @param log :: the value of the loged link
    @param staple :: the computed staple
@@ -63,13 +63,14 @@ project_APE( GLU_complex ape[ NCNC ] ,
    General LOG projection, the staple must already be in hermitian form
  **/
 void
-project_LOG( GLU_complex log[ NCNC ] , 
+project_LOG( GLU_complex smeared_link[ NCNC ] , 
 	     GLU_complex staple[ NCNC ] , 
 	     const GLU_complex link[ NCNC ] , 
-	     const double smear_alpha ) ;
+	     const double smear_alpha ,
+	     const double al ) ;
 
 /**
-    @fn void project_LOG_short( GLU_complex log[ NCNC ] , const GLU_complex staple[ NCNC ] , const GLU_complex link[ NCNC ] , const double smear_alpha )
+    @fn void project_LOG_short( GLU_complex smeared_link[ NCNC ] , const GLU_complex staple[ NCNC ] , const GLU_complex link[ NCNC ] , const double smear_alpha )
    @brief LOG-smearing projection
    @param log :: the value of the loged link
    @param staple :: the computed staple
@@ -78,13 +79,14 @@ project_LOG( GLU_complex log[ NCNC ] ,
    General LOG projection, the staple must already be in hermitian form, uses eponentiate_short()
  **/
 void
-project_LOG_short( GLU_complex log[ NCNC ] , 
+project_LOG_short( GLU_complex smeared_link[ NCNC ] , 
 		   GLU_complex staple[ NCNC ] , 
 		   const GLU_complex link[ NCNC ] , 
-		   const double smear_alpha ) ;
+		   const double smear_alpha ,
+		   const double al ) ;
 
 /**
-   @fn void project_LOG_wflow( GLU_complex log[ NCNC ] , GLU_complex *__restrict staple , const GLU_complex link[ NCNC ] , const double smear_alpha )
+   @fn void project_LOG_wflow( GLU_complex smeared_link[ NCNC ] , GLU_complex *__restrict staple , const GLU_complex link[ NCNC ] , const double smear_alpha )
    @brief log smearing projection for the log-wilson-flow
    @param log :: output link from log smearing transform
    @param staple :: HERMSIZE staple
@@ -92,7 +94,7 @@ project_LOG_short( GLU_complex log[ NCNC ] ,
    @param smear_alpha :: the normalised smearing alpha
  **/
 void
-project_LOG_wflow( GLU_complex log[ NCNC ] , 
+project_LOG_wflow( GLU_complex smeared_link[ NCNC ] , 
 		   GLU_complex *__restrict staple , 
 		   const GLU_complex link[ NCNC ] , 
 		   const double smear_alpha ) ;
@@ -125,10 +127,11 @@ void
 project_STOUT( GLU_complex stout[ NCNC ] , 
 	       const GLU_complex staple[ NCNC ] , 
 	       const GLU_complex link[ NCNC ] , 
-	       const double smear_alpha ) ;
+	       const double smear_alpha ,
+	       const double al ) ;
 
 /**
-   @fn void project_STOUT_short( GLU_complex stout[ NCNC ] , const GLU_complex staple[ NCNC ] , const GLU_complex link[ NCNC ] , const double smear_alpha )
+   @fn void project_STOUT_short( GLU_complex smeared_link[ NCNC ] , const GLU_complex staple[ NCNC ] , const GLU_complex link[ NCNC ] , const double smear_alpha )
    @brief STOUT-smearing projection
    @param stout :: the value of the stouted link
    @param staple :: the computed staple
@@ -137,13 +140,14 @@ project_STOUT( GLU_complex stout[ NCNC ] ,
    General STOUT projection uses the shortened versions of links, justifiably taking fewer operations and relying on conjugacy.
  **/
 void
-project_STOUT_short( GLU_complex stout[ NCNC ] , 
+project_STOUT_short( GLU_complex smeared_link[ NCNC ] , 
 		     const GLU_complex staple[ NCNC ] , 
 		     const GLU_complex link[ NCNC ] , 
-		     const double smear_alpha ) ;
+		     const double smear_alpha ,
+		     const double al ) ;
 
 /**
-   @fn void project_STOUT_wflow( GLU_complex stout[ NCNC ] , const GLU_complex *__restrict staple , const GLU_complex link[ NCNC ] , const double smear_alpha )
+   @fn void project_STOUT_wflow( GLU_complex smeared_link[ NCNC ] , const GLU_complex *__restrict staple , const GLU_complex link[ NCNC ] , const double smear_alpha )
    @brief Had to make a shorter version for large matrices
    @param stout :: the value of the stouted link
    @param staple :: the computed staple shortened to HERMSIZE
@@ -151,7 +155,7 @@ project_STOUT_short( GLU_complex stout[ NCNC ] ,
    @param smear_alpha :: the normalised smearing alpha
  **/
 void
-project_STOUT_wflow( GLU_complex stout[ NCNC ] , 
+project_STOUT_wflow( GLU_complex smeared_link[ NCNC ] , 
 		     const GLU_complex *__restrict staple , 
 		     const GLU_complex link[ NCNC ] , 
 		     const double smear_alpha ) ;

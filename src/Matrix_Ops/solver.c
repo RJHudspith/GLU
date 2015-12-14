@@ -56,7 +56,7 @@ deflate( GLU_complex B[ NCNC ] ,
 	 const double evalue )
 {
   double norm = 0.0 ;
-  int j ;
+  size_t j ;
   for( j = 0 ; j < NC ; j++ ) {
     norm += creal( v[ j ] ) * creal( v[ j ] ) +\
       cimag( v[j] ) * cimag( v[j] ) ;
@@ -85,7 +85,7 @@ rayliegh_quotient( GLU_complex v[ NC ] ,
   GLU_complex t[ NCNC ] , t2[ NCNC ] , b[ NC ] ;
   GLU_complex numerator , sum ;
   double evalue = 1.0 , err = 1.0 , norm , new ;
-  int i , j , iterations = 0 ;
+  size_t i , j , iterations = 0 ;
   // close upon convergence
   while( err > PREC_TOL && iterations < 10 ) {
     equiv( t , A ) ;
@@ -166,7 +166,7 @@ rayliegh_evalues( double z[ NC ] ,
   GLU_complex B[ NCNC ] , temp[ NCNC ] , v[ NC ] ;
   register double sum = 0.0 , oneONC = 1.0/sqrt((double)NC) ;
   double evalue ;
-  int i , j ;
+  size_t i , j ;
   equiv( temp , A ) ;
   for( i = 0 ; i < NC-1 ; i++ ) {
     // initial guess for the eigenvectors
@@ -294,7 +294,7 @@ Eigenvalues_hermitian( double z[ NC ] ,
   gsl_matrix_complex *mat = gsl_matrix_complex_alloc(NC,NC);
   gsl_vector *eval = gsl_vector_alloc(NC) ;
   gsl_eigen_herm_workspace *w = gsl_eigen_herm_alloc(NC) ;
-  int i , j ;
+  size_t i , j ;
   register double re , im ;
   // pack the matrices
   for( i = 0 ; i < NC ; i++ ) {
@@ -358,6 +358,3 @@ Eigenvalues_suNC( double complex z[ NC ] ,
 }
 
 #undef rr3
-
-
-

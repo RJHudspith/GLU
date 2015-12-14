@@ -24,7 +24,7 @@
 #define GLU_CFACG_H
 
 /**
-   @fn int Coulomb_FACG( struct site  *__restrict lat , GLU_complex  *__restrict *__restrict out , GLU_complex  *__restrict *__restrict in , const void *__restrict forward , const void *__restrict backward , const GLU_real * __restrict p_sq , const double accuracy , const int max_iter ) ;
+   @fn size_t Coulomb_FACG( struct site  *__restrict lat , GLU_complex  *__restrict *__restrict out , GLU_complex  *__restrict *__restrict in , const void *__restrict forward , const void *__restrict backward , const GLU_real * __restrict p_sq , const double accuracy , const size_t max_iter ) ;
    @brief Conjugate gradient Fourier Accelerated Coulomb gauge fixing code
    @param lat :: lattice links
    @param out :: FFTW temporary
@@ -33,9 +33,9 @@
    @param backward :: FFTW backward transform plan
    @param accuracy :: the accuracy we wish to attain
    @param max_iter :: the maximum number of (per slice) iterations we wish to have before random transform
-   @return the maximum number of iterations (i.e. the sum of each slice's)
+   @return the maximum number of iterations (i.e. the sum of each slice's) or 0 if something went wrong
  */
-int 
+size_t
 Coulomb_FACG( struct site  *__restrict lat , 
 	      GLU_complex  *__restrict *__restrict out , 
 	      GLU_complex  *__restrict *__restrict in , 
@@ -43,9 +43,9 @@ Coulomb_FACG( struct site  *__restrict lat ,
 	      const void *__restrict backward , 
 	      const GLU_real * __restrict p_sq ,
 	      const double accuracy ,
-	      const int max_iter ) ;
+	      const size_t max_iter ) ;
 /**
-   @fn int Coulomb_FASD( struct site  *__restrict lat , GLU_complex  *__restrict *__restrict out , GLU_complex  *__restrict *__restrict in , const void *__restrict forward , const void *__restrict backward , const GLU_real * __restrict p_sq , const double accuracy , const int max_iter ) ;
+   @fn size_t Coulomb_FASD( struct site  *__restrict lat , GLU_complex  *__restrict *__restrict out , GLU_complex  *__restrict *__restrict in , const void *__restrict forward , const void *__restrict backward , const GLU_real * __restrict p_sq , const double accuracy , const size_t max_iter ) ;
    @brief steepest descent Fourier Accelerated Coulomb gauge fixing code
    @param lat :: lattice links
    @param out :: FFTW temporary
@@ -55,9 +55,9 @@ Coulomb_FACG( struct site  *__restrict lat ,
    @param psq :: precomputed psq table
    @param accuracy :: the accuracy we wish to attain
    @param max_iter :: the maximum number of (per slice) iterations we wish to have before random transform
-   @return the maximum number of iterations (i.e. the sum of each slice's)
+   @return the maximum number of iterations (i.e. the sum of each slice's) or 0 if something went wrong
  */
-int 
+size_t
 Coulomb_FASD( struct site  *__restrict lat , 
 	      GLU_complex  *__restrict *__restrict out , 
 	      GLU_complex  *__restrict *__restrict in , 
@@ -65,7 +65,7 @@ Coulomb_FASD( struct site  *__restrict lat ,
 	      const void *__restrict backward , 
 	      const GLU_real * __restrict p_sq ,
 	      const double accuracy ,
-	      const int max_iter ) ;
+	      const size_t max_iter ) ;
 
 /**
    @fn void query_probes_Coulomb( void )

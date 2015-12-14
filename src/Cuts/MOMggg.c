@@ -64,11 +64,11 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
   //need to compute the triplet, first we compute the momentum of our list
   int **momentum = malloc( num_mom[ 0 ] * sizeof( int * ) ) ; 
 
-  int i ;
+  size_t i ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < num_mom[0] ; i++ ) {
     momentum[ i ] = ( int * )malloc( ND * sizeof ( int ) ) ;
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       momentum[ i ][ mu ] = list[i].MOM[mu] ;
     }
@@ -76,28 +76,29 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
 
   // fill up trip by calling get_triplet again .. read from a file ..
   // set up the number of triplets ... 
-  int *trip = malloc( nnmax/2 * sizeof( int ) ) ;
+  size_t *trip = malloc( nnmax/2 * sizeof( size_t ) ) ;
 
   // look for a file or just calculate it the dumb way
   read_trip( trip , nnmax ) ;
 
-  int nn , counter[ 1 ] ;
+  size_t nn ;
+  int counter[ 1 ] ;
   counter[ 0 ] = 1 ; 
   for( nn = 0 ; nn < nnmax/2 ; nn++ ) {
     counter[ 0 ] += trip[ nn ] ;
   }
   
   // set this up so that it will never be altered, important.
-  const int count = counter[ 0 ]  ;
+  const size_t count = counter[ 0 ]  ;
  
   // allocate both the triplet and the projector
-  int **triplet = malloc( count * sizeof( int* ) ) ;
+  size_t **triplet = malloc( count * sizeof( size_t* ) ) ;
   double **proj = malloc( count * sizeof( double* ) ) ;
 
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < count ; i++ ) {
     proj[i] = ( double* ) malloc( ND * ND * ND *  sizeof ( double ) ) ;
-    triplet[i] = (int*) malloc( 3 *  sizeof (int ) ) ;
+    triplet[i] = ( size_t* ) malloc( 3 *  sizeof( size_t ) ) ;
   }
 
   // read in the triplet and the projector 
@@ -133,14 +134,14 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
   double *g3 = ( double* )malloc( count * sizeof( double ) ) ;
 
   //set place == 0 again
-  int checker = 0 ;
+  size_t checker = 0 ;
   for( nn = 0 ; nn < nnmax/2 ; nn ++ ) {
 
     double psq = 0. ;
     double oneOpsq = 0. ;
     if( trip[ nn ] == 0 ) { } else {
       // compute psq
-      int mu ;
+      size_t mu ;
       for( mu = 0 ; mu < ND ; mu++ ) {
         #ifdef PSQ_MOM
 	const double temp =  momentum[ triplet[ checker ][ 0 ] ][ mu ] * Latt.twiddles[ mu ] ; 
@@ -154,24 +155,24 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
       if( psq < PREC_TOL ) {
 	psq = 1.0 ;
       }
-	  
+
       // wrap the psq into the g3 normalisation ...
       oneOpsq = g3_norm / ( psq ) ;
     }
 
     // count through the available triplets .. should be able to parallelize
     for( i = 0 ; i < trip[ nn ] ; i++ ) { 	  
-      const int place = checker + i ;
+      const size_t place = checker + i ;
 	  
       // initialise the threepoint
       g3[ place ] = 0. ;
       
-      const int trip0 = list[ triplet[ place ][ 0 ] ].idx ; 
-      const int trip1 = list[ triplet[ place ][ 1 ] ].idx ; 
-      const int trip2 = list[ triplet[ place ][ 2 ] ].idx ; 
+      const size_t trip0 = list[ triplet[ place ][ 0 ] ].idx ; 
+      const size_t trip1 = list[ triplet[ place ][ 1 ] ].idx ; 
+      const size_t trip2 = list[ triplet[ place ][ 2 ] ].idx ; 
 
       // apply projector ? try this one 
-      int z ;
+      size_t z ;
       double sum = 0. ;
       #pragma omp parallel for private(z) reduction(+:sum)
       for( z = 0 ; z < ( ND * ND * ND ) ; z++ ) {
@@ -179,9 +180,9 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
 	} else {
 	  // faster , simpler triplet multiplication
 	  GLU_complex test = 0. ;
-	  const int rho = z % ND ;
-	  const int nu = ( ( z - z % ND ) / ND ) % ND ;
-	  const int mu = ( ( z - z % ( ND * ND ) ) / ( ND * ND ) ) % ND ;
+	  const size_t rho = z % ND ;
+	  const size_t nu = ( ( z - z % ND ) / ND ) % ND ;
+	  const size_t mu = ( ( z - z % ( ND * ND ) ) / ( ND * ND ) ) % ND ;
 	  
 	  // do the projection either in lie space or not
 	  #ifdef LIE_PROJECTION
@@ -209,7 +210,7 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
       
       // compute the gluonic two point function here ...
       double res = 0. ;
-      int mu ;
+      size_t mu ;
       #pragma omp parallel for private(mu) reduction(+:res)
       for( mu = 0 ; mu < ND ; mu++ ) {
 	GLU_complex tr ;

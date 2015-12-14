@@ -28,84 +28,19 @@
 
 #include "lin_derivs.h" // for trace deriv
 
-// approximate log definition to start off with ....
-double
-approx_log_deriv( GLU_complex sum[ HERMSIZE ] , 
-		  const struct site *__restrict lat , 
-		  const int i , 
-		  const int MAX_DIR )
-{
-  GLU_complex A[ HERMSIZE ] , shiftA[ HERMSIZE ] ;
-  int mu ; 
-  for( mu = 0 ; mu < MAX_DIR ; mu++ ) {
-    exact_log_fast_short( A , lat[i].O[mu] ) ; 
-    exact_log_fast_short( shiftA , lat[lat[i].back[mu]].O[mu] ) ; 
-    a_plus_Sxbminc_short( sum , 1.0 , shiftA , A ) ;
-  }
-  return trace_deriv( sum ) ; 
-}
-// approximate log definition of the nn type
-double
-approx_log_deriv_nn( GLU_complex sum[ HERMSIZE ] , 
-		     const struct site *__restrict lat , 
-		     const int i , 
-		     const int MAX_DIR )
-{
-  GLU_complex A[ HERMSIZE ] , shiftA[ HERMSIZE ] ;
-  int mu ; 
-  for( mu = 0 ; mu < MAX_DIR ; mu++ ) {
-    exact_log_fast_short( A , lat[i].O[mu] ) ; 
-    exact_log_fast_short( shiftA , lat[lat[i].back[mu]].O[mu] ) ; 
-    a_plus_Sxbminc_short( sum , nn1 , shiftA , A ) ;
-
-    exact_log_fast_short( A , lat[lat[i].neighbor[mu]].O[mu] ) ; 
-    exact_log_fast_short( shiftA , lat[lat[lat[i].back[mu]].back[mu]].O[mu] ) ; 
-    a_plus_Sxbminc_short( sum , nn2 , shiftA , A ) ;
-  }
-  return trace_deriv( sum ) ; 
-}
-
-// approximate log definition of the nn type
-double
-approx_log_deriv_nnn( GLU_complex sum[ HERMSIZE ] , 
-		      const struct site *__restrict lat , 
-		      const int i , 
-		      const int MAX_DIR )
-{
-  GLU_complex A[ HERMSIZE ] , shiftA[ HERMSIZE ] ;
-  int mu ; 
-  for( mu = 0 ; mu < MAX_DIR ; mu++ ) {
-    // first deriv
-    exact_log_fast_short( A , lat[i].O[mu] ) ; 
-    exact_log_fast_short( shiftA , lat[lat[i].back[mu]].O[mu] ) ; 
-    a_plus_Sxbminc_short( sum , nnn1 , shiftA , A ) ;
-
-    exact_log_fast_short( A , lat[lat[i].neighbor[mu]].O[mu] ) ; 
-    exact_log_fast_short( shiftA , lat[lat[lat[i].back[mu]].back[mu]].O[mu] ) ; 
-    a_plus_Sxbminc_short( sum , nnn2 , shiftA , A ) ;
-
-    const int fi = lat[lat[i].neighbor[mu]].neighbor[mu] ;
-    const int bi = lat[lat[lat[i].back[mu]].back[mu]].back[mu] ;
-    exact_log_fast_short( A , lat[fi].O[mu] ) ; 
-    exact_log_fast_short( shiftA , lat[bi].O[mu] ) ; 
-    a_plus_Sxbminc_short( sum , nnn3 , shiftA , A ) ;
-  }
-  return trace_deriv( sum ) ; 
-}
-
 // log definition of the gauge matrices at the point i
 double
 log_deriv( GLU_complex sum[ HERMSIZE ] , 
 	   double *functional ,
 	   const struct site *__restrict lat , 
-	   const int i , 
-	   const int MAX_DIR )
+	   const size_t i , 
+	   const size_t MAX_DIR )
 {
   GLU_complex A[ HERMSIZE ] , shiftA[ HERMSIZE ] ;
   GLU_real trAA ;
   *functional = 0.0 ;
 
-  int mu ; 
+  size_t mu ; 
   for( mu = 0 ; mu < MAX_DIR ; mu++ ) {
     exact_log_slow_short( A , lat[i].O[mu] ) ; 
     exact_log_slow_short( shiftA , lat[lat[i].back[mu]].O[mu] ) ; 
@@ -122,11 +57,11 @@ log_deriv( GLU_complex sum[ HERMSIZE ] ,
 double
 log_deriv_nn( GLU_complex sum[ HERMSIZE ] , 
 	      const struct site *__restrict lat , 
-	      const int i , 
-	      const int MAX_DIR )
+	      const size_t i , 
+	      const size_t MAX_DIR )
 {
   GLU_complex shiftA[ HERMSIZE ] , A[ HERMSIZE ] ;
-  int mu ; 
+  size_t mu ; 
   for( mu = 0 ; mu < ND ; mu++ ) {
     // first deriv
     exact_log_slow_short( A , lat[i].O[mu] ) ; 
@@ -144,11 +79,11 @@ log_deriv_nn( GLU_complex sum[ HERMSIZE ] ,
 double
 log_deriv_nnn( GLU_complex sum[ HERMSIZE ] , 
 	      const struct site *__restrict lat , 
-	      const int i , 
-	      const int MAX_DIR )
+	      const size_t i , 
+	      const size_t MAX_DIR )
 {
   GLU_complex shiftA[ HERMSIZE ] , A[ HERMSIZE ] ;
-  int mu ; 
+  size_t mu ; 
   for( mu = 0 ; mu < ND ; mu++ ) {
     // first deriv
     exact_log_slow_short( A , lat[i].O[mu] ) ; 
@@ -159,8 +94,8 @@ log_deriv_nnn( GLU_complex sum[ HERMSIZE ] ,
     exact_log_slow_short( shiftA , lat[lat[lat[i].back[mu]].back[mu]].O[mu] ) ; 
     a_plus_Sxbminc_short( sum , nnn2 , shiftA , A ) ;
 
-    const int fi = lat[lat[i].neighbor[mu]].neighbor[mu] ;
-    const int bi = lat[lat[lat[i].back[mu]].back[mu]].back[mu] ;
+    const size_t fi = lat[lat[i].neighbor[mu]].neighbor[mu] ;
+    const size_t bi = lat[lat[lat[i].back[mu]].back[mu]].back[mu] ;
     exact_log_slow_short( A , lat[fi].O[mu] ) ; 
     exact_log_slow_short( shiftA , lat[bi].O[mu] ) ; 
     a_plus_Sxbminc_short( sum , nnn3 , shiftA , A ) ;

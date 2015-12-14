@@ -85,32 +85,34 @@ write_header_NERSC( FILE *__restrict out ,
  // fill in the normal header crap //
  fprintf( out , "BEGIN_HEADER\n" ) ; 
  fprintf( out , "HDR_VERSION = 1.0\n" ) ; 
- switch( type )
-   {
-   case OUTPUT_SMALL : 
-     fprintf( out , "DATATYPE = %dD_SU%d_GAUGE_SMALL\n" , ND , NC ) ; 
-     break ;
-   case OUTPUT_GAUGE : 
-     fprintf( out , "DATATYPE = %dD_SU%d_GAUGE\n" , ND , NC ) ; 
-     break ;
-   default :
-     fprintf( out , "DATATYPE = %dD_SU%d_GAUGE_%dx%d\n" , ND , NC , NC , NC ) ;  
-     break ;
-   }
+ switch( type ) {
+ case OUTPUT_SMALL : 
+   fprintf( out , "DATATYPE = %dD_SU%d_GAUGE_SMALL\n" , 
+	    ND , NC ) ; 
+   break ;
+ case OUTPUT_GAUGE : 
+   fprintf( out , "DATATYPE = %dD_SU%d_GAUGE\n" , 
+	    ND , NC ) ; 
+   break ;
+ default :
+   fprintf( out , "DATATYPE = %dD_SU%d_GAUGE_%dx%d\n" , 
+	    ND , NC , NC , NC ) ;  
+   break ;
+ }
  fprintf( out , "STORAGE_FORMAT = 1.0\n" ) ; 
- int mu ;
+ size_t mu ;
  for( mu = 0 ; mu < ND ;  mu++ ) {
-   fprintf( out , "DIMENSION_%d = %d\n" , mu + 1 , Latt.dims[mu] ) ; 
+   fprintf( out , "DIMENSION_%zu = %zu\n" , mu + 1 , Latt.dims[mu] ) ; 
  }
  fprintf( out , "CHECKSUM = %x\n" , chksum ) ; 
  fprintf( out , "LINK_TRACE = %1.15f\n" , tr ) ; 
  fprintf( out , "PLAQUETTE = %1.15f\n" , plaq ) ; 
  // only use PERIODIC
  for( mu = 0 ; mu < ND ; mu++ ) {
-   fprintf( out , "BOUNDARY_%d = PERIODIC\n" , mu + 1 ) ; 
+   fprintf( out , "BOUNDARY_%zu = PERIODIC\n" , mu + 1 ) ; 
  }
  fprintf( out , "ENSEMBLE_ID = ukqcd\n" ) ; 
- fprintf( out , "SEQUENCE_NUMBER = %d\n" , Latt.flow ) ; 
+ fprintf( out , "SEQUENCE_NUMBER = %zu\n" , Latt.flow ) ; 
  fprintf( out , "ENSEMBLE_LABEL = %s\n" , details ) ; 
  fprintf( out , "CREATOR_MACHINE = %s\n" , getenv( "USER" ) ) ; 
 #ifdef HAVE_TIME_H
@@ -133,4 +135,3 @@ write_header_NERSC( FILE *__restrict out ,
  fprintf( out , "END_HEADER\n" ) ; 
  return ;
 }
-

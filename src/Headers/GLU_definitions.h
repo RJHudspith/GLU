@@ -106,15 +106,15 @@
    @def PIOtwo
    @brief is \f$ 0.5\times\pi \f$
  */
-#define MPI 3.141592653589793
-#define TWOPI 6.283185307179586
-#define PIOtwo 1.5707963267948966
+#define MPI (3.141592653589793)
+#define TWOPI (6.283185307179586)
+#define PIOtwo (1.5707963267948966)
 
 /**
    @def r2
    @brief the \f$ \sqrt{2} \f$ in GLU_real precision
  */
-#define r2 M_SQRT2 // sqrt( 2. )
+#define r2 (1.4142135623730951)
 
 /**
    sin tolerances for the exact exponentiation ..
@@ -590,9 +590,9 @@ Defines for the gauge fixing routines ( Landau/{}.c )
   #define one_min_a1 ( 1.0 - Latt.sm_alpha[0] )
   #define one_min_a2 ( 1.0 - Latt.sm_alpha[1] )
   #define one_min_a3 ( 1.0 - Latt.sm_alpha[2] )
-  #define alpha1 Latt.sm_alpha[0] / 6.0
-  #define alpha2 Latt.sm_alpha[1] * 0.25
-  #define alpha3 Latt.sm_alpha[2] * 0.5
+  #define alpha1 ( Latt.sm_alpha[0] / 6.0 )
+  #define alpha2 ( Latt.sm_alpha[1] / 4.0 )
+  #define alpha3 ( Latt.sm_alpha[2] * 0.5 )
  #endif
 #endif
 

@@ -90,13 +90,12 @@ multab_dag( GLU_complex a[ NCNC ] ,
   *( A + 3 ) = _mm_add_pd( SSE2_MUL_CONJ( *( B + 2 ) , *( C + 2 ) ) , 
 			   SSE2_MUL_CONJ( *( B + 3 ) , *( C + 3 ) ) ) ;
 #else // instead of inlining we have a function call
-  int i , j , m ;
+  size_t i , j , m ;
   register __m128d sum ;
   for( i = 0 ; i < NC ; i++ ) {
     for( j = 0 ; j < NC ; j++ ) {
       sum = _mm_setzero_pd( ) ;
       for( m = 0 ; m < NC ; m++ ) {
-	//sum += REB * REC + IMB * IMC + I * ( REC * IMB - REB * IMC ) ;
 	sum = _mm_add_pd( sum , SSE2_MUL_CONJ( *( B + m + NC*i ) ,
 					       *( C + m + NC*j ) ) ) ;
       }

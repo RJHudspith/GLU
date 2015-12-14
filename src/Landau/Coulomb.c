@@ -29,7 +29,7 @@
 #include "plaqs_links.h"  // plaqutte and link measurements
 
 // cute little callback
-static int 
+static size_t
 ( *FA_callback ) ( struct site *__restrict lat ,
 		   GLU_complex *__restrict *__restrict out , 
 		   GLU_complex *__restrict *__restrict in , 
@@ -37,7 +37,7 @@ static int
 		   const void *__restrict backward , 
 		   const GLU_real *psq , 
 		   const double acc , 
-		   const int max_iters ) ;
+		   const size_t max_iters ) ;
 
 // callback selector
 static void
@@ -52,10 +52,10 @@ select_callback( void )
 }
 
 // Coulomb gauge fixing code
-int 
+size_t
 Coulomb( struct site *__restrict lat , 
 	 const double accuracy , 
-	 const int iter )
+	 const size_t iter )
 {
   double splink , tlink ;
   all_links( lat , &splink , &tlink ) ;
@@ -73,12 +73,12 @@ Coulomb( struct site *__restrict lat ,
     return GLU_FAILURE ;
   }
 
-  fftw_plan *forward = malloc( ( TRUE_HERM ) * sizeof( fftw_plan ) ) ; 
+  fftw_plan *forward  = malloc( ( TRUE_HERM ) * sizeof( fftw_plan ) ) ; 
   fftw_plan *backward = malloc( ( TRUE_HERM ) * sizeof( fftw_plan ) ) ; 
-  GLU_complex **out = fftw_malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
-  GLU_complex **in = fftw_malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
+  GLU_complex **out   = fftw_malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
+  GLU_complex **in    = fftw_malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
 
-  int i ; 
+  size_t i ; 
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < TRUE_HERM ; i ++  ) {
     out[i] = ( GLU_complex* )fftw_malloc( LCU * sizeof( GLU_complex ) ) ; 
@@ -98,9 +98,9 @@ Coulomb( struct site *__restrict lat ,
 
   /////  End of the search for Wisdom  ////
 #else
-
- GLU_complex **in = malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
-  int i ;
+  
+  GLU_complex **in = malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
+  size_t i ;
   #pragma omp parallel for private(i)
   PFOR(  i = 0 ; i < TRUE_HERM ; i++  ) {
     in[i] = ( GLU_complex* )malloc( LCU * sizeof( GLU_complex ) ) ; 
@@ -113,10 +113,10 @@ Coulomb( struct site *__restrict lat ,
 #endif
   select_callback( ) ;
 
-  const int iters =  FA_callback( lat , out , in ,
-				  forward , backward , 
-				  psq , 
-				  accuracy , iter ) ;
+  const size_t iters =  FA_callback( lat , out , in ,
+				     forward , backward , 
+				     psq , 
+				     accuracy , iter ) ;
  
 #ifdef HAVE_FFTW3_H
 
@@ -146,7 +146,7 @@ Coulomb( struct site *__restrict lat ,
 #endif
 
   all_links( lat , &splink , &tlink ) ;
-  printf( "[GF] Tuning :: %f || Iterations :: %d ||\n[GF] Final Tlink :: %1.15f "
+  printf( "[GF] Tuning :: %f || Iterations :: %zu ||\n[GF] Final Tlink :: %1.15f "
 	  "|| Slink :: %1.15f \n[GF] Plaquette :: %1.15f \n" , 
 	  Latt.gf_alpha , iters , tlink , splink , av_plaquette( lat ) ) ; 
 

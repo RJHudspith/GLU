@@ -34,34 +34,34 @@
 #ifdef HAVE_FFTW3_H
 
 static int
-mom_gauge( A , def )
-     struct site *__restrict A ;
-     const lie_field_def def ;
+mom_gauge( struct site *__restrict A ,
+	   const lie_field_def def )
 {
   if( parallel_ffts( ) == GLU_FAILURE ) {
     printf( "[PAR] Problem with initialising the OpenMP FFTW routines \n" ) ;
     return GLU_FAILURE ;
   }
 
-  int i , flag = 0 ;
+  // callback for the log definition
+  void (*log)( GLU_complex Q[ NCNC ] ,
+	       const GLU_complex U[ NCNC ] ) ;
+  switch( def ) {
+  case LINEAR_DEF :
+    log = Hermitian_proj ;
+    break ;
+  case LOG_DEF : 
+    log = exact_log_slow ; 
+    break ;
+  }
+
+  size_t i ;
+  int flag = 0 ;
   #pragma omp parallel for private(i) shared(A)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) { 
     GLU_complex temp[ NCNC ] ;
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
-      switch( def )
-	{
-	case LINEAR_DEF :
-	  Hermitian_proj( temp , A[i].O[mu] ) ;
-	  break ;
-	case LOG_DEF :
-	  exact_log_slow( temp , A[i].O[mu] ) ;
-	  break ;
-	default :
-	  printf( "Field definition %d misunderstood \n" , def ) ;
-	  flag = 1 ;
-	  break ;
-	}
+      log( temp , A[i].O[mu] ) ;
       equiv( A[i].O[mu] , temp ) ;
     }
   }
@@ -79,9 +79,8 @@ mom_gauge( A , def )
   // End of the search for Wisdom 
 
   //forward transform
-  int mu ;
+  size_t mu , j ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    int j ;
     for( j = 0 ; j < NCNC ; j++ ) {
       // FORWARD ONE
       #ifdef CUT_FORWARD
@@ -125,9 +124,8 @@ mom_gauge( A , def )
 #else
 
 static int
-mom_gauge( A , def )
-     struct site *__restrict A ;
-     const lie_field_def def ;
+mom_gauge( struct site *__restrict A ,
+	   const lie_field_def def )
 {
   printf( "[CUTS] WARNING! No FFT taking place\n" ) ;
   return GLU_FAILURE ;
@@ -169,35 +167,34 @@ cuts_struct( struct site *__restrict A ,
   FILE *Ap = fopen( str , "wb" ) ; 
 
   int check = 0 ;
-  switch( CUTINFO.dir )
-    {
-    case FIELDS :
-      //all of this work leads to us discarding (most of) our A fields
-      write_mom_veclist( Ap , in , list , ND ) ;
-      write_lattice_fields( Ap , A , list , in ) ;
-      break ;
-    case EXCEPTIONAL :      
-      write_mom_veclist( Ap , in , list , ND ) ;
-      check = write_exceptional_g2g3_MOMgg( Ap , A , 
-					    list , in ) ;
-      break ;
-    case NONEXCEPTIONAL :
-      // we write the mom-list internally in the g2g3 code as it can
-      // be different from the cut-momentum one..
-      write_nonexceptional_g2g3( Ap , 
-				 A , list , 
-				 in , CUTINFO.max_mom ) ;
-      break ;
-    case GLUON_PROPS :
-      write_mom_veclist( Ap , in , list , ND ) ;
-      compute_gluon_prop( Ap , A , list , in ) ;
-      break ;
-    default : // default behaviour to the Exceptional triple glue
-      write_mom_veclist( Ap , in , list , ND ) ;
-      check = write_exceptional_g2g3_MOMgg( Ap , A , 
-					    list , in ) ;
-      break ;
-    }
+  switch( CUTINFO.dir ) {
+  case FIELDS :
+    //all of this work leads to us discarding (most of) our A fields
+    write_mom_veclist( Ap , in , list , ND ) ;
+    write_lattice_fields( Ap , A , list , in ) ;
+    break ;
+  case EXCEPTIONAL :      
+    write_mom_veclist( Ap , in , list , ND ) ;
+    check = write_exceptional_g2g3_MOMgg( Ap , A , 
+					  list , in ) ;
+    break ;
+  case NONEXCEPTIONAL :
+    // we write the mom-list internally in the g2g3 code as it can
+    // be different from the cut-momentum one..
+    write_nonexceptional_g2g3( Ap , 
+			       A , list , 
+			       in , CUTINFO.max_mom ) ;
+    break ;
+  case GLUON_PROPS :
+    write_mom_veclist( Ap , in , list , ND ) ;
+    compute_gluon_prop( Ap , A , list , in ) ;
+    break ;
+  default : // default behaviour to the Exceptional triple glue
+    write_mom_veclist( Ap , in , list , ND ) ;
+    check = write_exceptional_g2g3_MOMgg( Ap , A , 
+					  list , in ) ;
+    break ;
+  }
   printf( "[CUTS] Writing finished...\n[CUTS] Outputting to %s \n" , str ) ;
 
   // Free allocated memory

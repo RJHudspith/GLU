@@ -32,7 +32,7 @@ void
 calculate_effs_VDM_herm( double complex *__restrict f , 
 			 const double *__restrict z )
 {
-  int i ; 
+  size_t i ; 
   for( i = 0 ; i < NC ; i++ ) {
     f[ i ] = cos( z[ i ] ) + I * sin( z[i] ) ;
   }
@@ -46,7 +46,7 @@ calculate_effs_VDM_suNC( double complex *__restrict f ,
 			 const double complex *__restrict z )
 {
   double x[ NC ] ;
-  int i ; 
+  size_t i ; 
   for( i = 0 ; i < NC ; i++ ) {
     f[ i ] = z[ i ] ; 
     x[ i ] = carg( z[ i ] ) ;
