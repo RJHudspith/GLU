@@ -271,13 +271,8 @@ exact_log_slow( GLU_complex Q[ NCNC ] ,
   }
   multab( Q , vr , b ) ;
   #else
-  // get desperate and call the series log or our own asinh def
-  #ifdef SERIES_LOG
+  // get desperate and call the series log
   brute_force_log( Q , U , NC ) ;
-  #else 
-  asinh_log( Q , U ) ;
-  #endif
-  // 
 #endif
 #endif
   return ;

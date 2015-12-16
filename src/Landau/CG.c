@@ -312,7 +312,7 @@ approx_minimum( const size_t nmeas ,
   #ifdef verbose
   printf( "[GF] sumneg  :: %zu \n" , sumneg ) ;
   printf( "[GF] bestmin :: %zu \n" , bestmin ) ;
-  printf( "[GF] sumder  :: %zu \n" , sumder ) ;
+  printf( "[GF] sumder  :: %e \n" , sumder ) ;
   #endif
 
   // if we are at the limit of precision we leave

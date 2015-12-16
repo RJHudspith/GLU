@@ -258,7 +258,7 @@ newton_approx_inverse( GLU_complex Zinv[ NCNC ] , // is Z_{k-1}^{-1}
 {
   GLU_complex BX[ NCNC ] ;
   size_t iters , j ;
-  for( iters = 0 ; iters < 10 ; iters++ ) {
+  for( iters = 0 ; iters < 4 ; iters++ ) {
     multab( BX , Z , Zinv ) ;
     // should be the identity
     if( fabs( creal( trace( BX ) ) - NC ) < PREC_TOL ) {

@@ -48,33 +48,6 @@ multab( GLU_complex a[ NCNC ] ,
   a[2] = b[2] * c[0] + b[3] * c[2] ;		\
   a[3] = b[2] * c[1] + b[3] * c[3] ;		
 #else
-  #if (NC%2==0)
-  size_t i , j , m ;
-  const GLU_complex *pB = b ;
-  register GLU_complex sum , sum2 ;
-  register GLU_real REB , IMB , REC , IMC ;
-  for( i = 0 ; i < NC ; i+=2 ) {
-    for( j = 0 ; j < NC ; j++ ) {
-      sum = sum2 = 0.0 ;
-      for( m = 0 ; m < NC ; m+=2  ) {
-	REB = creal( pB[m] ) ; IMB = cimag( pB[m] ) ;
-	REC = creal( c[ j + m*NC ] ) ; IMC = cimag( c[ j + m*NC ] ) ;
-	sum += REB * REC - IMB * IMC + I * ( REB * IMC + IMB * REC ) ; 
-	REB = creal( pB[m+NC] ) ; IMB = cimag( pB[m+NC] ) ;
-	sum2 += REB * REC - IMB * IMC + I * ( REB * IMC + IMB * REC ) ; 
-	REB = creal( pB[m+1] ) ; IMB = cimag( pB[m+1] ) ;
-	REC = creal( c[ j + (m+1)*NC ] ) ; IMC = cimag( c[ j + (m+1)*NC ] ) ;
-	sum += REB * REC - IMB * IMC + I * ( REB * IMC + IMB * REC ) ; 
-	REB = creal( pB[m+1+NC] ) ; IMB = cimag( pB[m+1+NC] ) ;
-	sum2 += REB * REC - IMB * IMC + I * ( REB * IMC + IMB * REC ) ; 
-      }
-      a[ j + NC*i ] = sum ;
-      a[ j + NC*i + NC ] = sum2 ;
-    }
-    pB += NC ;
-    pB += NC ;
-  }
-  #else
   // slow and stupid version
   size_t i , j , m ;
   register GLU_complex sum ;
@@ -90,7 +63,6 @@ multab( GLU_complex a[ NCNC ] ,
       a[ j + NC*i ] = sum ;
     }
   }
-  #endif
 #endif
   return ;
 }

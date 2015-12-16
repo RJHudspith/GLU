@@ -213,7 +213,7 @@ line_search( GLU_complex *__restrict *__restrict gauge ,
   double val[LINE_NSTEPS] ;
   val[0] = zero_alpha ; // 0 is a freebie
 #ifdef verbose
-  printf( "[GF] Landau CG probe :: %f %e \n" , al[0] , val[0] ) ;
+  printf( "[GF] Landau CG probe :: %f %1.15f \n" , al[0] , val[0] ) ;
 #endif
   for( counter = 1 ; counter < LINE_NSTEPS ; counter++ ) {
     exponentiate_gauge( gauge , (const GLU_complex**)in , al[counter] ) ;
@@ -221,7 +221,7 @@ line_search( GLU_complex *__restrict *__restrict gauge ,
 				   lat , ND , LVOLUME , 0 ) ;
     // the last argument of this has to be 0 !!! 
 #ifdef verbose
-    printf( "[GF] Landau CG probe :: %f %e \n" , al[counter] , val[counter] ) ;
+    printf( "[GF] Landau CG probe :: %f %1.15f \n" , al[counter] , val[counter] ) ;
 #endif
   }
 
@@ -325,8 +325,8 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
     if( *tr < CG_TOL ) {
       beta = insum / in_old_sum ;
     }
-
     in_old_sum = insum ;
+
     // compute sn, the conjugate matrix in FFTW's order
     #pragma omp parallel for private(i)
     for( i = 0 ; i < TRUE_HERM ; i++ ) {
@@ -344,7 +344,7 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
     }
 
     #ifdef verbose
-    printf( "[GF] %d BETA %e " , iters , beta ) ;
+    //printf( "[GF] %zu BETA %e " , iters , beta ) ;
     printf( "[GF] SPLINE :: %e " , spline_min ) ;
     printf( "[GF] cgacc %e \n" , *tr ) ;
     #endif

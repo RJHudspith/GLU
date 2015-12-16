@@ -34,45 +34,70 @@ void
 multab_atomic_left( GLU_complex a[ NCNC ] , 
 		    const GLU_complex b[ NCNC ] )
 {
+  __m128d *A = ( __m128d* )a ;
+  const __m128d *B = ( const __m128d* )b ;
 #if NC == 3
-  GLU_complex C0 = b[0] * a[0] + b[1] * a[3] + b[2] * a[6] ;	\
-  GLU_complex C1 = b[3] * a[0] + b[4] * a[3] + b[5] * a[6] ;	\
-  GLU_complex C2 = b[6] * a[0] + b[7] * a[3] + b[8] * a[6] ;	\
-  a[0] = C0 ; a[3] = C1 ; a[6] = C2 ;				\
-  C0 = b[0] * a[1] + b[1] * a[4] + b[2] * a[7] ;		\
-  C1 = b[3] * a[1] + b[4] * a[4] + b[5] * a[7] ;		\
-  C2 = b[6] * a[1] + b[7] * a[4] + b[8] * a[7] ;		\
-  a[1] = C0 ; a[4] = C1 ; a[7] = C2 ;				\
-  C0 = b[0] * a[2] + b[1] * a[5] + b[2] * a[8] ;		\
-  C1 = b[3] * a[2] + b[4] * a[5] + b[5] * a[8] ;		\
-  C2 = b[6] * a[2] + b[7] * a[5] + b[8] * a[8] ;		\
-  a[2] = C0 ; a[5] = C1 ; a[8] = C2 ;
+  register __m128d C0 = _mm_add_pd( SSE2_MUL( *( B + 0 ) , *( A + 0 ) ) , 
+				    _mm_add_pd( SSE2_MUL( *( B + 1 ) , *( A + 3 ) ) ,
+						SSE2_MUL( *( B + 2 ) , *( A + 6 ) ) ) ) ;
+  register __m128d C1 = _mm_add_pd( SSE2_MUL( *( B + 3 ) , *( A + 0 ) ) , 
+				    _mm_add_pd( SSE2_MUL( *( B + 4 ) , *( A + 3 ) ) ,
+						SSE2_MUL( *( B + 5 ) , *( A + 6 ) ) ) ) ;
+  register __m128d C2 = _mm_add_pd( SSE2_MUL( *( B + 6 ) , *( A + 0 ) ) , 
+				    _mm_add_pd( SSE2_MUL( *( B + 7 ) , *( A + 3 ) ) ,
+						SSE2_MUL( *( B + 8 ) , *( A + 6 ) ) ) ) ;
+  A[0] = C0 ; A[3] = C1 ; A[6] = C2 ;
+  // middle
+  C0 = _mm_add_pd( SSE2_MUL( *( B + 0 ) , *( A + 1 ) ) , 
+		   _mm_add_pd( SSE2_MUL( *( B + 1 ) , *( A + 4 ) ) ,
+			       SSE2_MUL( *( B + 2 ) , *( A + 7 ) ) ) ) ;
+  C1 = _mm_add_pd( SSE2_MUL( *( B + 3 ) , *( A + 1 ) ) , 
+		   _mm_add_pd( SSE2_MUL( *( B + 4 ) , *( A + 4 ) ) ,
+			       SSE2_MUL( *( B + 5 ) , *( A + 7 ) ) ) ) ;
+  C2 = _mm_add_pd( SSE2_MUL( *( B + 6 ) , *( A + 1 ) ) , 
+		   _mm_add_pd( SSE2_MUL( *( B + 7 ) , *( A + 4 ) ) ,
+			       SSE2_MUL( *( B + 8 ) , *( A + 7 ) ) ) ) ;
+  A[1] = C0 ; A[4] = C1 ; A[7] = C2 ;
+  // end
+  C0 = _mm_add_pd( SSE2_MUL( *( B + 0 ) , *( A + 2 ) ) , 
+		   _mm_add_pd( SSE2_MUL( *( B + 1 ) , *( A + 5 ) ) ,
+			       SSE2_MUL( *( B + 2 ) , *( A + 8 ) ) ) ) ;
+  C1 = _mm_add_pd( SSE2_MUL( *( B + 3 ) , *( A + 2 ) ) , 
+		   _mm_add_pd( SSE2_MUL( *( B + 4 ) , *( A + 5 ) ) ,
+			       SSE2_MUL( *( B + 5 ) , *( A + 8 ) ) ) ) ;
+  C2 = _mm_add_pd( SSE2_MUL( *( B + 6 ) , *( A + 2 ) ) , 
+		   _mm_add_pd( SSE2_MUL( *( B + 7 ) , *( A + 5 ) ) ,
+			       SSE2_MUL( *( B + 8 ) , *( A + 8 ) ) ) ) ;
+  A[2] = C0 ; A[5] = C1 ; A[8] = C2 ;
 #elif NC == 2
-  GLU_complex C0 = b[0] * a[0] + b[1] * a[2] ;			\
-  GLU_complex C1 = b[2] * a[0] + b[3] * a[2] ;			\
-  a[0] = C0 ; a[2] = C1 ;					\
-  C0 = b[0] * a[1] + b[1] * a[3] ;				\
-  C1 = b[2] * a[1] + b[3] * a[3] ;				\
-  a[1] = C0 ; a[3] = C1 ;					
+  __m128d C0 = _mm_add_pd( SSE2_MUL( *( B + 0 ) , *( A + 0 ) ) ,
+			   SSE2_MUL( *( B + 1 ) , *( A + 2 ) ) ) ;
+  __m128d C1 = _mm_add_pd( SSE2_MUL( *( B + 2 ) , *( A + 0 ) ) ,
+			   SSE2_MUL( *( B + 3 ) , *( A + 2 ) ) ) ;
+  A[0] = C0 ; A[2] = C1 ;
+  C0 = _mm_add_pd( SSE2_MUL( *( B + 0 ) , *( A + 1 ) ) ,
+		   SSE2_MUL( *( B + 1 ) , *( A + 3 ) ) ) ;
+  C1 = _mm_add_pd( SSE2_MUL( *( B + 2 ) , *( A + 1 ) ) ,
+		   SSE2_MUL( *( B + 3 ) , *( A + 3 ) ) ) ;
+  A[1] = C0 ; A[3] = C1 ;					
 #else
   // slow and stupid loopy version, memory access pattern is odd
   size_t i , j , m ;
-  __m128d *A = (__m128d*)a ;
-  __m128d R[ NC ] ; // temporary storage up in here
+  __m128d C[ NC ] ; // temporary storage up in here
   register __m128d sum ;
   for( i = 0 ; i < NC ; i++ ) { // loop cols
-    const __m128d *B = (const __m128d*)b ;
+    B = (const __m128d*)b ;
     for( j = 0 ; j < NC ; j ++ ) { // loop rows
       sum = _mm_setzero_pd( ) ;
       for( m = 0 ; m < NC ; m ++  ) { // loop elements in row or column
 	sum = _mm_add_pd( sum , SSE2_MUL( *( B ) , *( A + i + m * NC ) ) ) ;
 	B++ ;
       }	
-      *( R + j ) = sum ;
+      *( C + j ) = sum ;
     }
     // copy back over to a ...
     for( m = 0 ; m < NC ; m++ ) {
-      *( A + i + m*NC ) = *( R + m ) ;
+      *( A + i + m*NC ) = *( C + m ) ;
     }
   }
 #endif
@@ -86,40 +111,69 @@ void
 multab_atomic_right( GLU_complex a[ NCNC ] , 
 		     const GLU_complex b[ NCNC ] )
 {
+  __m128d *A = ( __m128d* )a ;
+  const __m128d *B = ( const __m128d* )b ;
 #if NC==3
-  GLU_complex R0 = a[0] * b[0] + a[1] * b[3] + a[2] * b[6] ;	\
-  GLU_complex R1 = a[0] * b[1] + a[1] * b[4] + a[2] * b[7] ;	\
-  GLU_complex R2 = a[0] * b[2] + a[1] * b[5] + a[2] * b[8] ;	\
-  a[0] = R0 ; a[1] = R1 ; a[2] = R2 ;				\
-  R0 = a[3] * b[0] + a[4] * b[3] + a[5] * b[6] ;		\
-  R1 = a[3] * b[1] + a[4] * b[4] + a[5] * b[7] ;		\
-  R2 = a[3] * b[2] + a[4] * b[5] + a[5] * b[8] ;		\
-  a[3] = R0 ; a[4] = R1 ; a[5] = R2 ;				\
-  R0 = a[6] * b[0] + a[7] * b[3] + a[8] * b[6] ;		\
-  R1 = a[6] * b[1] + a[7] * b[4] + a[8] * b[7] ;		\
-  R2 = a[6] * b[2] + a[7] * b[5] + a[8] * b[8] ;		\
-  a[6] = R0 ; a[7] = R1 ; a[8] = R2 ;				
+  register __m128d C0 = _mm_add_pd( SSE2_MUL( *( B + 0 ) , *( A + 0 ) ) , 
+				    _mm_add_pd( SSE2_MUL( *( B + 3 ) , *( A + 1 ) ) ,
+						SSE2_MUL( *( B + 6 ) , *( A + 2 ) ) ) ) ;
+  register __m128d C1 = _mm_add_pd( SSE2_MUL( *( B + 1 ) , *( A + 0 ) ) , 
+				    _mm_add_pd( SSE2_MUL( *( B + 4 ) , *( A + 1 ) ) ,
+						SSE2_MUL( *( B + 7 ) , *( A + 2 ) ) ) ) ;
+  register __m128d C2 = _mm_add_pd( SSE2_MUL( *( B + 2 ) , *( A + 0 ) ) , 
+				    _mm_add_pd( SSE2_MUL( *( B + 5 ) , *( A + 1 ) ) ,
+						SSE2_MUL( *( B + 8 ) , *( A + 2 ) ) ) ) ;
+  A[0] = C0 ; A[1] = C1 ; A[2] = C2 ;
+  // middle
+  C0 = _mm_add_pd( SSE2_MUL( *( B + 0 ) , *( A + 3 ) ) , 
+		   _mm_add_pd( SSE2_MUL( *( B + 3 ) , *( A + 4 ) ) ,
+			       SSE2_MUL( *( B + 6 ) , *( A + 5 ) ) ) ) ;
+  C1 = _mm_add_pd( SSE2_MUL( *( B + 1 ) , *( A + 3 ) ) , 
+		   _mm_add_pd( SSE2_MUL( *( B + 4 ) , *( A + 4 ) ) ,
+			       SSE2_MUL( *( B + 7 ) , *( A + 5 ) ) ) ) ;
+  C2 = _mm_add_pd( SSE2_MUL( *( B + 2 ) , *( A + 3 ) ) , 
+		   _mm_add_pd( SSE2_MUL( *( B + 5 ) , *( A + 4 ) ) ,
+			       SSE2_MUL( *( B + 8 ) , *( A + 5 ) ) ) ) ;
+  A[3] = C0 ; A[4] = C1 ; A[5] = C2 ;
+  // bottom
+  C0 = _mm_add_pd( SSE2_MUL( *( B + 0 ) , *( A + 5 ) ) , 
+		   _mm_add_pd( SSE2_MUL( *( B + 3 ) , *( A + 6 ) ) ,
+			       SSE2_MUL( *( B + 6 ) , *( A + 7 ) ) ) ) ;
+  C1 = _mm_add_pd( SSE2_MUL( *( B + 1 ) , *( A + 5 ) ) , 
+		   _mm_add_pd( SSE2_MUL( *( B + 4 ) , *( A + 6 ) ) ,
+			       SSE2_MUL( *( B + 7 ) , *( A + 7 ) ) ) ) ;
+  C2 = _mm_add_pd( SSE2_MUL( *( B + 2 ) , *( A + 5 ) ) , 
+		   _mm_add_pd( SSE2_MUL( *( B + 5 ) , *( A + 6 ) ) ,
+			       SSE2_MUL( *( B + 8 ) , *( A + 7 ) ) ) ) ;
+  A[6] = C0 ; A[7] = C1 ; A[8] = C2 ;				
 #elif NC==2
-  GLU_complex R0 = a[0] * b[0] + a[1] * b[2] ;		\
-  GLU_complex R1 = a[0] * b[1] + a[1] * b[3] ;		\
-  a[0] = R0 ; a[1] = R1 ;				\
-  R0 = a[2] * b[0] + a[3] * b[2] ;			\
-  R1 = a[2] * b[1] + a[3] * b[3] ;			\
-  a[2] = R0 ; a[3] = R1 ;				
+  __m128d C0 = _mm_add_pd( SSE2_MUL( *( B + 0 ) , *( A + 0 ) ) ,
+			   SSE2_MUL( *( B + 2 ) , *( A + 1 ) ) ) ;
+  __m128d C1 = _mm_add_pd( SSE2_MUL( *( B + 1 ) , *( A + 0 ) ) ,
+			   SSE2_MUL( *( B + 3 ) , *( A + 1 ) ) ) ;
+  A[0] = C0 ; A[1] = C1 ;
+  C0 = _mm_add_pd( SSE2_MUL( *( B + 0 ) , *( A + 2 ) ) ,
+		   SSE2_MUL( *( B + 2 ) , *( A + 3 ) ) ) ;
+  C1 = _mm_add_pd( SSE2_MUL( *( B + 1 ) , *( A + 2 ) ) ,
+		   SSE2_MUL( *( B + 3 ) , *( A + 3 ) ) ) ;
+  A[2] = C0 ; A[3] = C1 ;				
 #else
   // slow and stupid loopy version
   size_t i , j , m ;
-  GLU_complex R[ NC ] ;
+  __m128d C[ NC ] ;
+  register __m128d sum ;
   for( i = 0 ; i < NC ; i++ ) {
     for( j = 0 ; j < NC ; j ++ ) {
-      R[j] = 0.0 ;
+      sum = _mm_setzero_pd( ) ;
       for( m = 0 ; m < NC ; m ++  ) {
-        R[ j ] += a[ m + i*NC ] * b[ j + m*NC ] ;
-      }	
+        sum = _mm_add_pd( sum , 
+			  SSE2_MUL( *( A +  m + i*NC ) , *( B + j + m*NC ) ) ) ;
+      }
+      *( C + j ) = sum ;
     }
     // copy back over to a ...
     for( j = 0 ; j < NC ; j ++ ) {
-      a[ j + i*NC ] = R[j] ;
+      *( A + j + i*NC ) = *( C + j ) ;
     }
   }
 #endif

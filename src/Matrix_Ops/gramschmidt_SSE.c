@@ -33,46 +33,7 @@
 #include "SSE2_OPS.h"
 
 #if NC > 3
-
-#include "GLU_malloc.h" // GLU_malloc()
-#include "LU.h"         // LU_det()
-
-// gramschmidt projection V = V - V.U^{\dagger}
-static void
-project( GLU_complex *__restrict V ,
-	 const GLU_complex *__restrict U )
-{
-  size_t i ;
-  register double projRE = 0.0 , projIM = 0.0 ;
-  for( i = 0 ; i < NC ; i ++ ) {
-    projRE += ( double )( creal( V[i] ) * creal( U[i] ) ) ;
-    projRE += ( double )( cimag( V[i] ) * cimag( U[i] ) ) ;
-    projIM += ( double )( creal( U[i] ) * cimag( V[i] ) ) ;
-    projIM -= ( double )( cimag( U[i] ) * creal( V[i] ) ) ; 
-  } 
-  for( i = 0 ; i < NC ; i++ ) {
-    V[i] -= projRE * creal( U[i] ) - projIM * cimag( U[i] ) +
-      I * ( projRE * cimag( U[i] ) + projIM * creal( U[i] ) ) ;
-  }
-  return ;
-}
-
-// normalize a vector //
-static void
-vect_norm2( GLU_complex *__restrict a )
-{
-  size_t mu ;
-  register double norm = 0.0 ;
-  for( mu = 0 ; mu < NC ; mu++ ) {
-    norm += (double)( creal( a[mu] ) * creal( a[mu] ) ) +	\
-            (double)( cimag( a[mu] ) * cimag( a[mu] ) ) ;
-  }
-  norm = 1. / sqrt( norm ) ;
-  for( mu = 0 ; mu < NC ; mu++ ) {
-    a[ mu ] *= norm ;
-  }
-  return ;
-}
+  #include "LU.h"         // LU_det()
 #endif
 
 //reunitarise an SU(3) matrix sped up for our requirements
@@ -139,53 +100,61 @@ reunit2( GLU_complex *__restrict U)
   *( u + 3 ) = SSE2_CONJ( *( u + 0 ) ) ;
 
 #else
-  // need a modified gram-schmidt process, leaves the
+   // need a modified gram-schmidt process, leaves the
   // bottom row untouched
-  size_t i , j , k ;
-  GLU_complex v[ NC - 1 ][ NC ] ;
-
-  // equate our vector to our matrix , parallelism here is a bit extreme
-  for( i = 0 ; i < NC-1 ; i++ ) {
+  size_t i , j , k , idx ;
+  GLU_complex array[ (NC-1)*(NC-1) ] ;
+  // perform the modified gram-schmidt
+  register __m128d *v1 , *v2 ;
+  register __m128d proj , norm , z1 ;
+  for( k = 0 ; k < NC-1 ; k++ ) { // loop rows
+    // do the projection
+    for( i = 0 ; i < k ; i++ ) { // loop cols
+      proj = _mm_setzero_pd( ) ;
+      v1 = (__m128d*)U + k*NC ; v2 = (__m128d*)U + i*NC ;
+      for( j = 0 ; j < NC ; j ++ ) {
+	proj = _mm_add_pd( proj , SSE2_MUL_CONJ( *v1 , *v2 ) ) ;
+	v1++ , v2++ ;
+      }
+      v1 = (__m128d*)U + k*NC ; v2 = (__m128d*)U + i*NC ;
+      for( j = 0 ; j < NC ; j++ ) {
+	*v1 = _mm_sub_pd( *v1 , SSE2_MUL( proj , *v2 ) ) ;
+	v1++ , v2++ ;
+      }
+    }
+    // norm code
+    v1 = (__m128d*)U + k*NC ;
+    norm = _mm_setzero_pd( ) ;
     for( j = 0 ; j < NC ; j++ ) {
-      v[i][j] = U[ j + ( NC * i ) ] ;
+      z1 = _mm_shuffle_pd( *v1 , *v1 , 1 ) ;
+      norm = _mm_add_pd( norm , 
+			 _mm_add_pd( _mm_mul_pd( *v1 , *v1 ) ,
+				     _mm_mul_pd(  z1 ,  z1 ) ) ) ;
+      v1++ ;
+    }
+    v1 = (__m128d*)U + k*NC ;
+    norm = _mm_div_pd( _mm_setr_pd( 1.0 , 1.0 ) , _mm_sqrt_pd( norm ) ) ;
+    for( j = 0 ; j < NC ; j++ ) {
+      *v1 = _mm_mul_pd( *v1 , norm ) ; v1++ ;
     }
   }
-
-  // perform the modified gram schmidt
-  for( k = 0 ; k < NC-1 ; k++ ) {
-    for( i = 0 ; i < k ; i++ ) { 
-      project( v[k] , v[i] ) ;      
+  // initialise submatrix and compute sub-determinant
+  for( k = 0 ; k < NC ; k++ ) {
+    idx = 0 ;
+    for( i = 0 ; i < NC-1 ; i++ ) {
+      for( j = 0 ; j < NC ; j++ ) {
+	if( j==k ) continue ;
+	array[ idx++ ] = U[ j + i*NC ] ;
+      }
     }
-    // normalize
-    vect_norm2( v[k] ) ;
-    // and put back into U, need the index i to make sure the vector gets normalised
-    for( j = 0 ; j < NC ; j++ ) {
-      U[ j + ( NC * i ) ] = v[i][j] ;
-    }
-  }
-
-  // OK so this process leaves the bottom row as was, need to complete
-  GLU_complex *array = NULL ;
-  GLU_malloc( (void**)&array , 16 , ( NC - 1 ) * ( NC - 1 ) * sizeof( GLU_complex ) ) ;
-
-  for( i = (NCNC-NC) ; i < NCNC ; i++ ) { // our bona-fide minor index loops the bottom row
-    size_t idx = 0 ;
-    for( j = 0 ; j < ( NCNC - NC ) ; j++ ) {
-      if( ( j%NC != i%NC ) ) { // remove columns  ( j/NC != i/NC ) is implicit!!
-	// pack array
-	array[idx++] = U[j] ;
-      } 
-    }
-    // compute the determinant
-    #if ( NC%2 == 0 )
-    register const GLU_real mulfact = ( i % 2 == 0 ) ? -1.0 : 1.0 ; 
-    #else
-    register const GLU_real mulfact = ( i % 2 == 0 ) ? 1.0 : -1.0 ; 
-    #endif
+#if ( NC%2 == 0 )
+    register const GLU_real mulfact = !(k&1) ? -1 :  1 ; 
+#else
+    register const GLU_real mulfact = !(k&1) ?  1 : -1 ; 
+#endif
     // compute the determinant of the minors using the LU decomp
-    U[i] = conj( mulfact * (GLU_complex)LU_det_overwrite( NC-1 , array ) ) ;
+    U[ k + i*NC ] = conj( mulfact * (GLU_complex)LU_det_overwrite( NC-1 , array ) ) ;
   }
-  free( array ) ;
 #endif
   return ;
 }

@@ -658,7 +658,8 @@ static char *exponentiate_test(  ) {
   return 0 ;
 }
 
-static char *exponentiate_short_test(  ) {
+static char *exponentiate_short_test( void ) 
+{
   // Hermitian proj has been tested
   GLU_complex hHa[ HERMSIZE ] , Ha[ NCNC ] ;
   GLU_complex hUa[ NCNC ] , Ua[ NCNC ] ;

@@ -53,19 +53,20 @@ static void
 denman_rootY( GLU_complex Y[ NCNC ] )
 {
   GLU_complex M[ NCNC ] , INVM[ NCNC ] ;
-  size_t i ;
-  for( i = 0 ; i < NCNC ; i++ ) { M[i] = Y[i] ; }
   // lets see if the other one makes more sense
   GLU_real tol = 1.0 ;
-  int iters = 0 ;
+  size_t i , iters = 0 ;
+  for( i = 0 ; i < NCNC ; i++ ) { M[i] = Y[i] ; }
+
   while( tol > PREC_TOL && iters < 25 ) { // aggressive
 
     // invert M into INVM
     inverse( INVM , M ) ;
 
-    // M^-1 -> ( 1 + M^-1 )
+    // M^-1 -> ( 1 + M^-1 ) :: M -> 1 + M
     for( i = 0 ; i < NC ; i++ ) {
       INVM[ i*(NC+1) ] += 1.0 ;
+      M[ i*(NC+1) ]    += 1.0 ;
     }
     multab_atomic_right( Y , INVM ) ;
 
@@ -75,12 +76,13 @@ denman_rootY( GLU_complex Y[ NCNC ] )
     for( i = 0 ; i < NCNC ; i++ ) {
       Y[i] *= 0.5 ;
       M[i] = 0.25 * ( M[i] + INVM[i] ) ;
-      if( i%(NC+1) == 0 ) { 
-	M[i] += 0.25 ; 
-	tol += creal( M[i] ) * creal( M[i] ) + cimag( M[i] ) * cimag( M[i] ) - 1.0 ;
-      }
     }
-    tol = fabs( tol ) ;
+    register GLU_complex c ;
+    for( i = 0 ; i < NC ; i++ ) {
+      c = M[ i*(NC+1) ] ;
+      tol += creal( c ) * creal( c ) + cimag( c ) * cimag( c ) ;
+    }
+    tol = fabs( tol - NC ) ;
 
     // should complain here
     if( iters > 25 ) {
@@ -90,7 +92,6 @@ denman_rootY( GLU_complex Y[ NCNC ] )
 
     iters++ ;
   }
-
   // that works most of the time
   return ;
 }
@@ -118,23 +119,24 @@ denman_rootZ( GLU_complex *__restrict Z )
     // add the identity
     for( i = 0 ; i < NC ; i++ ) {
       INVM[ i*(NC+1) ] += 1.0 ;
+      M[ i*(NC+1) ]    += 1.0 ;
     }
     multab_atomic_left( Z , INVM ) ;
 
     // Z <- 0.5 ( 1 + M^-1 ) Z
     // M <- 0.25 ( M + 2I + M^-1 )
-    tol = 0. ;
     for( i = 0 ; i < NCNC ; i++ ) {
       Z[i] *= 0.5 ; 
       M[i] = 0.25 * ( M[i] + INVM[i] ) ;
-      if( !( i%(NC+1) ) ) { 
-	M[i] += 0.25 ; 
-	// M tends to the identity, compare it to 1
-	tol += creal( M[i] ) * creal( M[i] ) + cimag( M[i] ) * cimag( M[i] ) - 1.0 ;
-      }
     }
     // make sure it is positive definite
-    tol = fabs( tol ) ;
+    register GLU_complex c ;
+    tol = 0. ;
+    for( i = 0 ; i < NC ; i++ ) {
+      c = M[ i*(NC+1) ] ;
+      tol += creal( c ) * creal( c ) + cimag( c ) * cimag( c ) ;
+    }
+    tol = fabs( tol - NC ) ;
     iters++ ;
   }
   // that works!
@@ -158,14 +160,13 @@ precompute_taylor_factors( void )
   return ;
 }
 
-// logarithm of a unitary matrix by asinh
-void
-asinh_log( GLU_complex *__restrict Q , 
-	   const GLU_complex *__restrict U )
+static void
+log_asinh( GLU_complex *__restrict Q , 
+	   const GLU_complex *__restrict U ,
+	   const size_t NROOTS )
 {
   // should I allocate these?, possibly
   GLU_complex y[ NCNC ] , z[ NCNC ] , zz[ NCNC ] ;
-  const size_t NROOTS = 2 ;
   size_t roots , i ;
 
   // y is our workspace
@@ -205,7 +206,7 @@ asinh_log( GLU_complex *__restrict Q ,
   }
   // horner's rule for the series of numerator 
   // and denominator
-  for( roots = NPADE-2 ; roots > -1 ; roots-- ) {
+  for( roots = NPADE-1 ; roots > -1 ; roots-- ) {
     for( i = 0 ; i < NC ; i++ ) {
       numerator[i*(NC+1)]   += num[roots] ;
       denominator[i*(NC+1)] += dum[roots] ;
@@ -230,13 +231,49 @@ asinh_log( GLU_complex *__restrict Q ,
   multab_atomic_left( numerator , z ) ;
 
   // multiply by 2^NROOTS-1
-  const GLU_complex SCALE = -I * (double)( 2 << ( NROOTS - 1 ) ) ;
+  const GLU_complex SCALE = -I * pow( 2.0 , ( NROOTS ) ) ;
   for( i = 0 ; i < NCNC ; i++ ) {
     Q[i] = SCALE * numerator[i] ;
   }
 
-  // consider fixing up the error cascade here?
+  // enforce hermiticity to clean up the procedure
+  for( i = 0 ; i < NC-1 ; i++ ) { 
+    size_t j ;
+    for( j = i+1 ; j < NC ; j++ ) {
+      Q[ j + i*NC ] = 0.5 * ( Q[ j + i*NC ] + conj( Q[ i + j*NC ] ) ) ;
+      Q[ i + j*NC ] = conj( Q[ j + i*NC ] ) ;
+    }
+  }
+  return ;
+}
 
+// logarithm of a unitary matrix by asinh
+void
+asinh_log( GLU_complex *__restrict Q , 
+	   const GLU_complex *__restrict U )
+{
+  double eps = 1.0 ;
+  size_t iters = 0 ;
+
+  GLU_complex Qtemp[ NCNC ] ;
+  size_t nroots = 3 ;
+
+  log_asinh( Qtemp , U , nroots ) ;
+
+  while( eps > 1E-5 && iters < 32 ) {
+    nroots+=4 ;
+
+    log_asinh( Q , U , nroots ) ;
+
+    size_t i ;
+    eps = 0.0 ;
+    for( i = 0 ; i < NCNC ; i++ ) {
+      eps += cabs( Qtemp[i] - Q[i] ) ;
+    }
+    eps /= (NCNC) ;
+    iters++ ;
+    equiv( Qtemp , Q ) ;
+  }
   return ;
 }
 

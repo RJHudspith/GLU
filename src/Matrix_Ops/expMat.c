@@ -46,6 +46,7 @@
 
 // LUT for the factorials
 #ifdef USE_PADE
+#define PADE_ORDER (4)
 static GLU_real *pade ;
 #else
 static GLU_real *factorial ;
@@ -56,13 +57,13 @@ void
 init_factorial( void ) 
 {
 #ifdef USE_PADE
-  pade = ( GLU_real* ) malloc( 6 * sizeof( GLU_real ) ) ;
+  // mix of 4,4 pade and 3 rootings is nice combination
+  pade = ( GLU_real* ) malloc( (PADE_ORDER+1) * sizeof( GLU_real ) ) ;
   pade[ 0 ] = 1.0 ;
   pade[ 1 ] = 1.0/2.0 ;
-  pade[ 2 ] = 1.0/9.0 ;
-  pade[ 3 ] = 1.0/72.0 ;
-  pade[ 4 ] = 1.0/1008.0 ;
-  pade[ 5 ] = 1.0/30240.0 ;
+  pade[ 2 ] = 3.0/28.0 ;
+  pade[ 3 ] = 1.0/84.0 ;
+  pade[ 4 ] = 1.0/1680.0 ;
 #else
   factorial = ( GLU_real* ) malloc ( MAX_FACTORIAL * sizeof( GLU_real ) ) ;
   factorial[ 0 ] = 1.0 ;
@@ -110,8 +111,8 @@ horners_pade( GLU_complex a[ NCNC ] ,
 	      const GLU_complex b[ NCNC ] )
 {
   size_t i ;
-  for( i = 0 ; i < NCNC ; i++ ) { a[i] = b[i] * pade[5] ; } 
-  for( i = 4 ; i > 0 ; i-- ) {    
+  for( i = 0 ; i < NCNC ; i++ ) { a[i] = b[i] * pade[PADE_ORDER] ; } 
+  for( i = PADE_ORDER-1 ; i > 0 ; i-- ) {    
     add_constant( a , pade[i] ) ; 
     multab_atomic_left( a , b ) ;    
   }
@@ -347,6 +348,7 @@ exponentiate( GLU_complex U[ NCNC ] ,
       EOLD[ j ] = U[ j ] ;
     }
     sum /= NCNC ;
+
     // convergence ....
     if( sum < PREC_TOL ) { break ; } 
     // warning for non-convergence ..
