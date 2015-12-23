@@ -28,7 +28,7 @@
 
 // big endian file writers, set up to mimic the c-standard fwrite but cannot
 // use a multiple of the array length for the size value
-static void
+static int
 FWRITE( void *arr ,
 	const size_t size , // MUST BE sizeof(int) or sizeof(double)
 	const size_t stride ,
@@ -44,9 +44,11 @@ FWRITE( void *arr ,
     fwrite( arr , size , stride , file ) ;
     if( !WORDS_BIGENDIAN ) { bswap_64( stride , arr ) ; }
   } else {
-    printf( "[CUT] I do not understand your byte-swapping size %zu \n" , size ) ;
+    fprintf( stderr , "[CUT] I do not understand your byte-swapping "
+	     "size %zu \n" , size ) ;
+    return GLU_FAILURE ;
   }
-  return ;
+  return GLU_SUCCESS ;
 }
 
 // gives us some nominal information on the cutting procedure
@@ -67,40 +69,44 @@ check_psq( const struct cut_info CUTINFO )
   // 2 is a cylinder cut
   // 3 is with an angle
 
-  printf( "\n[CUTS] " ) ;
+  fprintf( stdout , "\n[CUTS] " ) ;
   if( CUTINFO.dir == NONEXCEPTIONAL ) {
-    printf( "PSQ Cutting Procedure \n" ) ;
+    fprintf( stdout , "PSQ Cutting Procedure \n" ) ;
   } else {
     switch( CUTINFO.type ) {
     case HYPERCUBIC_CUT :
-      printf( "HYPERCUBIC Cutting Procedure \n" ) ;
+      fprintf( stdout , "HYPERCUBIC Cutting Procedure \n" ) ;
       break ;
     case PSQ_CUT :
-      printf( "PSQ Cutting Procedure \n" ) ;
+      fprintf( stdout , "PSQ Cutting Procedure \n" ) ;
       break ;
     case CYLINDER_CUT :
-      printf( "Cylinder Cutting Procedure \n" ) ;
-      printf( "[CUTS] Cylinder Width in Lattice units :: %g \n" , CUTINFO.cyl_width ) ; 
-      printf( "[CUTS] Physical Momentum Cap :: %g \n" , TWOPI*CUTINFO.cyl_width/small  ) ; 
+      fprintf( stdout , "Cylinder Cutting Procedure \n" ) ;
+      fprintf( stdout , "[CUTS] Cylinder Width in Lattice units :: %g \n" , 
+	       CUTINFO.cyl_width ) ; 
+      fprintf( stdout , "[CUTS] Physical Momentum Cap :: %g \n" , 
+	       TWOPI*CUTINFO.cyl_width/small  ) ; 
       break ;
     case CYLINDER_AND_CONICAL_CUT :
-      printf( "Cylinder and Conical Cutting Procedure \n" ) ;
-      printf( "[CUTS] Cylinder Radius in Lattice units :: %g \n" , CUTINFO.cyl_width ) ; 
-      printf( "[CUTS] Physical Momentum Cap :: %g \n" , TWOPI*CUTINFO.cyl_width/small ) ; 
-      printf( "[CUTS] Cone Angle :: %g \n" , (double)CUTINFO.angle ) ; 
+      fprintf( stdout , "Cylinder and Conical Cutting Procedure \n" ) ;
+      fprintf( stdout , "[CUTS] Cylinder Radius in Lattice units :: %g \n" , 
+	       CUTINFO.cyl_width ) ; 
+      fprintf( stdout , "[CUTS] Physical Momentum Cap :: %g \n" , 
+	       TWOPI*CUTINFO.cyl_width/small ) ; 
+      fprintf( stdout , "[CUTS] Cone Angle :: %g \n" , 
+	       (double)CUTINFO.angle ) ; 
       break ;
     default:
-      printf( "I don't recognise the type.. Leaving \n" ) ;
+      fprintf( stderr , "I don't recognise the type.. Leaving \n" ) ;
       return GLU_FAILURE ;
     }
   }
-  printf( "[CUTS] Maximum p^2 :: %zu \n\n" , CUTINFO.max_mom ) ;
+  fprintf( stdout , "[CUTS] Maximum p^2 :: %zu \n\n" , CUTINFO.max_mom ) ;
   if( CUTINFO.definition == LOG_DEF ) {
-    printf( "[CUTS] Using the LOGARITHMIC field definition \n" ) ;
+    fprintf( stdout , "[CUTS] Using the LOGARITHMIC field definition \n" ) ;
   } else {
-    printf( "[CUTS] Using the LINEAR field definition \n" ) ;
+    fprintf( stdout , "[CUTS] Using the LINEAR field definition \n" ) ;
   }
-
   return GLU_SUCCESS ;
 }
 
@@ -113,49 +119,48 @@ output_str_struct( const struct cut_info CUTINFO )
   char tmp[ 256 ] ;
   sprintf( tmp , "%s" , CUTINFO.where ) ;
   #ifndef CONDOR_MODE
-  printf( "[CUTS] Our file is located @ %s \n", CUTINFO.where ) ;
+  fprintf( stdout , "[CUTS] Our file is located @ %s \n", CUTINFO.where ) ;
   #else
   sprintf( tmp , "./" ) ;
   #endif
 
   // each mode has a slightly different start so that you know what you are getting into 
-  switch( CUTINFO.dir )
-    {
-    case INSTANTANEOUS_GLUONS :
-      sprintf( str , "%sG2spG2t" , tmp ) ;
-      break ;
-    case SMEARED_GLUONS :
-      sprintf( str , "%sG2_G2SM" , tmp ) ;
-      break ;
-    case GLUON_PROPS :
-      sprintf( str , "%sG2F2" , tmp ) ; 
-      break ;
-    case CONFIGSPACE_GLUONS :
-      sprintf( str , "%sCSPACE" , tmp ) ; 
-      break ;
-    case FIELDS :
-      sprintf( str , "%sMATS" , tmp) ; 
-      break ;
-    case EXCEPTIONAL :
-      sprintf( str , "%sMOMgg" , tmp ) ; 
-      break ;
-    case NONEXCEPTIONAL :
-      #ifdef PROJ_GRACEY
-      sprintf( str , "%spgracey", tmp ) ;
-      #else
-      sprintf( str , "%spboucaud", tmp ) ;
-      #endif
-      break ;
-    case STATIC_POTENTIAL :
-      sprintf( str , "%sSTATPOT" , tmp ) ;
-      break ;
-    case TOPOLOGICAL_SUSCEPTIBILITY :
-      sprintf( str , "%sQSUSC" , tmp ) ;
-      break ;
-    default : // default behaviour is the 3 gluon vertex
-      sprintf( str , "%sMOMgg" , tmp ) ; 
-      break ;
-    }
+  switch( CUTINFO.dir ) {
+  case INSTANTANEOUS_GLUONS :
+    sprintf( str , "%sG2spG2t" , tmp ) ;
+    break ;
+  case SMEARED_GLUONS :
+    sprintf( str , "%sG2_G2SM" , tmp ) ;
+    break ;
+  case GLUON_PROPS :
+    sprintf( str , "%sG2F2" , tmp ) ; 
+    break ;
+  case CONFIGSPACE_GLUONS :
+    sprintf( str , "%sCSPACE" , tmp ) ; 
+    break ;
+  case FIELDS :
+    sprintf( str , "%sMATS" , tmp) ; 
+    break ;
+  case EXCEPTIONAL :
+    sprintf( str , "%sMOMgg" , tmp ) ; 
+    break ;
+  case NONEXCEPTIONAL :
+#ifdef PROJ_GRACEY
+    sprintf( str , "%spgracey", tmp ) ;
+#else
+    sprintf( str , "%spboucaud", tmp ) ;
+#endif
+    break ;
+  case STATIC_POTENTIAL :
+    sprintf( str , "%sSTATPOT" , tmp ) ;
+    break ;
+  case TOPOLOGICAL_SUSCEPTIBILITY :
+    sprintf( str , "%sQSUSC" , tmp ) ;
+    break ;
+  default : // default behaviour is the 3 gluon vertex
+    sprintf( str , "%sMOMgg" , tmp ) ; 
+    break ;
+  }
   // color info
   sprintf( str , "%s_SU%d_" , str , NC ) ;
 
@@ -236,10 +241,8 @@ output_str_struct( const struct cut_info CUTINFO )
       sprintf( str , "%s_LIN" , str ) ;
     }
   }
-
   // and finish up with the configuration number
   sprintf( str , "%s.%zu.bin" , str , Latt.flow ) ;
-
   return str ;
 }
 
@@ -273,10 +276,12 @@ write_g2_to_list( FILE *__restrict Ap ,
 		  int num_mom[ 1 ] ) 
 {
 #ifdef ASCII_CHECK
-  int i ;
-  printf( "%d\n" , num_mom[0] ) ;
-  for( i = 0 ; i < num_mom[0] ; i++ ) { printf("%e \n", g2[i] ) ; }
-  printf("%d \n", num_mom[ 0 ] ) ;
+  size_t i ;
+  fprintf( stdout , "[CUTS] G2\n%d\n" , num_mom[0] ) ;
+  for( i = 0 ; i < num_mom[0] ; i++ ) { 
+    fprintf( stdout "%e\n", g2[i] ) ; 
+  }
+  fprintf( stdout , "%d\n", num_mom[ 0 ] ) ;
 #else
   // write NUM_MOM[0] , G2
   FWRITE( num_mom , sizeof(int) , 1 , Ap ) ;
@@ -293,11 +298,15 @@ write_g2g3_to_list( FILE *__restrict Ap ,
 		    int num_mom[ 1 ] ) 
 {
 #ifdef ASCII_CHECK
+  fprintf( stout , "[CUTS] g2g3\n%d\n", num_mom[ 0 ] ) ;
+  size_t i ;
+  for( i = 0 ; i < num_mom[0] ; i++ ) { 
+    printf( stdout , "%e\n", g2[i] ) ; 
+  }
   printf("%d \n", num_mom[ 0 ] ) ;
-  int i ;
-  for( i = 0 ; i < num_mom[0] ; i++ ) { printf("%e \n", g2[i] ) ; }
-  printf("%d \n", num_mom[ 0 ] ) ;
-  for( i = 0 ; i < num_mom[0] ; i++ ) { printf("%e \n", g3[i] ) ; }
+  for( i = 0 ; i < num_mom[0] ; i++ ) { 
+    printf( stdout , "%e\n", g3[i] ) ; 
+  }
 #else
   // write NUM_MOM[0] , G2 , NUM_MOM[0] , G3
   FWRITE( num_mom , sizeof(int) , 1 , Ap ) ;
@@ -318,7 +327,7 @@ write_lattice_fields( FILE *__restrict Ap ,
   FWRITE( num_mom , sizeof(int) , 1 , Ap ) ;
 
   //write lattice fields
-  const size_t stride = ND * NCNC * 2 ; // the 2 is for the real and imaginary bits
+  const size_t stride = ND * NCNC * 2 ; // the 2 is for the re/im parts
   double *aout = malloc( stride * sizeof( double ) ) ;
 
   size_t i ;
@@ -379,7 +388,7 @@ write_rr_values( FILE *__restrict Ap ,
 {
   size_t i ;
 #ifdef ASCII_CHECK
-  printf( "%d \n" , size[0] ) ;
+  fprintf( stdout , "[CUTS] rr\n%d\n" , size[0] ) ;
   // loop the possible rsq's
   for( i = 0 ; i < ARR_SIZE ; i++ ) {
     if( rsq[i] < max_r2 ) {
@@ -405,14 +414,14 @@ void
 write_triplet_mom_list( FILE *__restrict Ap , 
 			int *__restrict num_mom , 
 			int *__restrict *__restrict momentum ,
-			size_t *__restrict *__restrict triplet ,
+			int *__restrict *__restrict triplet ,
 			const size_t DIR )
 {
   const size_t stride = ( ND + 1 ) * num_mom[0] ;
   int *kall = malloc( stride * sizeof( int ) ) ;
 
 #ifdef ASCII_CHECK
-  printf("%zu\n", num_mom[0] ) ;
+  fprintf( stdout , "[CUTS] triplet momlist\n%d\n", num_mom[0] ) ;
 #endif
 
   FWRITE( num_mom , sizeof(int) , 1 , Ap ) ;
@@ -421,7 +430,6 @@ write_triplet_mom_list( FILE *__restrict Ap ,
   size_t i ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < num_mom[0] ; i++ ) {
-    //const int trip = i % 3 ;
     size_t n = i * ( ND + 1 ) , mu ;
     kall[ n ] = ND ; 
     n++ ; 
@@ -435,13 +443,13 @@ write_triplet_mom_list( FILE *__restrict Ap ,
   size_t mu , b = 0 ;
   for( i = 0 ; i < num_mom[0] ; i++ ) {
     for( mu = 0 ; mu < ND + 1 ; mu++ ) {
-      printf("%d ", kall[ b ] ) ; 
+      fprintf( stdout , "%d ", kall[ b ] ) ; 
       b++ ;
     }
-    printf( "\n" ) ;
+    fprintf( stdout , "\n" ) ;
   }
-  printf("%d \n", kall[b] ) ;
-  printf("%d \n", num_mom[0] ) ;
+  fprintf( stdout , "%d \n", kall[b] ) ;
+  fprintf( stdout , "%d \n", num_mom[0] ) ;
 #endif
   FWRITE( kall , sizeof(int) , stride , Ap ) ;
   free( kall ) ;
@@ -451,13 +459,16 @@ write_triplet_mom_list( FILE *__restrict Ap ,
 // write the timeslices, LT[0] is the size of the array
 void
 write_tslice_list( FILE *__restrict Ap , 
-		   size_t *__restrict LT )
+		   int *__restrict LT )
 {
-  size_t T[ LT[0] ] , t ;
+  size_t t ;
+  int T[ LT[0] ] ;
 #ifdef ASCII_CHECK
-  printf( "%d \n" , LT[0] ) ;
-  for( t = 0 ; t < LT[0] ; t++ ) { printf( "%d \n" , t ) ; }
-  printf( "%d \n" , LT[0] ) ;
+  fprintf( stdout , "[CUTS] tslice list\n%d\n" , LT[0] ) ;
+  for( t = 0 ; t < LT[0] ; t++ ) { 
+    fprintf( stdout , "%d\n" , t ) ; 
+  }
+  fprintf( stdout , "%d\n" , LT[0] ) ;
 #endif
   FWRITE( LT , sizeof(int) , 1 , Ap ) ;
   for( t = 0 ; t < LT[0] ; t++ ) { T[ t ] = t ; }

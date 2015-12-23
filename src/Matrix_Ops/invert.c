@@ -177,14 +177,16 @@ gauss_jordan( GLU_complex M_1[ NCNC ] ,
   for( j = 0 ; j < NC ; j++ ) {
     if( creal( a[ j*( NC+1 ) ] ) == 0.0 && 
 	cimag( a[ j*( NC+1 ) ] ) == 0.0 ) { 
-      printf( "[INVERSE] Matrix is singular!!\n" ) ; 
+      fprintf( stderr , "[INVERSE] Matrix is singular!!\n" ) ; 
       write_matrix( M ) ;
       return GLU_FAILURE ; 
     }
     am1 = 1.0 / a[ j*( NC+1 ) ] ;
     for( i = 0 ; i < NC ; i++ ) {
-      ainv[ i + j*NC ] = creal( ainv[ i + j*NC ] ) * creal( am1 ) - cimag( ainv[ i + j*NC ] ) * cimag( am1 ) 
-	+ I * ( creal( ainv[ i + j*NC ] ) * cimag( am1 ) + cimag( ainv[ i + j*NC ] ) * creal( am1 )  ) ;
+      ainv[ i + j*NC ] = creal( ainv[ i + j*NC ] ) * creal( am1 ) -
+	cimag( ainv[ i + j*NC ] ) * cimag( am1 ) 
+	+ I * ( creal( ainv[ i + j*NC ] ) * cimag( am1 ) + 
+		cimag( ainv[ i + j*NC ] ) * creal( am1 )  ) ;
     }
   }
 
@@ -226,7 +228,8 @@ inverse( GLU_complex M_1[ NCNC ] ,
   register GLU_complex deter = cofactor_transpose( adjunct , M ) ;
   // here we worry about numerical stability //
   if( unlikely( cabs( deter ) < NC * PREC_TOL ) ) {
-    printf( "[INVERSE] Matrix is singular !!! deter=%1.14e %1.14e \n",creal( deter ),cimag( deter ) ) ; 
+    fprintf( stderr , "[INVERSE] Matrix is singular !!! "
+	     "deter=%1.14e %1.14e \n" , creal( deter ) , cimag( deter ) ) ; 
     write_matrix( M ) ; 
     return GLU_FAILURE ; 
   }

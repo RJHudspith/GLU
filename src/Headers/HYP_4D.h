@@ -24,15 +24,16 @@
 #define GLU_HYP_4D_H
 
 /**
-   @fn void HYPSLsmear4D( struct site *__restrict lat , const int smiters , const int type )
+   @fn int HYPSLsmear4D( struct site *__restrict lat , const size_t smiters , const int type )
    @brief Performs a Hypecubically-blocked smearing transformation
    @param lat :: lattice gauge field
    @param smiters :: number of smearing iterations
    @param type :: type of smearing operation ( SM_LOG , SM_APE , SM_STOUT )
+   @return #GLU_SUCCESS or #GLU_FAILURE
  */
-void 
+int
 HYPSLsmear4D( struct site *__restrict lat , 
-	      const int smiters , 
+	      const size_t smiters , 
 	      const int type ) ;
 
 #endif

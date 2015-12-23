@@ -56,7 +56,7 @@ flow4d_RK_fast( struct site *__restrict lat ,
   struct spt_site *lat2 = NULL ;
   if( GLU_malloc( (void**)&Z , 16 , LVOLUME * sizeof( struct spt_site_herm ) ) != 0 ||
       GLU_malloc( (void**)&lat2 , 16 , LVOLUME * sizeof( struct spt_site ) ) != 0 ) {
-    printf( "[WFLOW] temporary field allocation failure\n" ) ;
+    fprintf( stderr , "[WFLOW] temporary field allocation failure\n" ) ;
     return GLU_FAILURE ;
   }
 
@@ -68,8 +68,8 @@ flow4d_RK_fast( struct site *__restrict lat ,
   // initial output information
   lattice_gmunu( lat , &(curr -> qtop) , &(curr -> avplaq) ) ;
   curr -> time = 0.0 ;
-  printf("[WFLOW] {t} %g {dt} %g {p} %1.10f {q} %1.10f {ttGG} 0. {W} 0. \n" ,
-	 curr -> time , delta_t , curr -> avplaq , curr -> qtop ) ;
+  fprintf( stdout , "[WFLOW] {t} %1.12f {dt} %g {p} %1.12f {q} %g {Gt} 0.\n" ,
+	   curr -> time , delta_t , curr -> avplaq , curr -> qtop ) ;
   curr -> next = head ;
   head = curr ;
 
@@ -95,7 +95,7 @@ flow4d_RK_fast( struct site *__restrict lat ,
     project = project_LOG_wflow_short ;
     break ;
   default :
-    printf( "[SMEARING] unrecognised smearing projection \n" ) ;
+    fprintf( stderr , "[SMEARING] unrecognised smearing projection \n" ) ;
     return GLU_FAILURE ;
   }
 
@@ -116,10 +116,8 @@ flow4d_RK_fast( struct site *__restrict lat ,
 
     // set the flow
     flow_next = curr -> Gt ;
-    printf( "[WFLOW] {t} %1.12f {s} %1.12f {p} %1.12f {q} %1.12f {Gt} %1.12f {Alpha} %1.12f\n" , 
-	    curr -> time , sqrt( 1.0 / ( 8.0 * curr -> time ) ) ,
-	    curr -> avplaq , curr -> qtop , curr -> Gt ,
-	    curr -> Gt * 4. / 3.0 ) ;
+    fprintf( stdout , "[WFLOW] {t} %1.12f {dt} %g {p} %1.12f {q} %g {Gt} %1.12f\n" , 
+	     curr -> time , delta_t  , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
 
     // use a poor approximation of the derivative of the flow as a guide to stop
     if( ( ( flow_next - flow ) * curr -> time / delta_t ) > ( W0_STOP * 1.25 ) ) {
@@ -146,8 +144,8 @@ flow4d_RK_fast( struct site *__restrict lat ,
       curr -> Gt = curr -> time * curr -> time * 
 	lattice_gmunu( lat , &(curr -> qtop) , &( curr->avplaq ) ) ;
       // output details
-      printf( "[WFLOW] {t} %1.12f {p} %1.12f {q} %1.12f {Gt} %1.12f \n" , 
-	      curr -> time , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
+      fprintf( stdout , "[WFLOW] {t} %1.12f {dt} %g {p} %1.12f {q} %g {Gt} %1.12f \n" , 
+	       curr -> time , delta_tcorr , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
       curr -> next = head ;
       head = curr ;
       break ;
@@ -191,19 +189,19 @@ flow4d_RK_slow( struct site *__restrict lat ,
   struct spt_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
   if( GLU_malloc( (void**)&Z , 16 , LVOLUME * sizeof( struct spt_site_herm ) ) != 0 ||
       GLU_malloc( (void**)&lat2 , 16 , LVOLUME * sizeof( struct spt_site ) ) != 0 ) {
-    printf( "[WFLOW] temporary field allocation failure\n" ) ;
+    fprintf( stderr , "[WFLOW] temporary field allocation failure\n" ) ;
     return GLU_FAILURE ;
   }
 #ifdef IMPROVED_SMEARING
   if( GLU_malloc( (void**)&lat3 , 16 , 2 * LCU * sizeof( struct spt_site ) ) != 0 ||
       GLU_malloc( (void**)&lat4 , 16 , 2 * LCU * sizeof( struct spt_site ) ) != 0 ) {
-    printf( "[WFLOW] temporary field allocation failure\n" ) ;
+    fprintf( stderr , "[WFLOW] temporary field allocation failure\n" ) ;
     return GLU_FAILURE ;
   }
 #else
   if( GLU_malloc( (void**)&lat3 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ||
       GLU_malloc( (void**)&lat4 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ) {
-    printf( "[WFLOW] temporary field allocation failure\n" ) ;
+    fprintf( stderr , "[WFLOW] temporary field allocation failure\n" ) ;
     return GLU_FAILURE ;
   }
 #endif
@@ -216,8 +214,8 @@ flow4d_RK_slow( struct site *__restrict lat ,
   // initial output information
   lattice_gmunu( lat , &(curr -> qtop) , &(curr -> avplaq) ) ;
   curr -> time = 0.0 ;
-  printf("[WFLOW] {t} %g {dt} %g {p} %1.10f {q} %1.10f {ttGG} 0. {W} 0. \n" ,
-	 curr -> time , delta_t , curr -> avplaq , curr -> qtop ) ;
+  fprintf( stdout , "[WFLOW] {t} %1.12f {dt} %g {p} %1.12f {q} %g {ttGG} 0.\n" ,
+	   curr -> time , delta_t , curr -> avplaq , curr -> qtop ) ;
   curr -> next = head ;
   head = curr ;
 
@@ -243,7 +241,7 @@ flow4d_RK_slow( struct site *__restrict lat ,
     project = project_LOG_wflow_short ;
     break ;
   default :
-    printf( "[SMEARING] unrecognised smearing projection \n" ) ;
+    fprintf( stderr , "[SMEARING] unrecognised smearing projection \n" ) ;
     return GLU_FAILURE ;
   }
 
@@ -264,8 +262,8 @@ flow4d_RK_slow( struct site *__restrict lat ,
 
     // set the flow
     flow_next = curr -> Gt ;
-    printf( "[WFLOW] {t} %g {p} %g {q} %g {Gt} %g \n" , 
-	    curr -> time , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
+    fprintf( stdout , "[WFLOW] {t} %1.12f {dt} %g {p} %1.12f {q} %g {Gt} %1.12f \n" , 
+	     curr -> time , delta_t , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
 
     // use a poor approximation of the derivative of the flow as a guide to stop
     if( ( ( flow_next - flow ) * curr -> time / delta_t ) > ( W0_STOP * 1.25 ) ) {
@@ -294,8 +292,8 @@ flow4d_RK_slow( struct site *__restrict lat ,
       curr -> Gt = curr -> time * curr -> time * 
 	lattice_gmunu( lat , &(curr -> qtop) , &( curr->avplaq ) ) ;
       // output details
-      printf( "[WFLOW] {t} %g {p} %g {q} %g {Gt} %g \n" , 
-	      curr -> time , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
+      fprintf( stdout , "[WFLOW] {t} %1.12f {dt} %g {p} %1.12f {q} %g {Gt} %1.12f \n" , 
+	       curr -> time , delta_tcorr , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
       curr -> next = head ;
       head = curr ;
       break ;

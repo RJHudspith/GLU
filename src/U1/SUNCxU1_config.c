@@ -176,24 +176,26 @@ periodic_dht( GLU_real *__restrict *__restrict fields )
 #endif
 
 // create the U1 fields
-static void
+static int
 create_u1( GLU_real *__restrict *__restrict U ,
 	   const GLU_real alpha )
 {
 #ifndef HAVE_FFTW3_H
 
-  printf( "[U(1)] Cannot create U(1) fields, requires FFTW ... Leaving\n" ) ;
-  return ;
+  fprintf( stderr , "[U(1)] Cannot create U(1) fields, "
+	   "requires FFTW ... Leaving\n" ) ;
+  return GLU_FAILURE ;
 
 #else
   if( parallel_ffts( ) == GLU_FAILURE ) {
-    printf( "[PAR] Problem with initialising the OpenMP FFTW routines \n" ) ;
-    return ;
+    fprintf( stderr , "[PAR] Problem with initialising the OpenMP "
+	     "FFTW routines \n" ) ;
+    return GLU_FAILURE ;
   }
 
   // alpha = 0.0795775387 is beta = 1 , gives noncompact plaq = 0.25 , test
   const GLU_real Nbeta = LVOLUME / ( ND * MPI * alpha ) ;
-  printf( "\n[U(1)] 1/(%d Beta) :: %f \n\n" , ND , ( MPI * alpha ) ) ;
+  fprintf( stdout , "\n[U(1)] 1/(%d Beta) :: %f \n\n" , ND , ( MPI * alpha ) ) ;
 
   size_t i ;
 
@@ -205,7 +207,7 @@ create_u1( GLU_real *__restrict *__restrict U ,
 
 #ifdef U1_DHT
 
-  printf( "[U(1)] Using the DHT U1 code ... \n\n" ) ;
+  fprintf( stdout , "[U(1)] Using the DHT U1 code ... \n\n" ) ;
 
   GLU_real **in = fftw_malloc( ND * sizeof( GLU_real* ) ) ;
   GLU_real **out = fftw_malloc( ND * sizeof( GLU_real* ) ) ;
@@ -221,7 +223,7 @@ create_u1( GLU_real *__restrict *__restrict U ,
 
 #else
 
-  printf( "[U(1)] Using the DFT U1 code ... \n\n" ) ;
+  fprintf( stdout , "[U(1)] Using the DFT U1 code ... \n\n" ) ;
 
   GLU_complex **in = fftw_malloc( ND * sizeof( GLU_complex* ) ) ;
   GLU_complex **out = fftw_malloc( ND * sizeof( GLU_complex* ) ) ;
@@ -312,19 +314,19 @@ create_u1( GLU_real *__restrict *__restrict U ,
 #endif
 
 #endif
- return ;
+ return GLU_SUCCESS ;
 }
 
 #endif // HAVE_FFTW3_H
 
 // Possibly a check that the plaquette has changed ..
-void 
+int
 suNC_cross_u1( struct site *__restrict lat , 
 	       const struct u1_info U1INFO )
 {
 #ifndef HAVE_FFTW3_H
-  printf( "[U1] Require FFTW to be linked to do quenched U(1)\n" ) ;
-  return ;
+  fprintf( stderr , "[U1] Require FFTW to be linked to do quenched U(1)\n" ) ;
+  return GLU_FAILURE ;
 #else
   size_t i ; 
   GLU_real **U = malloc( ND * sizeof( GLU_real* ) ) ;
@@ -360,5 +362,5 @@ suNC_cross_u1( struct site *__restrict lat ,
   }
   free( U ) ;
 #endif
-  return ;
+  return GLU_SUCCESS ;
 }

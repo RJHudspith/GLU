@@ -140,9 +140,9 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   // the error between the two plaquettes
   const double ADAPTIVE_EPS = 1E-7 ;
   // Standard shrink and factor from NRC RK4
-  const double ADAPTIVE_SHRINK = -0.25 ;
+  const double ADAPTIVE_SHRINK = -0.25 ; // 0.33?
   // Standard growth and factor from NRC RK4
-  const double ADAPTIVE_GROWTH = -0.20 ;
+  const double ADAPTIVE_GROWTH = -0.20 ; // 0.25?
   // define adaptive safe
   const double ADAPTIVE_SAFE = 0.9 ;
   // adaptive error conserving
@@ -152,13 +152,14 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   // fine measurement step
   const double FINESTEP = 0.02 ;
 
-  printf( "[WFLOW] Adaptive Error :: %e \n" , ADAPTIVE_EPS ) ;
-  printf( "[WFLOW] Adaptive ErrCon :: %f \n" , ADAPTIVE_ERRCON ) ;
-  printf( "[WFLOW] Adaptive Safety Factor :: %g \n" , ADAPTIVE_SAFE ) ;
-  printf( "[WFLOW] Adaptive growth factor :: %g \n" , ADAPTIVE_GROWTH ) ;
-  printf( "[WFLOW] Adaptive shrink factor :: %g \n\n" , ADAPTIVE_SHRINK ) ; 
-  printf( "[WFLOW] Fine measurement %% :: %g \n" , FINETWIDDLE ) ;
-  printf( "[WFLOW] Fine step :: %g \n\n" , FINESTEP ) ;
+  // adaptive factors for RK4, we are RK3 could be more lenient?
+  fprintf( stdout , "[WFLOW] Adaptive Error :: %e \n" , ADAPTIVE_EPS ) ;
+  fprintf( stdout , "[WFLOW] Adaptive ErrCon :: %f \n" , ADAPTIVE_ERRCON ) ;
+  fprintf( stdout , "[WFLOW] Safety Factor :: %g \n" , ADAPTIVE_SAFE ) ;
+  fprintf( stdout , "[WFLOW] Growth factor :: %g \n" , ADAPTIVE_GROWTH ) ;
+  fprintf( stdout , "[WFLOW] Shrink factor :: %g \n\n" , ADAPTIVE_SHRINK ) ; 
+  fprintf( stdout , "[WFLOW] Fine measurement %% :: %g \n" , FINETWIDDLE ) ;
+  fprintf( stdout ,  "[WFLOW] Fine step :: %g \n\n" , FINESTEP ) ;
 
   //////////////////////////////////////////
   struct spt_site_herm *Z = NULL ;
@@ -178,26 +179,26 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
     project = project_LOG_wflow_short ;
     break ;
   default :
-    printf( "[SMEARING] unrecognised smearing projection \n" ) ;
+    fprintf( stderr , "[SMEARING] unrecognised smearing projection \n" ) ;
     return GLU_FAILURE ;
   }
 
   if( GLU_malloc( (void**)&Z , 16 , LVOLUME * sizeof( struct spt_site_herm ) ) != 0 ||
       GLU_malloc( (void**)&lat2 , 16 , LCU * sizeof( struct spt_site ) )       != 0 ||
       GLU_malloc( (void**)&lat_two , 16 , LVOLUME * sizeof( struct site ) )    != 0 ) {
-    printf( "[SMEARING] allocation failure \n" ) ;
+    fprintf( stderr , "[SMEARING] allocation failure \n" ) ;
     return GLU_FAILURE ;
   }
 #ifdef IMPROVED_SMEARING
   if( GLU_malloc( (void**)&lat3 , 16 , 2 * LCU * sizeof( struct spt_site ) )   != 0 ||
       GLU_malloc( (void**)&lat4 , 16 , 2 * LCU * sizeof( struct spt_site ) )   != 0 ) {
-    printf( "[SMEARING] allocation failure \n" ) ;
+    fprintf( stderr , "[SMEARING] allocation failure \n" ) ;
     return GLU_FAILURE ;
   }
 #else
   if( GLU_malloc( (void**)&lat3 , 16 , LCU * sizeof( struct spt_site ) )   != 0 ||
       GLU_malloc( (void**)&lat4 , 16 , LCU * sizeof( struct spt_site ) )   != 0 ) {
-    printf( "[SMEARING] allocation failure \n" ) ;
+    fprintf( stderr , "[SMEARING] allocation failure \n" ) ;
     return GLU_FAILURE ;
   }
 #endif
@@ -291,7 +292,8 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
 
       // Print if we are in trouble
       if( counter == ADAPTIVE_BIG_NUMBER - 1 ) {
-	printf( "[WFLOW] Not stepping to required accuracy after < %zu > attempts! \n" , counter ) ;
+	fprintf( stderr , "[WFLOW] Not stepping to required accuracy"
+		 "after < %zu > attempts! \n" , counter ) ;
 	goto memfree ;
       }
 
@@ -331,7 +333,8 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
 
     // If we get stuck in a rut of updating by zero we leave
     if( fabs( delta_t ) < DBL_MIN ) {
-      printf( "[WFLOW] No update made delta_t :: %1.5e \nLeaving ... \n" , delta_t ) ; 
+      fprintf( stderr , "[WFLOW] No update made delta_t :: %1.5e \n"
+	       "Leaving ... \n" , delta_t ) ; 
       goto memfree ;
     }
 
@@ -390,8 +393,8 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   curr = head ;
 
   // Print out the stepping information
-  printf( "\n[WFLOW] Inadequate steps :: %zu \n" , NOTOK_STEPS ) ;
-  printf( "[WFLOW] Adequate steps :: %zu \n" , OK_STEPS ) ;
+  fprintf( stdout , "\n[WFLOW] Inadequate steps :: %zu \n" , NOTOK_STEPS ) ;
+  fprintf( stdout , "[WFLOW] Adequate steps :: %zu \n" , OK_STEPS ) ;
 
   // compute the t_0 and w_0 scales from the measurement
   if( delta_t > 0 ) {
@@ -423,4 +426,3 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
 #ifdef TIME_ONLY
   #undef TIME_ONLY
 #endif
-

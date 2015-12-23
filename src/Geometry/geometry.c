@@ -72,7 +72,7 @@ get_site_pipiBZ( int x[ ND ] ,
   for( mu = 0 ; mu < ND ; mu ++ ) {
     temp[mu] = x[mu] ; 
     if( mu != DIMS ) {
-      if(  temp[ mu ] < 0 ) {
+      if( temp[ mu ] < 0 ) {
 	temp[ mu ] += Latt.dims[ mu ] ; 
       }
     } else { // fill the rest with 0's
@@ -135,8 +135,8 @@ void
 get_mom_2piBZ_hirep2( int x[ ND ] , 
 		      const size_t i )
 {
-  size_t mu , subvol = 1 ;
-  for( mu = ND - 1 ; mu > 0 ; mu-- ) {
+  int mu , subvol = 1 ;
+  for( mu = ND-1 ; mu > 0 ; mu-- ) {
     x[ mu - 1 ] = ( ( i - i % subvol ) / subvol ) % Latt.dims[ mu - 1 ] ;
     subvol *= Latt.dims[ mu - 1 ] ;
   }
@@ -345,22 +345,22 @@ void
 init_geom( void )
 {
   // these are neccessary for geometry and stuff ::  x,y,z,t geometry
-  printf( "\n[DIMENSIONS] ( %zu x" , Latt.dims[0] ) ;
+  fprintf( stdout , "\n[DIMENSIONS] ( %zu x" , Latt.dims[0] ) ;
 #if ND == 2
   Latt.Lcu = Latt.dims[0] ;
   Latt.Volume = Latt.Lcu * Latt.dims[1] ;
-  printf( " %zu )\n\n" , Latt.dims[1] ) ; 
+  fprintf( stdout , " %zu )\n\n" , Latt.dims[1] ) ; 
   return ;
 #else
-  int mu ;
+  size_t mu ;
   Latt.Lsq = Latt.dims[0] ; // defined :: LSQ
   for( mu = 1 ; mu < ND-2 ; mu++ ) {
-    printf( " %zu x" , Latt.dims[ mu ] ) ;
+    fprintf( stdout , " %zu x" , Latt.dims[ mu ] ) ;
     Latt.Lsq *= Latt.dims[mu] ;
   } 
   Latt.Lcu = Latt.Lsq * Latt.dims[ ND - 2 ] ;     // defined :: LCU
   Latt.Volume = Latt.Lcu * Latt.dims[ ND - 1 ] ;  // defined :: LVOLUME
-  printf( " %zu x %zu )\n\n" , Latt.dims[mu] , Latt.dims[ mu+1 ] ) ; 
+  fprintf( stdout , " %zu x %zu )\n\n" , Latt.dims[mu] , Latt.dims[ mu+1 ] ) ; 
 #endif
   // precompute the twiddle factors
   for( mu = 0 ; mu < ND ; mu++ ) {

@@ -61,13 +61,13 @@ write_header_MILC( FILE *__restrict out ,
 
   char str[ 64 ] ;
   sprintf( str , "%s GMT" , get_date( ) ) ;
-  printf( "%s\n" , str ) ;
+  fprintf( stdout , "[IO] MILC time %s\n" , str ) ;
   fwrite( str , sizeof( char ) , 64 , out ) ;
 
-  int output_type[ 1 ] = { 0 } ; // this is the naturally-ordered type we support
+  int output_type[ 1 ] = { 0 } ; //naturally-ordered type we support
   swap_and_write_int( out , output_type , 1 ) ;
 
-  int checksums[2] = { milc_cksum29 , milc_cksum31 } ;
+  int checksums[ 2 ] = { milc_cksum29 , milc_cksum31 } ;
   swap_and_write_int( out , checksums , 2 ) ;
   
   return ;

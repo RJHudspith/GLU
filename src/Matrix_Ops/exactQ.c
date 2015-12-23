@@ -257,7 +257,7 @@ exact_log_slow( GLU_complex Q[ NCNC ] ,
 			    vr, ldvr ) ;
   // something broke here
   if( info != 0 ) { 
-    printf( "Oh dear! info :: %d \n" , info ) ;
+    fprintf( stderr , "[EXACTQ] info :: %d \n" , info ) ;
     size_t i ;
     for( i = 0 ; i < NC ; i++ ) { printcomplex( evalues[i] ) ; }
   }

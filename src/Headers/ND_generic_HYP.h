@@ -26,7 +26,7 @@
 #define GLU_ND_GENERIC_HYP_H
 
 /**
-   @fn void HYsmearND( struct site *__restrict lat , const int smiters , const int type , const int directions )
+   @fn void HYsmearND( struct site *__restrict lat , const size_t smiters , const int type , const size_t directions )
    @brief computes the ND-generic blocking transform via slow recursion
    @param lat :: lattice gauge field
    @param smiters :: number of smearing iterations being performed
@@ -35,10 +35,10 @@
    Recursion was unfortunately the only way I could think of doing this.
    @warning this code is incredibly slow
  */
-void 
+int
 HYsmearND( struct site *__restrict lat , 
-	   const int smiters , 
+	   const size_t smiters , 
 	   const int type ,
-	   const int directions ) ;
+	   const size_t directions ) ;
 
 #endif

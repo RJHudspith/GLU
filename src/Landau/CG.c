@@ -305,14 +305,14 @@ approx_minimum( const size_t nmeas ,
     }
 
     #ifdef verbose
-    printf( "[GF] der[%zu] %e \n" , i , derivative[i] ) ;
+    fprintf( stdout , "[GF] der[%zu] %e \n" , i , derivative[i] ) ;
     #endif
   }
 
   #ifdef verbose
-  printf( "[GF] sumneg  :: %zu \n" , sumneg ) ;
-  printf( "[GF] bestmin :: %zu \n" , bestmin ) ;
-  printf( "[GF] sumder  :: %e \n" , sumder ) ;
+  fprintf( stdout , "[GF] sumneg  :: %zu \n" , sumneg ) ;
+  fprintf( stdout , "[GF] bestmin :: %zu \n" , bestmin ) ;
+  fprintf( stdout , "[GF] sumder  :: %e \n" , sumder ) ;
   #endif
 
   // if we are at the limit of precision we leave

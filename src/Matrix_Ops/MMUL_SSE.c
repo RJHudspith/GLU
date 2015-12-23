@@ -136,15 +136,15 @@ multab_atomic_right( GLU_complex a[ NCNC ] ,
 			       SSE2_MUL( *( B + 8 ) , *( A + 5 ) ) ) ) ;
   A[3] = C0 ; A[4] = C1 ; A[5] = C2 ;
   // bottom
-  C0 = _mm_add_pd( SSE2_MUL( *( B + 0 ) , *( A + 5 ) ) , 
-		   _mm_add_pd( SSE2_MUL( *( B + 3 ) , *( A + 6 ) ) ,
-			       SSE2_MUL( *( B + 6 ) , *( A + 7 ) ) ) ) ;
-  C1 = _mm_add_pd( SSE2_MUL( *( B + 1 ) , *( A + 5 ) ) , 
-		   _mm_add_pd( SSE2_MUL( *( B + 4 ) , *( A + 6 ) ) ,
-			       SSE2_MUL( *( B + 7 ) , *( A + 7 ) ) ) ) ;
-  C2 = _mm_add_pd( SSE2_MUL( *( B + 2 ) , *( A + 5 ) ) , 
-		   _mm_add_pd( SSE2_MUL( *( B + 5 ) , *( A + 6 ) ) ,
-			       SSE2_MUL( *( B + 8 ) , *( A + 7 ) ) ) ) ;
+  C0 = _mm_add_pd( SSE2_MUL( *( B + 0 ) , *( A + 6 ) ) , 
+		   _mm_add_pd( SSE2_MUL( *( B + 3 ) , *( A + 7 ) ) ,
+			       SSE2_MUL( *( B + 6 ) , *( A + 8 ) ) ) ) ;
+  C1 = _mm_add_pd( SSE2_MUL( *( B + 1 ) , *( A + 6 ) ) , 
+		   _mm_add_pd( SSE2_MUL( *( B + 4 ) , *( A + 7 ) ) ,
+			       SSE2_MUL( *( B + 7 ) , *( A + 8 ) ) ) ) ;
+  C2 = _mm_add_pd( SSE2_MUL( *( B + 2 ) , *( A + 6 ) ) , 
+		   _mm_add_pd( SSE2_MUL( *( B + 5 ) , *( A + 7 ) ) ,
+			       SSE2_MUL( *( B + 8 ) , *( A + 8 ) ) ) ) ;
   A[6] = C0 ; A[7] = C1 ; A[8] = C2 ;				
 #elif NC==2
   __m128d C0 = _mm_add_pd( SSE2_MUL( *( B + 0 ) , *( A + 0 ) ) ,

@@ -166,22 +166,18 @@ staples3D( GLU_complex stap[ NCNC ] ,
 #endif
 
 // spatial only smearing
-void 
+int
 HYPSLsmear3D( struct site *__restrict lat , 
 	      const size_t smiters , 
 	      const int type ) 
 {
-  if( unlikely( smiters == 0 ) ) { return ; }
+  // successfully do nothing
+  if( smiters == 0 ) { return GLU_SUCCESS ; }
+  // should never get here ...
 #if ND != 4
-  printf( "[SMEAR] Sorry, HYP/HEX/HYL not supported for ND == %d \n" , ND ) ;
-  return ;
+  fprintf( stderr , "[SMEAR] Should not get here (HYPSLsmear3D)\n" , ND ) ;
+  return GLU_FAILURE ;
 #else
-
-  // check the type
-  if( ( type != SM_APE ) && ( type != SM_STOUT ) && ( type != SM_LOG ) ) {
-    printf( "[SMEAR] Unrecognised type [ %d ] ... Leaving \n" , type ) ; 
-    return ; 
-  }
 
   // callback for the projections
   void (*project) ( GLU_complex smeared_link[ NCNC ] , 
@@ -202,29 +198,30 @@ HYPSLsmear3D( struct site *__restrict lat ,
     project = project_LOG ;
     break ;
   default :
-    return ;
+    fprintf( stderr , "[SMEAR] Unrecognised type [ %d ] ... Leaving \n" , 
+	     type ) ; 
+    return GLU_FAILURE ;
   }
 
   struct spatial_lv1 *lev1 = NULL ;
   struct sp_site *lat2 = NULL ;
   if( GLU_malloc( (void**)&lev1 , 16 , LCU * sizeof( struct spatial_lv1 ) ) != 0 || 
       GLU_malloc( (void**)&lat2 , 16 , LCU * sizeof( struct sp_site ) ) != 0 ) {
-    printf( "[SMAERING] field allocation failure\n" ) ;
-    return ;
+    fprintf( stderr , "[SMEARING] field allocation failure\n" ) ;
+    return GLU_FAILURE ;
   }
  
   // iteration counter
   size_t count = 0 ; 
 
   for( count = 1 ; count <= smiters ; count++ )   {
-    size_t t ;
+    size_t t , i ;
     //loop time slices
     for( t = 0 ; t < Latt.dims[ ND - 1 ] ; t++ ) {
       // get the level 1 links for this slice
       get_spatial_lv1( lev1  ,  lat  ,  t  ,  type , project ) ; 
   
       const size_t slice = LCU * t ; 
-      size_t i ;
       #pragma omp parallel for private(i) SCHED
       PFOR( i = 0 ; i < LCU ; i++ )  {
 	const size_t it = slice + i ;
@@ -251,17 +248,9 @@ HYPSLsmear3D( struct site *__restrict lat ,
   print_smearing_obs( lat , type , count , GLU_TRUE ) ;
 #endif
 
-#ifdef FAST_SMEAR
-  if( type == SM_STOUT ) {
-    latt_reunitU( lat ) ;
-    printf( "\n[SMEAR] A final reunitarisation step to clean things up\n" ) ;
-    print_smearing_obs( lat , type , count , GLU_TRUE ) ;
-  }
-#endif
-
   free( lat2 ) ; 
   free( lev1 ) ; 
 
-  return ;
+  return GLU_SUCCESS ;
 #endif
 }

@@ -95,36 +95,38 @@ get_size_t( char *s ,
 struct QCDheader * 
 get_header( FILE *__restrict in )
 {
-  char line[MAX_LINE_LENGTH] ;
-  int n , len ;
+  char line[ MAX_LINE_LENGTH ] ;
+  size_t  n , len ;
   struct QCDheader *hdr ;
   char **tokens , **values ;
   char *p , *q ;
 
   // Begin reading, and check for "BEGIN_HEADER" token 
   if( fgets( line , MAX_LINE_LENGTH , in ) == NULL ) {
-    printf( "Header reading failed ... Leaving\n" ) ;
-    exit( 1 ) ;
+    fprintf( stderr , "[IO] Nersc Header reading failed ... Leaving\n" ) ;
+    return NULL ;
   }
   if( strcmp( line , "BEGIN_HEADER\n" ) != 0 ) {
-    printf( "Missing \"BEGIN_HEADER\"; Is this a NERSC config?\n" ) ;
-    exit( 1 ) ;
+    fprintf( stderr , "Missing \"BEGIN_HEADER\"; Is this a NERSC config?\n" ) ;
+    return NULL ;
   }
 
   // Allocate space for QCDheader and its pointers 
   tokens = ( char ** )malloc( MAX_TOKENS * sizeof( char * ) );
   values = ( char ** )malloc( MAX_TOKENS * sizeof( char * ) );
   hdr = ( struct QCDheader * ) malloc( sizeof ( struct QCDheader ) ) ;
-  (*hdr).token = tokens ;
-  (*hdr).value = values ;
+  hdr -> token = tokens ;
+  hdr -> value = values ;
 
   // Begin loop on tokens 
   n = 0 ;
   while (1) {
 
     if( fgets( line , MAX_LINE_LENGTH , in ) == NULL ) {
-      printf( "Header reading failed ... Leaving \n" ) ;
-      exit( 1 ) ; 
+      fprintf( stderr , "Header reading failed ... Leaving \n" ) ;
+      free( hdr -> token ) ;
+      free( hdr -> value ) ;
+      return NULL ;
     }
     if( strcmp ( line , "END_HEADER\n" ) == 0 ) {
       break;
@@ -185,7 +187,7 @@ skip_hdr( FILE *__restrict file )
   while( GLU_TRUE ) {
     // if there is an error we leave
     if( fgets( line , MAX_LINE_LENGTH , file ) == NULL ) {
-      printf( "[IO] Skip header failure ... Leaving \n" ) ;  
+      fprintf( stderr , "[IO] Skip header failure ... Leaving \n" ) ;  
       return GLU_FAILURE ;
     } else if ( strcmp ( line , "END_HEADER\n" ) == GLU_SUCCESS ) {
       return GLU_SUCCESS ;

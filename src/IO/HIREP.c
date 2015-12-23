@@ -42,31 +42,31 @@ translate_to_GLU_geom( i )
 }
 
 // generic (ish) reader for files in the HiRep format
-void
+int
 read_gauge_field( struct site *__restrict lat , 
 		  FILE *__restrict in , 
 		  uint32_t *chksum )
 {
-  const int stride = 2 * NCNC * ND ;
+  const size_t stride = 2 * NCNC * ND ;
   // these guys also seem to save only in double, making things easy
   double *uind = malloc( stride * sizeof( double ) ) ; 
 
   uint32_t k = 0 ;
-  int i ;
+  size_t i ;
   for( i = 0 ; i < Latt.Volume ; i++ ) {
-    const int idx = translate_to_GLU_geom( i ) ;
+    const size_t idx = translate_to_GLU_geom( i ) ;
 
     if( fread( uind , sizeof( double ) , stride , in ) != stride ) {
-      printf( "File read error.. Leaving \n " ) ;
+      fprintf( stderr , "File read error.. Leaving \n " ) ;
       free( uind ) ;
-      return ;
+      return GLU_FAILURE ;
     }
       
     if ( !WORDS_BIGENDIAN ) {
       bswap_64( stride , uind ) ; 
     }
 
-    int mu , j , a = 0 ;
+    size_t mu , j , a = 0 ;
     for( j = 0 ; j < NCNC ; j++ ) {
       lat[idx].O[ND-1][j] = (GLU_real)uind[a] + I * (GLU_real)uind[a + 1] ;
       a += 2 ;
@@ -82,7 +82,7 @@ read_gauge_field( struct site *__restrict lat ,
   
   *chksum = k ;
   free( uind ) ;
-  return ; 
+  return GLU_SUCCESS ; 
 }
 
 // writes my gauge field out in the HiRep format 
@@ -90,19 +90,19 @@ void
 write_gauge_field( const struct site *__restrict lat ,
 		   FILE *__restrict outfile )
 {
-  const int stride = NCNC * ND * 2 ; // the size of the link matrices at a site
+  const size_t stride = NCNC * ND * 2 ; // the size of the link matrices 
 
   int NAV[ ND + 1 ] ; 
   NAV[ 0 ] = NC ;
   NAV[ 1 ] = Latt.dims[ ND - 1 ] ;
 
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < ND - 1 ; mu++ ) {
     NAV[ 2 + mu ] = Latt.dims[ mu ] ;
   }
 
   // first of all set calculate the plaquette checksum in header
-  double plaq[1] ;
+  double plaq[1] = { 0 } ;
 
   plaq[0] = av_plaquette( lat ) ;
 
@@ -127,25 +127,25 @@ write_gauge_field( const struct site *__restrict lat ,
 
   double *uoutd = ( double* ) malloc( stride *sizeof( double ) ) ; 
 
-  int i ;
+  size_t i ;
   for( i = 0 ; i < LVOLUME ; i++ ) {
     // loop HiRep indices
-    const int idx = translate_to_GLU_geom( i ) ;
-    int mu , j , a = 0 ;
+    const size_t idx = translate_to_GLU_geom( i ) ;
+    size_t mu , j , a = 0 ;
+    // t first
     for( j = 0 ; j < NCNC ; j++ ) {
       uoutd[ a ] = ( double )creal( lat[idx].O[ ND - 1 ][ j ] ) ; 
       uoutd[ a + 1 ] = ( double )cimag( lat[idx].O[ ND - 1 ][ j ] ) ; 
       a += 2 ;
     }
-      
+    // then xyz
     for( mu = 0 ;  mu < ND - 1 ; mu++ ) {
       for( j = 0 ; j < NCNC ; j++ ) {
 	uoutd[ a ] = ( double )creal( lat[idx].O[mu][j] ) ; 
 	uoutd[ a + 1 ] = ( double )cimag( lat[idx].O[mu][j] ) ; 
 	a += 2 ;
       }
-    }
-      
+    } 
     #ifdef OUT_BIG
     if( !WORDS_BIGENDIAN ) {
       bswap_64( stride , uoutd ) ; 
@@ -156,9 +156,8 @@ write_gauge_field( const struct site *__restrict lat ,
     }
     #endif
     fwrite( uoutd , sizeof( double ) , stride , outfile ) ; 
-
   }
- 
+
   free( uoutd ) ;
 
   return ;

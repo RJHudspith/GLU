@@ -45,7 +45,8 @@ mom_gauge( struct site *__restrict A ,
 	   const lie_field_def def )
 {
   if( parallel_ffts( ) == GLU_FAILURE ) {
-    printf( "[PAR] Problem with initialising the OpenMP FFTW routines \n" ) ;
+    fprintf( stderr , "[PAR] Problem with initialising the OpenMP "
+	              "FFTW routines \n" ) ;
     return GLU_FAILURE ;
   }
 
@@ -79,9 +80,7 @@ mom_gauge( struct site *__restrict A ,
   fftw_plan forward , backward ;
   small_create_plans_DFT( &forward , &backward , in , out , ND ) ;
 
-  ////// End of the search for Wisdom /////
-
-  //forward transform
+  // do the FFTs
   size_t mu , j ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     for( j = 0 ; j < NCNC ; j++ ) {
@@ -130,7 +129,7 @@ static int
 mom_gauge( struct site *__restrict A ,
 	   const lie_field_def def )
 {
-  printf( "[CUTS] WARNING! Not performing an FFT \n" ) ;
+  fprintf( stderr , "[CUTS] WARNING! Not performing an FFT\n" ) ;
   return GLU_FAILURE ;
 }
 
@@ -213,8 +212,8 @@ create_weak_field( struct site *__restrict A )
       exponentiate( A[j].O[mu] , temp ) ;
     }
   }
-  printf( "[CUTS] Weak field {p} %1.15f {l} %1.15f\n" , 
-	  av_plaquette( A ) , links( A ) ) ; 
+  fprintf( stdout , "[CUTS] Weak field {p} %1.15f {l} %1.15f\n" , 
+	   av_plaquette( A ) , links( A ) ) ; 
   return ;
 }
 #endif
@@ -248,8 +247,8 @@ cuts_struct_smeared( struct site *__restrict A ,
 #ifdef TADPOLE_IMPROVE
   const double u0 = 1.0 / sqrt( av_plaquette( A ) ) ;
   const double u0_SM = 1.0 / sqrt( av_plaquette( SM_A ) ) ;
-  printf( "[CUTS] <WARNING> Tadpole improvement being used \n" ) ;
-  printf( "[CUTS] Thin :: %f || Fat :: %f \n" , u0 , u0_SM ) ;
+  fprintf( stdout , "[CUTS] <WARNING> Tadpole improvement being used \n" ) ;
+  fprintf( stdout , "[CUTS] Thin :: %f || Fat :: %f \n" , u0 , u0_SM ) ;
 #endif
 
   // performs LOG and FFT , rewrites "A"
@@ -305,7 +304,8 @@ cuts_struct_smeared( struct site *__restrict A ,
   write_g2g3_to_list( Ap , g2 , g2_SM , in ) ;
 
   // tell us where the output file is ....
-  printf( "[CUTS] Writing finished...\n[CUTS]Outputting to %s \n" , str ) ;
+  fprintf( stdout , "[CUTS] Writing finished...\n"
+	            "[CUTS]Outputting to %s \n" , str ) ;
 
   // free the props
   free( g2 ) ;

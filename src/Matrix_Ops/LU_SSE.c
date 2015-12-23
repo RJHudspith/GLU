@@ -57,7 +57,7 @@ LU_det_overwrite( const int N , GLU_complex U[ N*N ] )
       perms++ ;
     }
     if( _mm_ucomile_sd( best , _mm_setzero_pd() ) ) {
-      printf( "[DETERMINANT] LU  Singular Matrix!!!\n" ) ;
+      fprintf( stderr , "[DETERMINANT] LU  Singular Matrix!!!\n" ) ;
       return 0.0 ;
     }
     // perform gaussian elimination

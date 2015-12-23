@@ -20,20 +20,20 @@
    @file HYP.h
    @brief 3D (spatial) Hypercubically blocked smearing routine
  */
-
 #ifndef GLU_HYP_H
 #define GLU_HYP_H
 
 /**
-   @fn voidb HYPSLsmear3D( struct site *__restrict lat , const int smiters , const int type )
+   @fn int HYPSLsmear3D( struct site *__restrict lat , const size_t smiters , const int type )
    @brief 3D (spatial) Hypercubically blocked smearing routine
    @param lat :: lattice gauge field
    @param smiters :: number of smearing iterations
    @param type :: smearing type ( SM_LOG , SM_APE , SM_STOUT )
+   @return #GLU_FAILURE or #GLU_SUCCESS
  */
-void
+int
 HYPSLsmear3D( struct site *__restrict lat , 
-	      const int smiters , 
+	      const size_t smiters , 
 	      const int type ) ;
 
 #endif

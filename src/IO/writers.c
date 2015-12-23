@@ -32,14 +32,12 @@
 
 // avoid type-punning issues with unions
 #ifdef SINGLE_PREC
-typedef union 
-{
+typedef union {
   float val ;
   uint32_t chk ;
 } U32 ;
 #else
-typedef union 
-{
+typedef union {
   double val ;
   uint32_t chk[2] ;
 } U32 ;
@@ -47,9 +45,8 @@ typedef union
 
 // compute the checksum
 static uint32_t
-checksum( p , idx )
-     const GLU_real *__restrict p ;
-     const int idx ;
+checksum( const GLU_real *__restrict p ,
+	  const size_t idx )
 {
   #ifdef SINGLE_PREC
   U32 in ;
@@ -70,38 +67,40 @@ checksum( p , idx )
 
 // construct the loop variables ...
 static GLU_output
-construct_loop_variables( LATT_LOOP , LOOP_VAR , type )
-     int *LATT_LOOP , *LOOP_VAR ;
-     const int type ;
+construct_loop_variables( size_t *LATT_LOOP , 
+			  size_t *LOOP_VAR ,
+			  const int type )
 {
-  // set up our loop variables, SMALL is special
-  switch( type )
-    {
-    case OUTPUT_SMALL :
-      printf( "[IO] Writing %dD_SU%d_GAUGE_SMALL binary data\n", ND , NC ) ;
-      *LATT_LOOP = ND * LOOP_SMALL * LVOLUME ;
-      *LOOP_VAR = LOOP_SMALL ;
-      return OUTPUT_SMALL ;
-    case OUTPUT_GAUGE : 
-      printf( "[IO] Writing %dD_SU%d_GAUGE binary data\n", ND , NC ) ;
-      *LATT_LOOP = ND * LOOP_GAUGE * LVOLUME ;
-      *LOOP_VAR = LOOP_GAUGE ;
-      return OUTPUT_GAUGE ;
-    case OUTPUT_MILC :
-    case OUTPUT_SCIDAC :
-    case OUTPUT_ILDG :
-    case OUTPUT_NCxNC :
-      printf( "[IO] Writing %dD_SU%d_GAUGE_%dx%d binary data\n", 
-	      ND , NC , NC , NC ) ;
-      *LATT_LOOP = ND * LOOP_NCxNC * LVOLUME ;
-      *LOOP_VAR = LOOP_NCxNC ;
-      return OUTPUT_NCxNC ;
-    default :
-      printf( "[IO] Unrecognised output type .. Defaulting to NERSC's %dD_SU%d_GAUGE binary data\n", ND , NC ) ;
-      *LATT_LOOP = ND * LOOP_GAUGE * LVOLUME ;
-      *LOOP_VAR = LOOP_GAUGE ;
-      return OUTPUT_GAUGE ;
-    }
+  // set up our loop variables, SMALL is "special"
+  switch( type ) {
+  case OUTPUT_SMALL :
+    fprintf( stdout , "[IO] Writing %dD_SU%d_GAUGE_SMALL binary data\n", 
+	     ND , NC ) ;
+    *LATT_LOOP = ND * LOOP_SMALL * LVOLUME ;
+    *LOOP_VAR = LOOP_SMALL ;
+    return OUTPUT_SMALL ;
+  case OUTPUT_GAUGE : 
+    fprintf( stdout , "[IO] Writing %dD_SU%d_GAUGE binary data\n", 
+	     ND , NC ) ;
+    *LATT_LOOP = ND * LOOP_GAUGE * LVOLUME ;
+    *LOOP_VAR = LOOP_GAUGE ;
+    return OUTPUT_GAUGE ;
+  case OUTPUT_MILC :
+  case OUTPUT_SCIDAC :
+  case OUTPUT_ILDG :
+  case OUTPUT_NCxNC :
+    fprintf( stdout , "[IO] Writing %dD_SU%d_GAUGE_%dx%d binary data\n", 
+	     ND , NC , NC , NC ) ;
+    *LATT_LOOP = ND * LOOP_NCxNC * LVOLUME ;
+    *LOOP_VAR = LOOP_NCxNC ;
+    return OUTPUT_NCxNC ;
+  default :
+    fprintf( stderr , "[IO] Unrecognised output type .. Defaulting "
+	     "to NERSC's %dD_SU%d_GAUGE binary data\n", ND , NC ) ;
+    *LATT_LOOP = ND * LOOP_GAUGE * LVOLUME ;
+    *LOOP_VAR = LOOP_GAUGE ;
+    return OUTPUT_GAUGE ;
+  }
   return GLU_FAILURE ;
 }
 
@@ -113,7 +112,7 @@ grab_sitedata( GLU_real *__restrict chunk ,
 	       const GLU_output checktype )
 {
   GLU_real tmp[ LOOP_VAR ] ;
-  int j , val = 0 , mu ;
+  size_t j , val = 0 , mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     switch( checktype ) {
     case OUTPUT_SMALL :
@@ -165,7 +164,7 @@ compute_checksum( uint32_t *nersc_cksum ,
 		  uint32_t *scidac_cksum29 ,
 		  uint32_t *scidac_cksum31 ,
 		  const struct site *__restrict lat ,
-		  const int LOOP_VAR ,
+		  const size_t LOOP_VAR ,
 		  const GLU_output checktype )
 {
   // initialise
@@ -178,8 +177,8 @@ compute_checksum( uint32_t *nersc_cksum ,
 
     // usual allocations
     GLU_real site[ ND * LOOP_VAR ] ;
-    int rank29 = ( i * ND * LOOP_VAR ) % 29 ;
-    int rank31 = ( i * ND * LOOP_VAR ) % 31 ;
+    size_t rank29 = ( i * ND * LOOP_VAR ) % 29 ;
+    size_t rank31 = ( i * ND * LOOP_VAR ) % 31 ;
     register uint32_t k_loc = 0 ;
     register uint32_t sum29_loc = 0 , sum31_loc = 0 ;
     uint32_t work ;
@@ -187,7 +186,7 @@ compute_checksum( uint32_t *nersc_cksum ,
     // all of the site data is in GLU_real array site
     grab_sitedata( site , lat[i] , LOOP_VAR , checktype ) ;
 
-    int j ;
+    size_t j ;
     for( j = 0 ; j < ND * LOOP_VAR ; j++ ) {
       // compute the actual checksum
       work = (uint32_t)checksum( site , j ) ;
@@ -203,8 +202,8 @@ compute_checksum( uint32_t *nersc_cksum ,
     }
     // and compute the CRC for the outputted data
     swap_for_output( site , ND * LOOP_VAR ) ;
-    const int r29 = i % 29 ;
-    const int r31 = i % 31 ;
+    const size_t r29 = i % 29 ;
+    const size_t r31 = i % 31 ;
     work = (uint32_t)crc32( 0 , (unsigned char*)site , 
 			    ND * LOOP_VAR * sizeof( GLU_real ) ) ;
     CRCsum29 = CRCsum29 ^ (uint32_t) ( work << r29 | work >> ( 32 - r29 ) ) ;
@@ -228,10 +227,9 @@ compute_checksum( uint32_t *nersc_cksum ,
 
 // can write in big or little endian, overwrites uout!
 static void
-byteswap_and_write( outfile , uout , SIZE )
-     FILE *__restrict outfile ;
-     GLU_real *__restrict uout ;
-     const int SIZE ;
+byteswap_and_write( FILE *__restrict outfile ,
+		    GLU_real *__restrict uout ,
+		    const size_t SIZE )
 {
   swap_for_output( uout , SIZE ) ; // do the byteswaps if necessary
   fwrite( uout , sizeof( GLU_real ) , SIZE , outfile ) ; 
@@ -242,25 +240,25 @@ byteswap_and_write( outfile , uout , SIZE )
 static void
 copy_data( GLU_real *uout , 
 	   const struct site *lat ,
-	   const int START ,
-	   const int END ,
-	   const int LOOP_VAR ,
+	   const size_t START ,
+	   const size_t END ,
+	   const size_t LOOP_VAR ,
 	   const GLU_output checktype )
 {
-  int i ;
+  size_t i ;
 #pragma omp parallel for private(i)
   for( i = START ; i < END ; i++ ) { 
     // temporary
     GLU_real site[ ND * LOOP_VAR ] ;
 
     // set this up here
-    int val = LOOP_VAR * ( i * ND ) ;
+    size_t val = LOOP_VAR * ( i * ND ) ;
 
     // puts the matrix in glu_real temporary
     grab_sitedata( site , lat[i] , LOOP_VAR , checktype ) ;
 
     // loop AntiHermitian_projised matrix-direction index
-    int j ;
+    size_t j ;
     for( j = 0 ; j < ND * LOOP_VAR ; j++ ) {
       #ifdef OUT_DOUBLE
       uout[ val++ ] = (double)site[ j ] ; 
@@ -274,12 +272,12 @@ copy_data( GLU_real *uout ,
 
 // writes the fields as binary data
 static void
-write_binary_data( lat , outfile , details , type , LATT_LOOP , LOOP_VAR )
-     const struct site *__restrict lat ;
-     FILE *__restrict outfile ;
-     const char *__restrict details ;
-     const short int type ;
-     const int LATT_LOOP , LOOP_VAR ;
+write_binary_data( const struct site *__restrict lat ,
+		   FILE *__restrict outfile ,
+		   const char *__restrict details ,
+		   const short int type ,
+		   const size_t LATT_LOOP ,
+		   const size_t LOOP_VAR )
 { 
   // write out in working precision
   GLU_real *uout = ( GLU_real* ) malloc( LATT_LOOP  * sizeof( GLU_real ) ) ; 
@@ -296,17 +294,17 @@ write_binary_data( lat , outfile , details , type , LATT_LOOP , LOOP_VAR )
 
 // writes the fields as binary data -> SLICE by SLICE version
 static void
-write_binary_data_cheap( lat , outfile , details , type , LOOP_VAR )
-     const struct site *__restrict lat ;
-     FILE *__restrict outfile ;
-     const char *__restrict details ;
-     const short int type ;
-     const int LOOP_VAR ;
+write_binary_data_cheap( const struct site *__restrict lat ,
+			 FILE *__restrict outfile ,
+			 const char *__restrict details ,
+			 const short int type ,
+			 const size_t LOOP_VAR )
 { 
   // write out in working precision
-  GLU_real *uout = ( GLU_real* ) malloc( LCU * LOOP_VAR * ND * sizeof( GLU_real ) ) ; 
+  GLU_real *uout = ( GLU_real* ) malloc( LCU * LOOP_VAR * 
+					 ND * sizeof( GLU_real ) ) ; 
 
-  int t ;
+  size_t t ;
   for( t = 0 ; t < Latt.dims[ ND - 1 ] ; t++ ) {
     
     // copy lattice data into uout 
@@ -335,9 +333,9 @@ write_lat( struct site *__restrict lat ,
   }
 
   // loop variables
-  int LOOP_VAR , LATT_LOOP ;
-  const GLU_output checktype = construct_loop_variables( &LATT_LOOP , &LOOP_VAR , 
-							 type ) ;
+  size_t LOOP_VAR , LATT_LOOP ;
+  const GLU_output checktype = construct_loop_variables( 
+            &LATT_LOOP , &LOOP_VAR , type ) ;
 
   // compute the checksums ...
   uint32_t nersc_cksum , milc_cksum29 , milc_cksum31 ;
@@ -349,48 +347,46 @@ write_lat( struct site *__restrict lat ,
 		    lat , LOOP_VAR , checktype ) ;
 
   // and begin writing the headers
-  switch( type ) 
-    {
-    case OUTPUT_HIREP : return GLU_FAILURE ;
-    case OUTPUT_SMALL : 
-    case OUTPUT_GAUGE :
-    case OUTPUT_NCxNC :
-      write_header_NERSC( out , links(lat) , av_plaquette(lat) , 
-			  nersc_cksum , details , checktype ) ;
-      break ;
-    case OUTPUT_MILC :
-      write_header_MILC( out , milc_cksum29 , milc_cksum31 ) ;
-      break ;
-    case OUTPUT_SCIDAC :
-      write_header_SCIDAC( out ) ;
-      break ;
-    case OUTPUT_ILDG :
-      write_header_ILDG( out ) ;
-      break ;
-    default :
-      return GLU_FAILURE ;
-    }
+  switch( type ) {
+  case OUTPUT_HIREP : return GLU_FAILURE ;
+  case OUTPUT_SMALL : 
+  case OUTPUT_GAUGE :
+  case OUTPUT_NCxNC :
+    write_header_NERSC( out , links(lat) , av_plaquette(lat) , 
+			nersc_cksum , details , checktype ) ;
+    break ;
+  case OUTPUT_MILC :
+    write_header_MILC( out , milc_cksum29 , milc_cksum31 ) ;
+    break ;
+  case OUTPUT_SCIDAC :
+    write_header_SCIDAC( out ) ;
+    break ;
+  case OUTPUT_ILDG :
+    write_header_ILDG( out ) ;
+    break ;
+  default :
+    return GLU_FAILURE ;
+  }
 
   // binary output is all the same for these types ...
   const int SAFETY = have_memory_readers_writers( type ) ;
   if( SAFETY != FAST ) {
-    printf( "[IO] Using the slower/memory cheaper code \n" ) ;
+    fprintf( stdout , "[IO] Using the slower/memory cheaper code \n" ) ;
     write_binary_data_cheap( lat , out , details , type , LOOP_VAR ) ;
   } else {
-    printf( "[IO] Using the faster/memory expensive code \n" ) ;
+    fprintf( stdout , "[IO] Using the faster/memory expensive code \n" ) ;
     write_binary_data( lat , out , details , type , LATT_LOOP , LOOP_VAR ) ;
   }
 
   // need to write out the scidac checksums here
-  switch( type ) 
-    {
-    case OUTPUT_SCIDAC :
-    case OUTPUT_ILDG :
-      write_trailing_header_SCIDAC( out , scidac_cksum29 , scidac_cksum31 ) ;
-      break ;
-    default :
-      break ;
-    }
+  switch( type ) {
+  case OUTPUT_SCIDAC :
+  case OUTPUT_ILDG :
+    write_trailing_header_SCIDAC( out , scidac_cksum29 , scidac_cksum31 ) ;
+    break ;
+  default :
+    break ;
+  }
   return GLU_SUCCESS ;
 }
 

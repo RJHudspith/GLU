@@ -25,12 +25,12 @@
 #define GLU_GEOMETRY_H
 
 /**
-   @fn int gen_site( const int x[ ND ] )
+   @fn size_t gen_site( const int x[ ND ] )
    @brief Generic return of the lattice index from the ND-vectors x. 
    @param x :: Converts the ND vector x == ( x , y , z , ... , t ) to our lexicographical index.
    Index vector to periodic lexicographical index value converter. The temporal direction is always last in this ordering.
  **/
-int
+size_t
 gen_site( const int x[ ND ] ) ;
 
 /**
@@ -189,7 +189,7 @@ compute_rsq( const size_t site ,
    @param DIMS :: maximum number of dimensions, i.e. ND-1 would be in the spatial subcube
    @return the lattice index of the shift 
  */
-int
+size_t
 compute_spacing( const int separation[ ND ] ,
 		 const size_t k ,
 		 const size_t DIMS ) ;

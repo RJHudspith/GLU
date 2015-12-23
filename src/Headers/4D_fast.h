@@ -25,19 +25,18 @@
 #define GLU_FOURD_FAST_H
 
 /**
-   @fn void HYPSLsmear4D_expensive( struct site *__restrict lat , 
-                                    const int smiters , 
-                                    const int type ) ;
+   @fn void HYPSLsmear4D_expensive( struct site *__restrict lat , const size_t smiters , const int type ) ;
    @brief  This is the most memory-expensive Hypercubic-blocking code that we have.
    @param lat :: The lattice field.
    @param smiters :: The number of smearing iterations to perform.
    @param type :: Can either be SM_LOG, SM_APE or SM_STOUT
 
-   @warning memory becomes an issue checked in GLU_memcheck.h
+   @warning could not run if we dont have memory
+   @return #GLU_SUCCESS or #GLU_FAILURE
  */
-void 
+int
 HYPSLsmear4D_expensive( struct site *__restrict lat , 
-			const int smiters , 
+			const size_t smiters , 
 			const int type ) ;
 
 #endif

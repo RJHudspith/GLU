@@ -25,14 +25,14 @@
 #define GLU_HIREP_H
 
 /**
-   @fn void read_gauge_field( struct site *__restrict lat , FILE *__restrict in , uint32_t *chksum )
+   @fn int read_gauge_field( struct site *__restrict lat , FILE *__restrict in , uint32_t *chksum )
    @brief reads in a configuration from a HiRep format file 
    @param lat :: lattice gauge fields
    @param in :: file to be read in
    @param chksum :: compute the checksum of the data for no reason whatsoever
-   Generic? reader of the HiRep format, into our gauge field.
- **/
-void
+   @return #GLU_SUCCESS or #GLU_FAILURE
+**/
+int
 read_gauge_field( struct site *__restrict lat , 
 		  FILE *__restrict in , 
 		  uint32_t *chksum ) ;
@@ -42,7 +42,6 @@ read_gauge_field( struct site *__restrict lat ,
    @brief writes out a configuration file in the HiRep order
    @param lat :: lattice gauge field
    @param outfile :: file we are outputting to
-   Generic writer of our gauge field into the HiRep format.
  **/
 void
 write_gauge_field( const struct site *__restrict lat ,

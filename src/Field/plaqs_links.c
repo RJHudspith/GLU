@@ -234,8 +234,8 @@ gauge_topological_meas( const struct site *__restrict lat ,
   const double QTOP_TOL = 5E-3 ;
   double avplaq ;
   const double plaq = lattice_gmunu( lat , qtop_new , &avplaq ) ;
-  printf( "{iter} %d {w} %g {GG} %g {q} %g {diff} %g \n" ,
-	  iter , avplaq , plaq , *qtop_new , fabs( *qtop_old - *qtop_new ) ) ;
+  fprintf( stdout , "{iter} %d {w} %g {GG} %g {q} %g {diff} %g \n" ,
+	   iter , avplaq , plaq , *qtop_new , fabs( *qtop_old - *qtop_new ) ) ;
   // rounded integer value for the topological charge
   const int qint = (int)( *qtop_new > 0. ? *qtop_new + 0.5 : *qtop_new - 0.5 ) ;
   // The two tests are the difference between the newest topological charge and
@@ -244,7 +244,7 @@ gauge_topological_meas( const struct site *__restrict lat ,
   // off by a little bit more. This is certainly a heuristic measure!
   if( fabs( *qtop_old - *qtop_new ) < QTOP_TOL &&
       fabs( qint - *qtop_new ) < ( 3 * QTOP_TOL ) ) {
-    printf( "\n{CONFIG} %zu {QTOP} %d \n\n" , Latt.flow , qint ) ;
+    fprintf( stdout , "\n{CONFIG} %zu {QTOP} %d \n\n" , Latt.flow , qint ) ;
     return GLU_SUCCESS ;
   }
   *qtop_old = *qtop_new ;

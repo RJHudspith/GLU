@@ -61,8 +61,9 @@ print_info( const char *info ,
 	    const double expensive_more ,
 	    const double expensive_less )
 {
-  printf( "[%s] Page size is :: %f, Total malloc [More] %f  [Less] %f \n" , 
-	  info , ( double )free_memory , expensive_more , expensive_less ) ; 
+  fprintf( stdout , "[%s] Page size is :: %f, Total malloc "
+	   "[More] %f  [Less] %f \n" , 
+	   info , ( double )free_memory , expensive_more , expensive_less ) ; 
   return ;
 }
 #endif
@@ -82,8 +83,10 @@ have_memory_Cgf( void )
     #endif
     const double MEM = gauge_fields + ( 3 * NCNC + HERMSIZE ) * sublat_element ;
     if( MEM > free_memory ) {
-      printf( "[GF] Avail :: %f    Required :: %f \n" , free_memory , MEM ) ;
-      printf( "[GF] Not enough memory for Coulomb gauge fixing ... Leaving\n" ) ;
+      fprintf( stdout , "[GF] Avail :: %f    Required :: %f \n" , 
+	       free_memory , MEM ) ;
+      fprintf( stdout , "[GF] Not enough memory for Coulomb"
+	       "gauge fixing ... Leaving\n" ) ;
       GF = GLU_FAILURE ;
     }
   }
@@ -100,8 +103,9 @@ have_memory_gauge( void )
   if( GFIELDS == -1 ) {
     check_mem( ) ;
     if( gauge_fields > MemTotal * GB ) {
-      printf( "[GAUGE] Cannot allocate gauge fields [AVAIL] %f [REQUESTED] %f \n" ,
-	      MemTotal * GB , gauge_fields ) ;
+      fprintf( stdout , "[GAUGE] Cannot allocate gauge fields "
+	       "[AVAIL] %f [REQUESTED] %f \n" ,
+	       MemTotal * GB , gauge_fields ) ;
       gfields = GLU_FAILURE ;
     }
   }
@@ -135,19 +139,22 @@ have_memory_hyp( const struct sm_info SMINFO )
     if( SMINFO.dir == ALL_DIRECTIONS ) {
       if( expensive_more > free_memory ) {
 	if( expensive_less > free_memory ) {
-	  printf( "[SMEAR] Defined slow smear \n" ) ; 
-	  printf( "[SMEAR] Running the REALLY SLOW Hypercubically-blocked smearing routine ... \n" ) ; 
+	  fprintf( stdout , "[SMEAR] Defined slow smear \n" ) ; 
+	  fprintf( stdout , "[SMEAR] Running the REALLY SLOW "
+		   "Hypercubically-blocked smearing routine ... \n" ) ; 
 	  fourDdef = SLOW ;
 	}
         #if NC < 4 // this is not available for NC > 3 because of gratuitous shortening
 	else  {
-	  printf( "[SMEAR] Running our SLOWER Hypercubically-blocked smearing routine ... \n" ) ; 
+	  fprintf( stdout , "[SMEAR] Running our SLOWER Hypercubically-blocked "
+		   "smearing routine ... \n" ) ; 
 	  fourDdef = MODERATE ;
 	}
 	#endif
 	// this else if for the expensive_more doodad
       } else {
-	printf( "[SMEAR] Running our FASTEST Hypercubically-blocked smearing routine ... \n\n" ) ; 
+	fprintf( stdout , "[SMEAR] Running our FASTEST Hypercubically-blocked "
+		 "smearing routine ... \n\n" ) ; 
       }
     }
     HYP = fourDdef ;
@@ -188,9 +195,11 @@ have_memory_Lgf( void )
     print_info( "GF" , free_memory , expensive_more , expensive_less ) ;
   
     if ( expensive_more < free_memory ) {
-      printf( "[GF] Running our fastest Landau Gauge Fixing routine .. \n\n" ) ; 
+      fprintf( stdout , "[GF] Running our fastest Landau Gauge Fixing "
+	       "routine .. \n\n" ) ; 
     } else {
-      printf( "[GF] Sorry, not enough memory to run Landau Gauge Fixing ... \n\n" ) ;
+      fprintf( stdout , "[GF] Sorry, not enough memory to run Landau Gauge "
+	       "Fixing ... \n\n" ) ;
       GF = GLU_FAILURE ;
     }
     LGF = GF ;
@@ -296,14 +305,17 @@ have_memory_wf( const struct sm_info SMINFO )
     if( SMINFO.dir == ALL_DIRECTIONS )  {
       if( expensive_more > free_memory ) {
 	if( expensive_less > free_memory ) {
-	  printf( "[WFLOW] Cannot use either Wilson Flow routine .. \n\n" ) ; 
+	  fprintf( stdout , "[WFLOW] Cannot use either Wilson Flow "
+		   "routine .. \n\n" ) ; 
 	  fourDdef = GLU_FAILURE ;
 	} else {
-	  printf( "[WFLOW] Running our slower Wilson Flow routine .. \n\n" ) ; 
+	  fprintf( stdout , "[WFLOW] Running our slower Wilson Flow "
+		   "routine .. \n\n" ) ; 
 	  fourDdef = MODERATE ;
 	}
       } else {
-	printf( "[WFLOW] Running our fastest Wilson Flow routine .. \n\n" ) ; 
+	fprintf( stdout , "[WFLOW] Running our fastest Wilson Flow "
+		 "routine .. \n\n" ) ; 
       }
     }
     WF = fourDdef ;

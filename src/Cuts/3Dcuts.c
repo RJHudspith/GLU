@@ -132,7 +132,7 @@ static short int
 mom_gauge_spatial( struct site *__restrict A ,
 		   const lie_field_def def )
 {
-  printf( "[CUTS] WARNING! No FFT of the fields \n" ) ;
+  fprintf( stderr , "[CUTS] WARNING! No FFT of the fields \n" ) ;
   return GLU_FAILURE ;
 }
 
@@ -143,7 +143,7 @@ int
 cuts_spatial ( struct site *__restrict A ,
 	       const struct cut_info CUTINFO )
 {
-  printf( "\n[CUTS] Instantaneous Spatial/Temporal prop calculating ... \n" ) ; 
+  fprintf( stdout , "\n[CUTS] Instantaneous Spatial/Temporal prop calculating ... \n" ) ; 
   // performs LOG and FFT of A, rewrites "A" to save space
   mom_gauge_spatial( A , CUTINFO.definition ) ; 
 
@@ -231,7 +231,7 @@ g( p ) =   ----------    >    Tr < A_( ND - 1 )( p ) . A_( ND - 1 )( -p ) >
   write_g2g3_to_list( Aps , g2_spatial , g2_temporal , num_mom ) ;
   
   // Tell us what we are outputting ...
-  printf( "[CUTS] Writing finished...\n[CUTS] Outputting to %s \n" , str ) ;
+  fprintf( stdout , "[CUTS] Writing finished...\n[CUTS] Outputting to %s \n" , str ) ;
  
   // FREE STUFF //
   fclose( Aps ) ;

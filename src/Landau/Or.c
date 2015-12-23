@@ -154,17 +154,18 @@ output_fixing_info( struct site *__restrict lat ,
   latt_reunitU( lat ) ;
 
   ////////// Print out the Gauge Fixing information /////////////
-  printf( "[GF] Plaquette :: %1.15f \n[GF] Accuracy :: %1.4e\n" , 
-	  av_plaquette( lat ) , theta ) ;
+  fprintf( stdout , "[GF] Plaquette :: %1.15f \n[GF] Accuracy :: %1.4e\n" , 
+	   av_plaquette( lat ) , theta ) ;
   GLU_real tr ;
   const double link = indivlinks( lat , &tr ) ;
-  printf( "[GF] Iters :: %zu\n[GF] Link trace :: %1.15f ||"
-	  "Maximum :: %1.15f\n" , iters , link , tr / NC ) ; 
+  fprintf( stdout , "[GF] Iters :: %zu\n[GF] Link trace :: %1.15f ||"
+	   "Maximum :: %1.15f\n" , iters , link , tr / NC ) ; 
   double lin , log ;
   const_time( lat , &lin , &log ) ; 
-  printf( "[GF] Temporal constance || Lin %e || Log %e \n" , lin , log ) ;
+  fprintf( stdout , "[GF] Temporal constance || Lin %e || Log %e \n" , 
+	   lin , log ) ;
   gauge_functional( lat ) ;
-  printf( "[GF] Functional :: %1.15f\n" , gauge_functional( lat ) ) ;
+  fprintf( stdout , "[GF] Functional :: %1.15f\n" , gauge_functional( lat ) ) ;
   ///////////////////////////////////////////////////////////////
   return ;
 }
@@ -183,7 +184,7 @@ OrLandau( struct site *__restrict lat ,
   // initialise the draughtboard
   init_cb( LVOLUME ) ;
 
-  printf( "[GF] Over-Relaxation parameter %f \n" , OrParam ) ;
+  fprintf( stdout , "[GF] Over-Relaxation parameter %f \n" , OrParam ) ;
 
   // iterations
   size_t iters = 0 ;
@@ -199,7 +200,9 @@ OrLandau( struct site *__restrict lat ,
 
     newlink = links( lat ) ;
 
-    printf( "%1.12f \n" , newlink ) ;
+    #ifdef verbose
+    fprintf( stdout , "%1.12f \n" , newlink ) ;
+    #endif
 
     // chroma condition is pretty shitty
     *theta = ( newlink - oldlink ) / newlink ;
@@ -246,7 +249,7 @@ OrCoulomb( struct site *__restrict lat ,
   // initialise the draughtboarding
   init_cb( LCU ) ;
 
-  printf( "[GF] Over-Relaxation parameter %f \n\n" , OrParam ) ;
+  fprintf( stdout , "[GF] Over-Relaxation parameter %f \n\n" , OrParam ) ;
 
   size_t t , iters = 0 ;
   for( t = 0 ; t < Latt.dims[ND-1] ; t++ ) {
@@ -274,21 +277,20 @@ OrCoulomb( struct site *__restrict lat ,
       loc_iters++ ;
     }
 
-    printf( "[GF] Slice :: %zu {Stopped by convergence} \n[GF] Accuracy :: %1.5e"
-	    " || Iterations :: %zu\n[GF] Failures :: %d\n\n" , 
-	    t , *theta , loc_iters , 0 ) ; 
+    fprintf( stdout , "[GF] Slice :: %zu {Stopped by convergence} \n"
+	     "[GF] Accuracy :: %1.5e || Iterations :: %zu\n"
+	     "[GF] Failures :: %d\n\n" , t , *theta , loc_iters , 0 ) ; 
     iters += loc_iters ;
   }
 
   // and print it out
   double splink , tlink ;
   all_links( lat , &splink , &tlink ) ;
-  printf( "[GF] Tuning :: %f || Iterations :: %zu ||\n[GF] Final Tlink :: %1.15f "
-	  "|| Slink :: %1.15f \n[GF] Plaquette :: %1.15f \n" , 
-	  Latt.gf_alpha , iters , tlink , splink , av_plaquette( lat ) ) ; 
-  
+  fprintf( stdout , "[GF] Tuning :: %f || Iterations :: %zu ||\n"
+	   "[GF] Final Tlink :: %1.15f || Slink :: %1.15f \n"
+	   "[GF] Plaquette :: %1.15f \n" , Latt.gf_alpha , iters , 
+	   tlink , splink , av_plaquette( lat ) ) ; 
   // memory frees
   free_cb( ) ;
-
   return iters ;
 }

@@ -276,22 +276,20 @@ gen_staples_4D2( GLU_complex stap[ NCNC ] ,
 #endif 
 
 // this code performs the smearing ...
-void 
+int
 HYPSLsmear4D( struct site *__restrict lat , 
 	      const size_t smiters , 
 	      const int type ) 
 {
-  if( unlikely( smiters == 0 ) ) { return ; }
-#if ND != 4
-  printf( "[SMEAR] Sorry, HYP/HEX/HYL not supported for ND == %d \n" , ND ) ;
-  return ;
-#else
+  // successfully do nothing
+  if( smiters == 0 ) { return GLU_SUCCESS ; }
 
-  // check the type
-  if( ( type != SM_APE ) && ( type != SM_STOUT ) && ( type != SM_LOG ) ) {
-    printf( "[SMEAR] Unrecognised type [ %d ] ... Leaving \n" , type ) ; 
-    return ; 
-  }
+  // should never get here as we have ND-generic smear
+#if ND != 4
+  fprintf( stderr , "[SMEAR] Sorry, HYP/HEX/HYL not supported for ND == %d \n" ,
+	   ND ) ;
+  return GLU_FAILURE ;
+#else
 
   // callback for the projections
   void (*project) ( GLU_complex smeared_link[ NCNC ] , 
@@ -312,7 +310,9 @@ HYPSLsmear4D( struct site *__restrict lat ,
     project = project_LOG ;
     break ;
   default :
-    return ;
+    fprintf( stderr , "[SMEAR] unrecognised smear projection %d\n" ,
+	     type ) ;
+    return GLU_FAILURE ;
   }
 
   // allocate temporaries ...
@@ -327,8 +327,8 @@ HYPSLsmear4D( struct site *__restrict lat ,
       GLU_malloc( (void**)&lev2 , 16 , LCU * sizeof( struct smallest_lv1 ) ) != 0 || 
       GLU_malloc( (void**)&lev2_up , 16 , LCU * sizeof( struct smallest_lv1 ) ) != 0 || 
       GLU_malloc( (void**)&lev2_down , 16 , LCU * sizeof( struct smallest_lv1 ) ) != 0 ) {
-    printf( "[SMEARING] field allocation error\n" ) ;
-    return ;
+    fprintf( stderr , "[SMEARING] field allocation error\n" ) ;
+    return GLU_FAILURE ;
   }
 
 #ifdef TOP_VALUE
@@ -442,15 +442,6 @@ HYPSLsmear4D( struct site *__restrict lat ,
   print_smearing_obs( lat , type , count , GLU_TRUE ) ;
 #endif
 
-  // need to clean up the lattice fields
-  #ifdef FAST_SMEAR
-  if( type == SM_STOUT ) {
-    latt_reunitU( lat ) ;
-    printf( "\n[SMEAR] A final reunitarisation step to clean things up\n" ) ;
-    print_smearing_obs( lat , type , count , GLU_TRUE ) ;
-  }
-  #endif
-
   // free that memory //
   free( lev1 ) ; 
   free( lev2 ) ; 
@@ -460,6 +451,6 @@ HYPSLsmear4D( struct site *__restrict lat ,
   free( lat3 ) ; 
   free( lat4 ) ; 
 
-  return ;
+  return GLU_SUCCESS ;
 #endif
 }

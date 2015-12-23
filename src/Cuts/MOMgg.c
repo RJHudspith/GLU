@@ -22,8 +22,6 @@
 
    @warning Expects A to be Landau gauge fixed Lie fields
  */
-
-
 #include "Mainfile.h"
 
 #include "cut_output.h" // output file formatting
@@ -114,8 +112,10 @@ contraction_traces( const struct site *__restrict A ,
   for( mu = 0 ; mu < ND ; mu++ ) {
     for( nu = 0 ; nu < ND ; nu++ ) {
       for( rho = 0 ; rho < ND ; rho++ ) {
-	trace_abc( &tr , A[ posit ].O[mu] , A[ conj ].O[nu] , A[ lzero_mat ].O[rho] ) ;
-	tr = (mu!=nu) ? (-mom[mu]*mom[nu]*invspsq)*mom[rho]*tr : (1.0-mom[mu]*mom[nu]*invspsq)*mom[rho]*tr ;
+	trace_abc( &tr , A[ posit ].O[mu] , A[ conj ].O[nu] , 
+		   A[ lzero_mat ].O[rho] ) ;
+	tr = (mu!=nu) ? (-mom[mu]*mom[nu]*invspsq)*mom[rho]*tr :\
+	  (1.0-mom[mu]*mom[nu]*invspsq)*mom[rho]*tr ;
 	res += tr ;
       }
     }

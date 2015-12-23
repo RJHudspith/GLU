@@ -122,25 +122,25 @@ construct_loop_variables( LATT_LOOP , LOOP_VAR , type )
      const int type ;
 {
   // dump it all in memory...
-  switch( type )
-    {
-    case OUTPUT_SMALL :
-      *LATT_LOOP = ND * LOOP_SMALL * Latt.Volume ;
-      *LOOP_VAR = LOOP_SMALL ;
-      break ;
-    case OUTPUT_GAUGE : 
-      *LATT_LOOP = ND * LOOP_GAUGE * Latt.Volume ;
-      *LOOP_VAR = LOOP_GAUGE ;
-      break ;      
-    case OUTPUT_NCxNC :
-      *LATT_LOOP = ND * LOOP_NCxNC * Latt.Volume ;
-      *LOOP_VAR = LOOP_NCxNC ;
-      break ;
-    default :
-      // actually should try and read an NCxNC config perhaps?
-      printf( "[IO] Unrecognised input type .. Leaving in disgust\n" ) ;
-      return GLU_FAILURE ;
-    }
+  switch( type ) {
+  case OUTPUT_SMALL :
+    *LATT_LOOP = ND * LOOP_SMALL * Latt.Volume ;
+    *LOOP_VAR = LOOP_SMALL ;
+    break ;
+  case OUTPUT_GAUGE : 
+    *LATT_LOOP = ND * LOOP_GAUGE * Latt.Volume ;
+    *LOOP_VAR = LOOP_GAUGE ;
+    break ;      
+  case OUTPUT_NCxNC :
+    *LATT_LOOP = ND * LOOP_NCxNC * Latt.Volume ;
+    *LOOP_VAR = LOOP_NCxNC ;
+    break ;
+  default :
+    // actually should try and read an NCxNC config perhaps?
+    fprintf( stderr , "[IO] Unrecognised input type .. "
+	     "Leaving in disgust\n" ) ;
+    return GLU_FAILURE ;
+  }
   return GLU_SUCCESS ;
 }
 
@@ -151,24 +151,13 @@ DML_checksum_accum( uint32_t *checksuma ,
 		    uint32_t *checksumb , 
 		    const uint32_t rank, 
 		    char *buf, 
-		    size_t size )
+		    const size_t size )
 {
-#ifdef DEBUG
-  printf( "[EDIT] RANK %d\n" , rank ) ;
-  printf( "[EDIT] SIZE %d\n" , size ) ;
-#endif
   const uint32_t rank29 = rank % 29 ;
   const uint32_t rank31 = rank % 31 ;
   const uint32_t work = (uint32_t)crc32(0, (unsigned char*)buf, size);
-#ifdef DEBUG
-  printf( "[EDIT] WORK %x\n" , work ) ;
-#endif 
   *checksuma ^= work<<rank29 | work>>(32-rank29);
   *checksumb ^= work<<rank31 | work>>(32-rank31);
-#ifdef DEBUG
-  printf( "[EDIT] CHECKSUMS %x %x\n" , *checksuma , *checksumb ) ;
-  printf( "\n" ) ;
-#endif
   return ;
 }
 
@@ -215,7 +204,8 @@ lattice_reader_suNC( struct site *__restrict lat ,
 {
   // this is checked previously, nice to be certain though
   if( in == NULL ) {
-    printf( "[IO] Error opening config file!!... Returning with error \n" ) ; 
+    fprintf( stderr , "[IO] Error opening config file!!..."
+	     "Returning with error\n" ) ; 
     return GLU_FAILURE ; 
   }
 
@@ -233,7 +223,8 @@ lattice_reader_suNC( struct site *__restrict lat ,
   if( HEAD_DATA.precision == DOUBLE_PREC ) {
     uind = ( double* )malloc( LATT_LOOP * sizeof( double ) ) ; 
     if( fread( uind , sizeof( double ) , LATT_LOOP , in ) != LATT_LOOP ) {
-      printf( "[IO] Configuration File reading failure .. Leaving \n" ) ;
+      fprintf( stderr , "[IO] Configuration File reading failure "
+	       ".. Leaving \n" ) ;
       free( uind ) ;
       return GLU_FAILURE ;
     }
@@ -261,7 +252,8 @@ lattice_reader_suNC( struct site *__restrict lat ,
   } else {
     uin = ( float* )malloc( LATT_LOOP * sizeof( float ) ) ; 
     if( fread( uin , sizeof( float ) , LATT_LOOP  , in ) != LATT_LOOP ) {
-      printf("[IO] Configuration File reading failure .. Leaving \n" ) ;
+      fprintf( stderr , "[IO] Configuration File reading failure "
+	       ".. Leaving \n" ) ;
       free( uin ) ;
       return GLU_FAILURE ;
     }
@@ -289,20 +281,20 @@ lattice_reader_suNC( struct site *__restrict lat ,
 
   // compute the crcs
   uint32_t k = 0 , sum29 = 0 , sum31 = 0 ;
-  int i ;
+  size_t i ;
   #pragma omp parallel for private(i) reduction(+:k) reduction(^:sum29) reduction(^:sum31)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     // t is the AntiHermitian_projised idx
-    int t = ND * LOOP_VAR * i ;
-    int rank29 = t % 29 ;
-    int rank31 = t % 31 ;
+    size_t t = ND * LOOP_VAR * i ;
+    size_t rank29 = t % 29 ;
+    size_t rank31 = t % 31 ;
     register uint32_t k_loc = 0 ;
     register uint32_t sum29_loc = 0 , sum31_loc = 0 ;
 
     // general variables ...
     GLU_real utemp[ LOOP_VAR ] ;
     uint32_t res = 0 ;
-    int mu , j , count = 0 ;
+    size_t mu , j , count = 0 ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       for( j = 0 ; j < LOOP_VAR ; j++ ) {
 	// should I shuffle this around ?
@@ -345,13 +337,6 @@ lattice_reader_suNC( struct site *__restrict lat ,
     sum31 = sum31 ^ (uint32_t)sum31_loc ;
   }
 
-#ifdef DEBUG
-  printf( "[IO] NERSC cksum   :: %x \n" , k ) ;
-  printf( "[IO] MILC cksums   :: %x %x \n" , sum29 , sum31 ) ;
-  printf( "[IO] SCIDAC cksums :: %x %x \n" , CRCsum29 , CRCsum31 ) ;
-  printf( "[IO] BQCD cksum    :: %x \n" , CRC_BQCD ) ;
-#endif
-
   if( HEAD_DATA.precision == DOUBLE_PREC ) {
     free( uind ) ; 
   } else {
@@ -382,7 +367,8 @@ lattice_reader_suNC_cheaper( struct site *__restrict lat ,
 {
   // this is checked previously, nice to be certain though
   if( in == NULL ) {
-    printf( "[IO] Error opening config file!!... Returning with error \n" ) ; 
+    fprintf( stderr , "[IO] Error opening config file!!..."
+	     "Returning with error \n" ) ; 
     return GLU_FAILURE ; 
   }
 
@@ -404,7 +390,7 @@ lattice_reader_suNC_cheaper( struct site *__restrict lat ,
 
   uint32_t k = 0 , sum29 = 0 , sum31 = 0 ; // NERSC & MILC checksums ...
   uint32_t CRCsum29 = 0 , CRCsum31 = 0 ;
-  int i ;
+  size_t i ;
   // do this in serial reads in site by site
   for( i = 0 ; i < LVOLUME ; i++ ) {
 
@@ -440,16 +426,16 @@ lattice_reader_suNC_cheaper( struct site *__restrict lat ,
       }
       q = uin ;
     }
-    int t = 0 ;
+    size_t t = 0 ;
 
     register uint32_t k_loc = 0 , sum29_loc = 0 , sum31_loc = 0 ;
-    int rank29 = ( ND * LOOP_VAR * i ) % 29 ;
-    int rank31 = ( ND * LOOP_VAR * i ) % 31 ;
+    size_t rank29 = ( ND * LOOP_VAR * i ) % 29 ;
+    size_t rank31 = ( ND * LOOP_VAR * i ) % 31 ;
 
     // general variables ...
     GLU_real utemp[ LOOP_VAR ] ;
     uint32_t res = 0 ;
-    int mu , j ;
+    size_t mu , j ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       for( j = 0 ; j < LOOP_VAR ; j++ ) {
 	// should I shuffle this around ?
@@ -492,13 +478,6 @@ lattice_reader_suNC_cheaper( struct site *__restrict lat ,
   // BQCD checksum is just the crc of the whol thing
   uint32_t CRC_BQCD , nbytes ;
   CKSUM_GET( &CRC_BQCD , &nbytes ) ;
-
-#ifdef DEBUG
-  printf( "[IO] NERSC cksum   :: %x \n" , k ) ;
-  printf( "[IO] MILC cksums   :: %x %x \n" , sum29 , sum31 ) ;
-  printf( "[IO] SCIDAC cksums :: %x %x \n" , CRCsum29 , CRCsum31 ) ;
-  printf( "[IO] BQCD cksum    :: %x \n" , CRC_BQCD ) ;
-#endif
 
   if( HEAD_DATA.precision == DOUBLE_PREC ) {
     free( uind ) ; 

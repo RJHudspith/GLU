@@ -173,12 +173,14 @@ static_quark_correlator( double complex *__restrict result ,
 {
   // init parallel threads, maybe
   if( parallel_ffts( ) == GLU_FAILURE ) {
-    printf( "[PAR] Problem with initialising the OpenMP FFTW routines \n" ) ;
+    fprintf( stderr , "[PAR] Problem with initialising the OpenMP "
+	              "FFTW routines \n" ) ;
     return GLU_FAILURE ;
   }
 
   GLU_complex **slice_poly = NULL ;
-  if( GLU_malloc( (void**)&slice_poly , 16 , LCU * sizeof( GLU_complex* ) ) != 0 ) {
+  if( GLU_malloc( (void**)&slice_poly , 16 , LCU * sizeof( GLU_complex* ) ) 
+      != 0 ) {
     return GLU_FAILURE ;
   }
   size_t i ;
@@ -310,7 +312,7 @@ Coul_staticpot( struct site *__restrict lat ,
   // leave if the loop arguments make no sense
   if( T < 1 || LVOLUME < 1 ) return GLU_FAILURE ;
 
-  printf( "\n[STATIC-POTENTIAL] measurements at T = %zu\n" , T ) ;
+  fprintf( stdout , "\n[STATIC-POTENTIAL] measurements at T = %zu\n" , T ) ;
 
   // compute the ratios of the dimensions in terms of the smallest
   simorb_ratios( ND ) ;
@@ -341,8 +343,9 @@ Coul_staticpot( struct site *__restrict lat ,
   write_mom_veclist( Ap , size , list , ND-1 ) ;
 
   // tell us where it is going
-  printf( "[STATIC-POTENTIAL] writing correlators up to T = %zu separation \n" , T ) ;
-  printf( "[STATIC-POTENTIAL] writing output file to %s \n" , str ) ;
+  fprintf( stdout , "[STATIC-POTENTIAL] writing correlators up to "
+	   "T = %zu separation \n" , T ) ;
+  fprintf( stdout , "[STATIC-POTENTIAL] writing output file to %s \n" , str ) ;
 
   // write out the size of the timeslices we are looking at
   size_t Tcorrs[1] = { T-1 } ;
@@ -380,7 +383,8 @@ Coul_staticpot( struct site *__restrict lat ,
     write_complex_g2g3_to_list( Ap , result , trtr , size ) ;
 
     // and tell us which temporal separation has been done
-    printf( "[STATIC-POTENTIAL] T = %zu sepation computed and written \n" , t ) ;
+    fprintf( stdout , "[STATIC-POTENTIAL] T = %zu sepation computed "
+	     "and written \n" , t ) ;
   }
 
   // close the file
@@ -401,4 +405,3 @@ Coul_staticpot( struct site *__restrict lat ,
 
   return GLU_SUCCESS ;
 }
-

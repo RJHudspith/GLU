@@ -60,16 +60,16 @@ Coulomb( struct site *__restrict lat ,
   double splink , tlink ;
   all_links( lat , &splink , &tlink ) ;
 
-  printf( "[GF] Initial Tlink :: %1.15f || Slink :: %1.15f \n"
-	  "[GF] Plaquette :: %1.15f \n", 
-	  tlink , splink , av_plaquette( lat ) ) ; 
-
+  fprintf( stdout , "[GF] Initial Tlink :: %1.15f || Slink :: %1.15f \n"
+	   "[GF] Plaquette :: %1.15f \n", 
+	   tlink , splink , av_plaquette( lat ) ) ; 
+  
   // put an ifdef guard here as SD requires none of this ...
 #ifdef HAVE_FFTW3_H
 
   if( parallel_ffts( ) == GLU_FAILURE ) {
-    printf( "Problem with initialising the OpenMP FFTW routines \n" ) ;
-    // should clean up the memory here
+    fprintf( stderr , "Problem with initialising the OpenMP"
+	     " FFTW routines \n" ) ;
     return GLU_FAILURE ;
   }
 
@@ -146,9 +146,10 @@ Coulomb( struct site *__restrict lat ,
 #endif
 
   all_links( lat , &splink , &tlink ) ;
-  printf( "[GF] Tuning :: %f || Iterations :: %zu ||\n[GF] Final Tlink :: %1.15f "
-	  "|| Slink :: %1.15f \n[GF] Plaquette :: %1.15f \n" , 
-	  Latt.gf_alpha , iters , tlink , splink , av_plaquette( lat ) ) ; 
+  fprintf( stdout , "[GF] Tuning :: %f || Iterations :: %zu ||"
+	   "\n[GF] Final Tlink :: %1.15f "
+	   "|| Slink :: %1.15f \n[GF] Plaquette :: %1.15f \n" , 
+	   Latt.gf_alpha , iters , tlink , splink , av_plaquette( lat ) ) ; 
 
   return iters ; 
 }

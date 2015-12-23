@@ -24,7 +24,7 @@
 #define GLU_TAYLOR_LOGS_H
 
 /**
-   @fn void asinh_log( GLU_complex *__restrict Q , const GLU_complex *__restrict U )
+   @fn int asinh_log( GLU_complex *__restrict Q , const GLU_complex *__restrict U )
    @brief computes the logarithm of a Unitary matrix
    @param Q :: the logarithm of U
    @param U :: Unitary or special unitary matrix
@@ -38,21 +38,24 @@
    asinh(x) = x*( 1 + ( -x^2/6 + ... ) / ( 1 + ... ) )
 
    Here, we use x = ( U - U^{\dagger} ) / 2
+
+   @return #GLU_FAILURE or #GLU_SUCCESS
  */
-void
+int
 asinh_log( GLU_complex *__restrict Q , 
 	   const GLU_complex *__restrict U ) ;
 
 /**
-   @fn void brute_force_log( GLU_complex *__restrict Q , const GLU_complex *__restrict U , const int NROOTS ) ;
+   @fn int brute_force_log( GLU_complex *__restrict Q , const GLU_complex *__restrict U , const int NROOTS ) ;
    @brief computes the logarithm of a matrix using accelerated Taylor series approximations
    @param Q :: the principal logarithm of Q
    @param U :: the matrix having its log taken
    @param NROOTS :: the number of nested roots we use for convergence
    This code is as near as possible generic for any matrix arguments. As it is
    based on series expansions it is dreadfully slow, but it is useful.
+   @return #GLU_FAILURE or #GLU_SUCCESS
  */
-void
+int
 brute_force_log( GLU_complex *__restrict Q , 
 		 const GLU_complex *__restrict U ,
 		 const int NROOTS ) ;

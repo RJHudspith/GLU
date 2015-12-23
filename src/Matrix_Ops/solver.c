@@ -245,7 +245,7 @@ Eigenvalues( double complex z[ NC ] ,
 #else
   // need to think about this one .... hmmm. Might need a library as complex QR
   // appears to be pretty hard to do well
-  printf( "sorry not implemented yet .. leaving \n" ) ;
+  fprintf( stderr , "sorry not implemented yet .. exiting \n" ) ;
   exit(-1) ;
 #endif
   return ;

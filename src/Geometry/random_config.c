@@ -32,7 +32,7 @@ void
 latt_reunitg( GLU_complex *__restrict *__restrict gauge )
 {
   GLU_complex *temp = malloc( NCNC * sizeof( GLU_complex ) ) ; 
-  int i ; 
+  size_t i ; 
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
     reunit2( gauge[i] ) ; 
@@ -46,10 +46,10 @@ latt_reunitg( GLU_complex *__restrict *__restrict gauge )
 void 
 latt_reunitU( struct site *__restrict lat )
 {
-  int i ; 
+  size_t i ; 
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       reunit2( lat[i].O[mu] ) ; 
     }
@@ -63,7 +63,7 @@ random_gtrans( struct site *__restrict lat )
 {
   rng_init(  ) ; 
   
-  printf( "\n[RNG] Performing a RANDOM gauge transformation \n" ) ;
+  fprintf( stdout , "\n[RNG] Performing a RANDOM gauge transformation \n" ) ;
 
   GLU_complex **gauge = malloc ( LVOLUME * sizeof( GLU_complex * ) ) ;
   size_t i ; 
@@ -82,7 +82,7 @@ random_gtrans( struct site *__restrict lat )
   gtransform( lat , ( const GLU_complex ** )gauge ) ; 
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) { 
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       reunit2( lat[i].O[mu] ) ; 
     }
@@ -98,7 +98,7 @@ void
 random_gtrans_slice( GLU_complex *__restrict *__restrict slice_gauge )
 {
   rng_init( ) ; 
-  int i ;
+  size_t i ;
   // openmp does not play nice with RNG
   for( i = 0 ; i < LCU ; i ++  ) {
     generate_NCxNC( slice_gauge[i] ) ;
@@ -115,7 +115,7 @@ void
 random_transform( struct site *__restrict lat ,
 		  GLU_complex *__restrict *__restrict gauge )
 {
-  int i ; 
+  size_t i ; 
   rng_init( ) ; 
   // openmp does not play nice with RNG
   for( i = 0 ; i < LVOLUME ; i++ ) {
@@ -133,18 +133,18 @@ random_transform( struct site *__restrict lat ,
 void 
 random_suNC( struct site *__restrict lat )
 {
-  int i ;
+  size_t i ;
   rng_init(  ) ; 
   // openmp does not play nice with RNG
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       generate_NCxNC( lat[i].O[mu] ) ;
     }
   }
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {      
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       reunit2( lat[i].O[mu] ) ;
     }
@@ -157,7 +157,7 @@ void
 reunit_gauge_slices( GLU_complex **gauge1 , 
 		     GLU_complex **gauge2 )
 {
-  int i ;
+  size_t i ;
 #pragma omp parallel for private(i)
   for( i = 0 ; i < LCU ; i++ ) {
     reunit2( gauge1[i] ) ;
@@ -170,11 +170,12 @@ reunit_gauge_slices( GLU_complex **gauge1 ,
 void
 trivial( struct site *__restrict lat )
 {
-  int i ; 
-  printf( "\n[UNIT] Creating identity SU(%d) lattice fields \n" , NC ) ; 
+  size_t i ; 
+  fprintf( stdout , "\n[UNIT] Creating identity SU(%d) lattice fields \n" , 
+	   NC ) ; 
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) { identity( lat[i].O[mu] ) ; } 
   }    
   return ;

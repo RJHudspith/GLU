@@ -39,21 +39,16 @@
 #endif
 
 //////////////////////////////////////////////////////////
-void 
+int
 smear3D( struct site *__restrict lat , 
 	 const size_t smiters , 
 	 const smearing_types type )
 {
 #if ND < 3
-  return ;
+  return GLU_SUCCESS ;
 #else
-  if( unlikely( smiters == 0 ) ) { return ; }
-
-  // check the type
-  if( ( type != SM_APE ) && ( type != SM_STOUT ) && ( type != SM_LOG ) ) {
-    printf( "[SMEAR] Unrecognised type [ %d ] ... Leaving \n" , type ) ; 
-    return ; 
-  }
+  // successfully do nothing
+  if( unlikely( smiters == 0 ) ) { return GLU_SUCCESS ; }
 
 #if ND != 4 
   const GLU_real alpha1 = Latt.sm_alpha[0] / ( ( ND-1 ) * ( ND -2 ) ) ;
@@ -67,8 +62,8 @@ smear3D( struct site *__restrict lat ,
   // allocate temporary lattice field
   struct sp_site *lat2 = NULL ;
   if( GLU_malloc( (void**)&lat2 , 16 , LCU * sizeof( struct sp_site ) ) != 0 ) {
-    printf( "[SMEARING] field allocation failure\n" ) ;
-    return ;
+    fprintf( stderr , "[SMEARING] field allocation failure\n" ) ;
+    return GLU_FAILURE ;
   }
 
   // callback for the projections
@@ -77,7 +72,6 @@ smear3D( struct site *__restrict lat ,
 		    const GLU_complex link[ NCNC ] , 
 		    const double smear_alpha , 	     
 		    const double al ) ;
-
   project = project_APE ;
   switch( type ) {
   case SM_APE :
@@ -90,7 +84,9 @@ smear3D( struct site *__restrict lat ,
     project = project_LOG ;
     break ;
   default :
-    return ;
+    fprintf( stderr , "[SMEAR] Unrecognised type [ %d ] ... Leaving \n" , 
+	     type ) ; 
+    return GLU_FAILURE ;
   }
 
   size_t count = 0 ; 
@@ -145,33 +141,20 @@ smear3D( struct site *__restrict lat ,
   print_smearing_obs( lat , type , count-1 , GLU_TRUE ) ;
 #endif
 
-// need to clean up the lattice fields
-  #ifdef FAST_SMEAR
-  if( type == SM_STOUT ) {
-    latt_reunitU( lat ) ;
-    printf( "\n[SMEAR] A final reunitarisation step to clean things up\n" ) ;
-    print_smearing_obs( lat , type , count-1 , GLU_TRUE ) ;
-  }
-  #endif
-
   // free our temporary lattice
   free( lat2 ) ;
-  return ;
+  return GLU_SUCCESS ;
 #endif
 }
 
 // General ALL-dimensional smearing routines ...
-void 
+int
 smear4D( struct site *__restrict lat ,
 	 const size_t smiters , 
 	 const smearing_types type )
 {
-  if( unlikely( smiters == 0 ) ) { return ; }
-  // check our smearing type ...
-  if( ( type != SM_APE ) && ( type != SM_STOUT ) && ( type != SM_LOG ) ) {
-    printf( "[SMEAR] Unrecognised type [ %d ] ... Leaving \n" , type ) ; 
-    return ; 
-  }
+  // successfully do nothing
+  if( unlikely( smiters == 0 ) ) { return GLU_SUCCESS ; }
 
 #if ND != 4 
   const GLU_real alpha1 = ND > 2 ? Latt.sm_alpha[0] / ( ( ND - 1 ) * ( ND - 2 ) ) : Latt.sm_alpha[0] ;
@@ -200,7 +183,9 @@ smear4D( struct site *__restrict lat ,
     project = project_LOG ;
     break ;
   default :
-    return ;
+    fprintf( stderr , "[SMEAR] Unrecognised type [ %d ] ... Leaving \n" , 
+	     type ) ; 
+    return GLU_FAILURE ;
   }
 
   struct spt_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
@@ -260,7 +245,6 @@ smear4D( struct site *__restrict lat ,
     for( t = 0 ; t < Latt.dims[ ND - 1 ] - 1 ; t++ ) {
     #endif
       const size_t slice = LCU * t ; 
-
       #pragma omp parallel for private(i) SCHED
       PFOR( i = 0 ; i < LCU ; i++ ) {
 	const size_t it = slice + i ;
@@ -345,18 +329,8 @@ smear4D( struct site *__restrict lat ,
     // end of iterations loop
   }
 
-
 #ifndef verbose
  print_smearing_obs( lat , type , count-1 , GLU_TRUE ) ;
-#endif
-
-  // need to clean up the lattice fields
-#ifdef FAST_SMEAR
-  if( type == SM_STOUT ) {
-    latt_reunitU( lat ) ;
-    printf( "\n[SMEAR] A final reunitarisation step to clean things up\n" ) ;
-    print_smearing_obs( lat , type , count , GLU_TRUE ) ;
-  }
 #endif
 
   // free stuff !
@@ -364,5 +338,5 @@ smear4D( struct site *__restrict lat ,
   free( lat3 ) ; 
   free( lat4 ) ;
 
-  return ;
+  return GLU_SUCCESS ;
 }

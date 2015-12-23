@@ -18,7 +18,8 @@
 */
 /**
    @file MOMggg.c
-   @brief computation of the non-exceptional three point function and the gluon propagator
+   @brief computation of the non-exceptional three point function and 
+   the gluon propagator
  */
 
 #include "Mainfile.h"
@@ -34,10 +35,14 @@
 static void
 print_momenta( int p1[ND] , int p2[ND] )
 {
-  int mu ;
-  printf( "(" ) ; for( mu = 0 ; mu < ND ; mu++ ) { printf( "%d " , p1[mu] ) ; } ; printf( ") " ) ;
-  printf( "(" ) ; for( mu = 0 ; mu < ND ; mu++ ) { printf( "%d " , p2[mu] ) ; } ; printf( ") " ) ;
-  printf( "(" ) ; for( mu = 0 ; mu < ND ; mu++ ) { printf( "%d " , -(p1[mu]+p2[mu]) ) ; } ; printf( ") \n" ) ;
+  size_t mu ;
+  fprintf( stdout , "(" ) ; for( mu = 0 ; mu < ND ; mu++ ) { 
+    fprintf( stdout , "%d " , p1[mu] ) ; } ; fprintf( stdout , ") " ) ;
+  printf( "(" ) ; for( mu = 0 ; mu < ND ; mu++ ) { 
+    fprintf( stdout , "%d " , p2[mu] ) ; } ; fprintf( stdout , ") " ) ;
+  fprintf( "(" ) ; for( mu = 0 ; mu < ND ; mu++ ) { 
+    fprintf( stdout , "%d " , -(p1[mu]+p2[mu]) ) ; } ; 
+  fprintf( stdout , ") \n" ) ;
 }
 #endif
 
@@ -54,7 +59,8 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
   compute_fs_and_ds() ;
 #endif
 
-  const double g2_norm = 2.0 / ( 3.0 * ( NCNC - 1 ) * ( ND - 1 ) * LVOLUME ) ;  // factor of 3 comes from the average over triplets
+  const double g2_norm = 2.0 / ( 3.0 * ( NCNC - 1 ) * ( ND - 1 ) * LVOLUME ) ;
+  // factor of 3 comes from the average over triplets
 #ifdef LIE_PROJECTION
   const double g3_norm = 1.0 / ( LVOLUME * NC * ( NCNC - 1 ) ) ;
 #else
@@ -76,7 +82,7 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
 
   // fill up trip by calling get_triplet again .. read from a file ..
   // set up the number of triplets ... 
-  size_t *trip = malloc( nnmax/2 * sizeof( size_t ) ) ;
+  int *trip = malloc( nnmax/2 * sizeof( size_t ) ) ;
 
   // look for a file or just calculate it the dumb way
   read_trip( trip , nnmax ) ;
@@ -92,62 +98,50 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
   const size_t count = counter[ 0 ]  ;
  
   // allocate both the triplet and the projector
-  size_t **triplet = malloc( count * sizeof( size_t* ) ) ;
+  int **triplet = malloc( count * sizeof( int* ) ) ;
   double **proj = malloc( count * sizeof( double* ) ) ;
 
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < count ; i++ ) {
-    proj[i] = ( double* ) malloc( ND * ND * ND *  sizeof ( double ) ) ;
-    triplet[i] = ( size_t* ) malloc( 3 *  sizeof( size_t ) ) ;
+    proj[i] = ( double* )malloc( ND * ND * ND *  sizeof ( double ) ) ;
+    triplet[i] = ( int* )malloc( 3 *  sizeof( int ) ) ;
   }
-
-  // read in the triplet and the projector 
-  const int test = read_triplet_and_proj( triplet , // reads in the trips
-					  proj ,  // computes the projector
-					  momentum , // send it the -pi , pi mom
-					  nnmax , // maximum momentum
-					  count , //size of the trip array
-					  num_mom[ 0 ] ) ; // size of the applicable momenta list
-
-  // if the test sends back a failure signal we get the hell out
-  if( unlikely( test == GLU_FAILURE ) ) {
-    for( i = 0 ; i < num_mom[ 0 ] ; i++ ) {
-      free( momentum[ i ] ) ;
-    }
-    free( momentum ) ;
-    for( i = 0 ; i < count ; i++ ) {
-      free( triplet[ i ] ) ;
-      free( proj[i] ) ;
-    }
-    free( triplet ) ;
-    free( proj ) ;    
-    return GLU_FAILURE ;
-  }
-  
-  write_triplet_mom_list( Ap , counter , momentum , triplet , ND ) ;
-
-  /// NOW that we have the triplets we can compute the symmetric
-  /// three point function ....
 
   // malloc these as they are pretty big ...
   double *g2 = ( double* )malloc( count * sizeof( double ) ) ;
   double *g3 = ( double* )malloc( count * sizeof( double ) ) ;
 
-  //set place == 0 again
+  // read in the triplet and the projector 
+  int flag = GLU_SUCCESS ;
+  flag = read_triplet_and_proj( triplet , // reads in the trips
+				proj ,  // computes the projector
+				(const int**)momentum , // momlist
+				nnmax , // maximum momentum
+				count , //size of the trip array
+				num_mom[ 0 ] ) ; // size mom list
+  
+  if( flag == GLU_FAILURE ) {
+    goto memfree ;
+  }
+  
+  write_triplet_mom_list( Ap , counter , momentum , triplet , ND ) ;
+
   size_t checker = 0 ;
   for( nn = 0 ; nn < nnmax/2 ; nn ++ ) {
 
     double psq = 0. ;
     double oneOpsq = 0. ;
-    if( trip[ nn ] == 0 ) { } else {
+    if( trip[ nn ] != 0 ) {
       // compute psq
       size_t mu ;
       for( mu = 0 ; mu < ND ; mu++ ) {
+	const double cache = momentum[ triplet[ checker ][ 0 ] ][ mu ] * \
+	  Latt.twiddles[ mu ] ; 
         #ifdef PSQ_MOM
-	const double temp =  momentum[ triplet[ checker ][ 0 ] ][ mu ] * Latt.twiddles[ mu ] ; 
+	const double temp =  cache ;
         #else 
 	// Sin variant hmmm, psq's may (will) be different in this case
-	const double temp =  2. * sin( 0.5 * momentum[ triplet[ checker ][ 0 ] ][ mu ] * Latt.twiddles[ mu ] );
+	const double temp =  2. * sin( 0.5 * cache );
         #endif
 	psq += temp * temp ;
       }
@@ -176,8 +170,7 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
       double sum = 0. ;
       #pragma omp parallel for private(z) reduction(+:sum)
       for( z = 0 ; z < ( ND * ND * ND ) ; z++ ) {
-	if( unlikely( fabs( proj[ place ][ z ] ) < PREC_TOL ) ) { // no zero mult!!
-	} else {
+	if( fabs( proj[ place ][ z ] ) > PREC_TOL ) {
 	  // faster , simpler triplet multiplication
 	  GLU_complex test = 0. ;
 	  const size_t rho = z % ND ;
@@ -185,11 +178,11 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
 	  const size_t mu = ( ( z - z % ( ND * ND ) ) / ( ND * ND ) ) % ND ;
 	  
 	  // do the projection either in lie space or not
-	  #ifdef LIE_PROJECTION
+          #ifdef LIE_PROJECTION
 	  test = (GLU_complex)ifabc_ABC( A[ trip0 ].O[mu] , 
 					 A[ trip1 ].O[nu] , 
 					 A[ trip2 ].O[rho] ) ;
-	  #else
+          #else
 	  trace_abc( &test ,
 		     A[ trip0 ].O[mu] ,
 		     A[ trip1 ].O[nu] ,
@@ -199,12 +192,12 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
 	  // and sum it ... Imaginary part cancels !
           #ifdef CUT_FORWARD
 	  sum = sum + (double)( proj[ place ][ z ] * (double)creal( test ) ) ;
-	  #else
+          #else
 	  sum = sum - (double)( proj[ place ][ z ] * (double)creal( test ) ) ;
-	  #endif
+          #endif
 	}
       }
-
+      
       // psq factor implicit in the norm, g3_norm included too
       g3[ place ] = sum * oneOpsq ;
       
@@ -227,11 +220,14 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
     // a value for which we add "place" to in the files..
     checker += trip[nn] ;
   }
-
-  // we write out the two and three point functions sequentially in the output file
+  
+  // we write out the two and three point functions in the output file
   write_g2g3_to_list( Ap , g2 , g3 , counter ) ; 
 
-  // FREE ALL THAT MEMORY ................
+  // great success!
+  flag = GLU_SUCCESS ;
+
+ memfree :
 
   // free the array denoting the size of triplets
   free( trip ) ;
@@ -251,7 +247,6 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
     free( triplet[ i ] ) ;
     free( proj[i] ) ;
   }
-  
   free( triplet ) ;
   free( proj ) ;
 
@@ -260,8 +255,7 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
   free_generators( ) ;
 #endif
 
-  // great success!
-  return GLU_SUCCESS ;
+  return flag ;
 }
 
 #ifdef LIE_PROJECTION

@@ -248,20 +248,22 @@ gen_staples_4D( GLU_complex *__restrict stap ,
 ////////////////////////////////////////////////////
 
 // this code performs the smearing ...
-void 
+int
 HYPSLsmear4D_expensive( struct site *__restrict lat , 
-			const int smiters , 
+			const size_t smiters , 
 			const int type )
 {
 #if ND != 4
-  return ;
+  return GLU_FAILURE ;
 #else
-  if( smiters == 0 ) { return ; }
+  // if we want zero iterations leaving now is a success
+  if( smiters < 1 ) { return GLU_SUCCESS ; }
 
   // check the type
   if( ( type != SM_APE ) && ( type != SM_STOUT ) && ( type != SM_LOG ) ) {
-    printf( "[SMEAR] Unrecognised type [ %d ] ... Leaving \n" , type ) ; 
-    return ; 
+    fprintf( stderr , "[SMEAR] Unrecognised type [ %d ] ... Leaving \n" , 
+	     type ) ; 
+    return GLU_FAILURE ; 
   }
 
 #ifdef TOP_VALUE
@@ -286,7 +288,8 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
     project = project_LOG ;
     break ;
   default :
-    return ;
+    printf( "[SMEAR] HYPSLsmear4D unrecognised type %d\n" , type ) ;
+    return GLU_FAILURE ;
   }
 
   // allocate temporary lattices ...
@@ -294,16 +297,16 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
   if( GLU_malloc( (void**)&lat2 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ||
       GLU_malloc( (void**)&lat3 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ||
       GLU_malloc( (void**)&lat4 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ) {
-    printf( "[SMEARING] field allocation failure \n" ) ;
-    return ;
+    fprintf( stderr , "[SMEARING] field allocation failure \n" ) ;
+    return GLU_FAILURE ;
   }
 
   // allocate levels
   struct lv1 *lev1 = NULL , *lev2 = NULL ;
   if( GLU_malloc( (void**)&lev1 , 16 , LVOLUME * sizeof( struct lv1 ) ) != 0 ||
       GLU_malloc( (void**)&lev2 , 16 , LVOLUME * sizeof( struct lv1 ) ) != 0 ) {
-    printf( "[SMEARING] field allocation failure \n" ) ;
-    return ;
+    fprintf( stderr , "[SMEARING] field allocation failure \n" ) ;
+    return GLU_FAILURE ;
   }
 
   // do the smearing
@@ -382,14 +385,6 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
   #ifndef verbose
   print_smearing_obs( lat , type , count , GLU_TRUE ) ;
   #endif
-        
-#ifdef FAST_SMEAR
-  if( type == SM_STOUT ) {
-    latt_reunitU( lat ) ;
-    printf( "\n[SMEAR] A final reunitarisation step to clean things up\n" ) ;
-    print_smearing_obs( lat , type , count , GLU_TRUE ) ;
-  }
-#endif
   
   // free that memory //
   free( lev1 ) ; 
@@ -398,7 +393,7 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
   free( lat3 ) ; 
   free( lat4 ) ; 
 
-  return ;
+  return GLU_SUCCESS ;
 #endif
 }
 

@@ -66,9 +66,10 @@ check_info1( const struct site *__restrict lat ,
 {
   if( iters % CAREFUL == 0 ) {
     *link = ( newlink == 0. ? 1. : newlink ) ; 
-    printf( "[GF] ACC after %zu iterations :: %1.5e \n" , iters , theta ) ;
-    printf( "[GF] Link :: %1.15f || Plaq :: %1.15f \n" , 
-	    *link , av_plaquette( lat ) ) ; 
+    fprintf( stdout , "[GF] ACC after %zu iterations :: %1.5e \n" , 
+	     iters , theta ) ;
+    fprintf( stdout , "[GF] Link :: %1.15f || Plaq :: %1.15f \n" , 
+	     *link , av_plaquette( lat ) ) ; 
   }
   return ;
 }
@@ -84,9 +85,9 @@ check_info2( const struct site *__restrict lat ,
 {
   if( iters % CAREFUL == 0 ) {
     *newlink = links( lat ) ;
-    printf("[GF] CHROMA ACC :: %1.15e \n" , 1. - link/(*newlink) ) ;
-    printf("[GF] GAUGE ACC :: %1.15e \n" , gauge_test( gauge ) ) ;
-    printf("[GF] THETA ACC :: %1.15e \n" , theta ) ;
+    fprintf( stdout , "[GF] CHROMA ACC :: %1.15e \n" , 1. - link/(*newlink) ) ;
+    fprintf( stdout , "[GF] GAUGE ACC :: %1.15e \n" , gauge_test( gauge ) ) ;
+    fprintf( stdout , "[GF] THETA ACC :: %1.15e \n" , theta ) ;
   }
   return ;
 }
@@ -213,7 +214,7 @@ line_search( GLU_complex *__restrict *__restrict gauge ,
   double val[LINE_NSTEPS] ;
   val[0] = zero_alpha ; // 0 is a freebie
 #ifdef verbose
-  printf( "[GF] Landau CG probe :: %f %1.15f \n" , al[0] , val[0] ) ;
+  fprintf( stdout , "[GF] Landau CG probe :: %f %1.15f \n" , al[0] , val[0] ) ;
 #endif
   for( counter = 1 ; counter < LINE_NSTEPS ; counter++ ) {
     exponentiate_gauge( gauge , (const GLU_complex**)in , al[counter] ) ;
@@ -221,7 +222,8 @@ line_search( GLU_complex *__restrict *__restrict gauge ,
 				   lat , ND , LVOLUME , 0 ) ;
     // the last argument of this has to be 0 !!! 
 #ifdef verbose
-    printf( "[GF] Landau CG probe :: %f %1.15f \n" , al[counter] , val[counter] ) ;
+    fprintf( stdout ,  "[GF] Landau CG probe :: %f %1.15f \n" , 
+	     al[counter] , val[counter] ) ;
 #endif
   }
 
@@ -344,9 +346,9 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
     }
 
     #ifdef verbose
-    //printf( "[GF] %zu BETA %e " , iters , beta ) ;
-    printf( "[GF] SPLINE :: %e " , spline_min ) ;
-    printf( "[GF] cgacc %e \n" , *tr ) ;
+    fprintf( stdout , "[GF] %zu BETA %e " , iters , beta ) ;
+    fprintf( stdout , "[GF] SPLINE :: %e " , spline_min ) ;
+    fprintf( stdout , "[GF] cgacc %e \n" , *tr ) ;
     #endif
 
     // spline_min == 0 is a special case where there looks like
@@ -393,7 +395,7 @@ FACG( struct site *__restrict lat ,
 
   if( GLU_malloc( (void**)&sn     , 16 , TRUE_HERM * sizeof( GLU_complex* ) ) != 0 ||
       GLU_malloc( (void**)&in_old , 16 , TRUE_HERM * sizeof( GLU_complex* ) ) != 0 ) {
-    printf( "[GF] FACG failed to allocate CG temporaries\n" ) ;
+    fprintf( stderr , "[GF] FACG failed to allocate CG temporaries\n" ) ;
     return GLU_FAILURE ;
   }
 
@@ -446,7 +448,7 @@ FACG( struct site *__restrict lat ,
     if( ( *th < 1E3*acc ) ) {
       const int sumiters = iters ;
       iters = 0 ; 
-      printf( "[GF] Continuation run \n" ) ;
+      fprintf( stdout , "[GF] Continuation run \n" ) ;
       while( ( *th > acc ) && ( iters < max_iters ) ) {
 	iters = steep_Landau_FACG( gauge , lat , forward , backward , 
 				   out , in , in_old , sn , p_sq , th , acc ,
@@ -526,8 +528,10 @@ FASD( struct site *__restrict lat ,
   // Have this loop just in case //
   if(  unlikely( iters == max_iters ) ) {
     if( *th < ( 1E3 * acc ) ) {
-      printf( "\n[GF] We will contunue this instead of restarting ... \n" ) ;
-      printf( "[GF] Link %1.15f || [GF_ ACC] %1.4e\n" , links( lat ) , *th ) ;
+      fprintf( stdout , "\n[GF] We will contunue this "
+	       "instead of restarting ... \n" ) ;
+      fprintf( stdout , "[GF] Link %1.15f || [GF_ ACC] %1.4e\n" , 
+	       links( lat ) , *th ) ;
       // be wary, this could cause infinite tail recursion ...
       // in practice I don't think it will as we are probably over the hump
       return iters + FASD( lat , gauge , out , in , forward , backward , 
@@ -564,7 +568,7 @@ FASD_SMEAR( struct site *__restrict lat ,
   //malloc temporary gauge
   GLU_complex **gauge2 = NULL ;
   if( GLU_malloc( (void**)&gauge2 , 16 , LVOLUME * sizeof( GLU_complex* ) ) != 0 ) {
-    printf( "[GF] FASD_SMEAR failed to allocate temporary gauge\n" ) ;
+    fprintf( stderr , "[GF] FASD_SMEAR failed to allocate temporary gauge\n" ) ;
     return GLU_FAILURE ;
   }
 
@@ -607,10 +611,10 @@ FASD_SMEAR( struct site *__restrict lat ,
 // tells us the probes we are using
 void
 query_probes_Landau( void ) {
-  printf( "[GF] Using the following probes for the CG \n" ) ;
+  fprintf( stdout , "[GF] Using the following probes for the CG \n" ) ;
   size_t mu ;
   for( mu = 0 ; mu < LINE_NSTEPS ; mu++ ) {
-    printf( "[GF] probe-%zu %f \n" , mu , al[mu] ) ; 
+    fprintf( stdout , "[GF] probe-%zu %f \n" , mu , al[mu] ) ; 
   }
   return ;
 }

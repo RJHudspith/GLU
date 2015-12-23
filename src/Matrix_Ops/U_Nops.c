@@ -352,17 +352,18 @@ is_unitary( const GLU_complex U[ NCNC ] )
   for( i = 0 ; i < NCNC ; i++ ) {
     const GLU_real check = !( i%(NC+1) ) ? cabs( temp[i] ) - 1.0 :\
       cabs( temp[i] ) ; 
-    //printf( "%e \n" , check ) ; 
     if( fabs( check ) > PREC_TOL ) {
       problem = GLU_TRUE ;
-      printf( "* flag seen * element -> %zu :: %1.8e\n" , i , check ) ;
-      printf( "%1.15f %1.15f \n" , creal( temp[i] ) , cimag( temp[i] ) ) ;
+      fprintf( stderr , "* flag seen * element -> %zu :: %1.8e\n" , 
+	       i , check ) ;
+      fprintf( stderr , "%1.15f %1.15f \n" , 
+	       creal( temp[i] ) , cimag( temp[i] ) ) ;
     }
     // same as isnan()
     if( U[i] != U[i] ) {
       problem = GLU_TRUE ;
-      printf( "* We have a NaN here * element %zu %f %f\n" , 
-	      i , creal( U[i] ) , cimag( U[i] ) ) ;
+      fprintf( stderr , "* We have a NaN here * element %zu %f %f\n" , 
+	       i , creal( U[i] ) , cimag( U[i] ) ) ;
     }
   }
 
@@ -374,8 +375,8 @@ is_unitary( const GLU_complex U[ NCNC ] )
     }
     if( fabs( vv - 1.0 )/NC > PREC_TOL ) {
       problem = GLU_TRUE ;
-      printf( "[column %zu] not orthogonal!!!\n"
-	      "MUST REUNITARIZE [reunit( Z , U )] vv %1.8f" , j , vv ) ; 
+      fprintf( stderr , "[column %zu] not orthogonal!!!\n"
+	       "MUST REUNITARIZE [reunit( Z , U )] vv %1.8f" , j , vv ) ; 
       break ;
     }
   }
@@ -388,8 +389,8 @@ is_unitary( const GLU_complex U[ NCNC ] )
     }
     if( fabs( vv - 1.0 )/NC > PREC_TOL ) {
       problem = GLU_TRUE ;
-      printf( "[row %zu] not orthogonal!!!\nMUST REUNITARIZE"
-	      " [reunit( Z , U )] vv %1.8f" , j , vv ) ; 
+      fprintf( stderr , "[row %zu] not orthogonal!!!\nMUST REUNITARIZE"
+	       " [reunit( Z , U )] vv %1.8f" , j , vv ) ; 
       break ;
     }
   }
@@ -545,7 +546,7 @@ pack_hermitian( GLU_complex a[ HERMSIZE ] ,
 INLINE_VOID
 printcomplex( const GLU_complex a ) 
 {
-  printf( " ( %1.7e  ,  %1.7e )\n" , creal( a ) , cimag( a ) ) ; 
+  fprintf( stdout , " ( %1.7e  ,  %1.7e )\n" , creal( a ) , cimag( a ) ) ; 
   return ;
 }
 
@@ -1173,11 +1174,11 @@ write_matrix( const GLU_complex U[ NCNC ] )
   size_t i ; 
   for( i = 0 ; i < NCNC ; i++ ) {
     if( i % NC == 0 ) {
-      printf( "\n" ) ;
+      fprintf( stdout , "\n" ) ;
     } 
-    printf( "%f %f " , creal( U[i] ) , cimag( U[i] ) ) ; 
+    fprintf( stdout , "%f %f " , creal( U[i] ) , cimag( U[i] ) ) ; 
   }
-  printf( "\n \n" ) ; 
+  fprintf( stdout , "\n \n" ) ; 
   return ;
 }
 
@@ -1186,12 +1187,12 @@ void
 write_matrix_cform( const GLU_complex U[ NCNC ] )
 {
   size_t i ; 
-  printf("\n{") ;
+  fprintf( stdout , "\n{") ;
   for( i = 0 ; i < NCNC ; i++ ) {
-    printf( " %f + I*%f " , creal( U[i] ) , cimag( U[i] ) ) ;
-    if( i < NCNC-1 ){ printf( "," ) ; }
+    fprintf( stdout , " %f + I*%f " , creal( U[i] ) , cimag( U[i] ) ) ;
+    if( i < NCNC-1 ){ fprintf( stdout , "," ) ; }
   }
-  printf("} ;\n") ;
+  fprintf( stdout , "} ;\n" ) ;
   return ;
 }
 
@@ -1200,19 +1201,19 @@ void
 write_matrix_mathematica( const GLU_complex U[ NCNC ] ) 
 {
   size_t i ; 
-  printf( "\n{{" ) ; 
+  fprintf( stdout , "\n{{" ) ; 
   for( i = 0 ; i < NCNC ; i++ ) {
     if( ( i%NC == 0 ) && ( i != 0 ) ) {
-      printf( "} , " ) ;
-      printf( "{" ) ; 
+      fprintf( stdout , "} , " ) ;
+      fprintf( stdout , "{" ) ; 
     } else {
       if( i != 0 ) {
-	printf( " , " ) ;
+	fprintf( stdout , " , " ) ;
       }
     }
-    printf( "%1.15f+I*%1.15f" , creal( U[i] ) , cimag( U[i] ) ) ; 
+    fprintf( stdout , "%1.15f+I*%1.15f" , creal( U[i] ) , cimag( U[i] ) ) ; 
   }
-  printf( "}}\n \n" ) ; 
+  fprintf( stdout , "}}\n \n" ) ; 
   return ;
 }
 

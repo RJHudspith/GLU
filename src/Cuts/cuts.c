@@ -38,7 +38,8 @@ mom_gauge( struct site *__restrict A ,
 	   const lie_field_def def )
 {
   if( parallel_ffts( ) == GLU_FAILURE ) {
-    printf( "[PAR] Problem with initialising the OpenMP FFTW routines \n" ) ;
+    fprintf( stderr , "[PAR] Problem with initialising the OpenMP "
+	              "FFTW routines \n" ) ;
     return GLU_FAILURE ;
   }
 
@@ -127,7 +128,7 @@ static int
 mom_gauge( struct site *__restrict A ,
 	   const lie_field_def def )
 {
-  printf( "[CUTS] WARNING! No FFT taking place\n" ) ;
+  fprintf( stderr , "[CUTS] WARNING! No FFT taking place\n" ) ;
   return GLU_FAILURE ;
 }
 
@@ -140,7 +141,7 @@ cuts_struct( struct site *__restrict A ,
 {
   // performs LOG and FFT , rewrites "A"
   if( mom_gauge( A , CUTINFO.definition ) == GLU_FAILURE ) {
-    printf( "[CUTS] FFT of the fields failed\n" ) ;
+    fprintf( stderr , "[CUTS] FFT of the fields failed\n" ) ;
     return GLU_FAILURE ;
   }
 
@@ -175,15 +176,12 @@ cuts_struct( struct site *__restrict A ,
     break ;
   case EXCEPTIONAL :      
     write_mom_veclist( Ap , in , list , ND ) ;
-    check = write_exceptional_g2g3_MOMgg( Ap , A , 
-					  list , in ) ;
+    check = write_exceptional_g2g3_MOMgg( Ap , A , list , in ) ;
     break ;
   case NONEXCEPTIONAL :
     // we write the mom-list internally in the g2g3 code as it can
     // be different from the cut-momentum one..
-    write_nonexceptional_g2g3( Ap , 
-			       A , list , 
-			       in , CUTINFO.max_mom ) ;
+    write_nonexceptional_g2g3( Ap , A , list , in , CUTINFO.max_mom ) ;
     break ;
   case GLUON_PROPS :
     write_mom_veclist( Ap , in , list , ND ) ;
@@ -191,11 +189,11 @@ cuts_struct( struct site *__restrict A ,
     break ;
   default : // default behaviour to the Exceptional triple glue
     write_mom_veclist( Ap , in , list , ND ) ;
-    check = write_exceptional_g2g3_MOMgg( Ap , A , 
-					  list , in ) ;
+    check = write_exceptional_g2g3_MOMgg( Ap , A , list , in ) ;
     break ;
   }
-  printf( "[CUTS] Writing finished...\n[CUTS] Outputting to %s \n" , str ) ;
+  fprintf( stdout , "[CUTS] Writing finished...\n"
+	            "[CUTS] Outputting to %s\n" , str ) ;
 
   // Free allocated memory
   fclose( Ap ) ;

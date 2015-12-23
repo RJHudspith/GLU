@@ -119,16 +119,19 @@ compute_U1_obs( const GLU_real *__restrict *__restrict U ,
   const double test_noncompact = non_plaquette( &plaq , (const GLU_real**)U ) ;
   const double test_compact = plaq ;
   // should have our U1-ified fields
-  printf("\n[U(1)] Plaquettes [NON-COMPACT] %lf  [COMPACT] %lf \n" , test_noncompact , test_compact ) ;
+  fprintf( stdout , "\n[U(1)] Plaquettes [NON-COMPACT] %lf  [COMPACT] %lf \n" ,
+	   test_noncompact , test_compact ) ;
 
   if( meas == U1_RECTANGLE ) {
     const double test_rectangle = U1_rectangle( &plaq , (const GLU_real**)U ) ;
-    printf("\n[U(1)] Rectangle  [NON-COMPACT] %lf  [COMPACT] %lf \n" , test_rectangle , plaq ) ;
+    fprintf( stdout , "\n[U(1)] Rectangle  [NON-COMPACT] %lf"
+	     "[COMPACT] %lf \n" , test_rectangle , plaq ) ;
   } else if( meas == U1_TOPOLOGICAL ) {
     double qtop ;
     int monopole , dirac_sheet ;
     U1_topological( &monopole , &dirac_sheet , &qtop , (const GLU_real**)U ) ;
-    printf("\n[U(1)] Topological :: [Monopole] %d  [Dirac_Sheet] %d [QTOP] %g \n" , monopole , dirac_sheet , qtop ) ;
+    fprintf( stdout , "\n[U(1)] Topological :: [Monopole] %d"
+	     "[Dirac_Sheet] %d [QTOP] %g \n" , monopole , dirac_sheet , qtop ) ;
   }
 
   return ;

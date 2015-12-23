@@ -39,7 +39,7 @@ void
 set_TMEAS_STOP( const double c0 ) 
 { 
   TMEAS_STOP = ( c0 * Latt.dims[0] ) * ( c0 * Latt.dims[0] ) / 8 ; 
-  printf( "[WFLOW] TMEAS_STOP changed to %f \n" , TMEAS_STOP ) ;
+  fprintf( stdout , "[WFLOW] TMEAS_STOP changed to %f \n" , TMEAS_STOP ) ;
   return ;
 }
 
@@ -313,15 +313,15 @@ evaluate_scale( double *der ,
       }
     }
     #ifdef verbose
-    printf( "[%s] %g %g \n" , message , x[ i ] , meas[ i ] ) ;
+    fprintf( stdout , "[%s] %g %g \n" , message , x[ i ] , meas[ i ] ) ;
     #endif
   }
   // print out the spline evaluation?
 #ifdef verbose
   double t = 0.0 ;
   for( t = 0.0 ; t < x[ Nmeas - 1 ] ; t+= 0.005 ) {
-    printf( "[%s-spline] %g %g \n" , message , t , 
-	    cubic_eval( x , meas , der , t , Nmeas ) ) ;
+    fprintf( stdout , "[%s-spline] %g %g \n" , message , t , 
+	     cubic_eval( x , meas , der , t , Nmeas ) ) ;
   }
 #endif
   // evaluate at "scale" error flag is -1
@@ -333,11 +333,11 @@ void
 print_GG_info( const int SM_TYPE , 
 	       const wflow_type WFLOW_TYPE ) 
 {
-  printf( "[WFLOW] Taking ({W},{GG} and {Qtop}) measurements from t >= %g \n" , 
-	  MEAS_START ) ; 
-  printf( "[WFLOW] fine measurements at t_0 >= %g \n" , T0_STOP ) ; 
-  printf( "[WFLOW] fine measurements at w_0 >= %g \n" , W0_STOP ) ; 
-  printf( "[WFLOW] OR, Stopping flow integration at t >= %g \n\n" , 
+  fprintf( stdout , "[WFLOW] Taking ({W},{GG} and {Qtop}) measurements"
+	   "from t >= %g \n" , MEAS_START ) ; 
+  fprintf( stdout , "[WFLOW] fine measurements at t_0 >= %g \n" , T0_STOP ) ; 
+  fprintf( stdout , "[WFLOW] fine measurements at w_0 >= %g \n" , W0_STOP ) ; 
+  fprintf( stdout , "[WFLOW] OR, Stopping flow integration at t >= %g \n\n" , 
 	  TMEAS_STOP ) ; 
   return ;
 }
@@ -362,24 +362,26 @@ scaleset( struct wfmeas *curr ,
   }
   const double t0 = evaluate_scale( der , time , GT , ( count + 1 ) , T_0 , "GT" ) ;
   if( t0 == -1.0 ) {
-    printf( "[WFLOW] cubic solve failure \n" ) ;
-    printf( "[WFLOW] solve needs to bound the value you are looking for\n" ) ;
+    fprintf( stderr , "[WFLOW] cubic solve failure (gt)\n" ) ;
+    fprintf( stderr , "[WFLOW] solve needs to bound the value you "
+	     "are looking for\n" ) ;
     free( der ) ; free( time ) ; free( GT ) ;
     return GLU_FAILURE ;
   }
-  printf( "[GT-scale] G(%g) %f \n" , T_0 , sqrt( t0 ) ) ;
+  fprintf( stdout , "[GT-scale] G(%g) %f \n" , T_0 , sqrt( t0 ) ) ;
   // W(t) = t ( dG(t) / dt )
   for( i = 0 ; i < ( count + 1 ) ; i++ ) {
     GT[ i ] = time[ i ] * der[ i ] ;
   }
   const double w0 = evaluate_scale( der , time , GT , ( count + 1 ) , W_0 , "WT" ) ;
   if( w0 == -1.0 ) {
-    printf( "[WFLOW] cubic solve failure \n" ) ;
-    printf( "[WFLOW] solve needs to bound the value you are looking for\n" ) ;
+    fprintf( stderr , "[WFLOW] cubic solve failure (wt) \n" ) ;
+    fprintf( stderr , "[WFLOW] solve needs to bound the value you "
+	     "are looking for\n" ) ;
     free( der ) ; free( time ) ; free( GT ) ;
     return GLU_FAILURE ;
   }
-  printf( "[WT-scale] W(%g) %f \n" , W_0 , sqrt( w0 ) ) ;
+  fprintf( stdout , "[WT-scale] W(%g) %g \n" , W_0 , sqrt( w0 ) ) ;
 
   free( der ) ;
   free( time ) ;

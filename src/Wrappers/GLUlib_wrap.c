@@ -68,23 +68,24 @@ read_file( struct head_data *HEAD_DATA ,
 {
   // some additional information
 #ifdef CONDOR_MODE
-    printf( "[PAR] CONDOR_MODE selected .... \n" ) ;
+  fprintf( stdout , "[PAR] CONDOR_MODE selected .... \n" ) ;
 #else
-    printf( "[PAR] NOT_CONDOR_MODE selected .... (same-architecture caching used) \n" ) ;
+  fprintf( stdout , "[PAR] NOT_CONDOR_MODE selected .... "
+	   "(same-architecture caching used) \n" ) ;
 #endif
 
   /// here we include the usual stuff look at header for global stuff
   // open our configuration
   FILE *infile = fopen( config_in , "r" ) ;
   if ( infile == NULL ) {
-    printf( "[IO] error opening file :: %s\n" , config_in ) ;
+    fprintf( stderr , "[IO] error opening file :: %s\n" , config_in ) ;
     return NULL ;
   }
  
   // initialise the configuration number to zero
   struct head_data tmp ;
   if( read_header( infile , &tmp , GLU_TRUE ) == GLU_FAILURE ) {
-    printf( "[IO] Header reading failure \n" ) ;
+    fprintf( stderr , "[IO] Header reading failure \n" ) ;
     fclose( infile ) ;
     return NULL ;
   } 
@@ -106,13 +107,13 @@ read_file( struct head_data *HEAD_DATA ,
   init_navig( lat ) ;
 
 #ifdef SINGLE_PREC
-  printf( "[PREC] Single-precision storage for the gauge fields\n" ) ;
+  fprintf( stdout , "[PREC] Single-precision storage for the gauge fields\n" ) ;
 #endif
 
   const uint32_t check = get_config_SUNC( infile , lat , tmp ) ;
   // read in the configuration ...  
   if( check == GLU_FAILURE ) {
-    printf( "[IO] File read error ... Leaving \n" ) ;
+    fprintf( stderr , "[IO] File read error ... Leaving \n" ) ;
     fclose( infile ) ;
     free( lat ) ;
     return NULL ;
@@ -151,7 +152,7 @@ write_configuration( struct site *lat ,
   //attempt to open a file
   FILE *out_config = fopen( outfile , "w" ) ;
   write_lat( lat , out_config , storage , output_details ) ;
-  printf( "[IO] Configuration written to %s \n", outfile ) ; 
+  fprintf( stdout , "[IO] Configuration written to %s \n", outfile ) ; 
   fclose( out_config ) ;
   return ;
 }

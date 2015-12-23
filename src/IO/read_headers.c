@@ -43,24 +43,26 @@ get_header_data_HIREP( FILE *__restrict CONFIG ,
   int NAV[ ND + 1 ] ;
   
   if( !fread( NAV , ( ND + 1 ) * sizeof ( int ) , 1 , CONFIG ) ) {
-    printf( "[IO] Cannot understand navigation details .. Leaving \n" ) ;
+    fprintf( stderr , "[IO] Cannot understand HiRep navigation details"
+	     ".. Leaving \n" ) ;
     return GLU_FAILURE ;
   }
   
   if ( !WORDS_BIGENDIAN ) { bswap_32( ND + 1 , NAV ) ; } 
   
   if( NAV[ 0 ] != NC ) {
-    printf( "[IO] NC mismatch! We are compiled for NC = %d \n\
-The file we are trying to read is NC = %d \nLeaving in abject disgust .. \n" , NC , NAV[ 0 ] ) ;
+    fprintf( stderr , "[IO] NC mismatch! We are compiled for NC = %d \n"
+	     "The file we are trying to read is NC = %d \nLeaving in abject "
+	     "disgust .. \n" , NC , NAV[ 0 ] ) ;
     return GLU_FAILURE ; 
   } else {
     if( VERB == GLU_TRUE ) {
-      printf("[IO] NC :: %d \n" , NAV[0] ) ;
+      fprintf( stdout , "[IO] HiRep NC :: %d \n" , NAV[0] ) ;
     }
   }
 
   // convert to my dimensions , they have the time dim first, I have it last
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < ND - 1 ; mu++ ) {
     Latt.dims[ mu ] = NAV[ mu + 2 ] ;
   }
@@ -110,7 +112,8 @@ get_header_data_MILC( FILE *__restrict in ,
   if( magic[0] != 20103 && magic[0] != 20104 ) {
     bswap_32( 1 , magic ) ;
     if( magic[0] != 20103 && magic[0] != 20104 ) {
-      printf( "[IO] Magic %d not understood in either endianness .. leaving \n" , magic[0] ) ;
+      fprintf( stdout , "[IO] Magic %d not understood in "
+	       "either endianness .. leaving \n" , magic[0] ) ;
       return GLU_FAILURE ;
     }
     need_swap = GLU_TRUE ;
@@ -131,7 +134,7 @@ get_header_data_MILC( FILE *__restrict in ,
   if( fread( str , sizeof(char) , 64 , in ) != 64 ) return GLU_FAILURE ;
   str[64] = '\0' ;
   if( VERB == GLU_TRUE ) {
-    printf( "[IO] Config creation date :: %s \n" , str ) ;
+    fprintf( stdout , "[IO] Config creation date :: %s \n" , str ) ;
   }
 
   // read in the output type, ripped from chroma ...
@@ -139,7 +142,8 @@ get_header_data_MILC( FILE *__restrict in ,
   if( fread( type , sizeof(int) , 1 , in ) != 1 ) return GLU_FAILURE ;
   if( need_swap ) { bswap_32( 1 , type ) ; }
   if( type[0] != 0 ) {
-    printf( "[IO] I only understand MILC's non-sitelist ... Leaving \n" ) ;
+    fprintf( stderr , "[IO] I only understand MILC's non-sitelist"
+	     "... Leaving \n" ) ;
     return GLU_FAILURE ;
   }
 
@@ -153,7 +157,8 @@ get_header_data_MILC( FILE *__restrict in ,
   }
   // they only use binary data checksums rather than plaq/link and checksum ...
   if( VERB == GLU_TRUE ) {
-    printf( "[IO] Checksums %x %x :: %d \n" , sum29[0] , sum31[0] , magic[0] ) ;
+    fprintf( stdout , "[IO] Checksums %x %x :: %d \n" , 
+	     sum29[0] , sum31[0] , magic[0] ) ;
   }
 
   HEAD_DATA -> config_type = OUTPUT_NCxNC ;
@@ -179,6 +184,11 @@ get_header_data_NERSC( FILE *__restrict CONFIG ,
   char *str ; 
 
   hdr = get_header( CONFIG ) ; 
+
+  // we have stderr reports hers so no need to repeat them
+  if( hdr == NULL ) {
+    return GLU_FAILURE ;
+  }
  
   // Look for basic info, reporting if avalailable
   get_string( "ENSEMBLE_LABEL" , hdr , &str ) ; 
@@ -187,15 +197,17 @@ get_header_data_NERSC( FILE *__restrict CONFIG ,
   get_string( "ENSEMBLE_ID" , hdr , &str ) ; 
   if( str == NULL ) { str = "(not specified)" ; }
 
-  int i = get_size_t( "SEQUENCE_NUMBER" , hdr , &Latt.flow ) ; 
-  // Should be able to rip out a Latt.flow-value from the config ... ? TODO //
+  const size_t i = get_size_t( "SEQUENCE_NUMBER" , hdr , 
+			       &Latt.flow ) ; 
   if ( i == GLU_FAILURE || Latt.flow == 0 ) {
-    printf( "[IO] Unknown sequence number.... \n" ) ; 
+    fprintf( stderr , "[IO] Unknown sequence number.... \n" ) ; 
+    return GLU_FAILURE ;
   }
 
   // print the config number from the NERSC header
   if( VERB == GLU_TRUE ) {
-    printf( "[IO] Configuration number :: %zu \n" , Latt.flow ) ; 
+    fprintf( stdout , "[IO] Configuration number :: %zu \n" , 
+	     Latt.flow ) ; 
   }
 
   // Get dimensions 
@@ -204,7 +216,7 @@ get_header_data_NERSC( FILE *__restrict CONFIG ,
     char str[ 64 ] ;
     sprintf( str , "DIMENSION_%zu" , mu + 1 ) ; 
     if( get_size_t( str , hdr , Latt.dims+mu ) == GLU_FAILURE ) {
-      printf( "[IO] DIMENSION_%zu not present\n" , mu ) ; 
+      fprintf( stderr , "[IO] DIMENSION_%zu not present\n" , mu ) ; 
       return GLU_FAILURE ;
     }
   }
@@ -212,7 +224,8 @@ get_header_data_NERSC( FILE *__restrict CONFIG ,
   // What precision and type of storage are we reading? Don't recognise we leave
   i = get_string( "FLOATING_POINT" , hdr , &str ) ; 
   if( unlikely( i == GLU_FAILURE ) ) {
-    printf( "[IO] FP precision not recognised in file ... leaving \n ") ; 
+    fprintf( stderr , "[IO] FP precision not recognised in file"
+	     "... leaving \n ") ; 
     return GLU_FAILURE ;
   }
 
@@ -233,13 +246,15 @@ get_header_data_NERSC( FILE *__restrict CONFIG ,
     HEAD_DATA -> precision = FLOAT_PREC ; 
     HEAD_DATA -> endianess = L_ENDIAN ; 
   } else {
-    printf( "[IO] PRECISION and ENDIANESS %s unknown .. Leaving " , str ) ;
+    fprintf( stderr , "[IO] PRECISION and ENDIANESS %s"
+	     "unknown .. Leaving " , str ) ;
     return GLU_FAILURE ;
   }
 
   // look for the datatype, nersc has a few options ...
-  if(  unlikely( ( i = get_string( "DATATYPE",hdr,&str ) ) == GLU_FAILURE  )  ) {
-    printf( "[IO] You must be joking! no DATATYPE read!! ... Leaving \n" ) ; 
+  if( ( i = get_string( "DATATYPE",hdr,&str ) == GLU_FAILURE  )  ) {
+    fprintf( stderr , "[IO] Nersc header no "
+	     "DATATYPE read!! ... Leaving \n" ) ; 
     return GLU_FAILURE ;
   }
   //more string compares to locate the storage type
@@ -254,8 +269,9 @@ get_header_data_NERSC( FILE *__restrict CONFIG ,
   } else if( strcmp( dat2 , str ) == GLU_SUCCESS ) {
     HEAD_DATA -> config_type = OUTPUT_NCxNC ;
   } else {
-    printf( "[IO] Storage type %s unrecognised \n" , str ) ;
-    printf( "[IO] Reminder :: we are compiled for %dD-SU(%d)\n" , ND, NC ) ;
+    fprintf( stderr , "[IO] Storage type %s unrecognised \n" , str ) ;
+    fprintf( stderr , "[IO] Reminder :: we are compiled for %dD-SU(%d)\n" ,
+	     ND, NC ) ;
     return GLU_FAILURE ;
   }
 
@@ -263,7 +279,7 @@ get_header_data_NERSC( FILE *__restrict CONFIG ,
   HEAD_DATA -> checksum = 0 ;
   uint32_t check ;
   if( get_uint32_t( "CHECKSUM" , hdr , &check ) == GLU_FAILURE ) {
-    printf("[IO] Checksum not found in header ... Leaving\n" ) ;
+    fprintf( stderr , "[IO] Checksum not found in header ... Leaving\n" ) ;
     return GLU_FAILURE ;
   }
   HEAD_DATA -> checksum = check ;
@@ -271,7 +287,7 @@ get_header_data_NERSC( FILE *__restrict CONFIG ,
   HEAD_DATA -> plaquette = 0. ;
   float plaq ;
   if( get_float( "PLAQUETTE" , hdr , &plaq ) == GLU_FAILURE ) {
-    printf("[IO] Plaquette not found in header ... Leaving\n" ) ;
+    fprintf( stderr , "[IO] Plaquette not found in header ... Leaving\n" ) ;
     return GLU_FAILURE ;
   }
   HEAD_DATA -> plaquette = (double)plaq ;
@@ -279,7 +295,7 @@ get_header_data_NERSC( FILE *__restrict CONFIG ,
   HEAD_DATA -> trace = 0. ;
   float tr ;
   if( get_float("LINK_TRACE" , hdr , &tr ) == GLU_FAILURE ) {
-    printf("[IO] Trace not found in header ... Leaving\n" ) ;
+    fprintf( stderr , "[IO] Trace not found in header ... Leaving\n" ) ;
     return GLU_FAILURE ;
   }
   HEAD_DATA -> trace = (double)tr ;

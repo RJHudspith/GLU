@@ -83,7 +83,8 @@ simorb_ratios( const int DIMS )
   norm = 0. ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     rats[ mu ] = (GLU_real)small / (GLU_real)Latt.dims[ mu ] ; 
-    printf( "[CUTS] rats :: %f %f %f\n" , rats[mu] , (GLU_real)small , (GLU_real)Latt.dims[ mu ] ) ;
+    fprintf( stdout , "[CUTS] rats :: %f %f %f\n" , rats[mu] , 
+	     (GLU_real)small , (GLU_real)Latt.dims[ mu ] ) ;
     norm += ( rats[mu] * rats[mu] ) ;
   }
   norm = sqrt( norm ) ;
@@ -334,43 +335,42 @@ safe_momenta( const int n[ ND ] ,
 	      const int DIMS )
 {
   const double latt_width = TWOPI * CUTINFO.cyl_width / small ;
-  switch( CUTINFO.type )
-    {
-    case HYPERCUBIC_CUT :
-      return gen_calc_hyp( n , sqrt( CUTINFO.max_mom ) , DIMS ) ;
-    case PSQ_CUT :
-      if( gen_calc_psq( n , DIMS ) <= CUTINFO.max_mom ) {
+  switch( CUTINFO.type ) {
+  case HYPERCUBIC_CUT :
+    return gen_calc_hyp( n , sqrt( CUTINFO.max_mom ) , DIMS ) ;
+  case PSQ_CUT :
+    if( gen_calc_psq( n , DIMS ) <= CUTINFO.max_mom ) {
+      return GLU_TRUE ;
+    }
+  case CYLINDER_CUT :
+    if( gen_calc_psq( n , DIMS ) <= CUTINFO.max_mom ) {
+      GLU_real k[ ND ] ; 
+      compute_p( k , n , DIMS ) ;
+      // CJD and DF are equivalent
+      #ifdef CYLINDER_AS
+      if( cylinder_AS( k , DIMS , latt_width ) == 1 ) {
 	return GLU_TRUE ;
       }
-    case CYLINDER_CUT :
-      if( gen_calc_psq( n , DIMS ) <= CUTINFO.max_mom ) {
-	GLU_real k[ ND ] ; 
-	compute_p( k , n , DIMS ) ;
-	// CJD and DF are equivalent
-        #ifdef CYLINDER_AS
-	if( cylinder_AS( k , DIMS , latt_width ) == 1 ) {
-	  return GLU_TRUE ;
-	}
-	#else
-	if( cylinder_DF( k , DIMS , latt_width ) == 1 ) {
-	  return GLU_TRUE ;
-	}
-	#endif
+      #else
+      if( cylinder_DF( k , DIMS , latt_width ) == 1 ) {
+	return GLU_TRUE ;
       }
-      break ;
-    case CYLINDER_AND_CONICAL_CUT :
-      if( gen_calc_psq( n , DIMS ) <= CUTINFO.max_mom ) {
-	GLU_real k[ ND ] ; 
-	compute_p( k , n , DIMS ) ;
-	if( cylinder_CJD( k , DIMS , latt_width , CUTINFO.angle ) == 1 ) {
-	  return GLU_TRUE ;
-	}
-      }
-    default :
-      if( gen_calc_psq( n , DIMS ) <= CUTINFO.max_mom ) {
+      #endif
+    }
+    break ;
+  case CYLINDER_AND_CONICAL_CUT :
+    if( gen_calc_psq( n , DIMS ) <= CUTINFO.max_mom ) {
+      GLU_real k[ ND ] ; 
+      compute_p( k , n , DIMS ) ;
+      if( cylinder_CJD( k , DIMS , latt_width , CUTINFO.angle ) == 1 ) {
 	return GLU_TRUE ;
       }
     }
+  default :
+    if( gen_calc_psq( n , DIMS ) <= CUTINFO.max_mom ) {
+      return GLU_TRUE ;
+    }
+  }
   return GLU_FALSE ;
 }
 
@@ -379,20 +379,20 @@ safe_momenta( const int n[ ND ] ,
 static int 
 get_mom_veclist( struct veclist *__restrict kept , 
 		 const struct cut_info CUTINFO ,
-		 const int LOOP ,
-		 const int DIMS )
+		 const size_t LOOP ,
+		 const size_t DIMS )
 { 
   simorb_ratios( DIMS ) ;
 
-  int mu ;
-  printf( "[CUTS] " ) ;
+  size_t mu ;
+  fprintf( stdout , "[CUTS] " ) ;
   for( mu = 0 ; mu < DIMS ; mu++ ) {
-    printf("simorb[ %f ] " , rats[mu] ) ;
+    fprintf( stdout , "simorb[ %f ] " , rats[mu] ) ;
   }
-  printf( "\n" ) ;
+  fprintf( stdout , "\n" ) ;
 
   // loop the correct length
-  int i , in = 0 ; 
+  size_t i , in = 0 ; 
   for( i = 0 ; i < LOOP ; i++ ) {
     int n[ ND ] ;
     get_mom_pipi( n , i , DIMS ) ; 
@@ -404,32 +404,29 @@ get_mom_veclist( struct veclist *__restrict kept ,
     }
   }
   
-  printf( "[CUTS] Kept vs reject %f vs %f \n" , 
-	  100 * in/( GLU_real )LOOP, 
-	  100 * ( LOOP - in )/( GLU_real )LOOP ) ; 
+  fprintf( stdout , "[CUTS] Kept vs reject %f vs %f \n" , 
+	   100 * in/( GLU_real )LOOP, 
+	   100 * ( LOOP - in )/( GLU_real )LOOP ) ; 
   
   // test the list in the shifted bz .. passes unless too many momenta are used
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < in ; i++ ) {
-
     int k[ ND ] , sum[ ND ] ; 
     get_mom_pipi( k , kept[ i ].idx , DIMS ) ; 
     get_mom_pipi( sum , kept[ in - i - 1 ].idx , DIMS ) ; 
-
     int mu ;
     for( mu = 0 ; mu < DIMS ; mu++ ) {
       if( ( k[mu] + sum[mu] ) != 0 ) {
-	printf( "NON +/- Symmetric Momenta @ %d \n" , i ) ;
-	    
-	printf("(");
+	fprintf( stderr , "[CUTS] NON +/- Symmetric Momenta @ %zu \n" , i ) ;
+	fprintf( stderr , "(") ;
 	for( mu = 0 ; mu < ND ; mu++ ){
-	  printf( " %d " , k[mu] );
+	  fprintf( stderr , " %d " , k[mu] ) ;
 	}
-	printf(") != (");
+	fprintf( stderr , ") != (" ) ;
 	for( mu = 0 ; mu < ND ; mu++ ) {
-	  printf( " %d " , sum[mu] );
+	  fprintf( stderr , " %d " , sum[mu] ) ;
 	}   
-	printf(")") ;
+	fprintf( stderr , ")" ) ;
       }
     }
   }
@@ -445,7 +442,6 @@ get_mom_veclist( struct veclist *__restrict kept ,
 //  call A[kept[i]].O[mu] will be a cut momenta.
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < in ; i++ ) {
-    //int k[ ND ] ;
     get_mom_pipi( kept[i].MOM , kept[i].idx , DIMS ) ; 
     kept[i].idx = get_site_pipiBZ( kept[i].MOM , DIMS ) ;
   }
@@ -455,9 +451,9 @@ get_mom_veclist( struct veclist *__restrict kept ,
 
 // does it pass the test?
 static GLU_bool
-passes_cuts( const int i , 
+passes_cuts( const size_t i , 
 	     const struct cut_info CUTINFO ,
-	     const int DIMS )
+	     const size_t DIMS )
 {
   // vector from the origin
   int n[ ND ] ;
@@ -466,13 +462,13 @@ passes_cuts( const int i ,
 }
 
 // gets the vector list
-static int
+static size_t
 get_veclist( struct veclist *__restrict kept , 
 	     const struct cut_info CUTINFO , 
-	     const int LOOP ,
-	     const int DIMS )
+	     const size_t LOOP ,
+	     const size_t DIMS )
 {
-  int i , size = 0 ;
+  size_t i , size = 0 ;
   for( i = 0 ; i < LOOP ; i++ ) {
     if( passes_cuts( i , CUTINFO , DIMS ) == GLU_TRUE ) {
       kept[ size ].idx = i ;
@@ -487,7 +483,7 @@ get_veclist( struct veclist *__restrict kept ,
 struct veclist*
 compute_veclist( int *__restrict list_size , 
 		 const struct cut_info CUTINFO ,
-		 const int DIMS ,
+		 const size_t DIMS ,
 		 const GLU_bool CONFIGSPACE )
 {
   int in[1] ;
@@ -502,11 +498,8 @@ compute_veclist( int *__restrict list_size ,
   // if we can, we look for a file
 #ifndef CONDOR_MODE
   int flag = MOMENTUM_CONFIG ;
-
   char str[1024] ;
-
   sprintf( str , "%s/Local/Moments/" , HAVE_PREFIX ) ;
-
   // write its dimensions
   size_t mu ;
   for( mu = 0 ; mu < DIMS - 1 ; mu++ ) {
@@ -542,7 +535,7 @@ compute_veclist( int *__restrict list_size ,
   // if we can't find the file we create one ...
   if( unlikely( flag == NO_MOMENTUM_CONFIG ) ) {
 
-    printf("[CUTS] Storing Momentum list @@@ ...\n%s\n",str) ;
+    fprintf( stdout , "[CUTS] Storing Momentum list @@@ ...\n%s\n" , str ) ;
 
     FILE *config2 = fopen( str , "wb" ) ;
 
@@ -555,7 +548,7 @@ compute_veclist( int *__restrict list_size ,
 
     // check that in[0] isn't something silly
     if( in[0] == 0 ) {
-      printf( "[CUTS] Empty Momentum list .. Nothing to do ... Leaving\n" ) ;
+      fprintf( stderr , "[CUTS] Empty Momentum list .. Leaving\n" ) ;
       fclose( config ) ;
       *list_size = 0 ;
       free( kept ) ;
@@ -582,7 +575,7 @@ compute_veclist( int *__restrict list_size ,
   // malloc list if not already done so
   int check = fread( in , sizeof(int) , 1 , config ) ;
   if( check != 1 ) {
-    printf( "[CUTS] cut file cannot be read\n" ) ;
+    fprintf( stderr , "[CUTS] cut file cannot be read\n" ) ;
     fclose( config ) ;
     *list_size = 0 ;
     free( list ) ;
@@ -593,7 +586,7 @@ compute_veclist( int *__restrict list_size ,
   }
   check = fread( list , sizeof(struct veclist) , in[0] , config ) ;
   if( unlikely( check == 0 ) ) {
-    printf( "[CUTS] Empty Momentum list .. Nothing to do ... Leaving\n" ) ;
+    fprintf( stderr , "[CUTS] Empty Momentum list ... Leaving\n" ) ;
     fclose( config ) ;
     *list_size = 0 ;
     free( list ) ;

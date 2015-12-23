@@ -122,13 +122,13 @@ residual_fix( struct site *__restrict lat )
   
   // set these
   if( GLU_malloc( (void**)&gauge , 16 , Latt.dims[ND-1] * sizeof( GLU_complex* ) ) != 0 ) {
-    printf( "[RESFIX] temporary gauge allocation failure\n" ) ;
+    fprintf( stderr , "[RESFIX] temporary gauge allocation failure\n" ) ;
     return ;
   }
 
   for( i = 0 ; i < Latt.dims[ND-1] ; i++ ) {
     if( GLU_malloc( (void**)&gauge[i] , 16 , NCNC * sizeof( GLU_complex ) ) != 0 ) {
-      printf( "[RESFIX] temporary gauge allocation failure\n" ) ;
+      fprintf( stderr , "[RESFIX] temporary gauge allocation failure\n" ) ;
       free( gauge ) ;
       return ;
     }

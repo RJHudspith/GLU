@@ -26,15 +26,15 @@
 #define GLU_TRIPLET_GEN_H
 
 /**
-   @fn int read_trip( size_t *__restrict trip , const size_t nnmax )
+   @fn int read_trip( int *__restrict trip , const size_t nnmax )
    @brief read the size of the triplets for each p^2
  */
 int
-read_trip( size_t *__restrict trip ,
+read_trip( int *__restrict trip ,
 	   const size_t nnmax ) ;
 
 /**
-   @fn int read_triplet_and_proj( size_t *__restrict *__restrict triplet , double *__restrict *__restrict proj , int *__restrict *__restrict momentum , const size_t nnmax , const size_t count , const size_t nmom )
+   @fn int read_triplet_and_proj( int *__restrict *__restrict triplet , double *__restrict *__restrict proj , const int *__restrict *__restrict momentum , const size_t nnmax , const size_t count , const size_t nmom )
    @brief computes the triplet and projector
    @param triplet :: is of the form triplet[ triplet_index ][ 0,1,2 ] as there are three of them
    @param proj :: projector for obtaining the non-exceptional scalar three point function
@@ -54,9 +54,9 @@ read_trip( size_t *__restrict trip ,
    @return #GLU_SUCCESS or #GLU_FAILURE
  **/
 int
-read_triplet_and_proj( size_t *__restrict *__restrict triplet , 
+read_triplet_and_proj( int *__restrict *__restrict triplet , 
 		       double *__restrict *__restrict proj , 
-		       int *__restrict *__restrict momentum , 
+		       const int *__restrict *__restrict momentum , 
 		       const size_t nnmax , 
 		       const size_t count ,
 		       const size_t nmom ) ;

@@ -55,7 +55,7 @@ parallel_ffts()
     #pragma omp parallel
     { nthreads = omp_get_num_threads( ) ; } // set nthreads
     fftw_plan_with_nthreads( nthreads ) ;
-    printf("[PAR] FFTW using %d thread(s) \n" , nthreads ) ;
+    fprintf( stdout , "[PAR] FFTW using %d thread(s) \n" , nthreads ) ;
   }
 #endif
   return GLU_SUCCESS ;
@@ -67,39 +67,39 @@ obtain_wisdom( int *planflag ,
 	       const int DIR , 
 	       const char *type )
 {
+  char *str = malloc( 256 * sizeof( char ) ) ;
 #ifndef CONDOR_MODE
   FILE *wizzard ;
   size_t mu ;
-  char *str = malloc( 256 * sizeof( char ) ) ;
   char prec_str[ 16 ] ; 
   *planflag = NOPLAN ; 
-#ifdef SINGLE_PREC
+  #ifdef SINGLE_PREC
   sprintf( prec_str , "FLOAT" ) ;
-#else
+  #else
   sprintf( prec_str , "DOUBLE" ) ;
-#endif
+  #endif
   // openmp'd wisdom
-#ifdef OMP_FFTW
+  #ifdef OMP_FFTW
   sprintf( str , "%s/Local/Wisdom/%s_%sOMPnt%d_SU%d_" , 
 	   HAVE_PREFIX , prec_str , type , nthreads , NC ) ;
-#else
+  #else
   sprintf( str , "%s/Local/Wisdom/%s_%sSU%d_" , 
 	   HAVE_PREFIX , prec_str , type , NC ) ;
-#endif
+  #endif
   for( mu = 0 ; mu < DIR - 1 ; mu++ ) {
     sprintf( str , "%s%zux" , str , Latt.dims[ mu ] ) ;
   }
   sprintf( str , "%s%zu.wisdom" , str , Latt.dims[ DIR - 1 ] ) ;
   if( ( wizzard = fopen( str , "r" ) ) == NULL ) {
-    printf( "\n[FFTW] No wisdom to be obtained here ... planning" ) ; 
+    fprintf( stdout , "\n[FFTW] No wisdom to be obtained here ... planning" ) ; 
   } else {
-    printf( "\n[FFTW] Successful wisdom attained" ) ; 
+    fprintf( stdout , "\n[FFTW] Successful wisdom attained" ) ; 
     *planflag = fftw_import_wisdom_from_file( wizzard ) ; 
     fclose( wizzard ) ; 
   }
   // condor mode ifdef
 #else
-  printf( "[FFTW] Creating plan on CONDOR host" ) ; 
+  fprintf( stdout , "[FFTW] Creating plan on CONDOR host" ) ; 
 #endif
   return str ;
 }
@@ -133,7 +133,7 @@ create_plans_DFT( fftw_plan *__restrict forward ,
 
   // I want to know how long FFTW is taking to plan its FFTs
   print_time( ) ;
-  printf( "[FFTW] plans finished\n\n" ) ;
+  fprintf( stdout , "[FFTW] plans finished\n\n" ) ;
 
 #ifndef CONDOR_MODE
   if( planflag == NOPLAN )  {
@@ -183,7 +183,7 @@ create_plans_DHT( fftw_plan *__restrict plan ,
 
   // I want to know how long FFTW is taking to plan its FFTs
   print_time( ) ;
-  printf( "[FFTW] plans finished\n\n" ) ;
+  fprintf( stdout , "[FFTW] plans finished\n\n" ) ;
 
 #ifndef CONDOR_MODE
   if( planflag == NOPLAN ) {
@@ -224,7 +224,7 @@ small_create_plans_DFT( fftw_plan *__restrict forward ,
 
   // I want to know how long FFTW is taking to plan its FFTs
   print_time( ) ;
-  printf( "[FFTW] plans finished\n\n" ) ;
+  fprintf( stdout , "[FFTW] plans finished\n\n" ) ;
 
 #ifndef CONDOR_MODE
   if( planflag == NOPLAN ) {

@@ -70,24 +70,19 @@ parse_SCIDAC_hdr( FILE *infile ,
 		  struct head_data *HEAD_DATA , 
 		  const int record )
 {
-#ifdef DEBUG
-  printf( "\n[IO] Header for record :: %d \n\n" , record ) ;
-#endif
   // assumes we have opened it fine and are at the start of the file
   const char myname[] = "GLU::parse_SCIDAC_hdr";
 
   // fread the whole header ...
-  const int status = fread( (void*)header.int64 , sizeof( int64_t ) , MAX_HDR64 , infile ) ;
+  const int status = fread( (void*)header.int64 , sizeof( int64_t ) , 
+			    MAX_HDR64 , infile ) ;
   if( status != MAX_HDR64 ) { return GLU_EOF ; }
   
   uint32_t i_magic_no[1] = { magic_number( ) } ;
   if( !WORDS_BIGENDIAN ) { bswap_32( 1 , i_magic_no ) ; }
 
-#ifdef DEBUG
-  printf( "[IO] Magic number :: %x \n" , i_magic_no[0] ) ;
-#endif
   if( i_magic_no[0] != 1164413355 ) {
-    printf( "%s wrong magic number %x vs. %x \n" , myname ,
+    fprintf( stderr , "%s wrong magic number %x vs. %x \n" , myname ,
 	    i_magic_no[0] , 1164413355 ) ;
     return GLU_FAILURE ;
   }
@@ -95,45 +90,14 @@ parse_SCIDAC_hdr( FILE *infile ,
   // now we look at the version number
   unsigned int i_version[1] = { header_version( ) } ;
   if( !WORDS_BIGENDIAN ) { bswap_32( 1 , i_version ) ; }
-#ifdef DEBUG
-  printf( "[IO] Reading Scidac header version %x \n" , i_version[0] ) ;
-#endif
-
-  // I don't really care about the ME or MB record type
-#ifdef DEBUG
-  GLU_bool i_MB, i_ME;
-  if( header_mbme( ) & MB_MASK ) { 
-    i_MB = GLU_TRUE ; 
-  } else {
-    i_MB = GLU_FALSE ;
-  }
-  printf( "[IO] %s MB flag %d \n" , myname , i_MB ) ;
-  // same for ME
-  if( header_mbme( ) & ME_MASK ) { 
-    i_ME = GLU_TRUE ; 
-  } else {
-    i_ME = GLU_FALSE ;
-  }
-  printf( "[IO] %s ME flag %d \n" , myname , i_ME ) ;
-#endif
 
   uint64_t i_data_length[1] = { header_datalength() } ;
   if( !WORDS_BIGENDIAN ) { bswap_64( 1 , i_data_length ) ; }
-#ifdef DEBUG
-  printf( "[IO] %s DATALENGTH %llu \n" , myname , (unsigned long long)i_data_length[0] ) ;
-#endif
 
-  int padding = lime_padding( (size_t)i_data_length[0] ) ;
-#ifdef DEBUG
-  printf( "[IO] Using %d bytes of padding for this record \n" , padding ) ;
-#endif
+  const int padding = lime_padding( (size_t)i_data_length[0] ) ;
 
   // again, typebuf is uninteresting ...
   unsigned char *typebuf = (unsigned char*)lime_hdr_rec_type ;
-#ifdef DEBUG
-  printf( "[IO] %s type %s \n" , myname , typebuf ) ;
-#endif
-
   // if we hit the binary data we exit for a binary read, could pass the length
   // of the data but the header has already given us the logical dimensions
   if( strcmp( (const char*)typebuf , "scidac-binary-data" ) == 0 ||
@@ -141,11 +105,11 @@ parse_SCIDAC_hdr( FILE *infile ,
     // and so we exit ...
     return GLU_EOF ; // is not end of file, but not error either
   }
-
   // we should be able to read the remaining data
   char *io_data = malloc( ( i_data_length[0] + 1 ) * sizeof( char ) ) ;
-  if( fread( io_data , sizeof( char ) , i_data_length[0] , infile ) != i_data_length[0] ) {
-    printf( "[IO] xml information reading failed ... Leaving \n" ) ;
+  if( fread( io_data , sizeof( char ) , i_data_length[0] , infile ) != 
+      i_data_length[0] ) {
+    fprintf( stderr , "[IO] xml information reading failed ... Leaving \n" ) ;
     free( io_data ) ;
     return GLU_FAILURE ;
   }
@@ -169,10 +133,6 @@ parse_SCIDAC_hdr( FILE *infile ,
     tmp.checksum = (uint32_t)cksum ;
     *HEAD_DATA = tmp ;
   }
-#ifdef DEBUG
-  printf( "[IO] %s \n" , io_data ) ;
-#endif
-
   parse_and_set_xml_SCIDAC( io_data , HEAD_DATA ) ;
 
   // free for now
@@ -182,11 +142,10 @@ parse_SCIDAC_hdr( FILE *infile ,
   if( padding > 0 ) {
     char pad_str[ padding ] ;
     if( fread( pad_str , sizeof( char ) , padding , infile ) != padding ) {
-      printf( "[IO] Reading of padded data failed \n" ) ;
+      fprintf( stderr , "[IO] Reading of padded data failed \n" ) ;
       return GLU_FAILURE ;
     }
   }
-
   return GLU_SUCCESS ;
 }
 
@@ -224,7 +183,7 @@ write_SCIDAC_binary( FILE *__restrict out ,
   // and write out the record
   if( fwrite( (void*)header.int64 , sizeof( int64_t ) , MAX_HDR64 , out ) 
       != MAX_HDR64 ) {
-    printf( "[IO] SCIDAC header writing failure ... Leaving\n" ) ;
+    fprintf( stderr , "[IO] SCIDAC header writing failure ... Leaving\n" ) ;
     return GLU_FAILURE ;
   }
   fprintf( out , "%s" , record ) ;
@@ -250,14 +209,6 @@ get_header_data_SCIDAC( FILE *infile ,
       break ;
     }
   }
-
-#ifdef DEBUG
-  struct head_data tem = *HEAD_DATA ;
-  printf( "[IO] ENDIAN :: %d \n" , tem.endianess ) ;
-  printf( "[IO] PRECISION :: %d \n" , tem.precision ) ;
-  printf( "[IO] CONFIG :: %d \n" , tem.config_type ) ;
-#endif
-
   return GLU_SUCCESS ;
 }
 

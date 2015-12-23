@@ -89,7 +89,7 @@ check_landau_condition( const struct site *__restrict A )
     trace_ab_herm( &tr , dA , dA ) ;
     sum = sum + (double)tr ;
   }
-  printf( "[CUTS] GF accuracy :: %e \n" , 4.0 * sum / ( NC * LVOLUME ) ) ;
+  fprintf( stdout , "[CUTS] GF accuracy :: %e \n" , sum / ( NC * LVOLUME ) ) ;
   return ;
 }
 
@@ -104,7 +104,8 @@ spatial_correlator( struct site *__restrict A ,
 {
   // init parallel threads, maybe
   if( parallel_ffts( ) == GLU_FAILURE ) {
-    printf( "[PAR] Problem with initialising the OpenMP FFTW routines \n" ) ;
+    fprintf( stderr , "[PAR] Problem with initialising "
+	              "the OpenMP FFTW routines \n" ) ;
     // should clean up the memory here
     return GLU_FAILURE ;
   }
@@ -220,8 +221,8 @@ contract_slices( const struct site *__restrict A ,
     loc_tr += (double)tr ;
     trace_ab_herm( &tr , A[x].O[2] , A[y].O[2] ) ;
     loc_tr += (double)tr ;
-    trace_ab_herm( &tr , A[x].O[3] , A[y].O[3] ) ;
-    loc_tr += (double)tr ;
+    //trace_ab_herm( &tr , A[x].O[3] , A[y].O[3] ) ;
+    //loc_tr += (double)tr ;
     #else
     size_t mu ;
     for( mu = 0 ; mu < ND-1 ; mu++ ) {
@@ -356,14 +357,16 @@ cuts_struct_configspace( struct site *__restrict A ,
 			 const struct cut_info CUTINFO ,
 			 const struct sm_info SMINFO )
 {
-  printf( "\n[CUTS] Computing the configuration-space gluon propagator\n" ) ;
+  fprintf( stdout , "\n[CUTS] Computing the configuration-space"
+	   "gluon propagator\n" ) ;
 
   // smeared gluon field to extract the ground state?
   SM_wrap_struct( A , SMINFO ) ;
 
   // take the log
   if( Amu_fields( A , CUTINFO.definition ) != GLU_SUCCESS ) {
-    printf( "[CUTS] Something wrong in Logging of the fields, check it out \n" ) ;
+    fprintf( stderr , "[CUTS] Something wrong in Logging of "
+	              "the fields, check it out \n" ) ;
     return GLU_FAILURE ;
   }
 
@@ -397,7 +400,7 @@ cuts_struct_configspace( struct site *__restrict A ,
   write_g2_to_list( Ap , gsp , lt ) ;
 
   // tell us where we are writing out to
-  printf( "[CUTS] data written to %s \n" , str ) ;
+  fprintf( stdout , "[CUTS] data written to %s \n" , str ) ;
 
   // we are so successful
   FLAG = GLU_SUCCESS ;

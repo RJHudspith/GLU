@@ -23,10 +23,16 @@
 
 #include "Mainfile.h"
 
+#ifdef HAVE_TIME_H
+#include <time.h>
+#endif
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
 // functions for the elapsed time of a process
 #ifdef HAVE_SYS_TIME_H
-
-#include <sys/time.h>
 
 /**
    @struct GLUtimer
@@ -44,17 +50,17 @@ print_time( void )
 {
   gettimeofday( &GLUtimer , NULL ) ;
   double diff = GLUtimer.tv_sec + ( GLUtimer.tv_usec/ 1E6 ) - t1 ;
-  printf( "\n[TIMER] elapsed :: " ) ;
+  fprintf( stdout , "\n[TIMER] elapsed :: " ) ;
   if( diff > 60 ) {
     diff /= 60. ;
-    if( unlikely( diff > 60 ) ) { // cocky
+    if( diff > 60 ) {
       diff /= 60. ;
-      printf( "%f (hours) \n", diff ) ;
+      fprintf( stdout , "%f (hours) \n", diff ) ;
     } else {
-      printf( "%f (minutes) \n", diff ) ;
+      fprintf( stdout , "%f (minutes) \n", diff ) ;
     }
   } else {
-    printf( "%f (seconds) \n", diff ) ;
+    fprintf( stdout , "%f (seconds) \n", diff ) ;
   }
   return diff ;
 }
@@ -79,8 +85,6 @@ start_timer( void ) { return ; }
 
 // functions for the date
 #ifdef HAVE_TIME_H
-
-#include <time.h>
 
 // gives us GMT, why? Because I am british
 char*

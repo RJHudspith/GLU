@@ -77,7 +77,7 @@ compute_Qsusc( struct site *__restrict lat ,
     sum += creal( qtop[i] ) ;
     sumsq += creal( qtop[i] * qtop[i] ) ;
   }
-  printf( "\nQTOP %f %f \n" , sum * NORM , sumsq * NORMSQ ) ;
+  fprintf( stdout , "\nQTOP %f %f \n" , sum * NORM , sumsq * NORMSQ ) ;
 #endif
 
   // allocate the results
@@ -91,7 +91,8 @@ compute_Qsusc( struct site *__restrict lat ,
 
   // init parallel threads, maybe
   if( parallel_ffts( ) == GLU_FAILURE ) {
-    printf( "[PAR] Problem with initialising the OpenMP FFTW routines \n" ) ;
+    fprintf( stderr , "[PAR] Problem with initialising the OpenMP "
+	              "FFTW routines \n" ) ;
     goto memfree ;
   }
 
@@ -121,7 +122,8 @@ compute_Qsusc( struct site *__restrict lat ,
   free( out ) ;
 
   #ifdef verbose
-  printf( "\nCheck sumsq :: %f \n" , creal( qtop[0] ) * NORMSQ ) ;
+  fprintf( stdout , "\n[QSUSC] Check sumsq :: %f \n" , 
+	   creal( qtop[0] ) * NORMSQ ) ;
   #endif
 
   // loop the possible rsqs
@@ -157,7 +159,7 @@ compute_Qsusc( struct site *__restrict lat ,
 #endif
 
   // tell us where to go
-  printf( "[CUTS] Outputting to %s \n" , str ) ;
+  fprintf( stdout , "[CUTS] Outputting to %s \n" , str ) ;
   
   // we are quite successful if we get here
   FLAG = GLU_SUCCESS ;

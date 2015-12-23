@@ -50,31 +50,37 @@ correct_pspace_landau( struct site *__restrict A ,
       const double p_mu = 2.0 * sin( cache ) ;
  
       #if ( defined deriv_linn ) || ( defined deriv_fulln )
-      const double p_mu_nn = 2.0 * ( nn1 * sin( cache ) + nn2 * sin( cache * 3.0 ) ) ;
+      const double p_mu_nn = 2.0 * ( nn1 * sin( cache ) + nn2 *\
+				     sin( cache * 3.0 ) ) ;
       #elif defined deriv_fullnn
-      const double p_mu_nn = 2.0 * ( nnn1 * sin( cache ) + nnn2 * sin( cache * 3.0 ) + nnn3 * sin( cache * 5.0 ) ) ;
+      const double p_mu_nn = 2.0 * ( nnn1 * sin( cache ) + nnn2 *\
+				     sin( cache * 3.0 ) + nnn3 *\
+				     sin( cache * 5.0 ) ) ;
       #endif
 
       // FFTWS forward cut has the conventional e^{-ipx}
       #ifdef CUT_FORWARD
-      const double complex exp_cache = cos( cache ) - I * 0.5 * p_mu ; // e^{-ip_\mu / 2 }
+      // e^{-ip_\mu / 2 }
+      const double complex exp_cache = cos( cache ) - I * 0.5 * p_mu ; 
       #else
-      const double complex exp_cache = cos( cache ) + I * 0.5 * p_mu ; // e^{ip_\mu / 2 }
+      // e^{ip_\mu / 2 }
+      const double complex exp_cache = cos( cache ) + I * 0.5 * p_mu ; 
       #endif
       
       // write over every element of A with this extra factor
       for( j = 0 ; j < NCNC ; j++ ) {
 	A[ list_idx ].O[ mu ][ j ] *= exp_cache ;
-        #if ( defined deriv_linn ) || ( defined deriv_fulln ) || ( defined deriv_fullnn )
+#if ( defined deriv_linn ) || ( defined deriv_fulln ) || ( defined deriv_fullnn )
 	sum += cabs( A[ list_idx ].O[ mu ][ j ] * p_mu_nn ) ;
-	#else
+#else
 	sum += cabs( A[ list_idx ].O[ mu ][ j ] * p_mu ) ;
-	#endif
+#endif
       }
     }
     // and finally do the reduction on ave_err
     ave_err = ave_err + (double)( sum / (double)NCNC ) ;
   }
-  printf( "\n[CUTS] P-Space gauge fixing error :: %1.5e \n\n" , ave_err / (double)in[0] ) ;
+  fprintf( stdout , "\n[CUTS] P-Space gauge fixing error :: %1.5e \n\n" , 
+	   ave_err / (double)in[0] ) ;
   return ;
 }

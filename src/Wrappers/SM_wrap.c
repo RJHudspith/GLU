@@ -41,10 +41,9 @@
 
 // Selects the correct code to run ...
 static void
-hyp_chooser( lat , SMINFO , meminfo )
-     struct site *__restrict lat ;
-     const struct sm_info SMINFO ;
-     const int meminfo ;
+hyp_chooser( struct site *__restrict lat ,
+	     const struct sm_info SMINFO ,
+	     const int meminfo )
 {
   // ADAPTIVE RK4 method of integrating the flow equation
   if( SMINFO.type == SM_ADAPTWFLOW_LOG || 
@@ -119,10 +118,10 @@ smear_or_wflow( int type )
       type == SM_ADAPTWFLOW_LOG ||
       type == SM_WFLOW_STOUT || 
       type == SM_ADAPTWFLOW_STOUT )  {
-    printf( "[WFLOW] " ) ;
+    fprintf( stdout , "[WFLOW] " ) ;
     return GLU_FALSE ;
   } else { 
-    printf( "[SMEAR] " ) ; 
+    fprintf( stdout , "[SMEAR] " ) ; 
     return GLU_TRUE ;
   }
 }
@@ -133,91 +132,91 @@ print_smearinfo( const struct sm_info SMINFO )
 {
   smear_or_wflow( SMINFO.type ) ;
   if( SMINFO.dir == SPATIAL_LINKS_ONLY ) {
-    printf( "Spatial SU(%d) smearing\n" , NC ) ;
+    fprintf( stdout , "Spatial SU(%d) smearing\n" , NC ) ;
   } else {
-    printf( "All directional SU(%d) smearing\n" , NC ) ;
+    fprintf( stdout , "All directional SU(%d) smearing\n" , NC ) ;
   }
-  #ifdef FAST_SMEAR
-  smear_or_wflow( SMINFO.type ) ;
-  printf( "Numerically unstable, but fast, routines being used\n" ) ;
-  #endif
   smear_or_wflow( SMINFO.type ) ;
   switch( SMINFO.type ) {
   case SM_APE : 
 #ifdef N_APE
-    printf( "APE smearing (n-APE determinant-rescaled projection)\n" ) ; 
+    fprintf( stdout , "APE smearing (n-APE det-rescaled projection)\n" ) ; 
 #else
-    printf( "APE smearing (Cabbibo-Marinari updates) \n" ) ; 
+    fprintf( stdout , "APE smearing (Cabbibo-Marinari updates) \n" ) ; 
 #endif
     break ;
-  case SM_LOG : printf( "Log smearing\n" ) ; break ;
-  case SM_STOUT : printf( "STOUT smearing\n" ) ; break ;
+  case SM_LOG : fprintf( stdout , "Log smearing\n" ) ; break ;
+  case SM_STOUT : fprintf( stdout , "STOUT smearing\n" ) ; break ;
   case SM_HYP : 
 #ifdef N_APE
-    printf( "HYP smearing (n-APE det rescaled projection)\n" ) ; 
+    fprintf( stdout , "HYP smearing (n-APE det rescaled projection)\n" ) ; 
 #else
-    printf( "HYP smearing (Cabbibo-Marinari updates) \n" ) ; 
+    fprintf( stdout , "HYP smearing (Cabbibo-Marinari updates) \n" ) ; 
 #endif
     break ;
-  case SM_HEX : printf( "HEX smearing\n" ) ; break ;
-  case SM_HYL : printf( "HYL smearing\n" ) ; break ;
-  case SM_WFLOW_LOG : printf( "RK3-Wilson flow Log\n" ) ; break ;
-  case SM_WFLOW_STOUT : printf( "RK3-Wilson flow STOUT\n" ) ; break ;
-  case SM_ADAPTWFLOW_LOG : printf( "Adaptive RK3-Wilson flow Log\n" ) ; break ;
-  case SM_ADAPTWFLOW_STOUT : printf( "Adaptive R3-Wilson flow STOUT\n" ) ; break ;
-  default : printf( "No smearing\n" ) ;
+  case SM_HEX : fprintf( stdout , "HEX smearing\n" ) ; break ;
+  case SM_HYL : fprintf( stdout , "HYL smearing\n" ) ; break ;
+  case SM_WFLOW_LOG : fprintf( stdout , "RK3-Wilson flow Log\n" ) ; break ;
+  case SM_WFLOW_STOUT : fprintf( stdout , "RK3-Wilson flow STOUT\n" ) ; break ;
+  case SM_ADAPTWFLOW_LOG : 
+    fprintf( stdout , "Adaptive RK3-Wilson flow Log\n" ) ; break ;
+  case SM_ADAPTWFLOW_STOUT : 
+    fprintf( stdout , "Adaptive RK3-Wilson flow STOUT\n" ) ; break ;
+  default : fprintf( stdout , "No smearing\n" ) ;
   }
   // wilson flow information about the clover terms and what have you
   if( smear_or_wflow( SMINFO.type ) == GLU_FALSE ) {
   #ifdef CLOVER_IMPROVE
-    printf( "O(a^4) Clover Term being used ... \n" ) ;
+    fprintf( stdout , "O(a^4) Clover Term being used ... \n" ) ;
     #ifndef NK5
-    printf( "k5 value :: %f \n" , k5 ) ; 
+    fprintf( stdout , "k5 value :: %f \n" , k5 ) ; 
     #endif
   #elif defined PLAQUETTE_FMUNU
-    printf( "Plaquette O(a) Clover Term being used ... \n" ) ;
+    fprintf( stdout , "Plaquette O(a) Clover Term being used ... \n" ) ;
   #else
-    printf( "O(a^2) Clover Term being used ... \n" ) ;
+    fprintf( stdout , "O(a^2) Clover Term being used ... \n" ) ;
   #endif
     smear_or_wflow( SMINFO.type ) ;
   #ifdef ANTIHERMITIAN
-    printf( "Traced, Antihermitian (BMW) field strength tensor def ... \n" ) ;
+    fprintf( stdout , "Traced, Antihermitian field strength tensor ... \n" ) ;
   #elif defined CLOVER_LOG_DEF
-    printf( "Exact Logarithm used in field strength tensor def ... \n" ) ;
+    fprintf( stdout , "Exact Logarithm used in field strength tensor ... \n" ) ;
   #else
-    printf( "Traceless hermitian field strength tensor def ... \n" ) ;
+    fprintf( stdout , "Traceless hermitian field strength tensor def ... \n" ) ;
   #endif
   } else {
-    printf( "Smearing Alpha(s) used:\n" ) ;
+    fprintf( stdout , "Smearing Alpha(s) used:\n" ) ;
     if( SMINFO.type == SM_HYP || SMINFO.type == SM_HEX || SMINFO.type == SM_HYL ) {
       size_t i ;
       for( i = 0 ; i < ND-1 ; i++ ) {
-	printf( "             (alpha%zu) %f\n" , i+1 , 
-		Latt.sm_alpha[i]/( ( ND-i-1 ) * ( ND-2 ) ) ) ;
+	fprintf( stdout , "             (alpha%zu) %f\n" , i+1 , 
+		 Latt.sm_alpha[i]/( ( ND-i-1 ) * ( ND-2 ) ) ) ;
       }
     } else { 
-      printf( "             (alpha) %f \n" , 
-	      Latt.sm_alpha[0]/(2.*(ND-1)) ) ; 
+      fprintf( stdout , "             (alpha) %f \n" , 
+	       Latt.sm_alpha[0]/(2.*(ND-1)) ) ; 
     }
   }
   // rectangle improvement is not implemented for hypercubic smearing ...
 #ifdef IMPROVED_SMEARING
   smear_or_wflow( SMINFO.type ) ;
   #ifdef SYMANZIK
-    printf( "SYMANZIK Over-improvement factor :: %f \n" , epsilon ) ;
+  fprintf( stdout , "SYMANZIK Over-improvement factor :: %f \n" , epsilon ) ;
   #elif defined IWASAKI
-    printf( "IWASAKI Over-improvement factor :: %f \n" , epsilon ) ;
+  fprintf( stdout , "IWASAKI Over-improvement factor :: %f \n" , epsilon ) ;
   #elif defined DBW2
-    printf( "DBW2 Over-improvement factor :: %f \n" , epsilon ) ;
+  fprintf( stdout , "DBW2 Over-improvement factor :: %f \n" , epsilon ) ;
   #elif defined SYMANZIK_ONE_LOOP
-    printf( "SYMANZIK ONE LOOP Over-improvement factor :: %f \n" , epsilon ) ;
+  fprintf( stdout , "SYMANZIK ONE LOOP Over-improvement factor :: %f \n" , 
+	   epsilon ) ;
   #else
-    printf( "Rectangle coefficients ( %f , %f ) :: Over improvement %f\n" ,
-	    IWA_WEIGHT1 , IWA_WEIGHT2 , epsilon ) ;
+  fprintf( stdout , "Rectangle coefficients ( %f , %f ) ::"
+	   "Over improvement %f\n" ,
+	   IWA_WEIGHT1 , IWA_WEIGHT2 , epsilon ) ;
   #endif
 #endif
   smear_or_wflow( SMINFO.type ) ;
-  printf( "With a MAXIMUM of %zu iterations \n\n" , SMINFO.smiters ) ;
+  fprintf( stdout , "With a MAXIMUM of %zu iterations \n\n" , SMINFO.smiters ) ;
   return ;
 }
 
@@ -230,7 +229,8 @@ SM_wrap_struct( struct site *__restrict lat ,
   if( SMINFO.type == SM_NOSMEARING ) { return GLU_SUCCESS ; }
   // are we looking for an integer value for the topological charge?
 #ifdef TOP_VALUE
-  printf( "[SMEAR] Iterating a search for the topological charge commencing after %d iterations \n\n" , TOP_VALUE ) ;
+  fprintf( stdout , "[SMEAR] Iterating a search for the topological"
+	   "charge commencing after %d iterations \n\n" , TOP_VALUE ) ;
 #endif
   start_timer( ) ;
   print_smearinfo( SMINFO ) ;

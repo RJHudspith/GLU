@@ -27,9 +27,10 @@
    @fn void instanton_config( struct site *lat )
    @brief create a lattice-wide instanton configuration
    @param lat :: lattice gauge field
+   @return #GLU_SUCCESS or #GLU_FAILURE
    @warning overwrites lat
- */
-void
+*/
+int
 instanton_config( struct site *lat ) ;
 
 #endif

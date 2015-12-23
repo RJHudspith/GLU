@@ -44,8 +44,8 @@ check_sums( plaq , tr , chksum , HEAD_DATA )
       Latt.head == SCIDAC_HEADER ) {
     // do a check only on the sum29
     if( chksum != HEAD_DATA.checksum )  {
-      printf( "\n[IO] Unequal checksums [Calc] %x [Read] %x \n\n" , 
-	      chksum , HEAD_DATA.checksum ) ; 
+      fprintf( stderr , "\n[IO] Unequal checksums [Calc] %x [Read] %x \n\n" , 
+	       chksum , HEAD_DATA.checksum ) ; 
       return GLU_FAILURE ;
     }
   } else if( Latt.head == ILDG_BQCD_HEADER ) {
@@ -57,21 +57,21 @@ check_sums( plaq , tr , chksum , HEAD_DATA )
       TTOL = 1E-14 ;
     }
     if( fabs( HEAD_DATA.plaquette - plaq ) > TTOL ) {
-      printf( "\n[IO] Unequal Plaquettes %e %e \n\n" , 
-	      plaq , HEAD_DATA.plaquette ) ; 
+      fprintf( stderr , "\n[IO] Unequal Plaquettes %e %e \n\n" , 
+	       plaq , HEAD_DATA.plaquette ) ; 
       return GLU_FAILURE ;
     }
     // and the CRC of the binary data
     if( chksum != HEAD_DATA.checksum )  {
-      printf( "\n[IO] Unequal checksums Calc %x || Read %x \n\n" , 
-	      chksum , HEAD_DATA.checksum ) ; 
+      fprintf( stderr , "\n[IO] Unequal checksums Calc %x || Read %x \n\n" , 
+	       chksum , HEAD_DATA.checksum ) ; 
       return GLU_FAILURE ;
     }
   } else if( Latt.head == HIREP_HEADER ) {
     // only check available is the plaquette
     if( fabs( plaq - HEAD_DATA.plaquette ) > PREC_TOL ) {
-      printf("[IO] HIREP header Plaquette Mismatch %e vs %e ... Leaving \n" ,
-	     plaq , HEAD_DATA.plaquette ) ;
+      fprintf( stderr , "[IO] HIREP header Plaquette Mismatch %e vs %e "
+	       "... Leaving \n" , plaq , HEAD_DATA.plaquette ) ;
       return GLU_FAILURE ;
     }
   } else if( Latt.head == NERSC_HEADER ) {
@@ -79,30 +79,31 @@ check_sums( plaq , tr , chksum , HEAD_DATA )
     // it is disastrous if all three checks fail ...
     int error = 0 ; 
     if( chksum != HEAD_DATA.checksum )  {
-      printf( "\n[IO] Unequal checksums Calc %x || Read %x \n\n" , 
-	      chksum , HEAD_DATA.checksum ) ; 
+      fprintf( stderr , "\n[IO] Unequal checksums Calc %x || Read %x \n\n" , 
+	       chksum , HEAD_DATA.checksum ) ; 
       error ++ ; 
       // TOL is defined as 10^-6
     }  if( fabs( plaq - HEAD_DATA.plaquette ) > PLAQ_AND_TRACE_TOL ) {
-      printf( "\n[IO] Unequal Plaquettes Calc %f || Read %f \n\n" , 
-	      plaq , HEAD_DATA.plaquette ) ; 
+      fprintf( stderr , "\n[IO] Unequal Plaquettes Calc %f || Read %f \n\n" , 
+	       plaq , HEAD_DATA.plaquette ) ; 
       error ++ ; 
     } if( fabs( tr - HEAD_DATA.trace) > PLAQ_AND_TRACE_TOL ) {
-      printf( "\n[IO] Unequal Link_Traces Calc %1.8f || Read %1.8f \n\n" , 
-	      tr , HEAD_DATA.trace ) ; 
+      fprintf( stderr , "\n[IO] Unequal Link_Traces Calc %1.8f || "
+	       "Read %1.8f \n\n" , tr , HEAD_DATA.trace ) ; 
       error ++ ; 
     }
     // pretty printing
-    printf( "[IO] Header     Trace :: %f           || Plaq :: %f \n" , 
-	    HEAD_DATA.trace , HEAD_DATA.plaquette ) ; 
+    fprintf( stdout , "[IO] Header     Trace :: %f           || Plaq :: %f \n" 
+	     , HEAD_DATA.trace , HEAD_DATA.plaquette ) ; 
     // if everything is wrong we leave
     if( unlikely( error == DISASTER ) ) {
-      printf("[IO] NONE of the NERSC Checksums match, this is a problem .. Leaving \n") ; 
+      fprintf( stdout , "[IO] NONE of the NERSC Checksums match, "
+	       "this is a problem .. Leaving \n") ; 
       return GLU_FAILURE ;
     }
   } 
- printf( "[IO] Calculated Trace :: %1.15f  || Plaq :: %1.15f \n" , 
-	 tr , plaq ) ; 
+  fprintf( stdout , "[IO] Calculated Trace :: %1.15f  || Plaq :: %1.15f \n" , 
+	   tr , plaq ) ; 
   return GLU_SUCCESS ; // may only be partially successful but I am optimistic
 }
 
@@ -154,7 +155,7 @@ get_config_SUNC( FILE *__restrict CONFIG ,
     instanton_config( lat ) ;
     return GLU_SUCCESS ;
   default : 
-    printf( "[IO] Unrecognised HEADER type .. Leaving \n" ) ;
+    fprintf( stderr , "[IO] Unrecognised HEADER type .. Leaving \n" ) ;
     return GLU_FAILURE ;
   }
   return GLU_FAILURE ;

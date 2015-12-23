@@ -40,25 +40,24 @@ Asing( GLU_real y[ ND ] , const GLU_real rho , int mu )
   sumr = sumr + rho*rho;
   
   return atan2( sum , sumr ) / sum; 
-  //return atan( sum / sumr ) / sum; 
 }
 #endif
 
 // create a BPST instanton lattice configuration
-void
+int
 instanton_config( struct site *lat ) 
 {
 #if ND != 4
-  printf( "Instanton solution not available for ND = %d \n" , ND ) ;
-  return ;
+  fprintf( stderr , "Instanton solution not available for ND = %d \n" , ND ) ;
+  return GLU_FAILURE ;
 #else
   // embed pauli matrices in SU(NC) matrices
   GLU_complex t[ 3 ][ NCNC ] ;  
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < 3 ; mu++ ) { zero_mat( t[mu] ) ; }
-  t[0][1] = 1. ; t[0][NC] = 1.0 ;
-  t[1][1] = -I ; t[1][NC] = I ;
-  t[2][0] = 1.0 ; t[2][NC+1] = -1.0 ;
+  t[0][1] = +1. ; t[0][NC]   = +1. ;
+  t[1][1] = -I  ; t[1][NC]   =  I  ;
+  t[2][0] = +1. ; t[2][NC+1] = -1. ;
 
   const GLU_real rho = 4.0 ; // instanton size
   const GLU_real sign = 1 ; // instanton (-1) or anti-instanton (1)
@@ -67,10 +66,8 @@ instanton_config( struct site *lat )
     // put it just off the centre
     c[ mu ] = ( Latt.dims[mu]/2 - 0.5 ) ;
   }
-  //const GLU_real c[ ND ] = { 3.5 , 3.5 , 3.5 , 3.5 } ; // centre
-  //const GLU_real c[ ND ] = { 3 , 3 , 3 , 3 } ; // centre
 
-  int i ;
+  size_t i ;
   #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
 
@@ -80,7 +77,7 @@ instanton_config( struct site *lat )
 
     // compute the coordinate "y"
     GLU_real y[ ND ] ;
-    int nu ;
+    size_t nu ;
     for( nu = 0 ; nu < ND ; nu++ ) {
       y[ nu ] = x[ nu ] - c[ nu ] ;
     }
@@ -96,9 +93,8 @@ instanton_config( struct site *lat )
     for( nu = 0 ; nu < ND ; nu++ ) {
       GLU_complex temp[ NCNC ] ;
       zero_mat( temp ) ;
-      int j ;
+      size_t j , k ;
       for( j = 0 ; j < 3 ; j++ ) {
-	int k ;
 	for( k = 0 ; k < NCNC ; k++ ) {
 	  temp[ k ] += b[ nu ][ j ] * t[ j ][ k ] ; 
 	}
@@ -115,6 +111,6 @@ instanton_config( struct site *lat )
       exponentiate( lat[i].O[nu] , temp ) ;
     }
   }
-  return ;
+  return GLU_SUCCESS ;
 #endif
 }

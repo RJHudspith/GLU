@@ -73,7 +73,8 @@ unpack_inputs( void )
 static int
 tag_failure( const char *tag )
 {
-  printf( "[IO] Failure looking for tag %s in input file ... Leaving\n" , tag ) ;
+  fprintf( stderr , "[IO] Failure looking for tag %s in input file "
+	   "... Leaving\n" , tag ) ;
   return GLU_FAILURE ;
 }
 
@@ -127,8 +128,8 @@ confno( void )
 {
   size_t conf = 0 ;
   if( setint( &conf , "CONFNO" ) == GLU_FAILURE ) {
-    printf( "[IO] I do not understand CONFNO %zu \n" , conf ) ;
-    printf( "[IO] CONFNO should be greater than 0\n" ) ;
+    fprintf( stderr , "[IO] I do not understand CONFNO %zu \n" , conf ) ;
+    fprintf( stderr , "[IO] CONFNO should be greater than 0\n" ) ;
     return GLU_FAILURE ;
   }
   return conf ;
@@ -195,21 +196,21 @@ get_mode( GLU_mode *mode )
     if( seed_idx == GLU_FAILURE ) { return tag_failure( "SEED" ) ; }
     sscanf( INPUT[seed_idx].VALUE , "%u" , &Latt.Seed[0] ) ;
     if( Latt.Seed[0] == 0 ) {
-      printf( "\n[RNG] Generating RNG seed from urandom \n" ) ; 
+      fprintf( stdout , "\n[RNG] Generating RNG seed from urandom \n" ) ; 
       if( initialise_seed( ) == GLU_FAILURE ) return GLU_FAILURE ;
     }
     #ifdef KISS_RNG
-    printf( "[RNG] KISS Seed %u \n\n" , Latt.Seed[0] ) ;
+    fprintf( stdout , "[RNG] KISS Seed %u \n\n" , Latt.Seed[0] ) ;
     #elif defined MWC_1038_RNG
-    printf( "[RNG] MWC_1038 Seed %u \n\n" , Latt.Seed[0] ) ;
+    fprintf( stdout , "[RNG] MWC_1038 Seed %u \n\n" , Latt.Seed[0] ) ;
     #elif defined MWC_4096_RNG
-    printf( "[RNG] MWC_4096 Seed %u \n\n" , Latt.Seed[0] ) ;
+    fprintf( stdout , "[RNG] MWC_4096 Seed %u \n\n" , Latt.Seed[0] ) ;
     #elif defined GSL_RNG
-    printf( "[RNG] GSL (MT) Seed %u \n\n" , Latt.Seed[0] ) ;
+    fprintf( stdout , "[RNG] GSL (MT) Seed %u \n\n" , Latt.Seed[0] ) ;
     #elif defined XOR1024_RNG
-    printf( "[RNG] XOR1024 Seed %u \n\n" , Latt.Seed[0] ) ;
+    fprintf( stdout , "[RNG] XOR1024 Seed %u \n\n" , Latt.Seed[0] ) ;
     #else
-    printf( "[RNG] well_19937a Seed %u \n\n" , Latt.Seed[0] ) ;
+    fprintf( stdout , "[RNG] well_19937a Seed %u \n\n" , Latt.Seed[0] ) ;
     #endif
   }
   return GLU_SUCCESS ;
@@ -260,61 +261,63 @@ header_type( void )
     const int header_idx = tag_search( "HEADER" ) ;
     if( header_idx == GLU_FAILURE ) { return tag_failure( "HEADER" ) ; }
     if( are_equal( INPUT[header_idx].VALUE , "NERSC" ) ) {
-      printf( "[IO] Attempting to read a NERSC file \n" ) ;
+      fprintf( stdout , "[IO] Attempting to read a NERSC file \n" ) ;
       return NERSC_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "HIREP" ) ) {
       if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return UNSUPPORTED ;
-      printf( "[IO] Attempting to read a HIREP file \n" ) ;
-      printf( "[IO] Using sequence number from input file :: %zu \n" ,
+      fprintf( stdout , "[IO] Attempting to read a HIREP file \n" ) ;
+      fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       return HIREP_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "MILC" ) ) {
       if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return UNSUPPORTED ;
-      printf( "[IO] Attempting to read a MILC file \n" ) ;
-      printf( "[IO] Using sequence number from input file :: %zu \n" ,
+      fprintf( stdout , "[IO] Attempting to read a MILC file \n" ) ;
+      fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       return MILC_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "SCIDAC" ) ) {
       if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return UNSUPPORTED ;
-      printf( "[IO] Attempting to read a SCIDAC file \n" ) ;
-      printf( "[IO] Using sequence number from input file :: %zu \n" ,
+      fprintf( stdout , "[IO] Attempting to read a SCIDAC file \n" ) ;
+      fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       return SCIDAC_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "LIME" ) ) {
       if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return UNSUPPORTED ;
-      printf( "[IO] Attempting to read an LIME file \n" ) ;
-      printf( "[IO] Using sequence number from input file :: %zu \n" ,
+      fprintf( stdout , "[IO] Attempting to read an LIME file \n" ) ;
+      fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
-      printf( "[IO] WARNING!! NOT CHECKING ANY CHECKSUMS!! \n" ) ;
+      fprintf( stdout , "[IO] WARNING!! NOT CHECKING ANY CHECKSUMS!! \n" ) ;
       return LIME_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "ILDG_SCIDAC" ) ) {
       if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return UNSUPPORTED ;
-      printf( "[IO] Attempting to read an ILDG (Scidac) file \n" ) ;
-      printf( "[IO] Using sequence number from input file :: %zu \n" ,
+      fprintf( stdout , "[IO] Attempting to read an ILDG (Scidac) file \n" ) ;
+      fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       return ILDG_SCIDAC_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "ILDG_BQCD" ) ) {
       if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return UNSUPPORTED ;
-      printf( "[IO] Attempting to read an ILDG (BQCD) file \n" ) ;
-      printf( "[IO] Using sequence number from input file :: %zu \n" ,
+      fprintf( stdout , "[IO] Attempting to read an ILDG (BQCD) file \n" ) ;
+      fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       return ILDG_BQCD_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "RANDOM" ) ) {
-      printf( "[IO] Attempting to generate an SU(%d) RANDOM config \n" , NC ) ;
+      fprintf( stdout , "[IO] Attempting to generate an SU(%d) "
+	       "RANDOM config \n" , NC ) ;
       if( read_random_lattice_info( ) == GLU_FAILURE ) return UNSUPPORTED ;
       return RANDOM_CONFIG ;
     } else if( are_equal( INPUT[header_idx].VALUE , "UNIT" ) ) {
-      printf( "[IO] Attempting to generate an %dx%d UNIT config \n" , NC , NC ) ;
+      fprintf( stdout , "[IO] Attempting to generate an %dx%d UNIT config \n" 
+	       , NC , NC ) ;
       read_random_lattice_info( ) ;
       return UNIT_GAUGE ;
     } else if( are_equal( INPUT[header_idx].VALUE , "INSTANTON" ) ) {
-      printf( "[IO] Attempting to generate a SU(%d) BPST instanton config \n" 
-	      , NC ) ;
+      fprintf( stdout , "[IO] Attempting to generate a SU(%d) BPST "
+	       "instanton config \n" , NC ) ;
       if( read_random_lattice_info( ) == GLU_FAILURE ) return UNSUPPORTED ;
       return INSTANTON ;
     }
-    printf( "[IO] HEADER %s not recognised ... Leaving \n" , 
-	    INPUT[header_idx].VALUE ) ;
+    fprintf( stderr , "[IO] HEADER %s not recognised ... Leaving \n" , 
+	     INPUT[header_idx].VALUE ) ;
     return UNSUPPORTED ;
   }
   return UNSUPPORTED ; 
@@ -347,9 +350,9 @@ read_cuts_struct( struct cut_info *CUTINFO )
     } else if( are_equal( INPUT[cuttype_idx].VALUE , "TOPOLOGICAL_SUSCEPTIBILITY" ) ) {
       CUTINFO -> dir = TOPOLOGICAL_SUSCEPTIBILITY ;
     } else {
-      printf( "[IO] I do not understand your CUTTYPE %s\n" , 
-	      INPUT[cuttype_idx].VALUE ) ;
-      printf( "[IO] Defaulting to no cutting \n" ) ;
+      fprintf( stderr , "[IO] I do not understand your CUTTYPE %s\n" , 
+	       INPUT[cuttype_idx].VALUE ) ;
+      fprintf( stderr , "[IO] Defaulting to no cutting \n" ) ;
       CUTINFO -> dir = GLU_FAILURE ;
     }
   }
@@ -366,8 +369,9 @@ read_cuts_struct( struct cut_info *CUTINFO )
     } else if ( are_equal( INPUT[momcut_idx].VALUE , "CONICAL_CUT" ) ) {
       CUTINFO -> type = CYLINDER_AND_CONICAL_CUT ; 
     } else {
-      printf( "[IO] Unrecognised type [%s] \n" , INPUT[momcut_idx].VALUE ) ; 
-      printf( "[IO] Defaulting to SPHERICAL_CUT \n" ) ; 
+      fprintf( stderr , "[IO] Unrecognised type [%s] \n" , 
+	       INPUT[momcut_idx].VALUE ) ; 
+      fprintf( stderr , "[IO] Defaulting to SPHERICAL_CUT \n" ) ; 
     }
   }
   // field definition
@@ -415,8 +419,8 @@ read_gf_struct ( struct gf_info *GFINFO )
     } else if ( are_equal( INPUT[gf_idx].VALUE , "COULOMB" ) ) {
       GFINFO -> type = GLU_COULOMB_FIX ;
     } else {
-      printf( "[IO] unknown type [%s] : Defaulting to NO GAUGE FIXING \n" , 
-	      INPUT[gf_idx].VALUE ) ; 
+      fprintf( stderr , "[IO] unknown type [%s] : Defaulting to "
+	       "NO GAUGE FIXING \n" , INPUT[gf_idx].VALUE ) ; 
       GFINFO -> type = DEFAULT_NOFIX ; 
     }
   }
@@ -514,8 +518,8 @@ smearing_info( struct sm_info *SMINFO )
     } else if( are_equal( INPUT[type_idx].VALUE , "ADAPTWFLOW_STOUT" ) ) {
       SMINFO -> type = SM_ADAPTWFLOW_STOUT ;
     } else {
-      printf( "[IO] Unrecognised Type [%s] Defaulting to No Smearing \n" , 
-	      INPUT[type_idx].VALUE ) ;
+      fprintf( stderr , "[IO] Unrecognised Type [%s] "
+	       "Defaulting to No Smearing \n" , INPUT[type_idx].VALUE ) ;
       SMINFO -> type = SM_NOSMEARING ;
     }
   }
@@ -536,10 +540,10 @@ smearing_info( struct sm_info *SMINFO )
   // poke the smearing alpha's into Latt.smalpha[ND]
   // logically for an ND - dimensional theory there are ND - 1 HYP params.
   {
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < ND - 1 ; mu++ ) {
       char alpha_str[ 64 ] ;
-      sprintf( alpha_str , "ALPHA%d" , mu + 1 ) ;
+      sprintf( alpha_str , "ALPHA%zu" , mu + 1 ) ;
       if( setdbl( &Latt.sm_alpha[ mu ] , alpha_str ) == GLU_FAILURE ) {
 	return GLU_FAILURE ;
       }
@@ -556,7 +560,8 @@ get_input_data( struct infile_data *INFILE ,
   // open the input file in here and free it at the bottom
   FILE *infile = fopen( file_name , "r" ) ;
   if( infile == NULL ) {
-    printf( "[IO] input file cannot be read ... Leaving\n" ) ;
+    fprintf( stderr , "[IO] input file %s cannot be read ... Leaving\n" ,
+	     file_name ) ;
     return GLU_FAILURE ;
   }
 

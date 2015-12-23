@@ -39,12 +39,12 @@ print_smearing_obs( const struct site *__restrict lat ,
 		    const size_t count ,
 		    const GLU_bool hypercubically_blocked )
 {
-  printf( "[SMEAR] {Iteration} %zu {Link trace} %1.15f \n" , 
-	  count , links( lat ) ) ; 
+  fprintf( stdout , "[SMEAR] {Iteration} %zu {Link trace} %1.15f \n" , 
+	   count , links( lat ) ) ; 
   // print out the info ::
   double splaq , tplaq , plaq = all_plaquettes( lat , &splaq , &tplaq ) ;
-  printf( "[SMEAR] {Plaquette} %1.15f {Spatial} %1.15f "
-	  "{Temporal} %1.15f \n\n" , plaq , splaq , tplaq ) ; 
+  fprintf( stdout , "[SMEAR] {Plaquette} %1.15f {Spatial} %1.15f "
+	   "{Temporal} %1.15f \n\n" , plaq , splaq , tplaq ) ; 
   return ;
 }
 

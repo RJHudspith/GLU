@@ -49,7 +49,7 @@ static double *fact ;
 // Computes the square-root of the matrix A
 //  using a denman-beavers iteration routine
 //  A must be invertible for this to make any sense
-static void
+static int
 denman_rootY( GLU_complex Y[ NCNC ] )
 {
   GLU_complex M[ NCNC ] , INVM[ NCNC ] ;
@@ -85,22 +85,23 @@ denman_rootY( GLU_complex Y[ NCNC ] )
     tol = fabs( tol - NC ) ;
 
     // should complain here
-    if( iters > 25 ) {
-      printf( "[TAYLOR_LOGS] Denman root Y ill convergence %e \n" , tol ) ;
-      break ;
+    if( iters == 24 ) {
+      fprintf( stderr , "[TAYLOR_LOGS] Denman root Y ill convergence %e \n" , 
+	       tol ) ;
+      return GLU_FAILURE ;
     }
 
     iters++ ;
   }
   // that works most of the time
-  return ;
+  return GLU_SUCCESS ;
 }
 
 // Computes the inverse square-root of the matrix A
 // using a denman-beavers iteration routine.
 // Again, A must be invertible. Passes by reference both
 // the inverse square root "Z" and the square root "Y"
-static void
+static int
 denman_rootZ( GLU_complex *__restrict Z )
 {
   GLU_complex M[ NCNC ] , INVM[ NCNC ] ;
@@ -137,10 +138,18 @@ denman_rootZ( GLU_complex *__restrict Z )
       tol += creal( c ) * creal( c ) + cimag( c ) * cimag( c ) ;
     }
     tol = fabs( tol - NC ) ;
+
+    // should complain here
+    if( iters == 24 ) {
+      fprintf( stderr , "[TAYLOR_LOGS] Denman root Z ill convergence %e \n" , 
+	       tol ) ;
+      return GLU_FAILURE ;
+    }
+
     iters++ ;
   }
   // that works!
-  return ;
+  return GLU_SUCCESS ;
 }
 
 // precomputation, this should be put in Mainfile.c
@@ -160,7 +169,7 @@ precompute_taylor_factors( void )
   return ;
 }
 
-static void
+static int
 log_asinh( GLU_complex *__restrict Q , 
 	   const GLU_complex *__restrict U ,
 	   const size_t NROOTS )
@@ -174,7 +183,9 @@ log_asinh( GLU_complex *__restrict Q ,
 
   // do 3 some rootings
   for( roots = 0 ; roots < NROOTS ; roots++ ) {
-    denman_rootY( y ) ;
+    if( denman_rootY( y ) == GLU_FAILURE ) {
+      return GLU_FAILURE ;
+    }
   }
   // ok, now compute z = ( U - U^{\dagger} ) / 2
   AntiHermitian_proj( z , y ) ;
@@ -244,11 +255,11 @@ log_asinh( GLU_complex *__restrict Q ,
       Q[ i + j*NC ] = conj( Q[ j + i*NC ] ) ;
     }
   }
-  return ;
+  return GLU_SUCCESS ;
 }
 
 // logarithm of a unitary matrix by asinh
-void
+int
 asinh_log( GLU_complex *__restrict Q , 
 	   const GLU_complex *__restrict U )
 {
@@ -258,12 +269,16 @@ asinh_log( GLU_complex *__restrict Q ,
   GLU_complex Qtemp[ NCNC ] ;
   size_t nroots = 3 ;
 
-  log_asinh( Qtemp , U , nroots ) ;
+  if( log_asinh( Qtemp , U , nroots ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
 
   while( eps > 1E-5 && iters < 32 ) {
     nroots+=4 ;
 
-    log_asinh( Q , U , nroots ) ;
+    if( log_asinh( Q , U , nroots ) == GLU_FAILURE ) {
+      return GLU_FAILURE ;
+    }
 
     size_t i ;
     eps = 0.0 ;
@@ -274,7 +289,7 @@ asinh_log( GLU_complex *__restrict Q ,
     iters++ ;
     equiv( Qtemp , Q ) ;
   }
-  return ;
+  return GLU_SUCCESS ;
 }
 
 //  Analytic brute force Logarithm, it is v. expensive!
@@ -303,7 +318,7 @@ asinh_log( GLU_complex *__restrict Q ,
 //   inverse to accelerate the series. As a note, I do the horner's rule correctly
 //   i.e. backwards, with the smallest terms added first to account for roundoff
 //   in the matrix power series.
-void
+int
 brute_force_log( GLU_complex *__restrict Q , 
 		 const GLU_complex *__restrict U ,
 		 const int NROOTS )
@@ -329,7 +344,9 @@ brute_force_log( GLU_complex *__restrict Q ,
 #else
   for( roots = 0 ; roots < 10 ; roots++ ) {
 #endif
-    denman_rootY( y ) ;    
+    if( denman_rootY( y ) == GLU_FAILURE ) {
+      return GLU_FAILURE ;
+    }    
 
     // durr says that all the eigenvalues should be real, 
     // don't have an NC-generic eigensolver yet
@@ -386,8 +403,8 @@ brute_force_log( GLU_complex *__restrict Q ,
     err *= SCALING ;
     // this whole code should probably return failure
     if( n >= NMAX ) {
-      printf( "[TAYLOR LOG] Not converging :: %e \n" , err ) ;
-      break ;
+      fprintf( stderr , "[TAYLOR LOG] Not converging :: %e \n" , err ) ;
+      return GLU_FAILURE ;
     }
     // increment the series by two to avoid doing too many matrix multiplies. Tune?
     if( err < 0.001*PREC_TOL ) break ;
@@ -439,8 +456,7 @@ brute_force_log( GLU_complex *__restrict Q ,
       Q[ i + j*NC ] = conj( Q[ j + i*NC ] ) ;
     }
   } 
-
-  return ;
+  return GLU_SUCCESS ;
 }
 
 // we free this in Mainfile.c
@@ -455,7 +471,7 @@ free_taylors( )
 
 // rescaled Denman-Beavers projection, used in the n-APE projection
 // which creates a differentiable SU(NC) projection from APE links
-void
+int
 nape_reunit( GLU_complex *__restrict U )
 {
   GLU_complex Z[ NCNC ] ;
@@ -469,9 +485,11 @@ nape_reunit( GLU_complex *__restrict U )
     U[i] *= dtv ;
   }
   // Z is the inverse square root of  U.U^{\dagger} 
-  denman_rootZ( Z ) ; // can do this, does not need Z in iteration
+  if( denman_rootZ( Z ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
   // atomically does U -> U Z
   multab_atomic_right( U , Z ) ;
 
-  return ;
+  return GLU_SUCCESS ;
 }

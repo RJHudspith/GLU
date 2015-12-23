@@ -24,6 +24,13 @@
 #define GLU_RNG_H
 
 /**
+   @fn void generate_NCxNC( GLU_complex U[ NCNC ] )
+   @brief generate a random NCxNC matrix calls polar()
+ */
+void 
+generate_NCxNC( GLU_complex U[ NCNC ] ) ;
+
+/**
    @fn int initialise_seed( void )
    @brief initialises the original seed for the RNG
    @warning attempts to read from /dev/urandom !!
@@ -33,20 +40,21 @@ int
 initialise_seed( void ) ;
 
 /**
-   @fn double rng_dbl( void )
-   @brief return a double in [0,1)
+   @fn GLU_real polar( void )
+   @brief Box-Mueller algorithm for uniformly distributed real gaussian numbers 
+
+   uses the slower cosine definition for the box-mueller calls rng_dbl()
  */
-double
-rng_dbl( void ) ;
+GLU_real 
+polar( void ) ;
 
 /**
-   @fn unsigned int rng_int( void )
-   @brief return an unsigned int
-
-   sometimes we just want an integer calls rng_dbl()
- */
-unsigned int
-rng_int( void ) ;
+   @fn GLU_complex polar_box( void )
+   @brief Box-Mueller algorithm for uniformly distributed complex gaussian numbers 
+   Uses the faster polar Box-Mueller algorithm for generating the numbers plus recursion calls rng_dbl()
+ **/
+GLU_complex
+polar_box( void ) ;
 
 /**
    @fn void rng_free( void )
@@ -75,30 +83,20 @@ rng_free( void ) ;
 void 
 rng_init( void ) ;
 
-
 /**
-   @fn GLU_real polar( void )
-   @brief Box-Mueller algorithm for uniformly distributed real gaussian numbers 
-
-   uses the slower cosine definition for the box-mueller calls rng_dbl()
+   @fn double rng_dbl( void )
+   @brief return a double in [0,1)
  */
-GLU_real 
-polar( void ) ;
+double
+rng_dbl( void ) ;
 
 /**
-   @fn GLU_complex polar_box( void )
-   @brief Box-Mueller algorithm for uniformly distributed complex gaussian numbers 
-   Uses the faster polar Box-Mueller algorithm for generating the numbers plus recursion calls rng_dbl()
- **/
-GLU_complex
-polar_box( void ) ;
+   @fn unsigned int rng_int( void )
+   @brief return an unsigned int
 
-/**
-   @fn void generate_NCxNC( GLU_complex U[ NCNC ] )
-   @brief generate a random NCxNC matrix calls polar()
+   sometimes we just want an integer calls rng_dbl()
  */
-void 
-generate_NCxNC( GLU_complex U[ NCNC ] ) ;
-
+unsigned int
+rng_int( void ) ;
 
 #endif

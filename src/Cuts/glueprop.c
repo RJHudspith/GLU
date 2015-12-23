@@ -31,10 +31,9 @@
 #include "geometry.h"   // lexicographical geometry look-ups
 
 // compute psq using the momentum lattice coordinates
-static inline
-double
+static inline double
 psq_calc( double mom[ ND ] ,
-	  const int posit )
+	  const size_t posit )
 {
   size_t mu ;
   int k[ ND ] ;
@@ -69,7 +68,7 @@ static void
 project_trans_long( double *transverse ,
 		    double *longitudinal ,
 		    const struct site *__restrict A ,
-		    const int posit ) 
+		    const size_t posit ) 
 {
   GLU_complex tr ;
   double mom[ ND ] , common ;
@@ -97,7 +96,8 @@ compute_gluon_prop( FILE *__restrict Ap ,
 		    const struct veclist *__restrict list ,
 		    int num_mom[1] )
 {
-  printf("\n[CUTS] computing the transverse and longitudinal gluon propagators \n" ) ;
+  fprintf( stdout , "\n[CUTS] computing the transverse and "
+	            "longitudinal gluon propagators \n" ) ;
 
   // normalisations
   const double g2_norm   = 2.0 / ( ( NCNC - 1 ) * ( ND - 1 ) * LVOLUME ) ;

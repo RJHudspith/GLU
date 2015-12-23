@@ -24,29 +24,31 @@
 #define GLU_SMEAR_H
 
 /**
-   @fn void smear3D( struct site *__restrict lat , const size_t smiters , const smearing_types type )
+   @fn int smear3D( struct site *__restrict lat , const size_t smiters , const smearing_types type )
    @brief ND-1 link smearing without blocking transforms
    @param lat :: lattice gauge fields 
    @param smiters :: number of smearing iterations
    @param type :: type of smearing projection
 
    calls staples() and projectors.h. Heavily.
+   @return #GLU_SUCCESS or #GLU_FAILURE 
  **/
-void 
+int
 smear3D( struct site *__restrict lat , 
 	 const size_t smiters , 
 	 const smearing_types type ) ;
 
 /**
-   @fn void smear4D( struct site *__restrict lat , const size_t smiters , const smearing_types type )
+   @fn int smear4D( struct site *__restrict lat , const size_t smiters , const smearing_types type )
    @brief ND link smearing without blocking transforms
    @param lat :: lattice gauge fields 
    @param smiters :: number of smearing iterations
    @param type :: type of smearing projection
 
    calls staples() and projectors.h . Heavily.
+   @return #GLU_SUCCESS or #GLU_FAILURE 
  **/
-void 
+int 
 smear4D( struct site *__restrict lat ,
 	 const size_t smiters , 
 	 const smearing_types type ) ;

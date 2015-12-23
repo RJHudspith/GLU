@@ -281,10 +281,10 @@ compute_fs_and_ds( void )
   char str[ 256 ] ;
   sprintf( str , "%s/Local/Moments/SU%d_fabc_dabc.config" , HAVE_PREFIX , NC ) ;
   FILE *fabc_dabc = fopen( str , "rb" ) ;
-  printf( "Checking for precomputed file %s ... \n" , str ) ;
+  fprintf( stdout , "[LIE] Checking for precomputed file %s ... \n" , str ) ;
   // first element is the length of f, second the length of d
   if( fabc_dabc == NULL ) {
-    printf( "File not found. Writing one.\n" ) ; 
+    fprintf( stdout , "[LIE] File not found. Writing one.\n" ) ; 
     actually_compute_fs_and_ds( ) ;
     // write them out
     fabc_dabc = fopen( str , "wb" ) ;
@@ -295,7 +295,7 @@ compute_fs_and_ds( void )
     fwrite( f , sizeof( struct struc_func ) , fcount , fabc_dabc ) ;
     fwrite( d , sizeof( struct struc_func ) , dcount , fabc_dabc ) ;
   } else {
-    printf( "File found (%s) ... Reading it \n" , str ) ; 
+    fprintf( stdout , "[LIE] File found (%s) ... Reading it \n" , str ) ; 
     if( fread( &fcount , sizeof( int ) , 1 , fabc_dabc ) != 1 ) return ;
     if( fread( &dcount , sizeof( int ) , 1 , fabc_dabc ) != 1 ) return ;
     f = ( struct struc_func* )malloc( fcount * sizeof( struct struc_func ) ) ;

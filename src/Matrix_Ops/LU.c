@@ -43,7 +43,7 @@ LU_det_overwrite( const int N , GLU_complex U[ N*N ] )
       }
     }
     if( best == 0.0 ) { 
-      printf( "[DETERMINANT] LU  Singular Matrix!!!\n" ) ;
+      fprintf( stderr , "[DETERMINANT] LU  Singular Matrix!!!\n" ) ;
       return 0.0 ;
     }
     if( piv != i ) {

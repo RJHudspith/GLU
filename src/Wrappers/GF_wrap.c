@@ -37,11 +37,14 @@
 #include "read_headers.h" // for rereading the header
 #include "SM_wrap.h"      // smeared preconditioning
 
+#ifdef LUXURY_GAUGE
+#include "geometry.h"
+#endif
+
 // coulomb wrapper
 static int 
-GF_wrap_coulomb( lat , GFINFO )
-     struct site *__restrict lat ;
-     const struct gf_info GFINFO ;
+GF_wrap_coulomb( struct site *__restrict lat ,
+		 const struct gf_info GFINFO )
 {
   start_timer( ) ;
 
@@ -66,7 +69,7 @@ GF_wrap_coulomb( lat , GFINFO )
     }
     free( gauge ) ;  
     #else
-    printf( "MAG not compatible with exact-log fixing \n" ) ;
+    fprintf( stderr , "MAG not compatible with exact-log fixing \n" ) ;
     #endif
   }
 
@@ -83,10 +86,11 @@ GF_wrap_coulomb( lat , GFINFO )
   // fixes the average temporal links to 1 as best it can
   // using an analogue of the temporal gauge ...
   if( GFINFO.improve == RESIDUAL_IMPROVE ) {
-    printf( "\nResidual gauge fixing step \n" ) ;
+    fprintf( stdout , "\nResidual gauge fixing step \n" ) ;
     residual_fix( lat ) ;
-    printf( "[TLINK] %1.15f [SLINK] %1.15f [LINK] %1.15f [PLAQ] %1.15f \n" , 
-	    t_links(lat) , s_links(lat) , links(lat) , av_plaquette(lat) ) ;
+    fprintf( stdout , "[TLINK] %1.15f [SLINK] %1.15f "
+	     "[LINK] %1.15f [PLAQ] %1.15f \n" , 
+	     t_links(lat) , s_links(lat) , links(lat) , av_plaquette(lat) ) ;
   }
   print_time( ) ;
 
@@ -95,11 +99,10 @@ GF_wrap_coulomb( lat , GFINFO )
 
 // landau wrapper
 static int
-GF_wrap_landau( infile , lat , GFINFO , improvement )
-     const char *__restrict infile ;
-     struct site *__restrict lat ;
-     const struct gf_info GFINFO ;
-     const GF_improvements improvement ;
+GF_wrap_landau( struct site *__restrict lat ,
+		const char *__restrict infile ,
+		const struct gf_info GFINFO ,
+		const GF_improvements improvement )
 {
   int iters = 0 ;
   start_timer( ) ;
@@ -108,7 +111,8 @@ GF_wrap_landau( infile , lat , GFINFO , improvement )
   if( GFINFO.improve == MAG_IMPROVE ) {
     GLU_complex **gauge = NULL ;
     if( GLU_malloc( (void**)&gauge , 16 , LVOLUME * sizeof( GLU_complex* ) ) != 0 ) {
-      printf( "[GF] GF_wrap_landau (overrelaxed-MAG) failed to allocate temporary gauge\n" ) ;
+      fprintf( stderr , "[GF] GF_wrap_landau (overrelaxed-MAG) failed "
+	       "to allocate temporary gauge\n" ) ;
       return GLU_FAILURE ;
     }
     size_t i ;
@@ -132,7 +136,8 @@ GF_wrap_landau( infile , lat , GFINFO , improvement )
 #else
   GLU_complex **gauge = NULL ;
   if( GLU_malloc( (void**)&gauge , 16 , LVOLUME * sizeof( GLU_complex* ) ) != 0 ) {
-    printf( "[GF] GF_wrap_landau failed to allocate temporary gauge\n" ) ;
+    fprintf( stderr , "[GF] GF_wrap_landau failed to allocate "
+	     "temporary gauge\n" ) ;
     return GLU_FAILURE ;
   }
   size_t i ;
@@ -150,7 +155,7 @@ GF_wrap_landau( infile , lat , GFINFO , improvement )
     #if !(defined deriv_full || defined deriv_fulln )
     mag( lat , gauge ) ; 
     #else
-    printf( "MAG not compatible with exact-log fixing \n" ) ;
+    fprintf( stderr , "MAG not compatible with exact-log fixing \n" ) ;
     #endif
   }  
 
@@ -172,105 +177,114 @@ GF_wrap_landau( infile , lat , GFINFO , improvement )
 
 // print out the details
 static void
-print_fixing_info( GFINFO , SMINFO )
-     const struct gf_info GFINFO ;
-     const struct sm_info SMINFO ;
+print_fixing_info( const struct gf_info GFINFO ,
+		   const struct sm_info SMINFO )
 {
 #ifdef OVERRELAXED_GF
-  printf( "\n[GF] Using the Over-Relaxation routines\n[GF] " ) ;
+  fprintf( stdout , "\n[GF] Using the Over-Relaxation routines\n[GF] " ) ;
 #else
 #ifdef GLU_GFIX_SD
   #ifdef HAVE_FFTW3_H
-  printf( "\n[GF] Using the Fourier accelerated steepest descent (FASD)"
-	  " routines\n[GF] " ) ;
+  fprintf( stdout , "\n[GF] Using the Fourier accelerated steepest "
+	   "descent (FASD) routines\n[GF] " ) ;
   #else
-  printf( "\n[GF] Using the steepest descent (SD) routines\n[GF] " ) ;
+  fprintf( stdout , "\n[GF] Using the steepest descent (SD) routines\n[GF] " ) ;
   #endif
 #else // default is the CG
   #ifdef HAVE_FFTW3_H
-  printf( "\n[GF] Using the Fourier accelerated non-linear"
-	  " conjugate gradient (FACG) routines\n[GF] " ) ;
+  fprintf( stdout , "\n[GF] Using the Fourier accelerated non-linear"
+	   " conjugate gradient (FACG) routines\n[GF] " ) ;
   #else
-  printf( "\n[GF] Using the non-linear"
-	  " conjugate gradient (CG) routines\n[GF] " ) ;
+  fprintf( stdout , "\n[GF] Using the non-linear"
+	   " conjugate gradient (CG) routines\n[GF] " ) ;
   #endif
 #endif
 #endif
   switch( GFINFO.type ) {
   case GLU_LANDAU_FIX :
-    printf( "Fixing to Landau gauge, within an accuracy of %g \n" ,
-	    GFINFO.accuracy ) ; 
+    fprintf( stdout , "Fixing to Landau gauge, within an accuracy of %g \n" ,
+	     GFINFO.accuracy ) ; 
     break ;
   case GLU_COULOMB_FIX :
-    printf( "Fixing to Coulomb gauge, within an accuracy of %g \n" ,
-	    GFINFO.accuracy ) ; 
+    fprintf( stdout , "Fixing to Coulomb gauge, within an accuracy of %g \n" ,
+	     GFINFO.accuracy ) ; 
     break ;
   default : break ;// should never get here
   }
-  printf( "[GF] Tuning parameter alpha :: %f \n" , Latt.gf_alpha ) ;
-  printf( "[GF] Performing AT MOST %zu iterations before randomly restarting ... \n" ,
-	  GFINFO.max_iters ) ;
-  printf( "[GF] Allowing for %d restarts before complaint ... \n" , GF_GLU_FAILURES ) ; 
+  fprintf( stdout , "[GF] Tuning parameter alpha :: %f \n" , Latt.gf_alpha ) ;
+  fprintf( stdout , "[GF] Performing AT MOST %zu iterations"
+	   "before randomly restarting ... \n" , GFINFO.max_iters ) ;
+  fprintf( stdout , "[GF] Allowing for %d restarts before complaint ... \n" , 
+	   GF_GLU_FAILURES ) ; 
   // derivative routines available
-  printf( "[GF] " ) ;
+  fprintf( stdout , "[GF] " ) ;
   #ifdef deriv_lin
-  printf( "Using the Hermitian projection definition of the gluon fields.\n" ) ; 
+  fprintf( stdout , "Using the Hermitian projection definition"
+	   "of the gluon fields.\n" ) ; 
   #elif defined deriv_linn
-  printf( "Using the Hermitian projection definition of the gluon fields,\n"
-	  "and the next nearest neighbor derivative.\n" ) ; 
-  printf( "[GF] Nearest neighbour terms nn1 :: %f nn2 :: %f \n" , nn1 , nn2 ) ;
+  fprintf( stdout , "Using the Hermitian projection definition"
+	   "of the gluon fields,\n"
+	   "and the next nearest neighbor derivative.\n" ) ; 
+  fprintf( stdout , "[GF] Nearest neighbour terms nn1 :: %f nn2 :: %f \n" , 
+	   nn1 , nn2 ) ;
   #elif defined deriv_full
-  printf( "Using the exact Log definition of the gluon fields.\n" ) ; 
+  fprintf( stdout , "Using the exact Log definition of the gluon fields.\n" ) ; 
   #elif defined deriv_fulln
-  printf( "Using the exact Log definition of the gluon fields,\n"
-	  "and the next nearest neighbor derivative.\n" ) ;
-  printf( "[GF] Nearest neighbour terms nn1 :: %f nn2 :: %f \n" , nn1 , nn2 ) ;
+  fprintf( stdout , "Using the exact Log definition of the gluon fields,\n"
+	   "and the next nearest neighbor derivative.\n" ) ;
+  fprintf( stdout , "[GF] Nearest neighbour terms nn1 :: %f nn2 :: %f \n" , 
+	   nn1 , nn2 ) ;
   #elif defined deriv_fullnn
-  printf( "Using the exact Log definition of the gluon fields,\n"
-	  "and the next to next nearest neighbor derivative improvement.\n" ) ; 
+  fprintf( stdout , "Using the exact Log definition of the gluon fields,\n"
+	   "and the next to next nearest neighbor derivative improvement.\n" ) ;
   #endif
   // exponentiation approximation routines
-  printf( "[GF] " ) ;
+  fprintf( stdout , "[GF] " ) ;
   #if defined exp_approx
-  printf( "Approximate O(a) exponential expansion, and reunitarisation in Gauge Fixing.\n" ) ; 
+  fprintf( stdout , "Approximate O(a) exponential expansion,"
+	   "and reunitarisation in Gauge Fixing.\n" ) ; 
   #elif defined exp_a2_approx
-  printf( "Approximate O(a^2) exponential expansion, and reunitarisation in Gauge Fixing.\n" ) ; 
+  fprintf( stdout , "Approximate O(a^2) exponential expansion,"
+	   "and reunitarisation in Gauge Fixing.\n" ) ; 
   #elif defined exp_exact
-  printf( "Exact exponentiation in the Gauge Fixing being used.\n" ) ; 
+  fprintf( stdout , "Exact exponentiation in the Gauge Fixing being used.\n" ) ;
   #endif
 // tell us which log-method we are using
 #if ( defined deriv_full ) || ( defined deriv_fulln )
-  printf( "[GF] Using Vandermonde logarithmic def warm-up \n" ) ;
+  fprintf( stdout , "[GF] Using Vandermonde logarithmic def warm-up \n" ) ;
 #endif
 #ifdef LUXURY_GAUGE
-  printf( "[GF] " ) ;
+  fprintf( stdout , "[GF] " ) ;
   #ifdef WORST_COPY
-  printf( "Finding the worst from %d random copies \n" , LUXURY_GAUGE ) ;
+  fprintf( stdout , "Finding the worst from %d random copies \n" , 
+	   LUXURY_GAUGE ) ;
   #else
-  printf( "Finding the best from %d random copies \n" , LUXURY_GAUGE ) ;
+  fprintf( stdout , "Finding the best from %d random copies \n" , 
+	   LUXURY_GAUGE ) ;
   #endif
 #endif
-  printf( "[GF] " ) ;
+  fprintf( stdout , "[GF] " ) ;
   switch( GFINFO.improve ) {
   case MAG_IMPROVE :
-    printf( "MAG-Preconditioning Improvement.\n" ) ; 
+    fprintf( stdout , "MAG-Preconditioning Improvement.\n" ) ; 
     break ;
   case SMPREC_IMPROVE :
     if( GFINFO.type == GLU_COULOMB_FIX )
-      printf( "Smearing-Preconditioning not implemented.\n" ) ;
+      fprintf( stderr , "Smearing-Preconditioning not implemented.\n" ) ;
     else
-      printf( "Smearing-Preconditioning Improvement.\n" ) ; 
+      fprintf( stdout , "Smearing-Preconditioning Improvement.\n" ) ; 
     break ;
   case RESIDUAL_IMPROVE :
     if( GFINFO.type != GLU_LANDAU_FIX ) {
-      printf( "Residual gauge fixing improvement, after Coulomb fixing.\n" ) ;
+      fprintf( stdout , "Residual gauge fixing improvement, "
+	       "after Coulomb fixing.\n" ) ;
     }
     break ;
   default :
-    printf( "No improvement.\n" ) ;
+    fprintf( stdout , "No improvement.\n" ) ;
     break ;
   }
-  printf( "\n" ) ;
+  fprintf( stdout , "\n" ) ;
   return ;
 }
 
@@ -306,17 +320,15 @@ smeared_prec_step( lat , gauge , SMINFO , HEAD_DATA , infile , Local_maxiters , 
 }
 
 #ifdef LUXURY_GAUGE
+
 ////////// LUXURY GAUGE SMPREC VERSION /////////////////
 /// leaves the best copy in "lat"
-
-#include "geometry.h"
 static int
-GF_wrap_smprec_luxury( infile , lat , GFINFO , SMINFO , HEAD_DATA )
-     const char *__restrict infile ;
-     struct site *__restrict lat ;
-     const struct gf_info GFINFO ;
-     const struct sm_info SMINFO ; 
-     const struct head_data HEAD_DATA ;
+GF_wrap_smprec_luxury( struct site *__restrict lat ,
+		       const char *__restrict infile ,
+		       const struct gf_info GFINFO ,
+		       const struct sm_info SMINFO ,
+		       const struct head_data HEAD_DATA )
 {
   // need to allocate a temporary lattice with this one ...
   struct site *lat_cpy = NULL ;
@@ -324,7 +336,8 @@ GF_wrap_smprec_luxury( infile , lat , GFINFO , SMINFO , HEAD_DATA )
   
   if( GLU_malloc( (void**)&gauge   , 16 ,  LVOLUME * sizeof( GLU_complex* ) ) != 0 ||
       GLU_malloc( (void**)&lat_cpy , 16 ,  LVOLUME * sizeof( struct site )  ) != 0 ) {
-    printf( "[GF] GF_wrap_smprec_luxury failed to allocate temporary space\n" ) ;
+    fprintf( stderr , "[GF] GF_wrap_smprec_luxury failed "
+	     "to allocate temporary space\n" ) ;
     return GLU_FAILURE ;
   }
   init_navig( lat_cpy ) ;
@@ -345,10 +358,12 @@ GF_wrap_smprec_luxury( infile , lat , GFINFO , SMINFO , HEAD_DATA )
   int copies , cpy_idx = 0 ;
   for( copies = 0 ; copies < LUXURY_GAUGE ; copies++ ) {
     // read in the lattice an perform a random transform
-    if( grab_file( lat_cpy , gauge , infile ) == GLU_FAILURE ) { return GLU_FAILURE ; }
+    if( grab_file( lat_cpy , gauge , infile ) == GLU_FAILURE ) { 
+      return GLU_FAILURE ; }
 
     smeared_prec_step( lat_cpy , gauge , SMINFO , HEAD_DATA , 
-		       infile , Local_maxiters , Local_accuracy , GFINFO.improve ) ;
+		       infile , Local_maxiters , Local_accuracy , 
+		       GFINFO.improve ) ;
 
     // set gauge to the identity
     #pragma omp parallel for private(i)
@@ -360,11 +375,11 @@ GF_wrap_smprec_luxury( infile , lat , GFINFO , SMINFO , HEAD_DATA )
 			      infile , SMPREC_IMPROVE ) ; 
 
     // compute the gauge functional
-    const double GFUNC = gauge_functional( lat_cpy ) ;
-    printf( "\n   [COPY] %d [FUNCTIONAL] %1.15f [ITER] %d " , 
-	    copies , GFUNC , iters ) ; 
+    const double GFUNC = links( lat ) ;
+    fprintf( stdout , "\n   [COPY] %d [FUNCTIONAL] %1.15f [ITER] %d " , 
+	     copies , GFUNC , iters ) ; 
     if( GFUNC < MIN_GFUNC && iters != Local_maxiters ) {
-      printf( " -> Copy accepted \n" ) ;
+      fprintf( stdout , " -> Copy accepted \n" ) ;
       // copy them over
       MIN_GFUNC = GFUNC ;
       cpy_idx = copies ;
@@ -372,9 +387,9 @@ GF_wrap_smprec_luxury( infile , lat , GFINFO , SMINFO , HEAD_DATA )
       for( i = 0 ; i < LVOLUME ; i++ ) {
 	memcpy( &lat[i] , &lat_cpy[i] , sizeof( struct site ) ) ;
       }
-    } else { printf( " -> Copy rejected \n\n" ) ; }
+    } else { fprintf( stdout , " -> Copy rejected \n\n" ) ; }
   print_time( ) ;
-  printf( "\n" ) ;
+  fprintf( stdout , "\n" ) ;
   }
 
   // completion run ...
@@ -383,11 +398,12 @@ GF_wrap_smprec_luxury( infile , lat , GFINFO , SMINFO , HEAD_DATA )
 	  infile , NO_IMPROVE ) ; 
 
   // the output is a little confusing so I print out the important details here
-  printf( "\n[GAUGE_COPY SELECTED] %d [FUNCTIONAL] %1.15f [PLAQUETTE] %1.15f \n" , 
-	  cpy_idx , MIN_GFUNC , av_plaquette(lat) ) ;
+  fprintf( stdout , "\n[GAUGE_COPY SELECTED] %d "
+	   "[FUNCTIONAL] %1.15f [PLAQUETTE] %1.15f \n" , 
+	   cpy_idx , MIN_GFUNC , av_plaquette(lat) ) ;
   GLU_real tr ;
   const double link = indivlinks( lat , &tr ) ;
-  printf( "[LINK] %1.15f [MAX] %1.15f \n" , link , tr/(GLU_real)NC ) ;
+  fprintf( stdout , "[LINK] %1.15f [MAX] %1.15f \n" , link , tr/(GLU_real)NC ) ;
 
 #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
@@ -403,17 +419,17 @@ GF_wrap_smprec_luxury( infile , lat , GFINFO , SMINFO , HEAD_DATA )
 
 // smeared-preconditioned step
 static int
-GF_wrap_smprec( infile , lat , GFINFO , SMINFO , HEAD_DATA , recurses )
-     const char *__restrict infile ;
-     struct site *__restrict lat ;
-     const struct gf_info GFINFO ;
-     const struct sm_info SMINFO ; 
-     const struct head_data HEAD_DATA ;
-     int recurses ;
+GF_wrap_smprec( struct site *__restrict lat ,
+		const char *__restrict infile ,
+		const struct gf_info GFINFO ,
+		const struct sm_info SMINFO ,
+		const struct head_data HEAD_DATA ,
+		int recurses )
 {
   GLU_complex **gauge = NULL ;
   if( GLU_malloc( (void**)&gauge , 16 , LVOLUME*sizeof( GLU_complex ) ) != 0 ) {
-    printf( "[GF] GF_wrap_smprec failed to allocate temporary fields \n" ) ;
+    fprintf( stderr , "[GF] GF_wrap_smprec failed to "
+	     "allocate temporary fields \n" ) ;
     return GLU_FAILURE ;
   }
   size_t i ;
@@ -431,16 +447,20 @@ GF_wrap_smprec( infile , lat , GFINFO , SMINFO , HEAD_DATA , recurses )
 
   // if this fails we reread and call the whole thing again
   GLU_bool restart = GLU_FALSE ;
-  if( GF_wrap_landau( infile , lat , GFINFO , NO_IMPROVE ) == GFINFO.max_iters && 
+  if( GF_wrap_landau( lat , infile , GFINFO , NO_IMPROVE ) == 
+      GFINFO.max_iters && 
       ( recurses < GF_GLU_FAILURES ) ) {
     if( grab_file( lat , gauge , infile ) == GLU_FAILURE ) {
-      printf( "[GF] Error in (re)reading the file ... Leaving in a state of disarray.\n" ) ;
+      fprintf( stderr , "[GF] Error in (re)reading the file ..."
+	       "Leaving in a state of disarray\n" ) ;
     } else {
       restart = GLU_TRUE ;
     }
   } if( recurses == GF_GLU_FAILURES ) {
-    printf( "\n[GF] We have failed enough! %d Strongly consider increasing the tuning parameter"
-	    " and/or increasing the number of gauge-fixing iterations.\n" , recurses ) ;
+    fprintf( stderr , "\n[GF] We have failed enough! %d Strongly consider"
+	     "increasing the tuning parameter"
+	    " and/or increasing the number of gauge-fixing iterations.\n" , 
+	     recurses ) ;
   }
   print_time( ) ;
 
@@ -453,8 +473,9 @@ GF_wrap_smprec( infile , lat , GFINFO , SMINFO , HEAD_DATA , recurses )
   
   // here is the call
   if( restart == GLU_TRUE ) {
-    printf( "\n\n ************ GLU_FAILURE %d **************** \n\n" , recurses ) ;
-    GF_wrap_smprec( infile , lat , GFINFO , SMINFO , HEAD_DATA , ++recurses ) ;
+    fprintf( stdout , "\n\n ************ GLU_FAILURE %d **************** \n\n" ,
+	     recurses ) ;
+    GF_wrap_smprec( lat , infile , GFINFO , SMINFO , HEAD_DATA , ++recurses ) ;
   }
 
   return GLU_SUCCESS ;
@@ -475,13 +496,15 @@ GF_wrap( const char *infile ,
   if( GFINFO.type == GLU_LANDAU_FIX ) {
     if( GFINFO.improve == SMPREC_IMPROVE ) {
       #ifdef LUXURY_GAUGE
-      return GF_wrap_smprec_luxury( infile , lat , GFINFO , SMINFO , HEAD_DATA ) ;
+      return GF_wrap_smprec_luxury( lat , infile , GFINFO , 
+				    SMINFO , HEAD_DATA ) ;
       #else
       int recurses = 0 ;
-      return GF_wrap_smprec( infile , lat , GFINFO , SMINFO , HEAD_DATA , recurses ) ;
+      return GF_wrap_smprec( lat , infile , GFINFO , SMINFO , 
+			     HEAD_DATA , recurses ) ;
       #endif 
     } else {
-      return GF_wrap_landau( infile , lat , GFINFO , GFINFO.improve ) ;
+      return GF_wrap_landau( lat , infile , GFINFO , GFINFO.improve ) ;
     }
   } else if( GFINFO.type == GLU_COULOMB_FIX ) {
     return GF_wrap_coulomb( lat , GFINFO ) ;

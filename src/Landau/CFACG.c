@@ -74,21 +74,23 @@ get_info( const size_t t , const double tr , const size_t iters ,
 	  const GLU_bool switched )
 {
   if( t == 0 ) {
-    printf( "\n" ) ;
+    fprintf( stdout , "\n" ) ;
   } if( tr < accuracy ) {
-    printf( "[GF] Slice :: %zu {Stopped by convergence} \n[GF] Accuracy :: %1.5e"
-	    " || Iterations :: %zu\n[GF] Failures :: %d\n" , 
-	    t , tr , iters , control ) ; 
+    fprintf( stdout , "[GF] Slice :: %zu {Stopped by convergence} "
+	     "\n[GF] Accuracy :: %1.5e"
+	     " || Iterations :: %zu\n[GF] Failures :: %d\n" , 
+	     t , tr , iters , control ) ; 
   } else {
-    printf( "[GF] Slice :: %zu {Stopped by iterations too high} \n"
-	    "[GF] Accuracy :: %1.5e || Iterations :: %zu\n[GF] Failures :: %d \n" , 
-	    t , tr , iters , control ) ; 
+    fprintf( stdout , "[GF] Slice :: %zu {Stopped by iterations too high} \n"
+	     "[GF] Accuracy :: %1.5e || Iterations :: %zu\n"
+	     "[GF] Failures :: %d \n" , 
+	     t , tr , iters , control ) ; 
   }
   // if we perform an SD switch -> should we ever?
   if( switched == GLU_TRUE ) {
-    printf( "[GF] Switched from CG to SD \n" ) ;
+    fprintf( stdout , "[GF] Switched from CG to SD \n" ) ;
   }
-  printf( "\n" ) ; 
+  fprintf( stdout , "\n" ) ; 
   return ;
 }
 
@@ -345,9 +347,9 @@ steep_step_FACG( const struct site *__restrict lat ,
     }
 
     #ifdef verbose
-    printf( "[GF] %zu BETA %e \n" , iters , beta ) ;
-    printf( "[GF] %zu SPLINE2 :: %e \n" , iters , spline_min ) ;
-    printf( "[GF] cgacc %e \n" , *tr ) ;
+    fprintf( stdout , "[GF] %zu BETA %e \n" , iters , beta ) ;
+    fprintf( stdout , "[GF] %zu SPLINE2 :: %e \n" , iters , spline_min ) ;
+    fprintf( stdout , "[GF] cgacc %e \n" , *tr ) ;
     #endif
 
     // no point in performing this rotation, 0.0 is like a flag for a broken
@@ -413,14 +415,14 @@ steep_fix_FACG( const struct site *__restrict lat ,
     if( ( iters + loc_iters ) >= ( max_iter - 1 ) ) {
       // if we are close we continue, no use in wasting good work
       if ( tr < ( accuracy * 1E3 ) && continuation == GLU_FALSE ) {
-	printf( "[GF] Continuation run %e \n" , tr ) ;
+	fprintf( stdout , "[GF] Continuation run %e \n" , tr ) ;
 	temp_iters += ( iters + loc_iters ) ;
 	loc_iters = iters = 0 ;
 	continuation = GLU_TRUE ;
 	// otherwise we randomly restart
       } else if( control < GF_GLU_FAILURES && tr > accuracy ) {
       restart :
-	printf( "[GF] Random transform \n" ) ;
+	fprintf( stdout , "[GF] Random transform \n" ) ;
 	random_gtrans_slice( slice_gauge ) ;
 	temp_iters += ( iters + loc_iters ) ;
 	loc_iters = iters = 0 ;
@@ -458,7 +460,8 @@ Coulomb_FACG( struct site  *__restrict lat ,
 {
   // allocations 
   GLU_complex **gtransformed = NULL ;
-  GLU_complex **slice_gauge = NULL , **slice_gauge_end = NULL , **slice_gauge_up  = NULL ;
+  GLU_complex **slice_gauge = NULL , **slice_gauge_end = NULL , 
+    **slice_gauge_up  = NULL ;
   GLU_complex **sn = NULL , **in_old = NULL ; // CG temporaries
 
   // allocate rotato
@@ -683,7 +686,7 @@ Coulomb_FASD( struct site  *__restrict lat ,
       GLU_malloc( (void**)&slice_gauge_end , 16 , LCU * sizeof( GLU_complex* ) ) != 0 ||
       GLU_malloc( (void**)&slice_gauge_up  , 16 , LCU * sizeof( GLU_complex* ) ) != 0 ||
       GLU_malloc( (void**)&rotato          , 16 , LCU * sizeof( struct sp_site_herm ) ) != 0 ) {
-    printf( "[GF] CFASD temporary gauge fields allocation failure\n" ) ;
+    fprintf( stderr , "[GF] CFASD temporary gauge fields allocation failure\n" ) ;
     goto memfree ;
   }
 
@@ -789,10 +792,10 @@ Coulomb_FASD( struct site  *__restrict lat ,
 // tells us the probes we are using
 void
 query_probes_Coulomb( void ) {
-  printf( "[GF] Using the following probes for the CG \n" ) ;
+  fprintf( stdout , "[GF] Using the following probes for the CG \n" ) ;
   size_t mu ;
   for( mu = 0 ; mu < LINE_NSTEPS ; mu++ ) {
-    printf( "[GF] probe-%zu %f \n" , mu , alcg[mu] ) ; 
+    fprintf( stdout , "[GF] probe-%zu %f \n" , mu , alcg[mu] ) ; 
   }
   return ;
 }

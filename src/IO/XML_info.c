@@ -95,11 +95,8 @@ parse_and_set_xml_SCIDAC( char *xml_info ,
 
   // We use the C tokenize capabilities to parse this string
   char *pch = strtok( xml_info , "<>" ) ;
-
+  // this is not an error
   if (strncmp( pch , "?xml" , 4 ) ) {
-    #ifdef DEBUG
-    printf( "[IO] No xml data found in this record ... \n" ) ;
-    #endif
     return 0 ;
   }
   int dimensions = 0 ;
@@ -107,37 +104,38 @@ parse_and_set_xml_SCIDAC( char *xml_info ,
   // set up the search for extra dimensions, extra space for terminating null
   const char open[4][3] = { "lx" , "ly" , "lz" , "lt" } ;
   char search[ND][3] ;
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < ND-1 ; mu++ ) {
     if( mu < 4 ) {
       sprintf( search[mu] , "%s" , open[mu] ) ;
     } else {
-      sprintf( search[mu] , "l%d" , mu ) ;
+      sprintf( search[mu] , "l%zu" , mu ) ;
     }
   }
   sprintf( search[ND-1] , "%s" , open[3] ) ;
 
-  // We've removed the XML header, now we can set up a state machine to parse the file
-  while ( ( pch = strtok( 0 , "<>" ) ) ) {
-    while ( ( pch = strtok( 0 , "<>" ) ) ) {
+  // We've removed the XML header, now we can set up a state 
+  // machine to parse the file
+  while( ( pch = strtok( 0 , "<>" ) ) ) {
+    while( ( pch = strtok( 0 , "<>" ) ) ) {
       
       // break if we are at the end of a scidac file or record
-      if ( are_equal( pch , "/scidacRecord" ) ) break ;
-      if ( are_equal( pch , "/scidacFile" ) ) break ;
-      if ( are_equal( pch , "/ildgFormat" ) ) break ;
+      if( are_equal( pch , "/scidacRecord" ) ) break ;
+      if( are_equal( pch , "/scidacFile" ) ) break ;
+      if( are_equal( pch , "/ildgFormat" ) ) break ;
 
       // get number of spacetime dimensions
       if( are_equal( pch , "spacetime" ) ) {
 	if( ( dimensions = get_int_tag( pch , "spacetime" ) ) != 0 ) {
 	  if( dimensions != ND ) {
-	    printf( "[IO] ND mismatch compiled %d vs. read %d \n" ,
-		    ND , dimensions ) ;
+	    fprintf( stderr , "[IO] ND mismatch compiled %d vs. read %d \n" ,
+		     ND , dimensions ) ;
 	    return GLU_FAILURE ;
 	  }
 	}
-	#ifdef DEBUG
+        #ifdef DEBUG
 	printf( "[IO] spacetime :: %d \n" , dimensions ) ;
-	#endif
+        #endif
       }
 
       // have a look at the colors
@@ -149,40 +147,37 @@ parse_and_set_xml_SCIDAC( char *xml_info ,
 	    return GLU_FAILURE ;
 	  }
 	}
-	#ifdef DEBUG
-	printf( "[IO] colors :: %d \n" , dimensions ) ;
-	#endif
       }
 
       // have a look at the storage type size
       if( are_equal( pch , "typesize" ) ) {
 	if( ( dimensions = get_int_tag( pch , "typesize" ) ) != 0 ) {
-	  HEAD_DATA -> config_type = OUTPUT_NCxNC ; // scidac uses this binary file output
+	  HEAD_DATA -> config_type = OUTPUT_NCxNC ; // binary file output
 	  if( dimensions == 2 * ND * NCNC ) {
 	    HEAD_DATA -> precision = FLOAT_PREC ;
 	  } else if( dimensions == ( 4 * ND * NCNC ) ) {
 	    HEAD_DATA -> precision = DOUBLE_PREC ;
 	  } else {
-	    printf( "[IO] Storage type not recognised \n" ) ;
+	    fprintf( stderr , "[IO] Storage type not recognised \n" ) ;
 	    return GLU_FAILURE ;
 	  }
 	}
-	#ifdef DEBUG
-	printf( "[IO] typesize :: %d \n" , dimensions ) ;
-	#endif
       }
 
       // get the floating point output precision ...
       if( are_equal( pch , "precision" ) ) {
 	if( ( dimensions = get_prec_tag( pch , "precision" ) ) != -1 ) {
 	  if( dimensions == FLOAT_PREC ) {
-	    printf( "[IO] Attempting to read single precision data\n" ) ;
+	    fprintf( stdout , "[IO] Attempting to read "
+		     "single precision data\n" ) ;
 	    HEAD_DATA -> precision = FLOAT_PREC ;
 	  } else if( dimensions == DOUBLE_PREC ) {
-	    printf( "[IO] Attempting to read double precision data\n" ) ;
+	    fprintf( stdout , "[IO] Attempting to read double "
+		     "precision data\n" ) ;
 	    HEAD_DATA -> precision = DOUBLE_PREC ;
 	  } else {
-	    printf( "[IO] Precision %d not understood \n" , dimensions ) ;
+	    fprintf( stderr , "[IO] Precision %d not understood \n" , 
+		     dimensions ) ;
 	    return GLU_FAILURE ;
 	  }
 	}
@@ -197,15 +192,9 @@ parse_and_set_xml_SCIDAC( char *xml_info ,
 	  int idx = 0 ;
 	  char *pEnd ;
 	  Latt.dims[ idx++ ] = strtol( token , &pEnd , 10 ) ;
-	  #ifdef DEBUG_ILDG
-	  printf( "[IO] DIMS_%d \n" , Latt.dims[idx]) ;
-	  #endif
 	  while( ( token = strtok( NULL , " " ) ) != NULL ) {
 	    if(  ( are_equal( token , "/dims" ) ) ) break ;
 	    Latt.dims[ idx ] = strtol( token , &pEnd , 10 ) ;
-	    #ifdef DEBUG_ILDG
-	    printf( "[IO] DIMS_%d \n" , Latt.dims[idx]) ;
-	    #endif
 	    idx++ ;
 	  } 
 	  // and break the xml
@@ -219,9 +208,6 @@ parse_and_set_xml_SCIDAC( char *xml_info ,
 	while( ( pch = strtok( 0 , "<>" ) ) ) {
 	  if( are_equal( pch , "/suma" ) ) break ;
 	  sscanf( pch , "%x" , &(HEAD_DATA -> checksum) ) ;
-	  #ifdef DEBUG
-	  printf( "[IO] checksum %x \n" , &(HEAD_DATA -> checksum) ) ;
-	  #endif
 	}
 	continue ;
       }
@@ -237,9 +223,6 @@ parse_and_set_xml_SCIDAC( char *xml_info ,
 	if( are_equal( pch , search[mu] ) ) {
 	  if( ( length = get_int_tag( pch , search[mu] ) ) != 0 ) {
 	    Latt.dims[ mu ] = length ;
-            #ifdef DEBUG
-	    printf( "[IO] ILDG Lx :: %d \n" , length ) ;
-            #endif
 	  }
 	  continue ;
 	}
@@ -256,12 +239,9 @@ parse_and_set_xml_SCIDAC( char *xml_info ,
 	  sprintf( compare , "su%dgauge" , NC ) ;
 	  if( !strncmp( compare , token , 8 ) ) {
 	    HEAD_DATA -> config_type = OUTPUT_NCxNC ;
-	    #ifdef DEBUG
-	    printf( "[ILDG] configuration type %d \n" , 
-		    HEAD_DATA -> config_type ) ; 
-	    #endif
 	  } else {
-	    printf( "[ILDG] Expected %s, got \"%s\" \n" , compare , token ) ;
+	    fprintf( stderr , "[ILDG] Expected %s, got \"%s\" \n" , 
+		     compare , token ) ;
 	    return GLU_FAILURE ;
 	  }
 	}

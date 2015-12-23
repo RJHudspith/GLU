@@ -208,19 +208,14 @@ recurse_staples( GLU_complex *__restrict link ,
 }
 
 // slow, recursive ND-Generic smearing routine
-void 
+int
 HYsmearND( struct site *__restrict lat , 
 	   const size_t smiters , 
 	   const int type ,
 	   const size_t directions )
 {
-  if( unlikely( smiters == 0 ) ) { return ; }
-
-  // check the type , just in case
-  if( ( type != SM_APE ) && ( type != SM_STOUT ) && ( type != SM_LOG ) ) {
-    printf( "[SMEAR] Unrecognised type [ %d ] ... Leaving \n" , type ) ; 
-    return ; 
-  }
+  // successfully do nothing
+  if( smiters == 0 ) { return GLU_SUCCESS ; }
 
 #ifdef TOP_VALUE
   double qtop_new , qtop_old = 0.0 ;
@@ -244,7 +239,9 @@ HYsmearND( struct site *__restrict lat ,
     project = project_LOG ;
     break ;
   default :
-    return ;
+    fprintf( stderr , "[SMEAR] Unrecognised type [ %d ] ... Leaving \n" , 
+	     type ) ; 
+    return GLU_FAILURE ;
   }
 
   // initialise our smearing parameters and print their values to the screen
@@ -255,13 +252,13 @@ HYsmearND( struct site *__restrict lat ,
   if( GLU_malloc( (void**)lat2 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ||
       GLU_malloc( (void**)lat3 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ||
       GLU_malloc( (void**)lat4 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ) {
-    printf( "[SMEARING] field allocation failure\n" ) ;
-    return ;
+    fprintf( stderr , "[SMEARING] field allocation failure\n" ) ;
+    return GLU_FAILURE ;
   }
 
   const size_t lev = directions - 1 ;
   size_t count = 0 ; 
-  size_t i ;
+  size_t i , t ;
   for( count = 1 ; count <= smiters ; count++ ) {
     const size_t back = lat[ 0 ].back[ ND - 1 ] ;
     #pragma omp parallel for private(i) SCHED
@@ -275,10 +272,7 @@ HYsmearND( struct site *__restrict lat ,
 			 directions , list_dirs , type , project ) ; 
       }
     }
-
-    //loop time slice
-    ///////////////////////////////////////
-    int t ;
+    //loop time slices
     for( t = 0 ; t < ( Latt.dims[ ND - 1 ] - 1 ) ; t++ ) {
       const int slice = LCU * t ;
 
@@ -342,19 +336,10 @@ HYsmearND( struct site *__restrict lat ,
   print_smearing_obs( lat , type , count , GLU_TRUE ) ;
   #endif 
 
-  // need to clean up the lattice fields
-  #ifdef FAST_SMEAR
-  if( type == SM_STOUT ) {
-    latt_reunitU( lat ) ;
-    printf( "\n[SMEAR] A final reunitarisation step to clean things up\n" ) ;
-    print_smearing_obs( lat , type , count , GLU_TRUE ) ;
-  }
-  #endif
-
   // FREE STUFF !! //
   free( lat2 ) ; 
   free( lat3 ) ; 
   free( lat4 ) ; 
 
-  return ;
+  return GLU_SUCCESS ;
 }

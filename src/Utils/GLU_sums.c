@@ -4,17 +4,19 @@
  */
 #include <stdlib.h>
 
-// numerically more friendly average?
+#ifdef HAVE_OMP_H
+#include <omp.h>
+#endif
+
+// divide and conquer summation
 double
-knuth_average( const double *a , 
-	       const size_t LENGTH )
+dandc_sum( const double *a , 
+	   const size_t lo ,
+	   const size_t hi )
 {
-  size_t i ;
-  register double ave = 0.0 ;
-  for( i = 0 ; i < LENGTH ; i++ ) {
-    ave += ( a[i] - ave ) / ( 1.0 + i ) ;
-  }
-  return ave ;
+  return ( hi - lo ) < 2 ? a[lo] : \
+    dandc_sum( a , lo , (hi+lo)/2 ) +\
+    dandc_sum( a , (hi+lo)/2 , hi ) ;
 }
 
 // kahan summation
@@ -33,22 +35,39 @@ kahan_summation( const double *a ,
   return sum ;
 }
 
-// divide and conquer summation
+// numerically more friendly average?
 double
-dandc_sum( const double *a , 
-	   const size_t lo ,
-	   const size_t hi )
+knuth_average( const double *a , 
+	       const size_t LENGTH )
 {
-  return ( hi - lo ) < 2 ? a[lo] : \
-    dandc_sum( a , lo , (hi+lo)/2 ) +\
-    dandc_sum( a , (hi+lo)/2 , hi ) ;
+  size_t i ;
+  register double ave = 0.0 ;
+  for( i = 0 ; i < LENGTH ; i++ ) {
+    ave += ( a[i] - ave ) / ( 1.0 + i ) ;
+  }
+  return ave ;
+}
+
+// computes the variance as well as the average
+void
+knuth_average_err( double *ave , 
+		   double *err , 
+		   const double *data , 
+		   const size_t N )
+{
+  size_t i ;
+  *err = *ave = 0.0 ;
+  for( i = 0 ; i < N ; i++ ) {
+    const double delta = data[i] - *ave ;
+    *ave += delta / ( i + 1.0 ) ;
+    *err += delta * ( data[i] - *ave ) ;
+  }
+  *err /= ( N - 1 ) ;
+  return ;
 }
 
 // parallel divide and conquer sum
 #ifdef HAVE_OMP_H
-
-#include <omp.h>
-
 double
 par_danc_sum( const double *a , 
 	      const size_t N )
@@ -69,5 +88,4 @@ par_danc_sum( const double *a ,
   }
   return sum ;
 }
-
 #endif

@@ -241,7 +241,7 @@ Sunitary_gen( GLU_complex Z[ NCNC ] )
   generate_NCxNC( Z ) ; // generate gaussian distributed elements of matrix
   reunit2( Z ) ;
   while( !is_unitary( Z ) ) {
-    printf("not unitary! Redoing ") ;
+    fprintf( stderr , "[GRAM] not unitary! Redoing " ) ;
     generate_NCxNC( Z ) ; 
     reunit2( Z ) ;
   }
