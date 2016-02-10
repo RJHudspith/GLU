@@ -185,7 +185,7 @@ compute_clover_s1( GLU_complex *__restrict sum ,
 {
   // 1x1 contribution
   if( likely( fClover_k1 > CL_TOL ) ) {
-    compute_s1( sum , lat , u , v , i , mu , nu , Clover_k1 ) ;
+    compute_s1( sum , u , v , lat , i , mu , nu , Clover_k1 ) ;
   }
   // 2x2 contribution
   if( likely( fClover_k2 > CL_TOL ) ) {
@@ -342,7 +342,7 @@ compute_clover_s2( GLU_complex *__restrict sum ,
 {
   // 1x1 contribution
   if( likely( fClover_k1 > CL_TOL ) ) {
-    compute_s2( sum , lat , u , v , i , mu , nu , Clover_k1 ) ;
+    compute_s2( sum , u , v , lat , i , mu , nu , Clover_k1 ) ;
   }
   // 2x2 contrib
   if( likely( fClover_k2 > CL_TOL ) ) {
@@ -486,7 +486,6 @@ compute_clover_s2( GLU_complex *__restrict sum ,
   return ;
 }
 
-
 // Sector 3 is the
 // bottom left of the clover term.
 static void
@@ -500,7 +499,7 @@ compute_clover_s3( GLU_complex *__restrict sum ,
 {
   // 1x1 contribution
   if( likely( fClover_k1 > CL_TOL ) ) {
-    compute_s3( sum , lat , u , v , i , mu , nu , Clover_k1 ) ;
+    compute_s3( sum , u , v , lat , i , mu , nu , Clover_k1 ) ;
   }
   // 2x2 contrib
   if( likely( fClover_k2 > CL_TOL ) ) {
@@ -657,7 +656,7 @@ compute_clover_s4( GLU_complex *__restrict sum ,
 {
   // 1x1 contribution
   if( likely( fClover_k1 > CL_TOL ) ) {
-    compute_s3( sum , lat , u , v , i , mu , nu , Clover_k1 ) ;
+    compute_s4( sum , u , v , lat , i , mu , nu , Clover_k1 ) ;
   }
   // 2x2 contrib
   if( likely( fClover_k2 > CL_TOL ) ) {

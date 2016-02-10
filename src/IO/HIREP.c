@@ -32,9 +32,8 @@
 #include "plaqs_links.h" // compute the plaquette
 
 // takes a HiRep index "i" and converts to the Nersc or my index
-inline static int
-translate_to_GLU_geom( i )
-     const int i ;
+static size_t
+translate_to_GLU_geom( const size_t i )
 {
   int x[ ND ] ;
   get_mom_2piBZ_hirep2( x , i ) ;
@@ -47,7 +46,11 @@ read_gauge_field( struct site *__restrict lat ,
 		  FILE *__restrict in , 
 		  uint32_t *chksum )
 {
-  const size_t stride = 2 * NCNC * ND ;
+  double Nelements = NCNC ;
+#if NC==2
+  Nelements = NC ;
+#endif
+  const size_t stride = 2 * Nelements * ND ;
   // these guys also seem to save only in double, making things easy
   double *uind = malloc( stride * sizeof( double ) ) ; 
 
@@ -66,18 +69,37 @@ read_gauge_field( struct site *__restrict lat ,
       bswap_64( stride , uind ) ; 
     }
 
+#if NC==2
+    size_t mu , a = 0 ;
+    // t-direction is first
+    lat[idx].O[ND-1][0] = (GLU_real)uind[a]   + I * (GLU_real)uind[a+1] ;
+    lat[idx].O[ND-1][1] = (GLU_real)uind[a+2] + I * (GLU_real)uind[a+3] ;
+    lat[idx].O[ND-1][2] = -conj( lat[idx].O[ND-1][1] ) ;
+    lat[idx].O[ND-1][3] =  conj( lat[idx].O[ND-1][0] ) ;
+    a += 2*NC ;
+    // then the others
+    for( mu = 0 ;  mu < ND - 1 ; mu++ ) {
+      lat[idx].O[mu][0] = (GLU_real)uind[a] + I * (GLU_real)uind[a+1] ;
+      lat[idx].O[mu][1] = (GLU_real)uind[a+2] + I * (GLU_real)uind[a+3] ;
+      lat[idx].O[mu][2] = -conj( lat[idx].O[mu][1] ) ;
+      lat[idx].O[mu][3] =  conj( lat[idx].O[mu][0] ) ;
+      a += 2*NC ;
+    }
+#else
     size_t mu , j , a = 0 ;
+    // t first
     for( j = 0 ; j < NCNC ; j++ ) {
       lat[idx].O[ND-1][j] = (GLU_real)uind[a] + I * (GLU_real)uind[a + 1] ;
       a += 2 ;
     }
-      
+    // then the others
     for( mu = 0 ;  mu < ND - 1 ; mu++ ) {
       for( j = 0 ; j < NCNC ; j++ ) {
 	lat[idx].O[mu][j] = (GLU_real)uind[a] + I * (GLU_real)uind[a + 1] ;
 	a += 2 ;
       }
     }
+#endif
   }
   
   *chksum = k ;
@@ -90,7 +112,12 @@ void
 write_gauge_field( const struct site *__restrict lat ,
 		   FILE *__restrict outfile )
 {
-  const size_t stride = NCNC * ND * 2 ; // the size of the link matrices 
+#if NC==2
+  const size_t mat_stride = NC ;
+#else
+  const size_t mat_stride = NCNC ;
+#endif
+  const size_t stride = mat_stride * ND * 2 ; // the size of the link matrices 
 
   int NAV[ ND + 1 ] ; 
   NAV[ 0 ] = NC ;
@@ -125,7 +152,7 @@ write_gauge_field( const struct site *__restrict lat ,
   fwrite( plaq , sizeof( double ) , 1 , outfile ) ;
   // now to put the gauge field in, in HiRep's weird order!
 
-  double *uoutd = ( double* ) malloc( stride *sizeof( double ) ) ; 
+  double *uoutd = ( double* )malloc( stride *sizeof( double ) ) ; 
 
   size_t i ;
   for( i = 0 ; i < LVOLUME ; i++ ) {
@@ -133,15 +160,15 @@ write_gauge_field( const struct site *__restrict lat ,
     const size_t idx = translate_to_GLU_geom( i ) ;
     size_t mu , j , a = 0 ;
     // t first
-    for( j = 0 ; j < NCNC ; j++ ) {
-      uoutd[ a ] = ( double )creal( lat[idx].O[ ND - 1 ][ j ] ) ; 
+    for( j = 0 ; j < mat_stride ; j++ ) {
+      uoutd[ a + 0 ] = ( double )creal( lat[idx].O[ ND - 1 ][ j ] ) ; 
       uoutd[ a + 1 ] = ( double )cimag( lat[idx].O[ ND - 1 ][ j ] ) ; 
       a += 2 ;
     }
     // then xyz
     for( mu = 0 ;  mu < ND - 1 ; mu++ ) {
-      for( j = 0 ; j < NCNC ; j++ ) {
-	uoutd[ a ] = ( double )creal( lat[idx].O[mu][j] ) ; 
+      for( j = 0 ; j < mat_stride ; j++ ) {
+	uoutd[ a + 0 ] = ( double )creal( lat[idx].O[mu][j] ) ; 
 	uoutd[ a + 1 ] = ( double )cimag( lat[idx].O[mu][j] ) ; 
 	a += 2 ;
       }

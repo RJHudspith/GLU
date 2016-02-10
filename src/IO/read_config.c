@@ -54,7 +54,7 @@ check_sums( plaq , tr , chksum , HEAD_DATA )
     if( HEAD_DATA.precision == FLOAT_PREC ) {
       TTOL = 1E-6 ;
     } else {
-      TTOL = 1E-14 ;
+      TTOL = PLAQ_AND_TRACE_TOL ;
     }
     if( fabs( HEAD_DATA.plaquette - plaq ) > TTOL ) {
       fprintf( stderr , "\n[IO] Unequal Plaquettes %e %e \n\n" , 
@@ -71,7 +71,8 @@ check_sums( plaq , tr , chksum , HEAD_DATA )
     // only check available is the plaquette
     if( fabs( plaq - HEAD_DATA.plaquette ) > PREC_TOL ) {
       fprintf( stderr , "[IO] HIREP header Plaquette Mismatch %e vs %e "
-	       "... Leaving \n" , plaq , HEAD_DATA.plaquette ) ;
+	       " < diff > %e ... Leaving \n" , plaq , HEAD_DATA.plaquette , 
+	       fabs( plaq - HEAD_DATA.plaquette ) ) ;
       return GLU_FAILURE ;
     }
   } else if( Latt.head == NERSC_HEADER ) {
@@ -83,9 +84,10 @@ check_sums( plaq , tr , chksum , HEAD_DATA )
 	       chksum , HEAD_DATA.checksum ) ; 
       error ++ ; 
       // TOL is defined as 10^-6
-    }  if( fabs( plaq - HEAD_DATA.plaquette ) > PLAQ_AND_TRACE_TOL ) {
-      fprintf( stderr , "\n[IO] Unequal Plaquettes Calc %f || Read %f \n\n" , 
-	       plaq , HEAD_DATA.plaquette ) ; 
+    } if( fabs( plaq - HEAD_DATA.plaquette ) > PLAQ_AND_TRACE_TOL ) {
+      fprintf( stderr , "\n[IO] Unequal Plaquettes Calc %f || Read %f " 
+	       " < diff > %e \n\n" , plaq , HEAD_DATA.plaquette , 
+	       fabs( plaq - HEAD_DATA.plaquette ) ) ; 
       error ++ ; 
     } if( fabs( tr - HEAD_DATA.trace) > PLAQ_AND_TRACE_TOL ) {
       fprintf( stderr , "\n[IO] Unequal Link_Traces Calc %1.8f || "

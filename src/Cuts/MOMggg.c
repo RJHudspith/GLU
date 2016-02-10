@@ -82,7 +82,7 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
 
   // fill up trip by calling get_triplet again .. read from a file ..
   // set up the number of triplets ... 
-  int *trip = malloc( nnmax/2 * sizeof( size_t ) ) ;
+  int *trip = malloc( nnmax/2 * sizeof( int ) ) ;
 
   // look for a file or just calculate it the dumb way
   read_trip( trip , nnmax ) ;

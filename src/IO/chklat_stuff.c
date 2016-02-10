@@ -126,6 +126,7 @@ get_header( FILE *__restrict in )
       fprintf( stderr , "Header reading failed ... Leaving \n" ) ;
       free( hdr -> token ) ;
       free( hdr -> value ) ;
+      free( hdr ) ;
       return NULL ;
     }
     if( strcmp ( line , "END_HEADER\n" ) == 0 ) {

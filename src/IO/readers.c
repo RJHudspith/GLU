@@ -32,70 +32,35 @@
 #include "gramschmidt.h"   // reunit2()
 #include "random_config.h" // latt_reunitU()
 
+// read a full matrix, should we just read in all 
+// of the complex values?
 static inline void 
-complete_NCxNC( O , uout )
-     GLU_complex *__restrict O ; 
-     const GLU_real *__restrict uout ;
+complete_NCxNC( GLU_complex *__restrict O ,
+		const GLU_real *__restrict uout )
 {
-#if NC == 3
-  O[0] = uout[0] + I * uout[1] ; 
-  O[1] = uout[2] + I * uout[3] ; 
-  O[2] = uout[4] + I * uout[5] ; 
-  O[3] = uout[6] + I * uout[7] ; 
-  O[4] = uout[8] + I * uout[9] ; 
-  O[5] = uout[10] + I * uout[11] ; 
-  O[6] = uout[12] + I * uout[13] ; 
-  O[7] = uout[14] + I * uout[15] ; 
-  O[8] = uout[16] + I * uout[17] ; 
-#elif NC == 2
-  O[0] = uout[0] + I * uout[1] ; 
-  O[1] = uout[2] + I * uout[3] ; 
-  O[2] = uout[4] + I * uout[5] ; 
-  O[3] = uout[6] + I * uout[7] ; 
-#else
-  // implementation of this is simple
-  int j ;
-  for( j = 0 ; j < NCNC ; j++ ) {
-    O[j] = uout[ 2 * j ] + I * uout[ 2 * j + 1 ] ;
-  }
-#endif
+  memcpy( O , uout , NCNC * sizeof( GLU_complex ) ) ;
   return ;
 }
 
 // recombines O from the top NC-1 rows of matrix
-static inline void 
-complete_top( O , uout )
-     GLU_complex *__restrict O ; 
-     const GLU_real *__restrict uout ; 
+static void 
+complete_top( GLU_complex *__restrict O , 
+	      const GLU_real *__restrict uout ) 
 {
+  memcpy( O , uout , ( NCNC-NC ) * sizeof( GLU_complex ) ) ;
 #if NC == 3
-  O[0] = uout[0] + I * uout[1] ; 
-  O[1] = uout[2] + I * uout[3] ; 
-  O[2] = uout[4] + I * uout[5] ; 
-  O[3] = uout[6] + I * uout[7] ; 
-  O[4] = uout[8] + I * uout[9] ; 
-  O[5] = uout[10] + I * uout[11] ; 
-  O[6] = uout[2] * uout[10] - uout[3] * uout[11] - I * ( uout[2] * uout[11] + uout[3] * uout[10] ) ; 
-  O[6] -= uout[4] * uout[8] - uout[5] * uout[9] - I * ( uout[4] * uout[9] + uout[5] * uout[8] ) ; 
-  O[7] = uout[1] * uout[11] - uout[0] * uout[10] + I * ( uout[0] * uout[11] + uout[1] * uout[10] ) ; 
-  O[7] -= uout[5] * uout[7] - uout[4] * uout[6] + I * ( uout[4] * uout[7] + uout[5] * uout[6] ) ; 
-  O[8] = uout[0] * uout[8] - uout[1] * uout[9] - I * ( uout[0] * uout[9] + uout[1] * uout[8] ) ; 
-  O[8] -= uout[2] * uout[6] - uout[3] * uout[7] - I * ( uout[2] * uout[7] + uout[3] * uout[6] ) ; 
+  O[6] = conj( O[1] * O[5] - O[2] * O[4] ) ;
+  O[7] = conj( O[2] * O[3] - O[0] * O[5] ) ;
+  O[8] = conj( O[0] * O[4] - O[1] * O[3] ) ;
 #elif NC == 2
-  O[0] = uout[0] + I * uout[1] ;
-  O[1] = uout[2] + I * uout[3] ;
   O[2] = -conj( O[1] ) ;  
-  O[3] = conj( O[0] ) ; 
+  O[3] =  conj( O[0] ) ; 
 #else
-  // not implemented but shouldn't be problematic will do now
-  int i ;
-  for( i = 0 ; i < NCNC - NC ; i++ ) {
-    O[i] = uout[ 2*i ] + I * uout[ 2*i + 1 ] ;
-  }
   // and complete, taken from the gramschmidt code, should consider a minors function ?
+  size_t i ;
   GLU_complex array[ ( NC - 1 ) * ( NC - 1 ) ] ;
   for( i = (NCNC-NC) ; i < NCNC ; i++ ) { // our bona-fide minor index
-    int idx = 0 , j ;
+    size_t idx = 0 , j ;
     for( j = 0 ; j < ( NCNC - NC ) ; j++ ) {
       if( ( j%NC != i%NC ) ) { // remove columns and rows
 	// pack array
@@ -117,31 +82,30 @@ complete_top( O , uout )
 
 // construct some common LOOP variables
 static int
-construct_loop_variables( LATT_LOOP , LOOP_VAR , type )
-     int *LATT_LOOP , *LOOP_VAR ;
-     const int type ;
+construct_loop_variables( size_t *LATT_LOOP , 
+			  size_t *LOOP_VAR ,
+			  const int type )
 {
   // dump it all in memory...
   switch( type ) {
   case OUTPUT_SMALL :
     *LATT_LOOP = ND * LOOP_SMALL * Latt.Volume ;
     *LOOP_VAR = LOOP_SMALL ;
-    break ;
+    return GLU_SUCCESS ;
   case OUTPUT_GAUGE : 
     *LATT_LOOP = ND * LOOP_GAUGE * Latt.Volume ;
     *LOOP_VAR = LOOP_GAUGE ;
-    break ;      
+    return GLU_SUCCESS ;
   case OUTPUT_NCxNC :
     *LATT_LOOP = ND * LOOP_NCxNC * Latt.Volume ;
     *LOOP_VAR = LOOP_NCxNC ;
-    break ;
+    return GLU_SUCCESS ;
   default :
     // actually should try and read an NCxNC config perhaps?
     fprintf( stderr , "[IO] Unrecognised input type .. "
 	     "Leaving in disgust\n" ) ;
     return GLU_FAILURE ;
   }
-  return GLU_SUCCESS ;
 }
 
 // CRC checksum calculator
@@ -163,9 +127,8 @@ DML_checksum_accum( uint32_t *checksuma ,
 
 // recreate O from the "short" definition
 static void 
-exhume_O( S , uout )
-     GLU_complex *__restrict S ; 
-     const GLU_real *__restrict uout ; 
+exhume_O( GLU_complex *__restrict S , 
+	  const GLU_real *__restrict uout ) 
 {
   rebuild( S , uout ) ;
   reunit2( S ) ;
@@ -173,26 +136,24 @@ exhume_O( S , uout )
 }
 
 // rebuilt using the switch for the different allowd formats
-static inline void
-rebuild_lat( link , utemp , type ) 
-     GLU_complex *__restrict link ;
-     const GLU_real *__restrict utemp ;
-     const GLU_output type ;
+static void
+rebuild_lat( GLU_complex *__restrict link ,
+	     const GLU_real *__restrict utemp ,
+	     const GLU_output type )
 {
   // smash all the read values into lat
-  switch( type )
-    { 
-    case OUTPUT_SMALL :
-      exhume_O( link , utemp ) ; 
-      return ;
-    case OUTPUT_GAUGE :
-      complete_top( link , utemp ) ;
-      return ;
-    case OUTPUT_NCxNC :
-      complete_NCxNC( link , utemp ) ;
-      return ;
-    default : return ;
-    }  
+  switch( type ) { 
+  case OUTPUT_SMALL :
+    exhume_O( link , utemp ) ; 
+    return ;
+  case OUTPUT_GAUGE :
+    complete_top( link , utemp ) ;
+    return ;
+  case OUTPUT_NCxNC :
+    complete_NCxNC( link , utemp ) ;
+    return ;
+  default : return ;
+  }  
   return ;
 }
 
@@ -210,7 +171,7 @@ lattice_reader_suNC( struct site *__restrict lat ,
   }
 
   // loop variables
-  int LOOP_VAR , LATT_LOOP ;
+  size_t LOOP_VAR , LATT_LOOP ;
   if( construct_loop_variables( &LATT_LOOP , &LOOP_VAR , 
 				HEAD_DATA.config_type ) == GLU_FAILURE ) {
     return GLU_FAILURE ;
@@ -231,7 +192,7 @@ lattice_reader_suNC( struct site *__restrict lat ,
     // scidac checksum is on the RAW binary data, not the byteswapped
     if( Latt.head == ILDG_BQCD_HEADER || Latt.head == SCIDAC_HEADER ||
 	Latt.head == ILDG_SCIDAC_HEADER ) {
-      int i ;
+      size_t i ;
       for( i = 0 ; i < LVOLUME ; i++ ) {
 	DML_checksum_accum( &CRCsum29 , &CRCsum31 , 
 			    i , (char*)( uind + ( i * ND * LOOP_VAR ) ) ,
@@ -260,7 +221,7 @@ lattice_reader_suNC( struct site *__restrict lat ,
     // BQCD checksum is just the crc of the whole thing and is kinda expensive
     if( Latt.head == ILDG_BQCD_HEADER || Latt.head == SCIDAC_HEADER ||
 	Latt.head == ILDG_SCIDAC_HEADER ) {
-      int i ;
+      size_t i ;
       for( i = 0 ; i < LVOLUME ; i++ ) {
 	DML_checksum_accum( &CRCsum29 , &CRCsum31 , 
 			    i , (char*)( uin + ( i * ND * LOOP_VAR ) ) ,
@@ -373,7 +334,7 @@ lattice_reader_suNC_cheaper( struct site *__restrict lat ,
   }
 
   // loop variables
-  int LOOP_VAR , LATT_LOOP ;
+  size_t LOOP_VAR , LATT_LOOP ;
   if( construct_loop_variables( &LATT_LOOP , &LOOP_VAR , 
 				HEAD_DATA.config_type ) == GLU_FAILURE ) {
     return GLU_FAILURE ;

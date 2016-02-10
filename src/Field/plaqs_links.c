@@ -231,10 +231,10 @@ gauge_topological_meas( const struct site *__restrict lat ,
 			const int iter )
 {
   // set up a tolerance for how close to an integer we wish to be
-  const double QTOP_TOL = 5E-3 ;
+  const double QTOP_TOL = 5.0E-3 ;
   double avplaq ;
   const double plaq = lattice_gmunu( lat , qtop_new , &avplaq ) ;
-  fprintf( stdout , "{iter} %d {w} %g {GG} %g {q} %g {diff} %g \n" ,
+  fprintf( stdout , "[QTOP] {iter} %d {w} %g {GG} %g {q} %g {diff} %g \n" ,
 	   iter , avplaq , plaq , *qtop_new , fabs( *qtop_old - *qtop_new ) ) ;
   // rounded integer value for the topological charge
   const int qint = (int)( *qtop_new > 0. ? *qtop_new + 0.5 : *qtop_new - 0.5 ) ;
@@ -243,8 +243,9 @@ gauge_topological_meas( const struct site *__restrict lat ,
   // And the more stringent test of "closeness to an integer" which is allowed to be
   // off by a little bit more. This is certainly a heuristic measure!
   if( fabs( *qtop_old - *qtop_new ) < QTOP_TOL &&
-      fabs( qint - *qtop_new ) < ( 3 * QTOP_TOL ) ) {
-    fprintf( stdout , "\n{CONFIG} %zu {QTOP} %d \n\n" , Latt.flow , qint ) ;
+      fabs( qint - *qtop_new ) < 0.10 ) { // +/- 0.10 seems ok to define integer?
+    fprintf( stdout , "\n[QTOP] {CONFIG} %zu {QTOP} %d \n\n" , 
+	     Latt.flow , qint ) ;
     return GLU_SUCCESS ;
   }
   *qtop_old = *qtop_new ;

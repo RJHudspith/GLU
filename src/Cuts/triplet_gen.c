@@ -118,11 +118,20 @@ recurse_p2( int *__restrict *__restrict triplet ,
 	int *adp2 = malloc( ND * sizeof( int ) ) ;
 	int *adp3 = malloc( ND * sizeof( int ) ) ;
 
-	// compute the asymmetry-adjusted momenta ...	  
+	// compute the asymmetry-adjusted momenta ...
+	int sumzeros = 0 ;
 	for( mu = 0 ; mu < ND ; mu++ ) {	 
 	  adp1[mu] =  (int)rats[mu] * ( p1[mu] ) ;
 	  adp2[mu] =  (int)rats[mu] * ( p2[mu] ) ;
 	  adp3[mu] = -(int)rats[mu] * ( p1[mu] + p2[mu] ) ;
+	  if( adp1[mu] != 0 && adp2[mu] !=0 && adp3[mu] != 0 ) {
+	    sumzeros++ ;
+	  }
+	}
+	if( sumzeros == 4 ) {
+	  printf( "(%d %d %d %d)," , adp1[0] , adp1[1] , adp1[2] , adp1[3] ) ;
+	  printf( "(%d %d %d %d)," , adp2[0] , adp2[1] , adp2[2] , adp2[3] ) ;
+	  printf( "(%d %d %d %d)\n" , adp3[0] , adp3[1] , adp3[2] , adp3[3] ) ;
 	}
  
 	const size_t trip_idx = count + check ;

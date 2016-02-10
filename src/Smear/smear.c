@@ -72,7 +72,7 @@ smear3D( struct site *__restrict lat ,
 		    const GLU_complex link[ NCNC ] , 
 		    const double smear_alpha , 	     
 		    const double al ) ;
-  project = project_APE ;
+
   switch( type ) {
   case SM_APE :
     project = project_APE ;
@@ -171,7 +171,7 @@ smear4D( struct site *__restrict lat ,
 		    const GLU_complex link[ NCNC ] , 
 		    const double smear_alpha , 	     
 		    const double al ) ;
-  project = project_APE ;
+
   switch( type ) {
   case SM_APE :
     project = project_APE ;

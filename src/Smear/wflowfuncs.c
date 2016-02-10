@@ -317,13 +317,13 @@ evaluate_scale( double *der ,
     #endif
   }
   // print out the spline evaluation?
-#ifdef verbose
-  double t = 0.0 ;
-  for( t = 0.0 ; t < x[ Nmeas - 1 ] ; t+= 0.005 ) {
-    fprintf( stdout , "[%s-spline] %g %g \n" , message , t , 
-	     cubic_eval( x , meas , der , t , Nmeas ) ) ;
+  if( Nmeas > 0 ) {
+    double t = 0.0 ;
+    for( t = 0.0 ; t < x[ Nmeas - 1 ] ; t+= 0.005 ) {
+      fprintf( stdout , "[%s-spline] %g %g \n" , message , t , 
+	       cubic_eval( x , meas , der , t , Nmeas ) ) ;
+    }
   }
-#endif
   // evaluate at "scale" error flag is -1
   return solve_spline( x , meas , der , scale , change_up ) ;
 }

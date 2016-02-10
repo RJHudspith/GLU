@@ -276,7 +276,7 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
 		    const GLU_complex link[ NCNC ] , 
 		    const double smear_alpha , 	     
 		    const double al ) ;
-  project = project_APE ;
+
   switch( type ) {
   case SM_APE :
     project = project_APE ;
@@ -371,7 +371,7 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
     // as in the wilson flow routine YOU provide the maximum iterations available
     // breaks on convergence
     #ifdef TOP_VALUE
-    if( count > TOP_VALUE ) {
+    if( count > TOP_VALUE && count%5 == 0 ) {
       if( gauge_topological_meas( lat , &qtop_new , &qtop_old , count-1 ) 
 	  == GLU_SUCCESS ) { break ; }
     }

@@ -97,7 +97,7 @@ check_info2( const struct site *__restrict lat ,
    @fn static void FA_deriv( struct site *__restrict lat , const void forward[ HERMSIZE ] , const void backward[ HERMSIZE ] , GLU_complex *__restrict *__restrict out , GLU_complex *__restrict *__restrict in , const GLU_real *psq , double *tr )
    @brief Fourier Accelerated steepest descent Landau gauge fixing routine
  */
-static void 
+static int
 FA_deriv(  GLU_complex *__restrict *__restrict in , 
 	   struct site *__restrict lat ,
 	   const GLU_real *psq , 
@@ -105,8 +105,11 @@ FA_deriv(  GLU_complex *__restrict *__restrict in ,
 {
   size_t i ;
   // put the functional and the trace of the square of the deriv here
-  double *alpha = malloc( LVOLUME * sizeof( double ) ) ;
-  double *trAA = malloc( LVOLUME * sizeof( double ) ) ;
+  double *alpha = NULL , *trAA ;
+  if( GLU_malloc( (void**)&alpha , 16 , LVOLUME * sizeof( double ) ) != 0 || 
+      GLU_malloc( (void**)&trAA  , 16 , LVOLUME * sizeof( double ) ) != 0 ) {
+    return GLU_FAILURE ;
+  }
   const double fact = 1.0 / (double)( NC * ND ) ;
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
@@ -177,7 +180,7 @@ FA_deriv(  GLU_complex *__restrict *__restrict in ,
 #endif
   *tr = kahan_summation( trAA , LVOLUME ) * ( GFNORM_LANDAU ) ; 
   free( alpha ) ; free( trAA ) ;
-  return ;
+  return GLU_SUCCESS ;
 }
 
 /**

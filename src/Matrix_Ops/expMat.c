@@ -105,7 +105,7 @@ free_factorial( void )
 }
 
 #ifdef USE_PADE
-// 5,5 pade approximation for the exponential
+// n,n pade approximation for the exponential
 static void
 horners_pade( GLU_complex a[ NCNC ] ,
 	      const GLU_complex b[ NCNC ] )

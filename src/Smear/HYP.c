@@ -186,7 +186,6 @@ HYPSLsmear3D( struct site *__restrict lat ,
 		    const double smear_alpha , 	     
 		    const double al ) ;
 
-  project = project_APE ;
   switch( type ) {
   case SM_APE :
     project = project_APE ;

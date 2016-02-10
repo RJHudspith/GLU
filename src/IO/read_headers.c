@@ -79,7 +79,6 @@ get_header_data_HIREP( FILE *__restrict CONFIG ,
     bswap_64( 1 , plaq ) ;
   } 
 
-  HEAD_DATA -> plaquette = 0. ;
   HEAD_DATA -> checksum = 0. ;
   HEAD_DATA -> trace = 0. ;
   HEAD_DATA -> plaquette = plaq[0] ;

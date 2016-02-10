@@ -414,7 +414,7 @@ get_mom_veclist( struct veclist *__restrict kept ,
     int k[ ND ] , sum[ ND ] ; 
     get_mom_pipi( k , kept[ i ].idx , DIMS ) ; 
     get_mom_pipi( sum , kept[ in - i - 1 ].idx , DIMS ) ; 
-    int mu ;
+    size_t mu ;
     for( mu = 0 ; mu < DIMS ; mu++ ) {
       if( ( k[mu] + sum[mu] ) != 0 ) {
 	fprintf( stderr , "[CUTS] NON +/- Symmetric Momenta @ %zu \n" , i ) ;
@@ -486,7 +486,7 @@ compute_veclist( int *__restrict list_size ,
 		 const size_t DIMS ,
 		 const GLU_bool CONFIGSPACE )
 {
-  int in[1] ;
+  int in[1] = { 1 } ;
   struct veclist *list = NULL ;
 
   // loop up to DIMS
@@ -601,6 +601,13 @@ compute_veclist( int *__restrict list_size ,
     in[0] = get_veclist( kept , CUTINFO , LOOP , DIMS ) ;
   } else {
     in[0] = get_mom_veclist( kept , CUTINFO , LOOP , DIMS ) ;
+  }
+  // check that in[0] isn't something silly
+  if( in[0] == 0 ) {
+    fprintf( stderr , "[CUTS] Empty Momentum list .. Leaving\n" ) ;
+    *list_size = 0 ;
+    free( kept ) ;
+    return NULL ;
   }
   list = malloc( in[0] * sizeof(struct veclist) );
 #pragma omp parallel for private(i)
