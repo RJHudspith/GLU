@@ -127,9 +127,9 @@ flow_directions( struct spt_site *__restrict lat2 ,
 
 // memory-expensive runge-kutta step
 static void
-RK4step( struct spt_site_herm *__restrict Z ,
+RK3step( struct spt_site_herm *__restrict Z ,
 	 struct spt_site *__restrict lat2 ,
-	 const struct site *__restrict lat ,
+	 struct site *__restrict lat ,
 	 const double factor , 
 	 const double RKfactor ,
 	 const int SM_TYPE ,
@@ -192,11 +192,11 @@ RK4step( struct spt_site_herm *__restrict Z ,
 
 // computes one of the RK steps, doesn't matter which one
 static void
-RK4step_memcheap( struct spt_site_herm *__restrict Z ,
+RK3step_memcheap( struct spt_site_herm *__restrict Z ,
 		  struct spt_site *__restrict lat2 ,
 		  struct spt_site *__restrict lat3 ,
 		  struct spt_site *__restrict lat4 ,  
-		  const struct site *__restrict lat ,
+		  struct site *__restrict lat ,
 		  const double multiplier ,
 		  const double step ,
 		  const int SM_TYPE ,
@@ -413,10 +413,10 @@ step_distance( struct site *__restrict lat ,
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
     memset( &Z[i] , 0.0 , sizeof( struct spt_site_herm ) ) ;
   }
-  // flow forwards one timestep
-  RK4step( Z , lat2 , lat , mseventeenOthsix , rk1 , SM_TYPE , project ) ;
-  RK4step( Z , lat2 , lat , eightOnine , rk2 , SM_TYPE , project ) ;
-  RK4step( Z , lat2 , lat , mthreeOfour , rk3 , SM_TYPE , project ) ;
+  // flow forwards one fictitious timestep
+  RK3step( Z , lat2 , lat , mseventeenOthsix , rk1 , SM_TYPE , project ) ;
+  RK3step( Z , lat2 , lat , eightOnine , rk2 , SM_TYPE , project ) ;
+  RK3step( Z , lat2 , lat , mthreeOfour , rk3 , SM_TYPE , project ) ;
   return ;
 }
 
@@ -447,11 +447,11 @@ step_distance_memcheap( struct site *__restrict lat ,
     memset( &Z[i] , 0.0 , sizeof( struct spt_site_herm ) ) ;
   }
   // flow forwards one timestep
-  RK4step_memcheap( Z , lat2 , lat3 , lat4 , 
+  RK3step_memcheap( Z , lat2 , lat3 , lat4 , 
 		    lat , mseventeenOthsix , rk1 , SM_TYPE , project ) ;
-  RK4step_memcheap( Z , lat2 , lat3 , lat4 , 
+  RK3step_memcheap( Z , lat2 , lat3 , lat4 , 
 		    lat , eightOnine , rk2 , SM_TYPE , project ) ;
-  RK4step_memcheap( Z , lat2 , lat3 , lat4 , 
+  RK3step_memcheap( Z , lat2 , lat3 , lat4 , 
 		    lat , mthreeOfour , rk3 , SM_TYPE , project ) ;
   return ;
 }

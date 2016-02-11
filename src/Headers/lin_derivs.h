@@ -25,14 +25,14 @@
 #define GLU_LIN_DERIVS_H
 
 /**
- @fn inline void constant_mul_deriv( GLU_complex sum[ HERMSIZE ] , const GLU_real constant , const GLU_complex shiftA[ HERMSIZE ] , const GLU_complex A[ HERMSIZE ] )
+ @fn void constant_mul_deriv( GLU_complex sum[ HERMSIZE ] , const GLU_real constant , const GLU_complex shiftA[ HERMSIZE ] , const GLU_complex A[ HERMSIZE ] )
  @brief multiplies the derivative by a constant constant.dA
  @param sum :: derivative
  @param constant :: the constant
  @param shiftA :: A( x - \mu/2 )
  @param A :: A( x + \mu/2 )
  */
-inline void
+void
 constant_mul_deriv( GLU_complex sum[ HERMSIZE ] ,
 		    const GLU_real constant ,
 		    const GLU_complex shiftA[ HERMSIZE ] ,

@@ -61,12 +61,23 @@ compute_Qsusc( struct site *__restrict lat ,
   const char *str = output_str_struct( CUTINFO ) ;  
   FILE *Ap = fopen( str , "wb" ) ; 
 
+  // flag for success or failure
+  int FLAG = GLU_FAILURE ;
+
   // write the list, in cut_outputs.c
   write_mom_veclist( Ap , size , list , ND ) ;
 
   // set up the matrix-valued array of the topological charge
   GLU_complex *qtop = malloc( LVOLUME * sizeof( GLU_complex ) ) ;
   size_t i ;
+
+  // allocate the results
+  double *qcorr = malloc( size[0] * sizeof( double ) ) ; 
+
+  // logic to fail
+  if( list == NULL ) goto memfree ;
+  if( qcorr == NULL ) goto memfree ;
+  if( qtop == NULL ) goto memfree ;
 
   // precompute all of charge densities q(x)
   compute_Gmunu_array( qtop , lat ) ;
@@ -79,12 +90,6 @@ compute_Qsusc( struct site *__restrict lat ,
   }
   fprintf( stdout , "\nQTOP %f %f \n" , sum * NORM , sumsq * NORMSQ ) ;
 #endif
-
-  // allocate the results
-  double *qcorr = malloc( size[0] * sizeof( double ) ) ; 
-
-  // flag for success or failure
-  int FLAG = GLU_FAILURE ;
   
   // if we have fftw, use it for the contractions
 #ifdef HAVE_FFTW3_H
@@ -160,14 +165,14 @@ compute_Qsusc( struct site *__restrict lat ,
 
   // tell us where to go
   fprintf( stdout , "[CUTS] Outputting to %s \n" , str ) ;
+
+  // write out the result of all that work
+  write_g2_to_list( Ap , qcorr , size ) ;
   
   // we are quite successful if we get here
   FLAG = GLU_SUCCESS ;
 
  memfree :
-
-  // write out the result of all that work
-  write_g2_to_list( Ap , qcorr , size ) ;
 
   // close the file and its name
   fclose( Ap ) ;

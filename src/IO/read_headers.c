@@ -196,8 +196,7 @@ get_header_data_NERSC( FILE *__restrict CONFIG ,
   get_string( "ENSEMBLE_ID" , hdr , &str ) ; 
   if( str == NULL ) { str = "(not specified)" ; }
 
-  const size_t i = get_size_t( "SEQUENCE_NUMBER" , hdr , 
-			       &Latt.flow ) ; 
+  size_t i = get_size_t( "SEQUENCE_NUMBER" , hdr , &Latt.flow ) ; 
   if ( i == GLU_FAILURE || Latt.flow == 0 ) {
     fprintf( stderr , "[IO] Unknown sequence number.... \n" ) ; 
     return GLU_FAILURE ;

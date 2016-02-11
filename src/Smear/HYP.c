@@ -45,7 +45,7 @@ get_spatial_lv1( struct spatial_lv1 *__restrict lev1 ,
 		 const size_t t ,
 		 const int type ,
 		 void (*project) ( GLU_complex smeared_link[ NCNC ] , 
-				   const GLU_complex staple[ NCNC ] , 
+				   GLU_complex staple[ NCNC ] , 
 				   const GLU_complex link[ NCNC ] , 
 				   const double smear_alpha , 	     
 				   const double al ) ) 
@@ -181,7 +181,7 @@ HYPSLsmear3D( struct site *__restrict lat ,
 
   // callback for the projections
   void (*project) ( GLU_complex smeared_link[ NCNC ] , 
-		    const GLU_complex staple[ NCNC ] , 
+		    GLU_complex staple[ NCNC ] , 
 		    const GLU_complex link[ NCNC ] , 
 		    const double smear_alpha , 	     
 		    const double al ) ;

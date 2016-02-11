@@ -68,7 +68,7 @@ smear3D( struct site *__restrict lat ,
 
   // callback for the projections
   void (*project) ( GLU_complex smeared_link[ NCNC ] , 
-		    const GLU_complex staple[ NCNC ] , 
+		    GLU_complex staple[ NCNC ] , 
 		    const GLU_complex link[ NCNC ] , 
 		    const double smear_alpha , 	     
 		    const double al ) ;
@@ -167,7 +167,7 @@ smear4D( struct site *__restrict lat ,
 
   // callback for the projections
   void (*project) ( GLU_complex smeared_link[ NCNC ] , 
-		    const GLU_complex staple[ NCNC ] , 
+		    GLU_complex staple[ NCNC ] , 
 		    const GLU_complex link[ NCNC ] , 
 		    const double smear_alpha , 	     
 		    const double al ) ;

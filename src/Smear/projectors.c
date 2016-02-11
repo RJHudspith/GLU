@@ -53,7 +53,7 @@ print_smearing_obs( const struct site *__restrict lat ,
 // in M-P and durr's paper
 void
 project_APE( GLU_complex smeared_link[ NCNC ] , 
-	     const GLU_complex staple[ NCNC ] , 
+	     GLU_complex staple[ NCNC ] , 
 	     const GLU_complex link[ NCNC ] , 
 	     const double smear_alpha , 	     
 	     const double al )
@@ -225,7 +225,7 @@ project_LOG_wflow_short( GLU_complex log[ NCNC ] ,
 // projection for stout smearing ..
 void
 project_STOUT( GLU_complex smeared_link[ NCNC ] , 
-	       const GLU_complex staple[ NCNC ] , 
+	       GLU_complex staple[ NCNC ] , 
 	       const GLU_complex link[ NCNC ] , 
 	       const double smear_alpha ,
 	       const double al )
@@ -262,7 +262,7 @@ project_STOUT( GLU_complex smeared_link[ NCNC ] ,
 // projection for stout smearing ..
 void
 project_STOUT_short( GLU_complex smeared_link[ NCNC ] , 
-		     const GLU_complex staple[ NCNC ] , 
+		     GLU_complex staple[ NCNC ] , 
 		     const GLU_complex link[ NCNC ] , 
 		     const double smear_alpha ,
 		     const double al )

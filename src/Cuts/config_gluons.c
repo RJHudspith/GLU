@@ -252,7 +252,7 @@ recurse_sum( const struct site *__restrict A ,
 
   double sum = 0.0 ;
   size_t nu ;
-  int loc_vec[ ND ] = {} ; 
+  int loc_vec[ ND ] ; 
   for( nu = 0 ; nu < ND ; nu++ ) {
     loc_vec[ nu ] = vec[ nu ] ;
   }

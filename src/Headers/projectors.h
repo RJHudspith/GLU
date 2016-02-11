@@ -35,7 +35,7 @@ print_smearing_obs( const struct site *__restrict lat ,
 		    const GLU_bool hypercubically_blocked ) ;
 
 /**
-   @fn void project_APE( GLU_complex smeared_link[ NCNC ] , const GLU_complex staple[ NCNC ] , const GLU_complex link[ NCNC ] , const double smear_alpha , const double al )
+   @fn void project_APE( GLU_complex smeared_link[ NCNC ] , GLU_complex staple[ NCNC ] , const GLU_complex link[ NCNC ] , const double smear_alpha , const double al )
    @brief d and sped up APE-projection
    @param ape :: the ape-projected link
    @param staple :: the computed staple
@@ -48,13 +48,13 @@ print_smearing_obs( const struct site *__restrict lat ,
  **/
 void
 project_APE( GLU_complex smeared_link[ NCNC ] , 
-	     const GLU_complex staple[ NCNC ] , 
+	     GLU_complex staple[ NCNC ] , 
 	     const GLU_complex link[ NCNC ] , 
 	     const double smear_alpha , 	     
 	     const double al ) ;
 
 /**
-    @fn void project_LOG( GLU_complex smeared_link[ NCNC ] , const GLU_complex staple[ NCNC ] , const GLU_complex link[ NCNC ] , const double smear_alpha )
+    @fn void project_LOG( GLU_complex smeared_link[ NCNC ] , GLU_complex staple[ NCNC ] , const GLU_complex link[ NCNC ] , const double smear_alpha )
    @brief LOG-smearing projection
    @param log :: the value of the loged link
    @param staple :: the computed staple
@@ -70,7 +70,7 @@ project_LOG( GLU_complex smeared_link[ NCNC ] ,
 	     const double al ) ;
 
 /**
-    @fn void project_LOG_short( GLU_complex smeared_link[ NCNC ] , const GLU_complex staple[ NCNC ] , const GLU_complex link[ NCNC ] , const double smear_alpha )
+    @fn void project_LOG_short( GLU_complex smeared_link[ NCNC ] , GLU_complex staple[ NCNC ] , const GLU_complex link[ NCNC ] , const double smear_alpha )
    @brief LOG-smearing projection
    @param log :: the value of the loged link
    @param staple :: the computed staple
@@ -115,7 +115,7 @@ project_LOG_wflow_short( GLU_complex log[ NCNC ] ,
 			 const double smear_alpha ) ;
 
 /**
-   @fn void project_STOUT( GLU_complex stout[ NCNC ] , const GLU_complex staple[ NCNC ] , const GLU_complex link[ NCNC ] , const double smear_alpha )
+   @fn void project_STOUT( GLU_complex stout[ NCNC ] , GLU_complex staple[ NCNC ] , const GLU_complex link[ NCNC ] , const double smear_alpha )
    @brief STOUT-smearing projection
    @param stout :: the value of the stouted link
    @param staple :: the computed staple
@@ -125,13 +125,13 @@ project_LOG_wflow_short( GLU_complex log[ NCNC ] ,
  **/
 void
 project_STOUT( GLU_complex stout[ NCNC ] , 
-	       const GLU_complex staple[ NCNC ] , 
+	       GLU_complex staple[ NCNC ] , 
 	       const GLU_complex link[ NCNC ] , 
 	       const double smear_alpha ,
 	       const double al ) ;
 
 /**
-   @fn void project_STOUT_short( GLU_complex smeared_link[ NCNC ] , const GLU_complex staple[ NCNC ] , const GLU_complex link[ NCNC ] , const double smear_alpha )
+   @fn void project_STOUT_short( GLU_complex smeared_link[ NCNC ] , GLU_complex staple[ NCNC ] , const GLU_complex link[ NCNC ] , const double smear_alpha )
    @brief STOUT-smearing projection
    @param stout :: the value of the stouted link
    @param staple :: the computed staple
@@ -141,7 +141,7 @@ project_STOUT( GLU_complex stout[ NCNC ] ,
  **/
 void
 project_STOUT_short( GLU_complex smeared_link[ NCNC ] , 
-		     const GLU_complex staple[ NCNC ] , 
+		     GLU_complex staple[ NCNC ] , 
 		     const GLU_complex link[ NCNC ] , 
 		     const double smear_alpha ,
 		     const double al ) ;

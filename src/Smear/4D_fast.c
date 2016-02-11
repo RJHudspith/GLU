@@ -43,7 +43,7 @@ get_lv1( struct lv1 *__restrict lev1 ,
 	 const struct site *__restrict lat ,
 	 const int type ,
 	 void (*project) ( GLU_complex smeared_link[ NCNC ] , 
-			   const GLU_complex staple[ NCNC ] , 
+			   GLU_complex staple[ NCNC ] , 
 			   const GLU_complex link[ NCNC ] , 
 			   const double smear_alpha , 	     
 			   const double al ) )
@@ -105,7 +105,7 @@ get_lv2( struct lv1 *__restrict lev2 ,
 	 const struct site *__restrict lat ,
 	 const int type ,
 	 void (*project) ( GLU_complex smeared_link[ NCNC ] , 
-			   const GLU_complex staple[ NCNC ] , 
+			   GLU_complex staple[ NCNC ] , 
 			   const GLU_complex link[ NCNC ] , 
 			   const double smear_alpha , 	     
 			   const double al ) )
@@ -272,7 +272,7 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
 
   // callback for the projections
   void (*project) ( GLU_complex smeared_link[ NCNC ] , 
-		    const GLU_complex staple[ NCNC ] , 
+		    GLU_complex staple[ NCNC ] , 
 		    const GLU_complex link[ NCNC ] , 
 		    const double smear_alpha , 	     
 		    const double al ) ;
