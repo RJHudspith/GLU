@@ -294,7 +294,7 @@ RK3step_memcheap( struct spt_site_herm *__restrict Z ,
 }
 
 // evaluate the flow using splines, evaluate a a particular scale
-const double
+double
 evaluate_scale( double *der , 
 		const double *x ,
 		const double *meas ,

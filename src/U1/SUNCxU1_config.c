@@ -55,7 +55,7 @@ compute_zeropoint( void )
 }
 
 // compute the conjugate site to "i"
-const static size_t
+static size_t
 conjugate_site( const size_t i )
 {
   int x[ ND ] ;

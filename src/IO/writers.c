@@ -69,7 +69,7 @@ checksum( const GLU_real *__restrict p ,
 static GLU_output
 construct_loop_variables( size_t *LATT_LOOP , 
 			  size_t *LOOP_VAR ,
-			  const int type )
+			  const GLU_output type )
 {
   // set up our loop variables, SMALL is "special"
   switch( type ) {
@@ -101,7 +101,6 @@ construct_loop_variables( size_t *LATT_LOOP ,
     *LOOP_VAR = LOOP_GAUGE ;
     return OUTPUT_GAUGE ;
   }
-  return GLU_FAILURE ;
 }
 
 // produce an array with the site's data stored

@@ -40,7 +40,7 @@
 #ifdef HAVE_FFTW3_H
 
 //def = 0 "lin" def = 1 "log"
-static volatile int
+static int
 mom_gauge( struct site *__restrict A ,
 	   const lie_field_def def )
 {

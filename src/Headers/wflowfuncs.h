@@ -67,7 +67,7 @@ set_TMEAS_STOP( const double c0 ) ;
    @param message :: identifier to make grepping easier
    @warning computes the derivative @der in this function
  */
-const double
+double
 evaluate_scale( double *der , 
 		const double *x ,
 		const double *meas ,

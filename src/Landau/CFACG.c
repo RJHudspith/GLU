@@ -472,7 +472,10 @@ Coulomb_FACG( struct site  *__restrict lat ,
 
   // flag for if something goes wrong
   size_t tot_its = 0 ;
-  
+
+  // loop counter and timeslice number
+  size_t i , t = 0 ;
+
   // temporary field allocations
   if( GLU_malloc( (void**)&gtransformed    , 16 , LCU * sizeof( GLU_complex* ) ) != 0 ||
       GLU_malloc( (void**)&slice_gauge     , 16 , LCU * sizeof( GLU_complex* ) ) != 0 ||
@@ -484,7 +487,6 @@ Coulomb_FACG( struct site  *__restrict lat ,
     goto memfree ;
   }
 
-  size_t i ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < TRUE_HERM ; i ++  ) {
     GLU_malloc( (void**)&sn[i] , 16 , LCU * sizeof( GLU_complex ) ) ;
@@ -504,7 +506,6 @@ Coulomb_FACG( struct site  *__restrict lat ,
   }
 
   // OK so we have set up the gauge transformation matrices
-  int t = 0 ;// initialise the time direction
   tot_its = steep_fix_FACG( lat , slice_gauge_end , out , in , in_old , 
 			    sn , rotato , gtransformed , forward , backward , 
 			    p_sq , t , accuracy , max_iter ) ; 
@@ -613,7 +614,7 @@ steep_fix_FA( const struct site *__restrict lat ,
 	      const void *__restrict forward , 
 	      const void *__restrict backward , 
 	      const GLU_real *__restrict psq , 
-	      const int t ,
+	      const size_t t ,
 	      const double accuracy ,
 	      const size_t max_iter )
 {
@@ -681,6 +682,9 @@ Coulomb_FASD( struct site  *__restrict lat ,
   // allocate traces
   allocate_traces( LCU ) ;
 
+  // initialise loop counter and timeslice index
+  size_t i , t = 0 ;
+
   // allocate temporary gauge transformation matrices
   if( GLU_malloc( (void**)&slice_gauge     , 16 , LCU * sizeof( GLU_complex* ) ) != 0 ||
       GLU_malloc( (void**)&slice_gauge_end , 16 , LCU * sizeof( GLU_complex* ) ) != 0 ||
@@ -691,7 +695,6 @@ Coulomb_FASD( struct site  *__restrict lat ,
   }
 
   // and allocate the transformation matrices
-  size_t i ;
 #pragma omp parallel for private(i) 
   PFOR( i = 0 ; i < LCU ; i ++  ) {
     GLU_malloc( (void**)&slice_gauge[i]     , 16 , NCNC * sizeof( GLU_complex ) ) ;
@@ -702,7 +705,6 @@ Coulomb_FASD( struct site  *__restrict lat ,
   }
 
   // OK so we have set up the gauge transformation matrices
-  size_t t = 0 ;// initialise the time direction
   tot_its = steep_fix_FA( lat , slice_gauge_end , out , in ,
 			  rotato , forward , backward , p_sq , 
 			  t , accuracy , max_iter ) ; 

@@ -59,7 +59,7 @@ static int small = 1 ; // smallest lattice size
    @enum list_creation
    @brief either add a momentum to the list or do not
  */
-enum{ DO_NOT_ADD , ADD_TO_LIST } list_creation ;
+typedef enum{ DO_NOT_ADD , ADD_TO_LIST } list_creation ;
 
 /**
    @enum momenta_saved
@@ -310,7 +310,7 @@ gen_calc_psq( const int k[ ND ] ,
 }
 
 // standard hypercube cut 
-static int
+static list_creation
 gen_calc_hyp( const int k[ ND ] , 
 	      const GLU_real root_mxmom , 
 	      const int DIMS )

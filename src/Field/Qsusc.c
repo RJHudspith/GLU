@@ -74,6 +74,16 @@ compute_Qsusc( struct site *__restrict lat ,
   // allocate the results
   double *qcorr = malloc( size[0] * sizeof( double ) ) ; 
 
+#ifdef verbose
+  register double sum = 0.0 , sumsq = 0.0 ;
+#endif
+
+  // fft'd list and plans
+#ifdef HAVE_FFTW3_H
+  GLU_complex *out = NULL ;
+  fftw_plan forward , backward ;
+#endif
+
   // logic to fail
   if( list == NULL ) goto memfree ;
   if( qcorr == NULL ) goto memfree ;
@@ -83,7 +93,6 @@ compute_Qsusc( struct site *__restrict lat ,
   compute_Gmunu_array( qtop , lat ) ;
 
 #ifdef verbose
-  register double sum = 0.0 , sumsq = 0.0 ;
   for( i = 0 ; i < LVOLUME ; i++ ) {
     sum += creal( qtop[i] ) ;
     sumsq += creal( qtop[i] * qtop[i] ) ;
@@ -102,9 +111,8 @@ compute_Qsusc( struct site *__restrict lat ,
   }
 
   // FFT Gmunu
-  GLU_complex *out = fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
+  out = fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
 
-  fftw_plan forward , backward ;
   small_create_plans_DFT( &forward , &backward , qtop , out , ND ) ;
   fftw_execute( forward ) ;
   

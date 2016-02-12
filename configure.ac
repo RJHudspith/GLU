@@ -33,6 +33,7 @@
 ## --enable-verbiage :: more verbose output than usual
 ## --enable-ascii_check :: prints to stdout the data we would write to our
 ##                         binary files
+## --enable-PLAQUETTE_FMUNU :: plaquette defintition of field strength tensor
 ## --enable-CLOVER_IMPROVE :: Are we using the O(a^4) clover def?
 ## --with-CLOVER_K5= :: specify the multiplicative term for the 3x3 wilson
 ##                      loop for the heavily improved field strength tensor
@@ -40,7 +41,7 @@
 ## --with-LUXURY_GAUGE= :: choose the "best" (one that minimises the
 ## 		       	  functional) from specified number of random
 ##                         initial transformations, default is 20
-## --enable-GLU_GFIX_SD :: turn on the steepest descent codes
+## --enable-GLU_GFIX_SD :: turn on the steepest descent codes (default is the CG)
 ## --enable-OVERRELAXED_GF :: switch to the overrelaxed codes for gauge fixing
 
 AC_INIT([GLU], [1.1], [renwick.james.hudspith@gmail.com])
@@ -466,6 +467,17 @@ AC_ARG_ENABLE([GIVENS_APE],
 	     AC_DEFINE([GIVENS_APE],[],[Trace maximisation routine for APE projection.])
 	     ;;
 	*) AC_MSG_ERROR([bad value ${enableval} for --enable-GIVENS_APE]) ;;
+	esac
+	],[])
+
+## plaquette field strength tensor
+AC_ARG_ENABLE([PLAQUETTE_FMUNU],
+	[ --enable-PLAQUETTE_FMUNU ],
+	[case "${enableval}" in
+	yes) AC_MSG_NOTICE([Simple plaquette definition of the field strength tensor.])	
+	     AC_DEFINE([PLAQUETTE_FMUNU],[],[Plaquette field strength tensor.])
+	     ;;
+	*) AC_MSG_ERROR([bad value ${enableval} for --enable-PLAQUETTE_FMUNU]) ;;
 	esac
 	],[])
 

@@ -96,6 +96,7 @@ compute_s1( GLU_complex *__restrict sum ,
 #endif
   return ;
 }
+#ifndef PLAQUETTE_FMUNU
 // bottom right
 static void
 compute_s2( GLU_complex *__restrict sum ,
@@ -169,6 +170,7 @@ compute_s4( GLU_complex *__restrict sum ,
 #endif
   return ;
 }
+#endif
 
 #ifdef CLOVER_IMPROVE 
 // compute sector 1 with improvements 

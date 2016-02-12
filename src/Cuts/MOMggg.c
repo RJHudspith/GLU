@@ -120,13 +120,14 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
 				count , //size of the trip array
 				num_mom[ 0 ] ) ; // size mom list
   
+  size_t checker = 0 ;
+
   if( flag == GLU_FAILURE ) {
     goto memfree ;
   }
   
   write_triplet_mom_list( Ap , counter , momentum , triplet , ND ) ;
 
-  size_t checker = 0 ;
   for( nn = 0 ; nn < nnmax/2 ; nn ++ ) {
 
     double psq = 0. ;

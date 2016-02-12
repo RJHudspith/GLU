@@ -130,7 +130,7 @@ confno( void )
   if( setint( &conf , "CONFNO" ) == GLU_FAILURE ) {
     fprintf( stderr , "[IO] I do not understand CONFNO %zu \n" , conf ) ;
     fprintf( stderr , "[IO] CONFNO should be greater than 0\n" ) ;
-    return GLU_FAILURE ;
+    return 0 ;
   }
   return conf ;
 }
@@ -217,7 +217,7 @@ get_mode( GLU_mode *mode )
 }
 
 // the code that writes out all of the config details
-static GLU_output
+static int
 out_details( const GLU_mode mode )
 {  
   // get the storage type
@@ -253,7 +253,7 @@ out_details( const GLU_mode mode )
 }
 
 // get the header type
-static header_mode
+static int
 header_type( void )
 {
   // headers we support

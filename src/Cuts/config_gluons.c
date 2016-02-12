@@ -386,6 +386,9 @@ cuts_struct_configspace( struct site *__restrict A ,
   // flag whether it worked or not
   int FLAG = GLU_FAILURE ;
 
+  // timeslice length
+  int lt[ 1 ] = { LT } ;
+
   // spatial correlator from the convolution in momentum space
   if( spatial_correlator( A , gsp , spat_norm , 
 			  CUTINFO.max_t ) == GLU_FAILURE ) {
@@ -393,7 +396,6 @@ cuts_struct_configspace( struct site *__restrict A ,
   }
 
   // write out the timeslice list ...
-  int lt[ 1 ] = { LT } ;
   write_tslice_list( Ap , lt ) ;
 
   // and write the props ....

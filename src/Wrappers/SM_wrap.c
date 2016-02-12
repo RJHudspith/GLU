@@ -48,7 +48,7 @@ hyp_chooser( struct site *__restrict lat ,
   // ADAPTIVE RK4 method of integrating the flow equation
   if( SMINFO.type == SM_ADAPTWFLOW_LOG || 
       SMINFO.type == SM_ADAPTWFLOW_STOUT ) {
-    int GENTYPE = SM_STOUT ;
+    smearing_type GENTYPE = SM_STOUT ;
     if( SMINFO.type == SM_ADAPTWFLOW_LOG ) {
       GENTYPE = SM_LOG ;
     }
@@ -58,25 +58,24 @@ hyp_chooser( struct site *__restrict lat ,
   }
   // RK4 method of integrating the flow equation
   if( SMINFO.type == SM_WFLOW_LOG || 
-      SMINFO.type == SM_WFLOW_STOUT )
-    {
-      int GENTYPE = SM_STOUT ;
-      if( SMINFO.type == SM_WFLOW_LOG ) {
-	GENTYPE = SM_LOG ;
-      }
-      switch( meminfo ){
-      case FAST :
-	flow4d_RK_fast( lat , SMINFO.smiters , ND , 
-			GLU_FORWARD , GENTYPE ) ;
-	return ;
-      case MODERATE :
-	flow4d_RK_slow( lat , SMINFO.smiters , ND , 
-			GLU_FORWARD , GENTYPE ) ;
-	return ;
-      }
+      SMINFO.type == SM_WFLOW_STOUT ) {
+    smearing_type GENTYPE = SM_STOUT ;
+    if( SMINFO.type == SM_WFLOW_LOG ) {
+      GENTYPE = SM_LOG ;
     }
+    switch( meminfo ){
+    case FAST :
+      flow4d_RK_fast( lat , SMINFO.smiters , ND , 
+		      GLU_FORWARD , GENTYPE ) ;
+      return ;
+    case MODERATE :
+      flow4d_RK_slow( lat , SMINFO.smiters , ND , 
+		      GLU_FORWARD , GENTYPE ) ;
+      return ;
+    }
+  }
   // The original decision for the smearing methods
-  const int GENTYPE = ( SMINFO.type - 1 ) % 3 + 1 ;
+  const smearing_types GENTYPE = ( SMINFO.type - 1 ) % 3 + 1 ;
 
   if( SMINFO.type == SM_APE || SMINFO.type == SM_STOUT 
       || SMINFO.type == SM_LOG ) {
@@ -112,7 +111,7 @@ hyp_chooser( struct site *__restrict lat ,
 
 // is it smear or wilson flow?
 static GLU_bool
-smear_or_wflow( int type )
+smear_or_wflow( const smearing_type type )
 {
   if( type == SM_WFLOW_LOG || 
       type == SM_ADAPTWFLOW_LOG ||
