@@ -31,6 +31,8 @@
 
 #include "Mainfile.h"
 
+#include "givens.h" // alphabetising
+
 /**
    @param GIVE_PRECOND
    @brief precondition the routine by giving the reunitarised matrix as an initial guess
@@ -43,60 +45,7 @@
 #endif
 
 // allocate the struct somewhere
-static struct su2_subgroups *su2_data ;
-
-// compactified (sparse matrix rep) su(2) multiply of,
-//
-//     | a b || M[row(a)] M[row(a)++] .... |   
-//     | c d || M[row(c)] M[row(c)++] .... |
-//
-void
-shortened_su2_multiply( GLU_complex *w , 
-			const GLU_complex a , 
-			const GLU_complex b , 
-			const GLU_complex c , 
-			const GLU_complex d , 
-			const int su2_index )
-{
-  GLU_complex W1 , W2 ; // temporaries
-  const size_t row_a = NC * (int)( su2_data[ su2_index ].idx_a / NC ) ;
-  const size_t row_c = NC * (int)( su2_data[ su2_index ].idx_c / NC ) ;
-  size_t i ;
-  for( i = 0 ; i < NC ; i++ ) {
-    W1 = w[ row_a + i ] ;
-    W2 = w[ row_c + i ] ;
-    w[ row_a + i ] = a * W1 + b * W2 ;
-    w[ row_c + i ] = c * W1 + d * W2 ;
-  }
-  return ;
-}
-
-//  compactified M.su(2)^{\dagger} multiply of,
-//
-//   | M[col(a)]    M[col(b)]    | | a b |^{\dagger}
-//   | M[col(a)+NC] M[col(b)+NC] | | c d |
-//   | .....        .......      |
-//
-void
-shortened_su2_multiply_dag( GLU_complex *U , 
-			    const GLU_complex a , 
-			    const GLU_complex b , 
-			    const GLU_complex c , 
-			    const GLU_complex d , 
-			    const int su2_index )
-{
-  GLU_complex U1 , U2 ; // temporaries for caching
-  const size_t col_a = (int)( su2_data[ su2_index ].idx_a % NC ) ;
-  const size_t col_b = (int)( su2_data[ su2_index ].idx_b % NC ) ;
-  size_t i ;
-  for( i = 0 ; i < NC ; i++ ) {
-    U1 = U[ col_a + i*NC ] ;
-    U2 = U[ col_b + i*NC ] ;
-    U[ col_a + i*NC ] = U1 * conj(a) + U2 * conj(b) ;
-    U[ col_b + i*NC ] = U1 * conj(c) + U2 * conj(d) ;
-  }
-  return ;
-}
+static struct su2_subgroups *su2_data = NULL ;
 
 // overrelaxation
 static void
@@ -338,7 +287,7 @@ free_su2_data()
 void
 givens_reunit( GLU_complex U[ NCNC ] ) 
 {
-  GLU_complex w[ NCNC ] ;
+  GLU_complex w[ NCNC ] GLUalign ;
   double trace_new , trace_old ;
 
   #ifdef GIVE_PRECOND
@@ -349,10 +298,10 @@ givens_reunit( GLU_complex U[ NCNC ] )
   // for APE smearing for large NC) Big slow down though due to gram 
   // schmidt and nested SU(2) updates; for SU(3) looks pretty good though 
   // suggest using n-ape for large NC though, is much stabler
-  GLU_complex temp[ NCNC ] ;
+  GLU_complex temp[ NCNC ] GLUalign ;
   equiv( temp , U ) ;
   equiv( w , U ) ;
-  reunit2( w ) ;
+  gram_reunit( w ) ;
   multab_dag( U , temp , w ) ;
   #else
   identity( w ) ;
@@ -377,7 +326,7 @@ givens_reunit( GLU_complex U[ NCNC ] )
 
     #elif NC == 2
 
-    GLU_complex rot[ NCNC ] , tmp[ NCNC ] ;
+    GLU_complex rot[ NCNC ] GLUalign , tmp[ NCNC ] GLUalign ;
     register GLU_complex s0 = U[0] + conj( U[3] ) ;
     register GLU_complex s1 = U[1] - conj( U[2] ) ;
     const double scale = 1.0 / sqrt( creal(s0)*creal(s0) + cimag(s0)*cimag(s0) + \
@@ -417,9 +366,9 @@ givens_reunit( GLU_complex U[ NCNC ] )
 
 // NC generic givens rotations
 void
-OrRotation( const GLU_complex U[ NCNC ] , 
-	    GLU_complex *s0 , 
+OrRotation( GLU_complex *s0 , 
 	    GLU_complex *s1 ,
+	    const GLU_complex U[ NCNC ] , 
 	    const double OrParam ,
 	    const int su2_index )
 {
@@ -430,6 +379,59 @@ OrRotation( const GLU_complex U[ NCNC ] ,
 
   // overrelax
   overrelax( s0 , s1 , OrParam ) ;
+  return ;
+}
+
+// compactified (sparse matrix rep) su(2) multiply of,
+//
+//     | a b || M[row(a)] M[row(a)++] .... |   
+//     | c d || M[row(c)] M[row(c)++] .... |
+//
+void
+shortened_su2_multiply( GLU_complex *w , 
+			const GLU_complex a , 
+			const GLU_complex b , 
+			const GLU_complex c , 
+			const GLU_complex d , 
+			const int su2_index )
+{
+  GLU_complex W1 , W2 ; // temporaries
+  const size_t row_a = NC * (int)( su2_data[ su2_index ].idx_a / NC ) ;
+  const size_t row_c = NC * (int)( su2_data[ su2_index ].idx_c / NC ) ;
+  size_t i ;
+  for( i = 0 ; i < NC ; i++ ) {
+    W1 = w[ row_a + i ] ;
+    W2 = w[ row_c + i ] ;
+    w[ row_a + i ] = a * W1 + b * W2 ;
+    w[ row_c + i ] = c * W1 + d * W2 ;
+  }
+  return ;
+}
+
+//  compactified M.su(2)^{\dagger} multiply of,
+//
+//   | M[col(a)]    M[col(b)]    | | a b |^{\dagger}
+//   | M[col(a)+NC] M[col(b)+NC] | | c d |
+//   | .....        .......      |
+//
+void
+shortened_su2_multiply_dag( GLU_complex *U , 
+			    const GLU_complex a , 
+			    const GLU_complex b , 
+			    const GLU_complex c , 
+			    const GLU_complex d , 
+			    const int su2_index )
+{
+  GLU_complex U1 , U2 ; // temporaries for caching
+  const size_t col_a = (int)( su2_data[ su2_index ].idx_a % NC ) ;
+  const size_t col_b = (int)( su2_data[ su2_index ].idx_b % NC ) ;
+  size_t i ;
+  for( i = 0 ; i < NC ; i++ ) {
+    U1 = U[ col_a + i*NC ] ;
+    U2 = U[ col_b + i*NC ] ;
+    U[ col_a + i*NC ] = U1 * conj(a) + U2 * conj(b) ;
+    U[ col_b + i*NC ] = U1 * conj(c) + U2 * conj(d) ;
+  }
   return ;
 }
 

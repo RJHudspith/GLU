@@ -25,7 +25,7 @@
 #define GLU_WFLOW_H
 
 /**
-   @fn int flow4d_RK_fast( struct site *__restrict lat , const size_t smiters , const size_t DIR , const size_t SIGN , const size_t SM_TYPE )
+   @fn int flow4d_RK_fast( struct site *__restrict lat , const size_t smiters , const size_t DIR , const size_t SIGN , const smearing_types SM_TYPE )
    @brief wilson flow using the Runge-Kutta used in Luescher's follow up paper and by BMW.
    @param lat :: lattice gauge field
    @param lat :: lattice gauge fields 
@@ -40,10 +40,10 @@ flow4d_RK_fast( struct site *__restrict lat ,
 		const size_t smiters ,
 		const size_t DIR ,
 		const size_t SIGN ,
-		const size_t SM_TYPE ) ;
+		const smearing_types SM_TYPE ) ;
 
 /**
-   \fn int flow4d_RK_slow( struct site *__restrict lat , const size_t smiters , const size_t DIR , const size_t SIGN , const size_t SM_TYPE )
+   \fn int flow4d_RK_slow( struct site *__restrict lat , const size_t smiters , const size_t DIR , const size_t SIGN , const smearing_types SM_TYPE )
    \brief the terms slow and fast are really a matter of opinion, the slow one has fewer temporaries for the cost of (many) more memcpy's.
    @param lat :: lattice gauge field
    @param lat :: lattice gauge fields 
@@ -60,6 +60,6 @@ flow4d_RK_slow( struct site *__restrict lat ,
 		const size_t smiters ,
 		const size_t DIR ,
 		const size_t SIGN ,
-		const size_t SM_TYPE ) ;
+		const smearing_types SM_TYPE ) ;
 
 #endif

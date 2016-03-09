@@ -25,22 +25,12 @@
 #define GLU_GRAMSCHMIDT_H
 
 /**
-   @fn void reunit( GLU_complex Z[ NCNC ] , const GLU_complex U[ NCNC ] )
-   @brief reunitarise the matrix Z into the matrix U
-   @param Z :: matrix to be reunitarised
-   @param U :: output matrix
- */
-void 
-reunit( GLU_complex Z[ NCNC ] ,
-	const GLU_complex U[ NCNC ] ) ;
-
-/**
-   @fn void reunit2( GLU_complex *__restrict U )
+   @fn void gram_reunit( GLU_complex *__restrict U )
    @brief reunitarises U into itself
    @param U :: overwritten with a reunitarised version of itself
  */
 void 
-reunit2( GLU_complex *__restrict U ) ;
+gram_reunit( GLU_complex *__restrict U ) ;
 
 /**
    @fn void reunit_latt( GLU_complex *__restrict *__restrict U )

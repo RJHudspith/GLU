@@ -52,7 +52,7 @@ instanton_config( struct site *lat )
   return GLU_FAILURE ;
 #else
   // embed pauli matrices in SU(NC) matrices
-  GLU_complex t[ 3 ][ NCNC ] ;  
+  GLU_complex t[ 3 ][ NCNC ] GLUalign ;  
   size_t mu ;
   for( mu = 0 ; mu < 3 ; mu++ ) { zero_mat( t[mu] ) ; }
   t[0][1] = +1. ; t[0][NC]   = +1. ;
@@ -91,7 +91,7 @@ instanton_config( struct site *lat )
  
     // perform the exponentiation, loop nu
     for( nu = 0 ; nu < ND ; nu++ ) {
-      GLU_complex temp[ NCNC ] ;
+      GLU_complex temp[ NCNC ] GLUalign ;
       zero_mat( temp ) ;
       size_t j , k ;
       for( j = 0 ; j < 3 ; j++ ) {

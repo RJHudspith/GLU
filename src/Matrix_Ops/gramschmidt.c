@@ -71,7 +71,7 @@ vect_norm2( GLU_complex *__restrict a )
 
 //reunitarise an SU(3) matrix sped up for our requirements
 void 
-reunit2( GLU_complex *__restrict U )
+gram_reunit( GLU_complex *__restrict U )
 {
 #if NC==3
   GLU_real *uu = (GLU_real*)U ;
@@ -224,26 +224,16 @@ reunit2( GLU_complex *__restrict U )
   return ;
 }
 
-//reunitarise an SU(Nc) matrix
-void 
-reunit( GLU_complex Z[ NCNC ] ,
-	const GLU_complex U[ NCNC ] ) 
-{
-  equiv( Z , U ) ;
-  reunit2( Z ) ;
-  return ;
-}
-
 // generate a random SU(N) matrix
 void 
 Sunitary_gen( GLU_complex Z[ NCNC ] )
 {
   generate_NCxNC( Z ) ; // generate gaussian distributed elements of matrix
-  reunit2( Z ) ;
+  gram_reunit( Z ) ;
   while( !is_unitary( Z ) ) {
     fprintf( stderr , "[GRAM] not unitary! Redoing " ) ;
     generate_NCxNC( Z ) ; 
-    reunit2( Z ) ;
+    gram_reunit( Z ) ;
   }
   return ;
 }

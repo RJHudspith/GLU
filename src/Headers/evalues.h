@@ -17,40 +17,11 @@
     along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
-   @file solver.h
+   @file evalues.h
    @brief function protypes used for calculating eigenvalues of small matrices
  */
-#ifndef GLU_SOLVER_H
-#define GLU_SOLVER_H
-
-/**
-   @fn void squarert( double complex *__restrict res , const double complex z , const double complex R )
-   @brief complex square root using de-Moivre's
-   @param z :: the complex number being rooted
-   @param R :: some parameter 
-   @param res :: result of the rooting
-
-   CALCULATION OF THE COMPLEX SQUARE ROOT WITH CONDITION 
-   \f[ 
-   \Re \left( R*\sqrt{ R^2 + g^3} \right) >= 0 
-   \f]
-   <br>
-   very slow apparently 
- */
-void 
-squarert( double complex *__restrict res , 
-	  const double complex z ,
-	  const double complex R ) ;
-
-/**
-   @fn void cubert( double complex *__restrict res , const double complex z )
-   @brief computes the cube root using de-Moivre's
-   @param z :: complex number being rooted
-   @param res :: result passed by reference
- */
-void 
-cubert( double complex *__restrict res ,
-	const double complex z ) ;
+#ifndef GLU_EVALUES_H
+#define GLU_EVALUES_H
 
 /**
    @fn void Eigenvalues( GLU_complex z[ NC ] , const GLU_complex *__restrict U )

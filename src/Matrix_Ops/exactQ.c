@@ -24,7 +24,7 @@
 #include "Mainfile.h"
 
 #include "effs.h"     // computation of the f-constants
-#include "solver.h"   // eigensolver using characteristic equation
+#include "evalues.h"   // eigensolver using characteristic equation
 
 // We have the bindings for Lapacke now
 #ifdef HAVE_LAPACKE_H
@@ -40,7 +40,7 @@ vectors( GLU_complex *__restrict v ,
 	 const GLU_complex *__restrict U ,
 	 const double complex *__restrict z )
 {
-  GLU_complex S[ NCNC ] , B[ NCNC ] ; 
+  GLU_complex S[ NCNC ] GLUalign , B[ NCNC ] GLUalign ; 
   size_t j , k , l ; 
   for( j = 0 ; j < NC ; j++ ) { // loop eigenvalues
     #if NC == 3
@@ -155,7 +155,7 @@ get_iQ( GLU_complex Q[ NCNC ] ,
 {
   size_t i , j ;
   double complex z[ NC ] ; 
-  GLU_complex v[ NCNC ] , delta[ NCNC ] ; 
+  GLU_complex v[ NCNC ] GLUalign , delta[ NCNC ] GLUalign ; 
   Eigenvalues_suNC( z , U ) ; 
   vectors( v , U , z ) ; 
   // Finally compute V.Delta.V^{\dagger} //

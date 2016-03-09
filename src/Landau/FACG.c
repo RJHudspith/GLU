@@ -106,19 +106,16 @@ FA_deriv(  GLU_complex *__restrict *__restrict in ,
   size_t i ;
   // put the functional and the trace of the square of the deriv here
   double *alpha = NULL , *trAA ;
-  if( GLU_malloc( (void**)&alpha , 16 , LVOLUME * sizeof( double ) ) != 0 || 
-      GLU_malloc( (void**)&trAA  , 16 , LVOLUME * sizeof( double ) ) != 0 ) {
+  if( GLU_malloc( (void**)&alpha , ALIGNMENT , LVOLUME * sizeof( double ) ) != 0 || 
+      GLU_malloc( (void**)&trAA  , ALIGNMENT , LVOLUME * sizeof( double ) ) != 0 ) {
     return GLU_FAILURE ;
   }
   const double fact = 1.0 / (double)( NC * ND ) ;
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
 
-    #if ( defined deriv_lin || defined deriv_linn )
     GLU_complex sum[ HERMSIZE ] ;
-    #else
-    GLU_complex sum[ HERMSIZE ] = { } ;
-    #endif
+    memset( &sum , 0 , HERMSIZE * sizeof( GLU_complex ) ) ;
 
     double functional = 0.0 ;
     #ifdef deriv_lin
@@ -594,7 +591,7 @@ FASD_SMEAR( struct site *__restrict lat ,
     // multiply through 
     #pragma omp parallel for private(i) 
     PFOR(  i = 0 ; i < LVOLUME ; i++  ) {
-      GLU_complex temp[ NCNC ] ;
+      GLU_complex temp[ NCNC ] GLUalign ;
       memcpy( temp , gauge2[i] , NCNC * sizeof( GLU_complex ) ) ;
       multab_suNC( gauge2[i] , gauge[i] , temp ) ; 
     }

@@ -35,44 +35,50 @@ all_staples( GLU_complex stap[ NCNC ] ,
 	     const size_t i , 
 	     const size_t mu , 
 	     const size_t dir , 
-	     const size_t type )
+	     const smearing_types type )
 {
-  GLU_complex a[ NCNC ] , b[ NCNC ] ; 
-  size_t nu ; 
-  for( nu = 0 ; nu < dir ; nu++ ) {
-    if( likely( nu != mu ) ) {
-      //top staple
-      register const size_t t1 = lat[ i ].neighbor[nu] ; 
+  GLU_complex a[ NCNC ] GLUalign , b[ NCNC ] GLUalign ; 
+  register size_t nu , t1 , t2 , b1 , b2 , j ; 
+  switch( type ) {
+  case SM_LOG :
+    for( j = 0 ; j < dir-1 ; j++ ) {
+      nu = j < mu ? j : j + 1 ;
+      // directions
+      t1 = lat[ i ].neighbor[nu] ; 
+      t2 = lat[ i ].neighbor[mu] ; 
+      b1 = lat[ i ].back[nu] ; 
+      b2 = lat[ b1 ].neighbor[mu] ; 
+      // top staple
       multab_suNC( a , lat[ i ].O[nu] , lat[ t1 ].O[mu] ) ; 
-      register const size_t t2 = lat[ i ].neighbor[mu] ; 
       multab_dag_suNC( b , a , lat[ t2 ].O[nu] ) ; 
-
-      if( type == SM_LOG ) {
-	multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-        #ifdef SLOW_SMEAR
-	exact_log_slow( b , a ) ; 
-        #else
-	exact_log_fast( b , a ) ; 
-        #endif
-      }
+      multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
+      exact_log_slow( b , a ) ; 
       a_plus_b( stap , b ) ; 
-
       //bottom staple
-      register const size_t b1 = lat[ i ].back[nu] ; 
       multabdag_suNC( a , lat[ b1 ].O[nu] , lat[ b1 ].O[mu] ) ; 
-      register const size_t b2 = lat[ b1 ].neighbor[mu] ; 
       multab_suNC( b , a , lat[ b2 ].O[nu] ) ; 
-
-      if( type == SM_LOG ) {
-	multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-        #ifdef SLOW_SMEAR
-	exact_log_slow( b , a ) ; 
-        #else
-	exact_log_fast( b , a ) ; 
-        #endif
-      }
+      multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
+      exact_log_slow( b , a ) ; 
       a_plus_b( stap , b ) ; 
-    }
+    } break ;
+  default :
+    for( j = 0 ; j < dir-1 ; j++ ) {
+      nu = j < mu ? j : j + 1 ;
+      // directions
+      t1 = lat[ i ].neighbor[nu] ; 
+      t2 = lat[ i ].neighbor[mu] ; 
+      b1 = lat[ i ].back[nu] ; 
+      b2 = lat[ b1 ].neighbor[mu] ; 
+      // top staple
+      multab_suNC( a , lat[ i ].O[nu] , lat[ t1 ].O[mu] ) ; 
+      multab_dag_suNC( b , a , lat[ t2 ].O[nu] ) ; 
+      a_plus_b( stap , b ) ; 
+      //bottom staple
+      multabdag_suNC( a , lat[ b1 ].O[nu] , lat[ b1 ].O[mu] ) ; 
+      multab_suNC( b , a , lat[ b2 ].O[nu] ) ; 
+      a_plus_b( stap , b ) ; 
+    } break ;
+    break ;
   }
   return ;
 }
@@ -85,15 +91,17 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
 		     const size_t i , 
 		     const size_t mu , 
 		     const size_t dir , 
-		     const size_t type )
+		     const smearing_types type )
 {
-  // and do the improvement
-  GLU_complex c0_stap[ NCNC ] = { } , c1_stap[ NCNC ] = { } ;
-  GLU_complex a[ NCNC ] , b[ NCNC ] ; 
-  GLU_complex tempstap[ NCNC ] ;
+  GLU_complex a[ NCNC ] GLUalign , b[ NCNC ] GLUalign ;
+  GLU_complex c0_stap[ NCNC ] GLUalign , c1_stap[ NCNC ] GLUalign ;
+  GLU_complex tempstap[ NCNC ] GLUalign ;
+
+  zero_mat( c1_stap ) ; zero_mat( c1_stap ) ;
 
 #ifdef SYMANZIK_ONE_LOOP
-  GLU_complex c2_stap[ NCNC ] = { } ;
+  GLU_complex c2_stap[ NCNC ] ;
+  zero_mat( c2_stap ) ;
 #endif 
 
   size_t nu ; 
@@ -121,11 +129,7 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
       multab_suNC( b , a , lat[ b2 ].O[nu] ) ; 
       if( type == SM_LOG )  {
 	multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-        #ifdef SLOW_SMEAR
 	exact_log_slow( b , a ) ; 
-        #else
-	exact_log_fast( b , a ) ; 
-        #endif
       }
       a_plus_b( c0_stap , b ) ;
 
@@ -173,11 +177,7 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
       multab_suNC( b , a , lat[ bv4 ].O[nu] ) ; 
       if( type == SM_LOG ) {
 	multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-        #ifdef SLOW_SMEAR
 	exact_log_slow( b , a ) ; 
-        #else
-	exact_log_fast( b , a ) ; 
-        #endif
       }
       a_plus_b( c1_stap , b ) ;
 
@@ -198,11 +198,7 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
       if( type == SM_LOG ) {
 	multab_dag_suNC( b , a , lat[ tf3 ].O[ mu ] ) ; 
 	multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-        #ifdef SLOW_SMEAR
 	exact_log_slow( b , a ) ; 
-        #else
-	exact_log_fast( b , a ) ; 
-        #endif
 	a_plus_b( c1_stap , b ) ;
       } else {
 	equiv( tempstap , a ) ;
@@ -218,11 +214,7 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
       if( type == SM_LOG ) {
 	multab_dag_suNC( b , a , lat[ tf3 ].O[ mu ] ) ; 
 	multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-        #ifdef SLOW_SMEAR
 	exact_log_slow( b , a ) ; 
-        #else
-	exact_log_fast( b , a ) ; 
-        #endif
       } else  {
 	a_plus_b( tempstap , a ) ;
 	multab_dag( b , tempstap , lat[ tf3 ].O[mu] ) ;
@@ -249,11 +241,7 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
 	register const size_t tb4 = lat[ i ].neighbor[ mu ] ; 
 	multab_dag_suNC( b , a , lat[ tb4 ].O[ nu ] ) ; 
 	multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-        #ifdef SLOW_SMEAR
 	exact_log_slow( b , a ) ; 
-        #else
-	exact_log_fast( b , a ) ; 
-        #endif
 	a_plus_b( c1_stap , b ) ;
 
 	// and the bottom staple ...
@@ -266,11 +254,7 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
 	const register size_t bb4 = lat[ bb3 ].neighbor[mu] ; 
 	multab_suNC( b , a , lat[ bb4 ].O[nu] ) ; 
 	multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-        #ifdef SLOW_SMEAR
 	exact_log_slow( b , a ) ; 
-        #else
-	exact_log_fast( b , a ) ; 
-        #endif
       } else {
 	register const size_t tb1 = lat[i].back[mu] ; 
 	register const size_t tb2 = lat[ tb1 ].neighbor[nu] ; 
@@ -324,11 +308,7 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
 
 	  if( type == SM_LOG ) {
 	    multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-            #ifdef SLOW_SMEAR
 	    exact_log_slow( b , a ) ; 
-            #else
-	    exact_log_fast( b , a ) ; 
-            #endif
 	  }
 	  a_plus_b( c2_stap , b ) ; 
 
@@ -344,11 +324,7 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
 	  multab_suNC( b , a , lat[temp2].O[rho] ) ; 
 	  if( type == SM_LOG ) {
 	    multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-            #ifdef SLOW_SMEAR
 	    exact_log_slow( b , a ) ; 
-            #else
-	    exact_log_fast( b , a ) ; 
-            #endif
 	  }
 	  a_plus_b( c2_stap , b ) ; 
 	  // thats the end of this term ....

@@ -37,10 +37,10 @@ void
 spline_derivative( double *__restrict der ,
 		   const double *__restrict x ,
 		   const double *__restrict y ,
-		   const int N ) ;
+		   const size_t N ) ;
 
 /**
-   @fn double cubic_eval( const double *__restrict x , const double *__restrict y , const double *__restrict der , const double mu , const int datalength )
+   @fn double cubic_eval( const double *__restrict x , const double *__restrict y , const double *__restrict der , const double mu , const size_t datalength )
    @brief computes the cubic spline evaluation at the point "mu"
    @param x :: x-data
    @param y :: y-data
@@ -53,10 +53,10 @@ cubic_eval( const double *__restrict x ,
 	    const double *__restrict y ,
 	    const double *__restrict der ,
 	    const double mu ,
-	    const int datalength ) ;
+	    const size_t datalength ) ;
 
 /**
-   @fn double cubic_min( const double *__restrict x , const double *__restrict y , const double *__restrict der , const int change_up )
+   @fn double cubic_min( const double *__restrict x , const double *__restrict y , const double *__restrict der , const size_t change_up )
    @brief evaluates the minimum of a cubic spline interpolation
    @param x :: x-data
    @param y :: y-data
@@ -69,10 +69,10 @@ double
 cubic_min( const double *__restrict x ,
 	   const double *__restrict y ,
 	   const double *__restrict der ,
-	   const int change_up ) ;
+	   const size_t change_up ) ;
 
 /**
-   @fn double solve_spline( const double *__restrict x , const double *__restrict y , const double *__restrict der , const double mu , const int datalength )
+   @fn double solve_spline( const double *__restrict x , const double *__restrict y , const double *__restrict der , const double mu , const size_t datalength )
    @brief solve the cubic spline y(x) = mu
  */
 double
@@ -80,10 +80,10 @@ solve_spline( const double *__restrict x ,
 	      const double *__restrict y ,
 	      const double *__restrict der ,
 	      const double mu ,
-	      const int change_up ) ;
+	      const size_t change_up ) ;
 
 /**
-   @fn double solve_spline( const double *__restrict x , const double *__restrict y , const double *__restrict der , const double mu , const int datalength )
+   @fn double solve_spline( const double *__restrict x , const double *__restrict y , const double *__restrict der , const double mu , const size_t datalength )
    @brief solve the cubic spline y(x) = mu
  */
 double
@@ -91,6 +91,6 @@ solve_derspline( const double *__restrict x ,
 		 const double *__restrict y ,
 		 const double *__restrict der ,
 		 const double mu ,
-		 const int change_up ) ;
+		 const size_t change_up ) ;
 
 #endif

@@ -34,7 +34,6 @@
 #include "GLU_memcheck.h"   // memory checking
 #include "GLU_timer.h"      // timing functions
 #include "HYP.h"            // 3D (spatial) smearing functions
-#include "HYP_4D.h"         // 4D (all directional) smearing functions
 #include "ND_generic_HYP.h" // recursive ND-dimensional blocked smearing
 #include "smear.h"          // standard smearing
 #include "wflow.h"          // fixed-epsilon wilson flow
@@ -48,7 +47,7 @@ hyp_chooser( struct site *__restrict lat ,
   // ADAPTIVE RK4 method of integrating the flow equation
   if( SMINFO.type == SM_ADAPTWFLOW_LOG || 
       SMINFO.type == SM_ADAPTWFLOW_STOUT ) {
-    smearing_type GENTYPE = SM_STOUT ;
+    smearing_types GENTYPE = SM_STOUT ;
     if( SMINFO.type == SM_ADAPTWFLOW_LOG ) {
       GENTYPE = SM_LOG ;
     }
@@ -59,7 +58,7 @@ hyp_chooser( struct site *__restrict lat ,
   // RK4 method of integrating the flow equation
   if( SMINFO.type == SM_WFLOW_LOG || 
       SMINFO.type == SM_WFLOW_STOUT ) {
-    smearing_type GENTYPE = SM_STOUT ;
+    smearing_types GENTYPE = SM_STOUT ;
     if( SMINFO.type == SM_WFLOW_LOG ) {
       GENTYPE = SM_LOG ;
     }
@@ -97,8 +96,6 @@ hyp_chooser( struct site *__restrict lat ,
 	HYPSLsmear4D_expensive( lat , SMINFO.smiters , GENTYPE ) ;
 	return ;
       case MODERATE :
-	HYPSLsmear4D( lat , SMINFO.smiters , GENTYPE ) ;  
-	return ;
       case SLOW :
 	HYsmearND( lat , SMINFO.smiters , GENTYPE , SMINFO.dir ) ;
 	return ;
@@ -111,7 +108,7 @@ hyp_chooser( struct site *__restrict lat ,
 
 // is it smear or wilson flow?
 static GLU_bool
-smear_or_wflow( const smearing_type type )
+smear_or_wflow( const smearing_types type )
 {
   if( type == SM_WFLOW_LOG || 
       type == SM_ADAPTWFLOW_LOG ||

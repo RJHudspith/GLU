@@ -53,7 +53,7 @@ void
 givens_reunit( GLU_complex U[ NCNC ] ) ;
 
 /**
-   @fn void OrRotation( const GLU_complex U[ NCNC ] , GLU_complex *s0 , GLU_complex *s1 , const double OrParam , const int su2_index )
+   @fn void OrRotation( GLU_complex *s0 , GLU_complex *s1 , const GLU_complex U[ NCNC ] , const double OrParam , const int su2_index )
    @brief compute the two defining parameters of the su(2) representation
    @param U :: matrix whose subgroup is computed
    @param s0 :: top left su(2) element
@@ -62,9 +62,9 @@ givens_reunit( GLU_complex U[ NCNC ] ) ;
    @param su2_index :: su(2) subgroup index
  */
 void
-OrRotation( const GLU_complex U[ NCNC ] , 
-	    GLU_complex *s0 , 
+OrRotation( GLU_complex *s0 , 
 	    GLU_complex *s1 ,
+	    const GLU_complex U[ NCNC ] , 
 	    const double OrParam ,
 	    const int su2_index ) ;
 

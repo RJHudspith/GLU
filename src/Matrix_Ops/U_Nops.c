@@ -182,7 +182,8 @@ cofactor_transpose( GLU_complex a[ NCNC ] ,
   return b[0] * a[0] + b[1] * a[2] ;
 #else
   // compute the cofactor matrix
-  GLU_complex array[ ( NC - 1 ) * ( NC - 1 ) ] , temp[ NCNC ] ;
+  GLU_complex array[ ( NC - 1 ) * ( NC - 1 ) ]  GLUalign , 
+    temp[ NCNC ] GLUalign ;
   size_t i , j ;
   for( i = 0 ; i < NCNC ; i++ ) { // our bona-fide minor index
     size_t idx = 0 ;
@@ -340,9 +341,9 @@ identity( GLU_complex ident[ NCNC ] )
 GLU_bool
 is_unitary( const GLU_complex U[ NCNC ] ) 
 {
-  GLU_complex temp[ NCNC ] ; 
+  GLU_complex temp[ NCNC ] GLUalign ; 
   GLU_real vv = 0. ; 
-  GLU_bool problem = GLU_FALSE ;
+  GLU_bool unitary = GLU_TRUE ;
   size_t i , j ; 
 
   // check U.U^{dag} = I
@@ -353,17 +354,19 @@ is_unitary( const GLU_complex U[ NCNC ] )
     const GLU_real check = !( i%(NC+1) ) ? cabs( temp[i] ) - 1.0 :\
       cabs( temp[i] ) ; 
     if( fabs( check ) > PREC_TOL ) {
-      problem = GLU_TRUE ;
+      unitary = GLU_FALSE ;
       fprintf( stderr , "* flag seen * element -> %zu :: %1.8e\n" , 
 	       i , check ) ;
       fprintf( stderr , "%1.15f %1.15f \n" , 
 	       creal( temp[i] ) , cimag( temp[i] ) ) ;
+      goto end ;
     }
     // same as isnan()
     if( U[i] != U[i] ) {
-      problem = GLU_TRUE ;
+      unitary = GLU_FALSE ;
       fprintf( stderr , "* We have a NaN here * element %zu %f %f\n" , 
 	       i , creal( U[i] ) , cimag( U[i] ) ) ;
+      goto end ;
     }
   }
 
@@ -374,10 +377,10 @@ is_unitary( const GLU_complex U[ NCNC ] )
       vv += creal( U[ NC * i ] * conj( U[ NC * i + j ] ) ) ; 
     }
     if( fabs( vv - 1.0 )/NC > PREC_TOL ) {
-      problem = GLU_TRUE ;
+      unitary = GLU_FALSE ;
       fprintf( stderr , "[column %zu] not orthogonal!!!\n"
 	       "MUST REUNITARIZE [reunit( Z , U )] vv %1.8f" , j , vv ) ; 
-      break ;
+      goto end ;
     }
   }
 
@@ -388,17 +391,20 @@ is_unitary( const GLU_complex U[ NCNC ] )
       vv += creal( U[ i ] * conj( U[ i + NC * j ] ) ) ; 
     }
     if( fabs( vv - 1.0 )/NC > PREC_TOL ) {
-      problem = GLU_TRUE ;
+      unitary = GLU_TRUE ;
       fprintf( stderr , "[row %zu] not orthogonal!!!\nMUST REUNITARIZE"
 	       " [reunit( Z , U )] vv %1.8f" , j , vv ) ; 
-      break ;
+      goto end ;
     }
   }
 
   // if we see a problem we print out what should be the identity
-  if( problem != GLU_FALSE ) { write_matrix( temp ) ; }
 
-  return problem ; 
+
+ end :
+  if( unitary == GLU_FALSE ) { write_matrix( temp ) ; }
+
+  return unitary ;
 }
 
 // matrix times a vector ( vector )vect=( matrix )S.( vector )v //
@@ -482,7 +488,7 @@ matrix_power( GLU_complex a[ NCNC ] ,
     }
     curr = head ;
     // go back through the list performing squarings if possible
-    GLU_complex tmp[ NCNC ] ;
+    GLU_complex tmp[ NCNC ] GLUalign ;
     multab( a , b , b ) ; 
     for( i = 0 ; i < length ; i++ ) {
       if( curr -> squareable != GLU_FALSE ) {
@@ -815,155 +821,6 @@ trace_ab( GLU_complex *__restrict tr ,
     }
   }
   *tr = sumr + I * sumi ;
-#endif
-  return ;
-}
-
-// Trace of the product of three matrices //
-INLINE_VOID
-trace_abc( GLU_complex *__restrict tr , 
-	   const GLU_complex a[ NCNC ] , 
-	   const GLU_complex b[ NCNC ] , 
-	   const GLU_complex c[ NCNC ] )
-{
-#if NC == 3
-  *tr = ( a[0] * b[0] + a[1] * b[3] + a[2] * b[6] ) * c[0] +\
-    ( a[3] * b[0] + a[4] * b[3] + a[5] * b[6] ) * c[1] +    \
-    ( a[6] * b[0] + a[7] * b[3] + a[8] * b[6] ) * c[2] +    \
-    ( a[0] * b[1] + a[1] * b[4] + a[2] * b[7] ) * c[3] +    \
-    ( a[3] * b[1] + a[4] * b[4] + a[5] * b[7] ) * c[4] +    \
-    ( a[6] * b[1] + a[7] * b[4] + a[8] * b[7] ) * c[5] +    \
-    ( a[0] * b[2] + a[1] * b[5] + a[2] * b[8] ) * c[6] +    \
-    ( a[3] * b[2] + a[4] * b[5] + a[5] * b[8] ) * c[7] +    \
-    ( a[6] * b[2] + a[7] * b[5] + a[8] * b[8] ) * c[8] ;
-#elif NC == 2
-  *tr = ( a[0] * b[0] + a[1] * b[2] ) * c[0] +	\
-    ( a[2] * b[0] + a[3] * b[2] ) * c[1] +	\
-    ( a[0] * b[1] + a[1] * b[3] ) * c[2] +	\
-    ( a[2] * b[1] + a[3] * b[3] ) * c[3] ;
-#else
-  const GLU_complex *pB , *pA ;
-  register GLU_real sumr = 0.0 , sumi = 0.0 ;
-  GLU_real insumr = 0.0 , insumi = 0.0 ;
-  size_t i , j , k ;
-  for( i = 0 ; i < NC ; i++ ) {
-    pA = a ;
-    for( j = 0 ; j < NC ; j++ ) {
-      pB = b ;
-      insumr = insumi = 0.0 ;
-      for( k = 0 ; k < NC ; k++ ) {
-	// unroll the mul
-	insumr += ( creal( pA[k] ) * creal( pB[i] ) -
-		    cimag( pA[k] ) * cimag( pB[i] ) ) ; 
-	insumi += ( creal( pA[k] ) * cimag( pB[i] ) + 
-		    cimag( pA[k] ) * creal( pB[i] ) ) ;
-	pB += NC ;
-      }
-      sumr += insumr * creal( c[j+i*NC] ) - insumi * cimag( c[j+i*NC] ) ;
-      sumi += insumr * cimag( c[j+i*NC] ) + insumi * creal( c[j+i*NC] ) ;
-      pA += NC ;
-    }
-  }
-  *tr = sumr + I * sumi ;
-#endif
-  return ;
-}
-
-// this is trace( a . b . c^{\dagger} )
-INLINE_VOID
-trace_abc_dag( GLU_complex *__restrict tr , 
-	       const GLU_complex a[ NCNC ] , 
-	       const GLU_complex b[ NCNC ] , 
-	       const GLU_complex c[ NCNC ] )
-{
-#if NC == 3
-  *tr = ( a[0] * b[0] + a[1] * b[3] + a[2] * b[6] ) * conj( c[0] ) +	\
-    ( a[3] * b[0] + a[4] * b[3] + a[5] * b[6] ) * conj( c[3] ) +	\
-    ( a[6] * b[0] + a[7] * b[3] + a[8] * b[6] ) * conj( c[6] ) +	\
-    ( a[0] * b[1] + a[1] * b[4] + a[2] * b[7] ) * conj( c[1] ) +	\
-    ( a[3] * b[1] + a[4] * b[4] + a[5] * b[7] ) * conj( c[4] ) +	\
-    ( a[6] * b[1] + a[7] * b[4] + a[8] * b[7] ) * conj( c[7] ) +	\
-    ( a[0] * b[2] + a[1] * b[5] + a[2] * b[8] ) * conj( c[2] ) +	\
-    ( a[3] * b[2] + a[4] * b[5] + a[5] * b[8] ) * conj( c[5] ) +	\
-    ( a[6] * b[2] + a[7] * b[5] + a[8] * b[8] ) * conj( c[8] ) ;
-#elif NC == 2
-  *tr = ( a[0] * b[0] + a[1] * b[2] ) * conj( c[0] ) + \
-    ( a[2] * b[0] + a[3] * b[2] ) * conj( c[2] ) + \
-    ( a[0] * b[1] + a[1] * b[3] ) * conj( c[1] ) + \
-    ( a[2] * b[1] + a[3] * b[3] ) * conj( c[3] ) ;
-#else
-  const GLU_complex *pB , *pA ;
-  register GLU_real sumr = 0.0 , sumi = 0.0 ;
-  GLU_real insumr = 0.0 , insumi = 0.0 ;
-  size_t i , j , k ;
-  for( i = 0 ; i < NC ; i++ ) {
-    pA = a ;
-    for( j = 0 ; j < NC ; j++ ) {
-      pB = b ;
-      insumr = insumi = 0.0 ;
-      for( k = 0 ; k < NC ; k++ ) {
-	// unroll the mul
-	insumr += ( creal( pA[k] ) * creal( pB[i] ) -
-		    cimag( pA[k] ) * cimag( pB[i] ) ) ; 
-	insumi += ( creal( pA[k] ) * cimag( pB[i] ) + 
-		    cimag( pA[k] ) * creal( pB[i] ) ) ;
-	pB += NC ;
-      }
-      sumr +=  insumr * creal( c[i+j*NC] ) + insumi * cimag( c[i+j*NC] ) ;
-      sumi += -insumr * cimag( c[i+j*NC] ) + insumi * creal( c[i+j*NC] ) ;
-      pA += NC ;
-    }
-  }
-  *tr = sumr + I * sumi ;
-#endif
-  return ;
-}
-
-// this is trace( a . b . c^{\dagger} )
-INLINE_VOID
-trace_abc_dag_Re( GLU_real *__restrict tr , 
-		  const GLU_complex a[ NCNC ] , 
-		  const GLU_complex b[ NCNC ] , 
-		  const GLU_complex c[ NCNC ] )
-{
-#if NC == 3
-  *tr = creal( ( a[0] * b[0] + a[1] * b[3] + a[2] * b[6] ) * conj( c[0] ) + \
-	       ( a[3] * b[0] + a[4] * b[3] + a[5] * b[6] ) * conj( c[3] ) + \
-	       ( a[6] * b[0] + a[7] * b[3] + a[8] * b[6] ) * conj( c[6] ) + \
-	       ( a[0] * b[1] + a[1] * b[4] + a[2] * b[7] ) * conj( c[1] ) + \
-	       ( a[3] * b[1] + a[4] * b[4] + a[5] * b[7] ) * conj( c[4] ) + \
-	       ( a[6] * b[1] + a[7] * b[4] + a[8] * b[7] ) * conj( c[7] ) + \
-	       ( a[0] * b[2] + a[1] * b[5] + a[2] * b[8] ) * conj( c[2] ) + \
-	       ( a[3] * b[2] + a[4] * b[5] + a[5] * b[8] ) * conj( c[5] ) + \
-	       ( a[6] * b[2] + a[7] * b[5] + a[8] * b[8] ) * conj( c[8] ) ) ;
-#elif NC == 2
-  *tr = creal( ( a[0] * b[0] + a[1] * b[2] ) * conj( c[0] ) +	\
-	       ( a[2] * b[0] + a[3] * b[2] ) * conj( c[2] ) +	\
-	       ( a[0] * b[1] + a[1] * b[3] ) * conj( c[1] ) +	\
-	       ( a[2] * b[1] + a[3] * b[3] ) * conj( c[3] ) ) ;
-#else
-  const GLU_complex *pB , *pA ;
-  register double sumr = 0.0 ;
-  double insumr = 0.0 , insumi = 0.0 ;
-  size_t i , j , k ;
-  for( i = 0 ; i < NC ; i++ ) {
-    pA = a ;
-    for( j = 0 ; j < NC ; j++ ) {
-      pB = b ;
-      insumr = insumi = 0.0 ;
-      for( k = 0 ; k < NC ; k++ ) {
-	// unroll the mul
-	insumr += ( creal( pA[k] ) * creal( pB[i] ) -
-		    cimag( pA[k] ) * cimag( pB[i] ) ) ; 
-	insumi += ( creal( pA[k] ) * cimag( pB[i] ) + 
-		    cimag( pA[k] ) * creal( pB[i] ) ) ;
-	pB += NC ;
-      }
-      sumr +=  insumr * creal( c[i+j*NC] ) + insumi * cimag( c[i+j*NC] ) ;
-      pA += NC ;
-    }
-  }
-  *tr = sumr ;
 #endif
   return ;
 }

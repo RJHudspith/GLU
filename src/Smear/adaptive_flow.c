@@ -81,6 +81,12 @@ print_flow( const struct wfmeas *curr ,
 }
 
 /**
+   @enum adaptive_control
+   @brief when to break our adaptive algorithm if we have done this many halvings and still have no result
+ */
+enum adaptive_control{ ADAPTIVE_BIG_NUMBER = 20 } ;
+
+/**
    @brief fine measurements
  */
 static struct wfmeas *
@@ -93,7 +99,7 @@ fine_measurement( struct site *lat ,
 		  double *t , 
 		  const double delta_t ,
 		  const double preverr , 
-		  const int SM_TYPE  , 
+		  const smearing_types SM_TYPE  , 
 		  void (*project)( GLU_complex log[ NCNC ] , 
 				   GLU_complex *__restrict staple , 
 				   const GLU_complex link[ NCNC ] , 
@@ -117,19 +123,13 @@ fine_measurement( struct site *lat ,
   return curr ;
 }
 
-/**
-   @enum adaptive_control
-   @brief when to break our adaptive algorithm if we have done this many halvings and still have no result
- */
-enum adaptive_control{ ADAPTIVE_BIG_NUMBER = 20 } ;
-
 // Adaptive stepsize version 
 int 
 flow4d_adaptive_RK( struct site *__restrict lat , 
-		    const int smiters ,
-		    const int DIR ,
+		    const size_t smiters ,
+		    const size_t DIR ,
 		    const int SIGN ,
-		    const int SM_TYPE )
+		    const size_t SM_TYPE )
 {  
   // set this for the coupling measurement
   //set_TMEAS_STOP( 0.4 ) ;
@@ -183,21 +183,21 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
     return GLU_FAILURE ;
   }
 
-  if( GLU_malloc( (void**)&Z , 16 , LVOLUME * sizeof( struct spt_site_herm ) ) != 0 ||
-      GLU_malloc( (void**)&lat2 , 16 , LCU * sizeof( struct spt_site ) )       != 0 ||
-      GLU_malloc( (void**)&lat_two , 16 , LVOLUME * sizeof( struct site ) )    != 0 ) {
+  if( GLU_malloc( (void**)&Z , ALIGNMENT , LVOLUME * sizeof( struct spt_site_herm ) ) != 0 ||
+      GLU_malloc( (void**)&lat2 , ALIGNMENT , LCU * sizeof( struct spt_site ) )       != 0 ||
+      GLU_malloc( (void**)&lat_two , ALIGNMENT , LVOLUME * sizeof( struct site ) )    != 0 ) {
     fprintf( stderr , "[SMEARING] allocation failure \n" ) ;
     return GLU_FAILURE ;
   }
 #ifdef IMPROVED_SMEARING
-  if( GLU_malloc( (void**)&lat3 , 16 , 2 * LCU * sizeof( struct spt_site ) )   != 0 ||
-      GLU_malloc( (void**)&lat4 , 16 , 2 * LCU * sizeof( struct spt_site ) )   != 0 ) {
+  if( GLU_malloc( (void**)&lat3 , ALIGNMENT , 2 * LCU * sizeof( struct spt_site ) )   != 0 ||
+      GLU_malloc( (void**)&lat4 , ALIGNMENT , 2 * LCU * sizeof( struct spt_site ) )   != 0 ) {
     fprintf( stderr , "[SMEARING] allocation failure \n" ) ;
     return GLU_FAILURE ;
   }
 #else
-  if( GLU_malloc( (void**)&lat3 , 16 , LCU * sizeof( struct spt_site ) )   != 0 ||
-      GLU_malloc( (void**)&lat4 , 16 , LCU * sizeof( struct spt_site ) )   != 0 ) {
+  if( GLU_malloc( (void**)&lat3 , ALIGNMENT , LCU * sizeof( struct spt_site ) )   != 0 ||
+      GLU_malloc( (void**)&lat4 , ALIGNMENT , LCU * sizeof( struct spt_site ) )   != 0 ) {
     fprintf( stderr , "[SMEARING] allocation failure \n" ) ;
     return GLU_FAILURE ;
   }
@@ -239,7 +239,7 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
       }
 
       // Step forward in two halves ...
-      const double rk1 =-0.52941176470588235294 * delta_t ;
+      const double rk1 = -0.52941176470588235294 * delta_t ;
       const double rk2 = delta_t ;
       const double rk3 = ( -delta_t ) ;  
 
@@ -305,11 +305,10 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
     const double yscal_new = new_plaq ;
     yscal = 2.0 * yscal_new - yscal ;
 
-    // rewrite lat .. 
-    #pragma omp parallel for private(i)
-    PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-      memcpy( &lat[i] , &lat_two[i] , sizeof( struct site ) ) ; 
-    }
+    // overwrite lat .. 
+    struct site *ptr = lat ;
+    lat = lat_two ;
+    lat_two = ptr ;
 
     t += delta_t ; // add one time step to the overall time 
 
@@ -397,7 +396,8 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   fprintf( stdout , "[WFLOW] Adequate steps :: %zu \n" , OK_STEPS ) ;
 
   // compute the t_0 and w_0 scales from the measurement
-  if( delta_t > 0 ) {
+  if( ( fabs( curr -> time - TMEAS_STOP ) > PREC_TOL ) && 
+      count <= smiters ) {
     scaleset( curr , T0_STOP , W0_STOP , count ) ;
   }
 
@@ -405,6 +405,13 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   FLAG = GLU_SUCCESS ;
 
  memfree :
+
+  // reswap pointers if we took a step, lat is freed elsewhere
+  if( count > 1 ) {
+    struct site *ptr = lat_two ;
+    lat_two = lat ;
+    lat = ptr ;
+  }
 
   // and free the list
   while( ( curr = head ) != NULL ) {

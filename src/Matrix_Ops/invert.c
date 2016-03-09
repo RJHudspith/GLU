@@ -37,7 +37,8 @@
 static void
 eliminate_column( double complex *__restrict a , 
 		  double complex *__restrict inverse , 
-		  const int i , const int j )
+		  const size_t i , 
+		  const size_t j )
 {
   const double complex fac1 = a[ i + j*NC ] / a[ i*(NC+1) ] ;  
   double complex *pA = a + i*NC ;
@@ -60,8 +61,8 @@ eliminate_column( double complex *__restrict a ,
 // col swapper
 static void
 swap_cols( double complex *__restrict a , 
-	   const int col_idx , 
-	   const int piv )
+	   const size_t col_idx , 
+	   const size_t piv )
 {
   size_t l ;
   for( l = 0 ; l < NC ; l++ ) {
@@ -97,7 +98,7 @@ static int
 gauss_jordan( GLU_complex M_1[ NCNC ] , 
 	      const GLU_complex M[ NCNC ] )
 {
-  double complex a[ NCNC ] , ainv[ NCNC ] ;
+  double complex a[ NCNC ] GLUalign , ainv[ NCNC ] GLUalign ;
   double row_best , col_best ;
   size_t i, j , col_piv ;
 
@@ -214,17 +215,16 @@ int
 inverse( GLU_complex M_1[ NCNC ] , 
 	 const GLU_complex M[ NCNC ] )
 {
-#ifdef HAVE_LAPACKE_H
+#if (defined HAVE_LAPACKE_H)
   const int n = NC , lda = NC ;
   int ipiv[ NC + 1 ] ;
   memcpy( M_1 , M , NCNC * sizeof( GLU_complex ) ) ;
   int info = LAPACKE_zgetrf( LAPACK_ROW_MAJOR , n , n , M_1 , lda , ipiv ) ;
   info = LAPACKE_zgetri( LAPACK_ROW_MAJOR , n , M_1 , lda, ipiv ) ;
   return info ;
-#else
+#elif (defined CLASSICAL_ADJOINT_INV)
   // define the adjunct //
-  #ifdef CLASSICAL_ADJOINT_INV
-  GLU_complex adjunct[ NCNC ] ; 
+  GLU_complex adjunct[ NCNC ] GLUalign ; 
   register GLU_complex deter = cofactor_transpose( adjunct , M ) ;
   // here we worry about numerical stability //
   if( unlikely( cabs( deter ) < NC * PREC_TOL ) ) {
@@ -238,18 +238,17 @@ inverse( GLU_complex M_1[ NCNC ] ,
   deter = 1.0 / deter ;
   for( i = 0 ; i < NCNC ; i++ ) { M_1[i] = adjunct[i] * deter ; }
   return GLU_SUCCESS ;
-  #else
-    #if NC == 2 
-    // use the identity, should warn for singular matrices
-    const double complex INV_detM = 1.0 / ( det( M ) ) ;
-    M_1[ 0 ] = M[ 3 ] * INV_detM ;
-    M_1[ 1 ] = -M[ 1 ] * INV_detM ;
-    M_1[ 2 ] = -M[ 2 ] * INV_detM ;
-    M_1[ 3 ] = M[ 0 ] * INV_detM ;
-    return GLU_SUCCESS ;
-    #else 
-    return gauss_jordan( M_1 , M ) ;
-    #endif
+#else
+  #if NC == 2 
+  // use the identity, should warn for singular matrices
+  const double complex INV_detM = 1.0 / ( det( M ) ) ;
+  M_1[ 0 ] = M[ 3 ] * INV_detM ;
+  M_1[ 1 ] = -M[ 1 ] * INV_detM ;
+  M_1[ 2 ] = -M[ 2 ] * INV_detM ;
+  M_1[ 3 ] = M[ 0 ] * INV_detM ;
+  return GLU_SUCCESS ;
+  #else 
+  return gauss_jordan( M_1 , M ) ;
   #endif
 #endif 
 }
@@ -259,7 +258,7 @@ void
 newton_approx_inverse( GLU_complex Zinv[ NCNC ] , // is Z_{k-1}^{-1}
 		       const GLU_complex Z[ NCNC ] )
 {
-  GLU_complex BX[ NCNC ] ;
+  GLU_complex BX[ NCNC ] GLUalign ;
   size_t iters , j ;
   for( iters = 0 ; iters < 4 ; iters++ ) {
     multab( BX , Z , Zinv ) ;

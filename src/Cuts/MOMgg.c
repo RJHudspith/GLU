@@ -46,9 +46,9 @@ contraction_matrices( const struct site *__restrict A ,
 		      const double spsq )
 {
   // Zero_Mat all of these matrices
-  GLU_complex AA[NCNC] , AM[ NCNC ] ;
-  GLU_complex Arho[NCNC] , AP[ NCNC ] ;
-  GLU_complex temp[ NCNC ] ; 
+  GLU_complex AA[NCNC] GLUalign , AM[ NCNC ] GLUalign;
+  GLU_complex Arho[NCNC] GLUalign , AP[ NCNC ] GLUalign ;
+  GLU_complex temp[ NCNC ] GLUalign ; 
   zero_mat( AA ) ; zero_mat( AM ) ; zero_mat( Arho ) ;
   zero_mat( AP ) ;
   size_t mu ;

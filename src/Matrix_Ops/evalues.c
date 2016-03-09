@@ -33,10 +33,12 @@
   #include <gsl/gsl_eigen.h>
 #endif
 
+// I * sqrt(3)
 #define rr3 (I * 1.7320508075688772)
 
+#if NC > 2
 // CALCULATES (one of) THE CUBE ROOT(s) //
-inline void 
+static inline void 
 cubert( double complex *__restrict res ,
 	const double complex z )
 {
@@ -45,6 +47,7 @@ cubert( double complex *__restrict res ,
   *res = cbrt( real ) * ( cos( angle ) + I * sin( angle ) ) ; 
   return ;
 }
+#endif
 
 #if !(defined HAVE_GSL_H || defined HAVE_LAPACKE_H) && ( NC > 3 ) 
 
@@ -82,7 +85,7 @@ rayliegh_quotient( GLU_complex v[ NC ] ,
 		   const GLU_complex A[ NCNC ] )
 {
   // rayliegh quotient iter ...
-  GLU_complex t[ NCNC ] , t2[ NCNC ] , b[ NC ] ;
+  GLU_complex t[ NCNC ] GLUalign , t2[ NCNC ] GLUalign , b[ NC ] ;
   GLU_complex numerator , sum ;
   double evalue = 1.0 , err = 1.0 , norm , new ;
   size_t i , j , iterations = 0 ;
@@ -128,22 +131,10 @@ rayliegh_quotient( GLU_complex v[ NC ] ,
 }
 #endif
 
-// CALCULATION OF THE COMPLEX SQUARE ROOT WITH CONDITION Re( R*sqrt( R^2+g^3 ) )>=0 very slow apparently -> retired //
-void 
-squarert( double complex *__restrict res ,
-	  const double complex z ,
-	  const double complex R )
-{
-  register const double real = cabs( z ) ;
-  register const double angle = carg( z ) * 0.5 ;
-  const double temp = sqrt( real ) * ( cos( angle ) + I * sin( angle ) ) ; 
-  *res = ( creal( conj( R ) * temp ) < 0 ) ? -temp : temp ;
-  return ;  
-}
-
+#if NC > 2
 // one that returns the root
-double complex 
-squarert2( const double complex z ,
+static inline double complex 
+squarert( const double complex z ,
 	   const double complex R )
 {
   register const double real = cabs( z )  ;
@@ -151,6 +142,7 @@ squarert2( const double complex z ,
   const double temp = sqrt( real ) * ( cos( angle ) + I * sin( angle ) ) ; 
   return ( creal( conj( R ) * temp ) < 0 ) ? -temp : temp ;
 }
+#endif
 
 #if !(defined HAVE_GSL_H || defined HAVE_LAPACKE_H) && ( NC > 3 ) 
 /**
@@ -163,7 +155,7 @@ static void
 rayliegh_evalues( double z[ NC ] ,
 		  const GLU_complex A[ NCNC ] )
 {
-  GLU_complex B[ NCNC ] , temp[ NCNC ] , v[ NC ] ;
+  GLU_complex B[ NCNC ] GLUalign , temp[ NCNC ] GLUalign , v[ NC ] ;
   register double sum = 0.0 , oneONC = 1.0/sqrt((double)NC) ;
   double evalue ;
   size_t i , j ;
@@ -198,8 +190,8 @@ Eigenvalues_su3_stab( double complex z[ NC ] ,
   const double complex b = -conj( a ) ;
   const double complex p = ( b + a * ( 2.0 - a ) ) ;
   const double complex q = ( a * ( 1.0 - b - a * 2.0 * ( 1.0 - a * OneO3 ) ) + b ) * 1.5 ;
-  double complex u1 , res ;
-  squarert( &res , q*q + p*p*p , p ) ;
+  double complex u1 ;
+  double complex res = squarert( q*q + p*p*p , p ) ;
   cubert( &u1 , res - q ) ;
   const double complex u2 = ( creal( u1 ) != 0.0 ) ? -p / ( u1 ) : 0.0 ;
   register const double complex plus = u1 + u2 ;
@@ -220,7 +212,7 @@ Eigenvalues( double complex z[ NC ] ,
   /// gives the roots for x^3+ax^2+bx+c=0 using cardano's method ///
   GLU_complex temp ;
   speed_det( &temp , U ) ; // should exit if the det is 0?
-  GLU_complex inv[ NCNC ] ; 
+  GLU_complex inv[ NCNC ] GLUalign ; 
   inverse( inv , U ) ; 
   double complex res = (double complex)temp ;
   const double complex trinv = (double complex)trace( inv ) ; 
@@ -245,7 +237,7 @@ Eigenvalues( double complex z[ NC ] ,
 #else
   // need to think about this one .... hmmm. Might need a library as complex QR
   // appears to be pretty hard to do well
-  fprintf( stderr , "sorry not implemented yet .. exiting \n" ) ;
+  fprintf( stderr , "[Evalues] sorry not implemented yet .. exiting \n" ) ;
   exit(-1) ;
 #endif
   return ;
@@ -267,7 +259,6 @@ Eigenvalues_hermitian( double z[ NC ] ,
   const double Q = -b/3 ; 
   double complex R = c/2 ; 
   double complex temp = c * c/4. + b * b * b/27. ; 
-  //squarert( temp , R , &res ) ; 
   temp = R + csqrt( temp ) ; 
   // reuse 'R'
   cubert( &R , temp ) ; 
@@ -336,7 +327,7 @@ Eigenvalues_suNC( double complex z[ NC ] ,
   const double complex Q = ( a * a ) + conjA ;
   const double complex R = a * ( Q + conjA * 0.5 ) - 0.5 ; 
   const double complex temp = R * R - Q * Q * Q ; 
-  double complex res = squarert2( temp , R ) ;
+  double complex res = squarert( temp , R ) ;
   cubert( &res , R + res ) ; 
   register const double complex A = -res ; 
   register const double complex B = ( A != 0.0 ? Q/A : 0.0 ) ; //Q/A

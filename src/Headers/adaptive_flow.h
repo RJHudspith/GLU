@@ -25,7 +25,7 @@
 #define GLU_ADAPTIVE_FLOW_H
 
 /**
-   @fn int flow4d_adaptive_RK( struct site *__restrict lat , const int smiters , const int DIR , const int SIGN , const int SM_TYPE ) ;
+   @fn int flow4d_adaptive_RK( struct site *__restrict lat , const int smiters , const int DIR , const int SIGN , const smearing_types SM_TYPE ) ;
    @brief this code performs a two-step adaptive RK integration of the flow equation
    @param lat :: lattice gauge field
    @param lat :: lattice gauge fields 
@@ -34,14 +34,14 @@
    @param SIGN :: of type #GLU_direction
    @param SM_TYPE :: will accept SM_APE , SM_STOUT or SM_LOG from #smearing_types
    <br>
-   it is expensive in memory (two lattice fields needed to compare) and uses the same static functions as void flow4d_RK_fast( struct site *lat , const int smiters , const int DIR , const int SIGN , const int SM_TYPE ) and so is comparable in speed. The code also shortens the time step when we get close to WFLOW_STOP, so we can measure W0 accurately.
+   it is expensive in memory (two lattice fields needed to compare) and uses the same static functions as void flow4d_RK_fast( struct site *lat , const int smiters , const int DIR , const int SIGN , const smearing_types SM_TYPE ) and so is comparable in speed. The code also shortens the time step when we get close to WFLOW_STOP, so we can measure W0 accurately.
  **/
 int 
 flow4d_adaptive_RK( struct site *__restrict lat , 
-		    const int smiters ,
-		    const int DIR ,
+		    const size_t smiters ,
+		    const size_t DIR ,
 		    const int SIGN ,
-		    const int SM_TYPE ) ;
+		    const size_t SM_TYPE ) ;
 
 
 #endif

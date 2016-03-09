@@ -131,7 +131,7 @@ exhume_O( GLU_complex *__restrict S ,
 	  const GLU_real *__restrict uout ) 
 {
   rebuild( S , uout ) ;
-  reunit2( S ) ;
+  gram_reunit( S ) ;
   return ;
 }
 

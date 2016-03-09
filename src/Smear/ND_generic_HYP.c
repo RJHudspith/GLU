@@ -30,11 +30,6 @@
 #include "plaqs_links.h"
 #include "projectors.h"
 
-// If we are using the dangerous smearing routines ...
-#ifdef FAST_SMEAR
-  #include "random_config.h"
-#endif
-
 // global maximum smearing direction ( ND-1 == SPATIAL , ND == ALL_DIRECTIONS )
 static GLU_real smear_alphas[ ND ] , one_minus_smalpha[ ND ] ;
 
@@ -94,7 +89,8 @@ recurse_staples( GLU_complex *__restrict link ,
   // the last index is our rho plane
   const size_t rho = list_dirs[ MAXDIR - lev - 1 ] ;
   // generic storage and stuff
-  GLU_complex stap[ NCNC ] , a[ NCNC ] , b[ NCNC ] ;
+  GLU_complex stap[ NCNC ] GLUalign , a[ NCNC ] GLUalign , 
+    b[ NCNC ] GLUalign ;
   zero_mat( stap ) ;
 
   if( lev == 1 ) { 
@@ -104,18 +100,13 @@ recurse_staples( GLU_complex *__restrict link ,
       if( is_orthogonal( jj , MAXDIR-lev , list_dirs ) == ORTHOGONAL ) { 
 	//jj is our orthogonal direction
 	size_t temp = lat[i].neighbor[jj] ; 
-
 	multab_suNC( a , lat[i].O[jj] , lat[temp].O[rho] ) ; 
 	temp = lat[i].neighbor[rho] ; 
 	multab_dag_suNC( b , a , lat[temp].O[jj] ) ; 
 
 	if( type == SM_LOG ) {
 	  multab_dag_suNC( a , b , lat[i].O[rho] ) ; 
-          #ifdef FAST_SMEAR
-	  exact_log_fast( b , a ) ; 
-          #else
 	  exact_log_slow( b , a ) ; 
-          #endif
 	}
 	a_plus_b( stap , b ) ; 
       
@@ -127,11 +118,7 @@ recurse_staples( GLU_complex *__restrict link ,
 
 	if( type == SM_LOG ) {
 	  multab_dag_suNC( a , b , lat[i].O[rho] ) ; 
-          #ifdef FAST_SMEAR
-	  exact_log_fast( b , a ) ; 
-          #else
 	  exact_log_slow( b , a ) ; 
-          #endif
 	}
 	a_plus_b( stap , b ) ; 
       }
@@ -140,7 +127,7 @@ recurse_staples( GLU_complex *__restrict link ,
   } else {
 
     // allocate these two temporaries
-    GLU_complex temp[ NCNC ] , temp2[ NCNC ] ;
+    GLU_complex temp[ NCNC ] GLUalign , temp2[ NCNC ] GLUalign ;
     size_t new_list_dirs[ MAXDIR - lev + 1 ] ;
     size_t orthogonal_dirs[ MAXDIR - lev + 1 ] , jj ;
     for( jj = 0 ; jj < MAXDIR ; jj++ ) {
@@ -168,11 +155,7 @@ recurse_staples( GLU_complex *__restrict link ,
 
 	if( type == SM_LOG ) {
 	  multab_dag_suNC( a , b , lat[i].O[rho] ) ; 
-          #ifdef FAST_SMEAR
-	  exact_log_fast( b , a ) ; 
-          #else
 	  exact_log_slow( b , a ) ; 
-          #endif
 	}
 	a_plus_b( stap , b ) ; 
 	// end of top staple ...
@@ -188,11 +171,7 @@ recurse_staples( GLU_complex *__restrict link ,
 
 	if( type == SM_LOG ) {
 	  multab_dag_suNC( a , b , lat[i].O[rho] ) ; 
-          #ifdef FAST_SMEAR
-	  exact_log_fast( b , a ) ; 
-          #else
 	  exact_log_slow( b , a ) ; 
-          #endif
 	}
 	a_plus_b( stap , b ) ; 
 	// end of the bottom staple ...

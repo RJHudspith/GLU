@@ -9,7 +9,8 @@
 #include "minunit.h"
 
 // temporary mats
-static GLU_complex Ua[ NCNC ] , Ub[ NCNC ] , res1[ NCNC ] , res2[ NCNC ] ;
+static GLU_complex Ua[ NCNC ] GLUalign , Ub[ NCNC ] GLUalign ;
+static GLU_complex res1[ NCNC ] GLUalign , res2[ NCNC ] GLUalign ;
 
 // equivalence test for matrices
 static GLU_bool
@@ -33,10 +34,11 @@ static char *reunit_test( void )
   generate_NCxNC( Ub ) ;
 
   // reunitarise
-  reunit2( Ua ) ;
-  mu_assert( "[GLUnit] error : reunit2 is broken" , !is_unitary( Ua ) ) ;
-  reunit2( Ub ) ;
-  mu_assert( "[GLUnit] error : reunit2 is broken" , !is_unitary( Ub ) ) ;
+  gram_reunit( Ua ) ;
+  gram_reunit( Ub ) ;
+
+  mu_assert( "[GLUnit] error : reunit2 is broken" , is_unitary( Ua ) ) ;
+  mu_assert( "[GLUnit] error : reunit2 is broken" , is_unitary( Ub ) ) ;
   return NULL ;
 }
 

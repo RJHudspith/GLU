@@ -59,7 +59,7 @@ mom_gauge( struct site *__restrict A ,
   int flag = 0 ;
   #pragma omp parallel for private(i) shared(A)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) { 
-    GLU_complex temp[ NCNC ] ;
+    GLU_complex temp[ NCNC ] GLUalign ;
     size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       log( temp , A[i].O[mu] ) ;

@@ -74,7 +74,7 @@ static char *rng_tests( ) {
 
 // test the exponential e^{0} = Identity?
 static char *exponentiate_test(  ) {
-  GLU_complex A[ NCNC ] , Id[ NCNC ] ;
+  GLU_complex A[ NCNC ] GLUalign , Id[ NCNC ] GLUalign ;
   zero_mat( A ) ;
   exponentiate( Id , A ) ;
   int i ;
@@ -93,12 +93,12 @@ static char *exponentiate_test(  ) {
 static char *exponentiate_short_test( void ) 
 {
   // Hermitian proj has been tested
-  GLU_complex hHa[ HERMSIZE ] , Ha[ NCNC ] ;
-  GLU_complex hUa[ NCNC ] , Ua[ NCNC ] ;
+  GLU_complex hHa[ HERMSIZE ] , Ha[ NCNC ] GLUalign ;
+  GLU_complex hUa[ NCNC ] GLUalign , Ua[ NCNC ] GLUalign ;
 
   // create a unitary matrix
   generate_NCxNC( Ua ) ;
-  reunit2( Ua ) ;
+  gram_reunit( Ua ) ;
 
   // hermitian proj it
   Hermitian_proj( Ha , Ua ) ;
@@ -122,7 +122,7 @@ static char *exact_log_test(  ) {
 
   // create a unitary matrix
   generate_NCxNC( Ua ) ;
-  reunit2( Ua ) ;
+  gram_reunit( Ua ) ;
 
   exact_log_slow( A , Ua ) ;
   exponentiate( eA , A ) ;
@@ -138,12 +138,13 @@ static char *exact_log_test(  ) {
 
 // log and exponentiate should be equivalent
 static char *exact_log_short_test(  ) {
-  GLU_complex A[ NCNC ] , Ua[ NCNC ] , eA[ NCNC ] ;
-  GLU_complex hA[ NCNC ] , heA[ NCNC ] ;
+  GLU_complex A[ NCNC ] GLUalign , Ua[ NCNC ] GLUalign , 
+    eA[ NCNC ] GLUalign ;
+  GLU_complex hA[ NCNC ] GLUalign , heA[ NCNC ] GLUalign ;
 
   // create a unitary matrix
   generate_NCxNC( Ua ) ;
-  reunit2( Ua ) ;
+  gram_reunit( Ua ) ;
 
   exact_log_slow( A , Ua ) ;
   exact_log_slow_short( hA , Ua ) ;
@@ -171,14 +172,14 @@ static char *logexp_tests( ) {
 
 // matrix inverse tests
 static char *inverse_test( ) {
-  GLU_complex Ua[ NCNC ] ;
+  GLU_complex Ua[ NCNC ] GLUalign ;
 
   // have been checked already
   generate_NCxNC( Ua ) ;
-  reunit2( Ua ) ;
+  gram_reunit( Ua ) ;
 
   // perform numerical inverse
-  GLU_complex iUa[ NCNC ] ;
+  GLU_complex iUa[ NCNC ] GLUalign ;
   inverse( iUa , Ua ) ;
 
   // must be checked before too
@@ -347,5 +348,6 @@ int main( const int argc , const char *argv[] )
  TEST_SUCCESS :
   unstick_GLU( ) ;
   fprintf( stderr , "[GLUnit] All %d tests passed \n" , full_tests_run ) ;
+
   return GLU_SUCCESS ;
 }

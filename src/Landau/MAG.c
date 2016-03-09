@@ -138,7 +138,7 @@ residual_fix( struct site *__restrict lat )
   const GLU_real one_LCU = 1.0 / LCU ; 
   size_t t ;
   for( t = 0 ; t < Latt.dims[ND-1]-1 ; t++ ) {
-    GLU_complex sum[ NCNC ] ;
+    GLU_complex sum[ NCNC ] GLUalign ;
     zero_mat( sum ) ;
     for( i = 0 ; i < LCU ; i++ ) {
       a_plus_b( sum , lat[ i + LCU*t ].O[ND-1] ) ;
@@ -150,7 +150,7 @@ residual_fix( struct site *__restrict lat )
     // two ways of doing this I can think of
     #ifdef HERM_PROJ
     // 1. Hermitian projection and exact exponentiation
-    GLU_complex A[ NCNC ] ;
+    GLU_complex A[ NCNC ] GLUalign ;
     Hermitian_proj( A , sum ) ;
     exponentiate( sum , A ) ;
     #else
@@ -164,7 +164,7 @@ residual_fix( struct site *__restrict lat )
   } 
 #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    GLU_complex temp[ NCNC ] ;
+    GLU_complex temp[ NCNC ] GLUalign ;
     const size_t t = (int)( i / LCU ) ;
     const size_t tup = ( t == Latt.dims[ND-1]-1 ) ? 0 : t+1 ;
     multab_dag_suNC( temp , lat[i].O[ND-1] , gauge[tup] ) ;

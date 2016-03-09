@@ -119,7 +119,7 @@ second_deriv( const double flow_prev ,
 	      const double delta_t ) ;
 
 /**
-   @fn void step_distance( struct site *__restrict lat , struct spt_site *__restrict lat2 , struct spt_site_herm *__restrict Z , const double rk1 , const double rk2 , const double rk3 , const int SM_TYPE )
+   @fn void step_distance( struct site *__restrict lat , struct spt_site *__restrict lat2 , struct spt_site_herm *__restrict Z , const double rk1 , const double rk2 , const double rk3 , const smearing_types SM_TYPE , void (*project)( GLU_complex log[ NCNC ] , GLU_complex *__restrict staple , const GLU_complex link[ NCNC ] , const double smear_alpha ) )
    @brief perform one rk4 wilson flow integration step
    @warning only SM_LOG and SM_STOUT available
    @param lat :: lattice gauge field
@@ -141,14 +141,14 @@ step_distance( struct site *__restrict lat ,
 	       const double rk1 ,
 	       const double rk2 , 
 	       const double rk3 ,
-	       const int SM_TYPE ,  
+	       const smearing_types SM_TYPE ,  
 	       void (*project)( GLU_complex log[ NCNC ] , 
 					 GLU_complex *__restrict staple , 
 					 const GLU_complex link[ NCNC ] , 
 					 const double smear_alpha ) ) ;
 
 /**
-   @fn void step_distance_memcheap( struct site *__restrict lat , struct spt_site *__restrict lat2 , struct spt_site *__restrict lat3 , struct spt_site *__restrict lat4 , struct spt_site_herm *__restrict Z , const double rk1 , const double rk2 , const double rk3 , const int SM_TYPE )
+   @fn void step_distance_memcheap( struct site *__restrict lat , struct spt_site *__restrict lat2 , struct spt_site *__restrict lat3 , struct spt_site *__restrict lat4 , struct spt_site_herm *__restrict Z , const double rk1 , const double rk2 , const double rk3 , const smearing_types SM_TYPE , void (*project)( GLU_complex log[ NCNC ] , GLU_complex *__restrict staple , const GLU_complex link[ NCNC ] , const double smear_alpha ) )
    @brief perform one rk4 wilson flow integration step
    @warning only SM_LOG and SM_STOUT available
    @param lat :: lattice gauge field
@@ -174,7 +174,7 @@ step_distance_memcheap( struct site *__restrict lat ,
 			const double rk1 ,
 			const double rk2 , 
 			const double rk3 , 
-			const int SM_TYPE ,
+			const smearing_types SM_TYPE ,
 			void (*project)( GLU_complex log[ NCNC ] , 
 					 GLU_complex *__restrict staple , 
 					 const GLU_complex link[ NCNC ] , 

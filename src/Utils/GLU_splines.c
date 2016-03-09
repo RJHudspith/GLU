@@ -20,25 +20,16 @@
    @file GLU_splines.c
    @brief cubic spline calculator
  */
-
-/*
-#include <complex.h>
-#include <math.h>
-#include <stdio.h>
-
-#define TWOPI ( 2.0 * M_PI )
-*/
-
 #include "Mainfile.h"
 
 #define sgn( a ) ( a < 0.0 ? -1 : 1 ) 
 
 // finds the upper index of target
-static int 
+static size_t
 find_idx( const double target , 
 	  const double *__restrict X , 
-	  const int high , 
-	  const int low )
+	  const size_t high , 
+	  const size_t low )
 {
   return ( ( high - low ) < 2 ) ? high :				\
     X[ ( high + low ) >> 1 ] < target ?					\
@@ -51,7 +42,7 @@ static void
 h2_derivative( double *__restrict der ,
 	       const double *__restrict x ,
 	       const double *__restrict y ,
-	       const int N )
+	       const size_t N )
 {
   // forwards iteration
   // expansion of f(x+a) + f(x+b)
@@ -61,7 +52,7 @@ h2_derivative( double *__restrict der ,
   der[0] = num0 / ( a0*b0*( b0-a0 ) ) ;
 
   // and the middle ones
-  int i ;
+  size_t i ;
   for( i = 1 ; i < N-1 ; i++ ) {
     const double a = x[i+1] - x[i] ;
     const double b = x[i] - x[i-1] ;
@@ -96,7 +87,7 @@ h3_derivative( double *__restrict der ,
     der[0] = num / ( -ab*(-ac+bc)*(b-c)*(-a+c) ) + (-1./a - 1./b - 1./c ) * y[0] ;
   }
   // expansion of f(x-a) + f(x+b) + f(x+c)
-  int i ;
+  size_t i ;
   for( i = 1 ; i < N-2 ; i++ ) {
     const double a = x[i] - x[i-1] ;
     const double b = x[i+1] - x[i] ;
@@ -137,7 +128,7 @@ void
 spline_derivative( double *__restrict der ,
 		   const double *__restrict x ,
 		   const double *__restrict y ,
-		   const int N )
+		   const size_t N )
 {
   // for these derivative functions to work, need at least 5 points
   if( N < 5 ) { 
@@ -175,7 +166,7 @@ spline_derivative( double *__restrict der ,
       ( 1./a + 1./-b - 1./c - 1./d ) * y[1] ;
   }
   // quasi-symmetric solution, can be done in parallel
-  int i ;
+  size_t i ;
   for( i = 2 ; i < N-2 ; i++ ) {
     const double a = x[i] - x[i-2] ;
     const double b = x[i] - x[i-1] ;
@@ -225,7 +216,7 @@ cubic_eval( const double *__restrict x ,
 	    const double mu ,
 	    const int datalength )
 {
-  const int ref = find_idx( mu , x , datalength , 0 ) ;
+  const size_t ref = find_idx( mu , x , datalength , 0 ) ;
 
   // newer, slightly higher order derivative
   const double diff = x[ref] - x[ref-1] ;
@@ -250,7 +241,7 @@ double
 cubic_min( const double *__restrict x ,
 	   const double *__restrict y ,
 	   const double *__restrict der ,
-	   const int change_up )
+	   const size_t change_up )
 {
   // if the cross over derivative is not bound we return 0
   if( change_up == 0 ) return 0.0 ;
@@ -284,13 +275,13 @@ cubic_min( const double *__restrict x ,
     ans = ( -b + root ) / ( 3.0 * a ) ;
   }
 
-  /*
+#ifdef verbose
   //Look at what we are solving ....
-  printf( "[SPLINE] %f %f \n" , yp , yp_p ) ;
-  printf( "[SPLINE] abc %e %e %e \n" , a , b , c ) ;
-  printf( "[SPLINE] change up %d \n" , change_up ) ;
-  printf( "[SPLINE] root %e \n" , ans ) ;
-  */
+  fprintf( stdout , "[SPLINE] %f %f \n" , yp , yp_p ) ;
+  fprintf( stdout , "[SPLINE] abc %e %e %e \n" , a , b , c ) ;
+  fprintf( stdout , "[SPLINE] change up %d \n" , change_up ) ;
+  fprintf( stdout , "[SPLINE] root %e \n" , ans ) ;
+#endif
 
   // and as we have solved for "t" in the note, we have to shift up
   return ans * diff + x[change_up-1] ;
@@ -325,8 +316,6 @@ quad_solve( double complex *Z ,
   }
 }
 
-#define TOL 1E-12
-
 // solve a cubic ( ca x^3 + cb x^2 + cc x + cd == eval ) for x 
 double
 cubic_solve( double complex Z[ 3 ] , 
@@ -337,11 +326,11 @@ cubic_solve( double complex Z[ 3 ] ,
 	     const double eval )
 {
   // if ca is super small this is a quadratic
-  if( fabs( ca ) < TOL ) {
+  if( fabs( ca ) < PREC_TOL ) {
     return quad_solve( Z , cb , cc , cd - eval ) ; 
   }
   // if the constant term is zero the solution is quadratic too
-  if( fabs( cd - eval ) < TOL ) {
+  if( fabs( cd - eval ) < PREC_TOL ) {
     return quad_solve( Z , ca , cb , cc ) ; 
   }
 
@@ -379,8 +368,10 @@ solve_spline( const double *__restrict x ,
 	      const double *__restrict y ,
 	      const double *__restrict der ,
 	      const double mu ,
-	      const int change_up )
+	      const size_t change_up )
 {
+  if( change_up == 0 ) return -1.0 ;
+
   // newer, slightly higher order derivative
   const double diff = x[change_up] - x[change_up-1] ;
   const double yp   = der[change_up-1] * diff ;
@@ -397,7 +388,7 @@ solve_spline( const double *__restrict x ,
   cubic_solve( Z , a , b , c , d , mu ) ;
 
   // should sanity-check the solution here too
-  int roots ;
+  size_t roots = 0 ;
   for( roots = 0 ; roots < 3 ; roots++ ) {
     const double sol = creal( Z[ roots ] ) * diff + x[ change_up - 1 ] ;
     if( sol < x[ change_up ] && sol > x[ change_up - 1 ] ) {

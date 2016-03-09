@@ -24,13 +24,8 @@
 #include "Mainfile.h"
 
 #include "plaqs_links.h"  // needed in print_smearing_obs()
-#ifdef FAST_SMEAR         // super dangerous, should probably remove this option
- #include "gramschmidt.h" // used for the reunitarisation step in APE
-                          // this is so unbearably dangerous
-#else
- #include "givens.h"      // or the standard cabibbo marinari rotations?
- #include "taylor_logs.h" // are we using the unit circle projection?
-#endif
+#include "givens.h"       // or the standard cabibbo marinari rotations?
+#include "taylor_logs.h"  // are we using the unit circle projection?
 
 // this is a common IO pattern for all the smearings
 void
@@ -96,7 +91,7 @@ project_LOG( GLU_complex smeared_link[ NCNC ] ,
 	     const double smear_alpha ,
 	     const double al )
 {
-  GLU_complex a[ NCNC ] ; 
+  GLU_complex a[ NCNC ] GLUalign ; 
 #if NC == 3
   *( staple + 0 ) *= smear_alpha ; 
   *( staple + 1 ) *= smear_alpha ; 
@@ -113,83 +108,13 @@ project_LOG( GLU_complex smeared_link[ NCNC ] ,
   *( staple + 2 ) = conj( staple[1] ) ; 
   *( staple + 3 ) = -staple[0] ;
 #else
-  int elem ;
+  size_t elem ;
   for( elem = 0 ; elem < NCNC ; elem++ ) {
     *( staple + elem ) *= smear_alpha ;
   }
 #endif
   exponentiate( a , staple ) ; 
   multab_suNC( smeared_link , a , link ) ;
-  return ;
-}
-
-// projection for the log smearing short def
-void
-project_LOG_short( GLU_complex smeared_link[ NCNC ] , 
-		   GLU_complex staple[ NCNC ] , 
-		   const GLU_complex link[ NCNC ] , 
-		   const double smear_alpha , 
-		   const double al )
-{
-#if NC > 3
-  project_LOG( smeared_link , staple , link , 
-	       smear_alpha , al ) ;
-  return ;
-#else
-  GLU_complex a[ NCNC ] ; 
-#if NC == 3
-  *( staple + 0 ) *= smear_alpha ; 
-  *( staple + 1 ) *= smear_alpha ; 
-  *( staple + 2 ) *= smear_alpha ;
-  *( staple + 3 ) = smear_alpha * staple[ 4 ]; 
-  *( staple + 4 ) = smear_alpha * staple[ 5 ] ;
-#elif NC == 2
-  *( staple + 0 ) *= smear_alpha ; 
-  *( staple + 1 ) *= smear_alpha ;
-#else
-  size_t mu ;
-  for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
-    *( staple + mu ) *= smear_alpha ;
-  }
-#endif
-  exponentiate_short( a , staple ) ; 
-  multab_suNC( smeared_link , a , link ) ;
-  return ;
-#endif
-}
-
-// LOG smearing wilson flow ....
-void
-project_LOG_wflow( GLU_complex log[ NCNC ] , 
-		   GLU_complex *__restrict staple , 
-		   const GLU_complex link[ NCNC ] , 
-		   const double smear_alpha )
-{
-  GLU_complex a[ NCNC ] , b[ NCNC ] ;
-  #if NC == 3
-  *( a + 0 ) = staple[0] * smear_alpha ; 
-  *( a + 1 ) = staple[1] * smear_alpha ; 
-  *( a + 2 ) = staple[2] * smear_alpha ;
-  *( a + 3 ) = conj( a[1] ) ;
-  *( a + 4 ) = staple[3] * smear_alpha ; 
-  *( a + 5 ) = staple[4] * smear_alpha ;
-  *( a + 6 ) = conj( a[2] ) ; 
-  *( a + 7 ) = conj( a[5] ) ; 
-  *( a + 8 ) = -a[0] - a[4] ;
-  #elif NC == 2
-  *( a + 0 ) = staple[0] * smear_alpha ; 
-  *( a + 1 ) = staple[1] * smear_alpha ; 
-  *( a + 2 ) = conj( a[1] ) ; 
-  *( a + 3 ) = -a[0] ;
-  #else
-  int elem ;
-  rebuild_hermitian( a , staple ) ;
-  for( elem = 0 ; elem < NCNC ; elem++ ) {
-    *( a + elem ) *= smear_alpha ;
-  }
-  #endif
-  exponentiate( b , a ) ; 
-  multab_suNC( log , b , link ) ;
   return ;
 }
 
@@ -200,7 +125,7 @@ project_LOG_wflow_short( GLU_complex log[ NCNC ] ,
 			 const GLU_complex link[ NCNC ] , 
 			 const double smear_alpha )
 {
-  GLU_complex a[ HERMSIZE ] , b[ NCNC ] ;
+  GLU_complex a[ HERMSIZE ] , b[ NCNC ] GLUalign ;
   #if NC == 3
   *( a + 0 ) = creal( staple[0] ) * smear_alpha ; 
   *( a + 1 ) = staple[1] * smear_alpha ; 
@@ -230,7 +155,7 @@ project_STOUT( GLU_complex smeared_link[ NCNC ] ,
 	       const double smear_alpha ,
 	       const double al )
 {
-  GLU_complex a[ NCNC ] , b[ NCNC ] ;  
+  GLU_complex a[ NCNC ] GLUalign , b[ NCNC ] GLUalign ;  
   multab_dag( b , staple , link ) ;   
   Hermitian_proj( a , b ) ;
 #if NC == 3
@@ -259,43 +184,6 @@ project_STOUT( GLU_complex smeared_link[ NCNC ] ,
   return ;
 }
 
-// projection for stout smearing ..
-void
-project_STOUT_short( GLU_complex smeared_link[ NCNC ] , 
-		     GLU_complex staple[ NCNC ] , 
-		     const GLU_complex link[ NCNC ] , 
-		     const double smear_alpha ,
-		     const double al )
-{
-#if NC > 3
-  project_STOUT( smeared_link , staple , link , 
-		 smear_alpha , al ) ;
-  return ;
-#else
-  GLU_complex a[ NCNC ] , b[ NCNC ] ;  
-  multab_dag( b , staple , link ) ;   
-  Hermitian_proj_short( a , b ) ;
-#if NC == 3
-  *( a + 0 ) *= smear_alpha ; 
-  *( a + 1 ) *= smear_alpha ; 
-  *( a + 2 ) *= smear_alpha ;
-  *( a + 3 ) *= smear_alpha ; 
-  *( a + 4 ) *= smear_alpha ;
-#elif NC == 2
-  *( a + 0 ) *= smear_alpha ; 
-  *( a + 1 ) *= smear_alpha ;
-#else
-  int mu ;
-  for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
-    a[ mu ] *= smear_alpha ;
-  }
-#endif
-  exponentiate_short( b , a ) ; 
-  multab_suNC( smeared_link , b , link ) ; 
-  return ;
-#endif
-}
-
 // I needed to write a cheaper projection for the wilson flow
 void
 project_STOUT_wflow_short( GLU_complex stout[ NCNC ] , 
@@ -303,7 +191,7 @@ project_STOUT_wflow_short( GLU_complex stout[ NCNC ] ,
 			   const GLU_complex link[ NCNC ] , 
 			   const double smear_alpha )
 {
-  GLU_complex a[ HERMSIZE ] , b[ NCNC ] ;
+  GLU_complex a[ HERMSIZE ] , b[ NCNC ] GLUalign ;
 #if NC == 3
   *( a + 0 ) = creal( staple[ 0 ] ) * smear_alpha ; 
   *( a + 1 ) = staple[ 1 ] * smear_alpha ; 
@@ -314,7 +202,7 @@ project_STOUT_wflow_short( GLU_complex stout[ NCNC ] ,
   *( a + 0 ) = creal( staple[ 0 ] ) * smear_alpha ; 
   *( a + 1 ) = staple[ 1 ] * smear_alpha ; 
 #else
-  int elem ;
+  size_t elem ;
   for( elem = 0 ; elem < HERMSIZE ; elem++ ) {
     *( a + elem ) = staple[ elem ] * smear_alpha ;
   }

@@ -70,6 +70,31 @@ make_short_log( GLU_complex short_staple[ HERMSIZE ] ,
   return ;
 }
 
+// accumulate the Z-matrix 
+static inline void
+set_zmatrix( struct spt_site_herm *__restrict Z ,
+	     const GLU_complex short_staple[ HERMSIZE ] ,
+	     const double multiplier ,
+	     const size_t i ,
+	     const size_t mu ) 
+{
+#if NC == 3
+  Z[i].O[mu][0] += multiplier * creal( short_staple[0] ) +\
+    I * multiplier * creal( short_staple[3] ) ;
+  Z[i].O[mu][1] += multiplier * short_staple[1] ;
+  Z[i].O[mu][2] += multiplier * short_staple[2] ;
+  Z[i].O[mu][3] += multiplier * short_staple[4] ;
+#elif NC == 2
+  Z[i].O[mu][0] += multiplier * creal( short_staple[0] ) ;
+  Z[i].O[mu][1] += multiplier * short_staple[1] ;
+#else
+  size_t elements ;
+  for( elements = 0 ; elements < HERMSIZE ; elements++ ) {
+    Z[i].O[mu][ elements ] += multiplier * short_staple[elements] ;
+  }
+#endif
+}
+
 // wilson flow in all ND directions ...
 static void
 flow_directions( struct spt_site *__restrict lat2 ,
@@ -80,13 +105,14 @@ flow_directions( struct spt_site *__restrict lat2 ,
 		 const size_t i ,
 		 const size_t it ,
 		 const size_t mu ,
-		 const int SM_TYPE ,
+		 const smearing_types SM_TYPE ,
 		 void (*project)( GLU_complex log[ NCNC ] , 
 				  GLU_complex *__restrict staple , 
 				  const GLU_complex link[ NCNC ] , 
 				  const double smear_alpha ) )
 {
-  GLU_complex staple[ NCNC ] ;
+  GLU_complex staple[ NCNC ] GLUalign , temp[ NCNC ] GLUalign ;
+  GLU_complex short_staple[ HERMSIZE ] GLUalign ; // does not need to be inited
   zero_mat( staple ) ;
   // first element
   #ifdef IMPROVED_SMEARING
@@ -94,32 +120,18 @@ flow_directions( struct spt_site *__restrict lat2 ,
   #else
   all_staples( staple , lat , it , mu , ND , SM_TYPE ) ;
   #endif
-  GLU_complex short_staple[ HERMSIZE ] ; // does not need to be inited
   // default to STOUT ...
-  if( SM_TYPE == SM_LOG ) {
+  switch( SM_TYPE ) {
+  case SM_LOG :
     make_short_log( short_staple , staple ) ;
-  } else {
-    // multiply by the daggered link
-    GLU_complex temp[ NCNC ] ;
+    break ;
+  default :
     multab_dag( temp , staple , lat[it].O[mu] ) ; 
-    // hermitian projection
     Hermitian_proj_short( short_staple , temp ) ;
+    break ;
   }
-  #if NC == 3
-  Z[it].O[mu][0] += multiplier * creal( short_staple[0] ) +\
-    I * multiplier * creal( short_staple[3] ) ;
-  Z[it].O[mu][1] += multiplier * short_staple[1] ;
-  Z[it].O[mu][2] += multiplier * short_staple[2] ;
-  Z[it].O[mu][3] += multiplier * short_staple[4] ;
-  #elif NC == 2
-  Z[it].O[mu][0] += multiplier * creal( short_staple[0] ) ;
-  Z[it].O[mu][1] += multiplier * short_staple[1] ;
-  #else
-  int elements ;
-  for( elements = 0 ; elements < HERMSIZE ; elements++ ) {
-    Z[it].O[mu][ elements ] += multiplier * short_staple[elements] ;
-  }
-  #endif
+  // poke back into the accumulated Z-matrix
+  set_zmatrix( Z , short_staple , multiplier , it , mu ) ;
   // perform the stout projection on the hermitian-shortened links
   project( lat2[i].O[mu] , Z[it].O[mu] , lat[it].O[mu] , delta_t ) ; 
   return ;
@@ -130,9 +142,9 @@ static void
 RK3step( struct spt_site_herm *__restrict Z ,
 	 struct spt_site *__restrict lat2 ,
 	 struct site *__restrict lat ,
-	 const double factor , 
-	 const double RKfactor ,
-	 const int SM_TYPE ,
+	 const double multiplier , 
+	 const double delta_t ,
+	 const smearing_types SM_TYPE ,
 	 void (*project)( GLU_complex log[ NCNC ] , 
 			  GLU_complex *__restrict staple , 
 			  const GLU_complex link[ NCNC ] , 
@@ -141,49 +153,44 @@ RK3step( struct spt_site_herm *__restrict Z ,
   size_t i ;
 #pragma omp parallel for private(i) SCHED
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-    GLU_complex staple[ NCNC ] ;
+    GLU_complex staple[ NCNC ] GLUalign , temp[ NCNC ] GLUalign ;
+    GLU_complex short_staple[ HERMSIZE ] GLUalign ;
     size_t mu ;
-    for( mu = 0 ; mu < ND ; mu++ ) {
-      zero_mat( staple ) ;
-      // first element
-      #ifdef IMPROVED_SMEARING
-      all_staples_improve( staple , lat , i , mu , ND , SM_TYPE ) ;
-      #else
-      all_staples( staple , lat , i , mu , ND , SM_TYPE ) ;
-      #endif
-      GLU_complex short_staple[ HERMSIZE ] ;
-      // default to STOUT ...
-      if( SM_TYPE == SM_LOG ){
-	// log smearing just requires an exact log as
-	// we have already multiplied through by the daggered
-	// link matrix and taken the log
+    switch( SM_TYPE ) {
+    case SM_LOG :
+      for( mu = 0 ; mu < ND ; mu++ ) {
+	zero_mat( staple ) ;
+	// first element
+        #ifdef IMPROVED_SMEARING
+	all_staples_improve( staple , lat , i , mu , ND , SM_TYPE ) ;
+        #else
+	all_staples( staple , lat , i , mu , ND , SM_TYPE ) ;
+        #endif
+	// log smearing just requires an set the log
 	make_short_log( short_staple , staple ) ;
-      } else {
-	// multiply by the daggered link
-	GLU_complex temp[ NCNC ] ;
-	multab_dag( temp , staple , lat[i].O[mu] ) ; 
+	set_zmatrix( Z , short_staple , multiplier , i , mu ) ;
+	project( lat2[i].O[mu] , Z[i].O[mu] , lat[i].O[mu] , delta_t ) ; 
+      } break ;
+    default :
+      for( mu = 0 ; mu < ND ; mu++ ) {
+	zero_mat( staple ) ;
+	// first element
+        #ifdef IMPROVED_SMEARING
+	all_staples_improve( staple , lat , i , mu , ND , SM_TYPE ) ;
+        #else
+	all_staples( staple , lat , i , mu , ND , SM_TYPE ) ;
+        #endif
+	// log smearing just requires an set the log
 	// hermitian projection
+	multab_dag( temp , staple , lat[i].O[mu] ) ; 
 	Hermitian_proj_short( short_staple , temp ) ;
-      }
-      #if NC == 3
-      Z[i].O[mu][0] += factor * creal( short_staple[0] ) +\
-	I * factor * creal( short_staple[3] ) ;
-      Z[i].O[mu][1] += factor * short_staple[1] ;
-      Z[i].O[mu][2] += factor * short_staple[2] ;
-      Z[i].O[mu][3] += factor * short_staple[4] ;
-      #elif NC == 2
-      Z[i].O[mu][0] += factor * creal( short_staple[0] ) ;
-      Z[i].O[mu][1] += factor * short_staple[1] ;
-      #else
-      int elements ;
-      for( elements = 0 ; elements < HERMSIZE ; elements++ ) {
-	Z[i].O[mu][ elements ] += factor * short_staple[ elements ] ;
-      }
-      #endif
-      project( lat2[i].O[mu] , Z[i].O[mu] , lat[i].O[mu] , RKfactor ) ; 
+	set_zmatrix( Z , short_staple , multiplier , i , mu ) ;
+	project( lat2[i].O[mu] , Z[i].O[mu] , lat[i].O[mu] , delta_t ) ;
+      } break ;
     }
   }
-  #pragma omp parallel for private(i)
+  // copy into lat
+#pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
     memcpy( &lat[i] , &lat2[i] , sizeof( struct spt_site ) ) ; 
   }
@@ -199,18 +206,18 @@ RK3step_memcheap( struct spt_site_herm *__restrict Z ,
 		  struct site *__restrict lat ,
 		  const double multiplier ,
 		  const double step ,
-		  const int SM_TYPE ,
+		  const smearing_types SM_TYPE ,
 		  void (*project)( GLU_complex log[ NCNC ] , 
 				   GLU_complex *__restrict staple , 
 				   const GLU_complex link[ NCNC ] , 
 				   const double smear_alpha ) )
 {
   size_t i ;
-  #ifdef IMPROVED_SMEARING
+#ifdef IMPROVED_SMEARING
   const size_t back = lat[ lat[0].back[ ND-1 ] ].back[ ND-1 ] ;
-  #else
+#else
   const size_t back = lat[0].back[ ND - 1 ] ;
-  #endif
+#endif
   // split volume - wise
   #pragma omp parallel for private(i) SCHED
   #ifdef IMPROVED_SMEARING
@@ -273,10 +280,10 @@ RK3step_memcheap( struct spt_site_herm *__restrict Z ,
   // put the last couple back in ....
   const size_t slice = LCU * t ;
   const size_t behind = lat[ slice ].back[ ND - 1 ] ;
-  #ifdef IMPROVED_SMEARING
+#ifdef IMPROVED_SMEARING
   const size_t behind2 = lat[ behind ].back[ ND-1 ] ;
-  #endif
-  #pragma omp parallel for private(i)
+#endif
+#pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LCU ; i++ ) {
     register const size_t back = behind + i ;
     register const size_t it = slice + i ; 
@@ -294,7 +301,7 @@ RK3step_memcheap( struct spt_site_herm *__restrict Z ,
 }
 
 // evaluate the flow using splines, evaluate a a particular scale
-double
+static double
 evaluate_scale( double *der , 
 		const double *x ,
 		const double *meas ,
@@ -308,7 +315,7 @@ evaluate_scale( double *der ,
     spline_derivative( der , x , meas , Nmeas ) ;
     // W_0 scale
     if( i > 0 ) {
-      if( ( meas[ i ] ) > scale && ( meas[ i - 1 ] ) < scale ) {
+      if( ( ( meas[ i ] ) > scale && ( meas[ i - 1 ] ) ) < scale ) {
 	change_up = i ;
       }
     }
@@ -353,6 +360,9 @@ scaleset( struct wfmeas *curr ,
   double *GT   = malloc( ( count + 1 ) * sizeof( double ) ) ;
   double *time = malloc( ( count + 1 ) * sizeof( double ) ) ;
   double *der  = malloc( ( count + 1 ) * sizeof( double ) ) ;
+  // error handling
+  double t0 = -1 , w0 = -1 ;
+  int flag = GLU_SUCCESS ;
   // traverse the list backwards setting the time and GT
   size_t i ;
   for( i = 0 ; i < ( count + 1 ) ; i++ ) {
@@ -360,33 +370,35 @@ scaleset( struct wfmeas *curr ,
     GT[ ( count + 1 ) - i - 1 ] = curr -> Gt ;
     curr = curr -> next ;
   }
-  const double t0 = evaluate_scale( der , time , GT , ( count + 1 ) , T_0 , "GT" ) ;
-  if( t0 == -1.0 ) {
+  t0 = evaluate_scale( der , time , GT , ( count ) , T_0 , "GT" ) ;
+  if( t0 == -1 ) {
     fprintf( stderr , "[WFLOW] cubic solve failure (gt)\n" ) ;
     fprintf( stderr , "[WFLOW] solve needs to bound the value you "
 	     "are looking for\n" ) ;
-    free( der ) ; free( time ) ; free( GT ) ;
-    return GLU_FAILURE ;
+    flag = GLU_FAILURE ;
+    goto free ;
   }
   fprintf( stdout , "[GT-scale] G(%g) %f \n" , T_0 , sqrt( t0 ) ) ;
   // W(t) = t ( dG(t) / dt )
   for( i = 0 ; i < ( count + 1 ) ; i++ ) {
     GT[ i ] = time[ i ] * der[ i ] ;
   }
-  const double w0 = evaluate_scale( der , time , GT , ( count + 1 ) , W_0 , "WT" ) ;
-  if( w0 == -1.0 ) {
+  w0 = evaluate_scale( der , time , GT , ( count ) , W_0 , "WT" ) ;
+  if( w0 == -1 ) {
     fprintf( stderr , "[WFLOW] cubic solve failure (wt) \n" ) ;
     fprintf( stderr , "[WFLOW] solve needs to bound the value you "
 	     "are looking for\n" ) ;
-    free( der ) ; free( time ) ; free( GT ) ;
-    return GLU_FAILURE ;
+    flag = GLU_FAILURE ;
+    goto free ;
   }
   fprintf( stdout , "[WT-scale] W(%g) %g \n" , W_0 , sqrt( w0 ) ) ;
 
+ free :
   free( der ) ;
   free( time ) ;
   free( GT ) ;
-  return GLU_SUCCESS ;
+
+  return flag ;
 }
 
 // driver function for the more memory expensive smearing
@@ -397,7 +409,7 @@ step_distance( struct site *__restrict lat ,
 	       const double rk1 ,
 	       const double rk2 , 
 	       const double rk3 , 
-	       const int SM_TYPE ,
+	       const smearing_types SM_TYPE ,
 	       void (*project)( GLU_complex log[ NCNC ] , 
 				GLU_complex *__restrict staple , 
 				const GLU_complex link[ NCNC ] , 
@@ -430,7 +442,7 @@ step_distance_memcheap( struct site *__restrict lat ,
 			const double rk1 ,
 			const double rk2 , 
 			const double rk3 , 
-			const int SM_TYPE ,
+			const smearing_types SM_TYPE ,
 			void (*project)( GLU_complex log[ NCNC ] , 
 					 GLU_complex *__restrict staple , 
 					 const GLU_complex link[ NCNC ] , 

@@ -90,7 +90,7 @@ OR_single( struct site *__restrict lat ,
 	   const size_t i ,
 	   const size_t DIMS )
 {
-  GLU_complex L[ NCNC ] ;
+  GLU_complex L[ NCNC ] GLUalign ;
   zero_mat( L ) ;
   size_t mu , j , k ;
   // loop directions summing into L
@@ -107,7 +107,7 @@ OR_single( struct site *__restrict lat ,
   // hits the link to the left and the one to the right with
   // gauge transformation matrices
   GLU_complex s0 , s1 ;
-  OrRotation( L , &s0 , &s1 , OrParam , su2_index ) ;
+  OrRotation( &s0 , &s1 , L , OrParam , su2_index ) ;
 
   // gauge rotate
   for( mu = 0 ; mu < ND ; mu++ ) {

@@ -59,7 +59,7 @@ exponentiate_gauge_CG( GLU_complex *__restrict *__restrict gauge ,
   // the derivative in this form is antihermitian i.e -> i.dA
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LCU ; i++ ) {
-    GLU_complex temp[ NCNC ] , temp2[ NCNC ] ;
+    GLU_complex temp[ NCNC ] GLUalign , temp2[ NCNC ] GLUalign ;
     set_gauge_matrix( temp , in , alpha , i ) ;
     equiv( temp2 , gauge[i] ) ;
     multab_suNC( gauge[i] , temp , temp2 ) ;
@@ -459,9 +459,8 @@ Coulomb_FACG( struct site  *__restrict lat ,
 	      const size_t max_iter )
 {
   // allocations 
-  GLU_complex **gtransformed = NULL ;
-  GLU_complex **slice_gauge = NULL , **slice_gauge_end = NULL , 
-    **slice_gauge_up  = NULL ;
+  GLU_complex **gt = NULL , **g = NULL , 
+    **g_end = NULL , **g_up  = NULL ;
   GLU_complex **sn = NULL , **in_old = NULL ; // CG temporaries
 
   // allocate rotato
@@ -477,86 +476,85 @@ Coulomb_FACG( struct site  *__restrict lat ,
   size_t i , t = 0 ;
 
   // temporary field allocations
-  if( GLU_malloc( (void**)&gtransformed    , 16 , LCU * sizeof( GLU_complex* ) ) != 0 ||
-      GLU_malloc( (void**)&slice_gauge     , 16 , LCU * sizeof( GLU_complex* ) ) != 0 ||
-      GLU_malloc( (void**)&slice_gauge_end , 16 , LCU * sizeof( GLU_complex* ) ) != 0 ||
-      GLU_malloc( (void**)&slice_gauge_up  , 16 , LCU * sizeof( GLU_complex* ) ) != 0 ||
-      GLU_malloc( (void**)&sn              , 16 , TRUE_HERM * sizeof( GLU_complex* ) ) != 0 ||
-      GLU_malloc( (void**)&in_old          , 16 , TRUE_HERM * sizeof( GLU_complex* ) ) != 0 ||
-      GLU_malloc( (void**)&rotato          , 16 , LCU * sizeof( struct sp_site_herm ) ) != 0 ) {
+  if( GLU_malloc( (void**)&gt     , ALIGNMENT , LCU * sizeof( GLU_complex* ) ) != 0 ||
+      GLU_malloc( (void**)&g      , ALIGNMENT , LCU * sizeof( GLU_complex* ) ) != 0 ||
+      GLU_malloc( (void**)&g_end  , ALIGNMENT , LCU * sizeof( GLU_complex* ) ) != 0 ||
+      GLU_malloc( (void**)&g_up   , ALIGNMENT , LCU * sizeof( GLU_complex* ) ) != 0 ||
+      GLU_malloc( (void**)&sn     , ALIGNMENT , TRUE_HERM * sizeof( GLU_complex* ) ) != 0 ||
+      GLU_malloc( (void**)&in_old , ALIGNMENT , TRUE_HERM * sizeof( GLU_complex* ) ) != 0 ||
+      GLU_malloc( (void**)&rotato , ALIGNMENT , LCU * sizeof( struct sp_site_herm ) ) != 0 ) {
     goto memfree ;
   }
 
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < TRUE_HERM ; i ++  ) {
-    GLU_malloc( (void**)&sn[i] , 16 , LCU * sizeof( GLU_complex ) ) ;
-    GLU_malloc( (void**)&in_old[i] , 16 , LCU * sizeof( GLU_complex ) ) ; 
+    GLU_malloc( (void**)&sn[i] , ALIGNMENT , LCU * sizeof( GLU_complex ) ) ;
+    GLU_malloc( (void**)&in_old[i] , ALIGNMENT , LCU * sizeof( GLU_complex ) ) ; 
   }
 
   // allocate the transformation matrices
 #pragma omp parallel for private(i) 
   PFOR( i = 0 ; i < LCU ; i++ ) {
     // allocations
-    GLU_malloc( (void**)&slice_gauge[i]     , 16 , NCNC * sizeof( GLU_complex ) ) ; 
-    GLU_malloc( (void**)&slice_gauge_up[i]  , 16 , NCNC * sizeof( GLU_complex ) ) ;
-    GLU_malloc( (void**)&slice_gauge_end[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
-    GLU_malloc( (void**)&gtransformed[i]    , 16 , NCNC * sizeof( GLU_complex ) ) ;
-    identity( slice_gauge[i] ) ;
-    identity( slice_gauge_end[i] ) ;
+    GLU_malloc( (void**)&g[i]     , ALIGNMENT , NCNC * sizeof( GLU_complex ) ) ; 
+    GLU_malloc( (void**)&g_up[i]  , ALIGNMENT , NCNC * sizeof( GLU_complex ) ) ;
+    GLU_malloc( (void**)&g_end[i] , ALIGNMENT , NCNC * sizeof( GLU_complex ) ) ;
+    GLU_malloc( (void**)&gt[i]    , ALIGNMENT , NCNC * sizeof( GLU_complex ) ) ;
+    identity( g[i] ) ;
+    identity( g_end[i] ) ;
   }
 
   // OK so we have set up the gauge transformation matrices
-  tot_its = steep_fix_FACG( lat , slice_gauge_end , out , in , in_old , 
-			    sn , rotato , gtransformed , forward , backward , 
+  tot_its = steep_fix_FACG( lat , g_end , out , in , in_old , 
+			    sn , rotato , gt , forward , backward , 
 			    p_sq , t , accuracy , max_iter ) ; 
   
   // and t+1
-  tot_its += steep_fix_FACG( lat , slice_gauge , out , in , in_old , 
-			     sn , rotato , gtransformed , forward , backward , 
+  tot_its += steep_fix_FACG( lat , g , out , in , in_old , 
+			     sn , rotato , gt , forward , backward , 
 			     p_sq , t + 1 , accuracy , max_iter ) ; 
 
   // reunitarise the gauges to counteract the accumulated round-off error
   #pragma omp parallel for private(i) 
   PFOR( i = 0 ; i < LCU ; i++ ) { 
-    reunit2( slice_gauge_end[i] ) ; 
-    reunit2( slice_gauge[i] ) ; 
+    gram_reunit( g_end[i] ) ; 
+    gram_reunit( g[i] ) ; 
   }
 
   //gauge transform the links at x -> then set slice_gauge_up to be slice_gauge
-  gtransform_slice( ( const GLU_complex ** )slice_gauge_end , lat , 
-		    ( const GLU_complex ** )slice_gauge , t ) ; 
+  gtransform_slice( (const GLU_complex **)g_end , lat , 
+		    (const GLU_complex **)g , t ) ; 
 
   //now we do the same for all time slices
   for( t = 2 ; t < Latt.dims[ ND - 1 ] ; t++ ) {
 
     // set the one above to be the identity so we can accumulate transforms
     #pragma omp parallel for private(i)
-    PFOR( i = 0 ; i < LCU ; i++ ) { identity( slice_gauge_up[i] ) ; }
+    PFOR( i = 0 ; i < LCU ; i++ ) { identity( g_up[i] ) ; }
 
     // gauge fix on this slice
-    tot_its += steep_fix_FACG( lat , slice_gauge_up , out , in , in_old , 
-			       sn , rotato , gtransformed , forward , backward , 
+    tot_its += steep_fix_FACG( lat , g_up , out , in , in_old , 
+			       sn , rotato , gt , forward , backward , 
 			       p_sq , t , accuracy , max_iter ) ; 
 
-    // reunitarise the computed gauge to counteract the accumulated round-off error
+    // reunitarise to counteract the accumulated round-off error
     #pragma omp parallel for private(i) 
-    PFOR( i = 0 ; i < LCU ; i++ ) { reunit2( slice_gauge_up[i] ) ; }
+    PFOR( i = 0 ; i < LCU ; i++ ) { gram_reunit( g_up[i] ) ; }
 
-    //gauge transform the links at x -> then set slice_gauge_up to be slice_gauge
-    gtransform_slice( ( const GLU_complex ** )slice_gauge , lat , 
-		      ( const GLU_complex ** )slice_gauge_up , t - 1 ) ; 
+    //gauge transform the links for this slice "g"
+    gtransform_slice( (const GLU_complex **)g , lat , 
+		      (const GLU_complex **)g_up , t - 1 ) ; 
 
-    // and copy "slice_up" (the working transformation matrices) into "slice" (the previous)
-    #pragma omp parallel for private(i)
-    PFOR( i = 0 ; i < LCU ; i ++  ) {
-      memcpy( slice_gauge[i] , slice_gauge_up[i] , NCNC * sizeof( GLU_complex ) ) ;
-    }
+    // and copy "g_up" (the working transformation matrices) into "g" 
+    GLU_complex **ptr = g ;
+    g = g_up ;
+    g_up = ptr ;
   }
 
   // no need for a reunitarisation step as it has already been done
   // gauge transform the very final slice
-  gtransform_slice( ( const GLU_complex ** )slice_gauge , lat , 
-		    ( const GLU_complex ** )slice_gauge_end , t - 1 ) ; 
+  gtransform_slice( (const GLU_complex **)g , lat , 
+		    (const GLU_complex **)g_end , t - 1 ) ; 
 
   // and free all of that memory, especially rotato
  memfree :
@@ -577,28 +575,34 @@ Coulomb_FACG( struct site  *__restrict lat ,
   free_traces( ) ;
 
   // free temporary gauge transformation matrices
-  if( slice_gauge != NULL ) {
+  if( gt != NULL ) {
 #pragma omp parallel for private(i)
     PFOR( i = 0 ; i < LCU ; i ++  ) {
-      free( slice_gauge[i]     ) ; 
+      free( gt[i]     ) ; 
     }
   }
-  if( slice_gauge_up != NULL ) {
+  if( g != NULL ) {
 #pragma omp parallel for private(i)
     PFOR( i = 0 ; i < LCU ; i ++  ) {
-      free( slice_gauge_up[i]     ) ; 
+      free( g[i]     ) ; 
     }
   }
-  if( slice_gauge_end != NULL ) {
+  if( g_up != NULL ) {
 #pragma omp parallel for private(i)
     PFOR( i = 0 ; i < LCU ; i ++  ) {
-      free( slice_gauge_end[i]     ) ; 
+      free( g_up[i]     ) ; 
     }
   }
-  free( gtransformed    ) ;
-  free( slice_gauge     ) ; 
-  free( slice_gauge_up  ) ; 
-  free( slice_gauge_end ) ;
+  if( g_end != NULL ) {
+#pragma omp parallel for private(i)
+    PFOR( i = 0 ; i < LCU ; i ++  ) {
+      free( g_end[i]     ) ; 
+    }
+  }
+  free( gt    ) ;
+  free( g     ) ; 
+  free( g_up  ) ; 
+  free( g_end ) ;
  
   // and return the total iterations
   return tot_its ;
@@ -646,7 +650,7 @@ steep_fix_FA( const struct site *__restrict lat ,
       size_t i ;
       // reunitarise the computed gauge to counteract the accumulated round-off error
       #pragma omp parallel for private(i) 
-      PFOR( i = 0 ; i < LCU ; i++ ) { reunit2( slice_gauge[i] ) ; }
+      PFOR( i = 0 ; i < LCU ; i++ ) { gram_reunit( slice_gauge[i] ) ; }
     }
     #endif
 
@@ -669,9 +673,7 @@ Coulomb_FASD( struct site  *__restrict lat ,
 	      const size_t max_iter )
 {
   // allocations 
-  GLU_complex **slice_gauge     = NULL ;
-  GLU_complex **slice_gauge_end = NULL ;
-  GLU_complex **slice_gauge_up  = NULL ;
+  GLU_complex **g = NULL , **g_end = NULL , **g_up  = NULL ;
 
   // allocate rotato
   struct sp_site_herm *rotato = NULL ;
@@ -686,10 +688,10 @@ Coulomb_FASD( struct site  *__restrict lat ,
   size_t i , t = 0 ;
 
   // allocate temporary gauge transformation matrices
-  if( GLU_malloc( (void**)&slice_gauge     , 16 , LCU * sizeof( GLU_complex* ) ) != 0 ||
-      GLU_malloc( (void**)&slice_gauge_end , 16 , LCU * sizeof( GLU_complex* ) ) != 0 ||
-      GLU_malloc( (void**)&slice_gauge_up  , 16 , LCU * sizeof( GLU_complex* ) ) != 0 ||
-      GLU_malloc( (void**)&rotato          , 16 , LCU * sizeof( struct sp_site_herm ) ) != 0 ) {
+  if( GLU_malloc( (void**)&g      , ALIGNMENT , LCU * sizeof( GLU_complex* ) ) != 0 ||
+      GLU_malloc( (void**)&g_end  , ALIGNMENT , LCU * sizeof( GLU_complex* ) ) != 0 ||
+      GLU_malloc( (void**)&g_up   , ALIGNMENT , LCU * sizeof( GLU_complex* ) ) != 0 ||
+      GLU_malloc( (void**)&rotato , ALIGNMENT , LCU * sizeof( struct sp_site_herm ) ) != 0 ) {
     fprintf( stderr , "[GF] CFASD temporary gauge fields allocation failure\n" ) ;
     goto memfree ;
   }
@@ -697,64 +699,63 @@ Coulomb_FASD( struct site  *__restrict lat ,
   // and allocate the transformation matrices
 #pragma omp parallel for private(i) 
   PFOR( i = 0 ; i < LCU ; i ++  ) {
-    GLU_malloc( (void**)&slice_gauge[i]     , 16 , NCNC * sizeof( GLU_complex ) ) ;
-    GLU_malloc( (void**)&slice_gauge_up[i]  , 16 , NCNC * sizeof( GLU_complex ) ) ;
-    GLU_malloc( (void**)&slice_gauge_end[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
-    identity( slice_gauge[i] ) ;
-    identity( slice_gauge_end[i] ) ;
+    GLU_malloc( (void**)&g[i]     , ALIGNMENT , NCNC * sizeof( GLU_complex ) ) ;
+    GLU_malloc( (void**)&g_up[i]  , ALIGNMENT , NCNC * sizeof( GLU_complex ) ) ;
+    GLU_malloc( (void**)&g_end[i] , ALIGNMENT , NCNC * sizeof( GLU_complex ) ) ;
+    identity( g[i] ) ;
+    identity( g_end[i] ) ;
   }
 
   // OK so we have set up the gauge transformation matrices
-  tot_its = steep_fix_FA( lat , slice_gauge_end , out , in ,
+  tot_its = steep_fix_FA( lat , g_end , out , in ,
 			  rotato , forward , backward , p_sq , 
 			  t , accuracy , max_iter ) ; 
   
   // and t+1
-  tot_its += steep_fix_FA( lat , slice_gauge , out , in , rotato ,
+  tot_its += steep_fix_FA( lat , g , out , in , rotato ,
 			   forward , backward , p_sq , 
 			   t + 1 , accuracy , max_iter ) ; 
 
   // reunitarise the gauges to counteract the accumulated round-off error
   #pragma omp parallel for private(i) 
   PFOR( i = 0 ; i < LCU ; i++ ) { 
-    reunit2( slice_gauge_end[i] ) ; 
-    reunit2( slice_gauge[i] ) ; 
+    gram_reunit( g_end[i] ) ; 
+    gram_reunit( g[i] ) ; 
   }
 
   //gauge transform the links at x -> then set slice_gauge_up to be slice_gauge
-  gtransform_slice( ( const GLU_complex** )slice_gauge_end , lat , 
-		    ( const GLU_complex** )slice_gauge , t ) ; 
+  gtransform_slice( (const GLU_complex**)g_end , lat , 
+		    (const GLU_complex**)g , t ) ; 
 
   //now we do the same for all time slices
   for( t = 2 ; t < Latt.dims[ ND - 1 ] ; t++ ) {
 
     // set the one above to be the identity so we can accumulate transforms
     #pragma omp parallel for private(i)
-    PFOR( i = 0 ; i < LCU ; i++ ) { identity( slice_gauge_up[i] ) ; }
+    PFOR( i = 0 ; i < LCU ; i++ ) { identity( g_up[i] ) ; }
 
     // gauge fix on this slice
-    tot_its += steep_fix_FA( lat , slice_gauge_up , out , in , 
+    tot_its += steep_fix_FA( lat , g_up , out , in , 
 			     rotato , forward , backward , p_sq , 
 			     t , accuracy , max_iter ) ; 
 
     // reunitarise the working gauge trans matrices to counteract the accumulated round-off error
     #pragma omp parallel for private(i)
-    PFOR( i = 0 ; i < LCU ; i++ ) { reunit2( slice_gauge_up[i] ) ; }
+    PFOR( i = 0 ; i < LCU ; i++ ) { gram_reunit( g_up[i] ) ; }
 
     //gauge transform the links at x -> then set slice_gauge_up to be slice_gauge
-    gtransform_slice( ( const GLU_complex** )slice_gauge , lat , 
-		      ( const GLU_complex** )slice_gauge_up , t - 1 ) ; 
+    gtransform_slice( (const GLU_complex**)g , lat , 
+		      (const GLU_complex**)g_up , t - 1 ) ; 
 
     // and copy "slice_up" (the working transformation matrices) into "slice" (the previous)
-    #pragma omp parallel for private(i)
-    PFOR( i = 0 ; i < LCU ; i ++  ) {
-      memcpy( slice_gauge[i] , slice_gauge_up[i] , NCNC * sizeof( GLU_complex ) ) ;
-    }
+    GLU_complex **ptr = g ;
+    g = g_up ;
+    g_up = ptr ;
   }
 
   // gauge transform the very final slice, no need for reunit2
-  gtransform_slice( ( const GLU_complex** )slice_gauge , lat , 
-		    ( const GLU_complex** )slice_gauge_end , t - 1 ) ; 
+  gtransform_slice( (const GLU_complex**)g , lat , 
+		    (const GLU_complex**)g_end , t - 1 ) ; 
 
  memfree :
 
@@ -765,27 +766,27 @@ Coulomb_FASD( struct site  *__restrict lat ,
   free_traces( ) ;
 
   // free temporary gauge transformation matrices
-  if( slice_gauge != NULL ) {
+  if( g != NULL ) {
 #pragma omp parallel for private(i)
     PFOR( i = 0 ; i < LCU ; i ++  ) {
-      free( slice_gauge[i]     ) ; 
+      free( g[i]     ) ; 
     }
   }
-  if( slice_gauge_up != NULL ) {
+  if( g_up != NULL ) {
 #pragma omp parallel for private(i)
     PFOR( i = 0 ; i < LCU ; i ++  ) {
-      free( slice_gauge_up[i]     ) ; 
+      free( g_up[i]     ) ; 
     }
   }
-  if( slice_gauge_end != NULL ) {
+  if( g_end != NULL ) {
 #pragma omp parallel for private(i)
     PFOR( i = 0 ; i < LCU ; i ++  ) {
-      free( slice_gauge_end[i]     ) ; 
+      free( g_end[i]     ) ; 
     }
   }
-  free( slice_gauge     ) ; 
-  free( slice_gauge_up  ) ; 
-  free( slice_gauge_end ) ; 
+  free( g     ) ; 
+  free( g_up  ) ; 
+  free( g_end ) ; 
 
   // and return the total iterations
   return tot_its ;

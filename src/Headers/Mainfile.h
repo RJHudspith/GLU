@@ -87,6 +87,7 @@ extern struct latt_info Latt ;
 
 // my own necessary libs ...
 #include "U_Nops.h"                // many matrix operations
+#include "trace_abc.h"             // trace of the product of 3 matrices
 // matrix multiplication
 #include "MMUL.h"                  // a = b x c :: b,c in SU(NC) 
 #include "MMUL_dag.h"              // a = b x c^{\dagger}

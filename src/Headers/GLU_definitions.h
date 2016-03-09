@@ -78,6 +78,14 @@
    typedef double GLU_real ;
 #endif
 
+// SSE alignment erm, local variables should be ok in gcc > 4.4 or so I think
+#define ALIGNMENT 16
+#if (defined HAVE_IMMINTRIN_H) && !(defined SINGLE_PREC)
+  #define GLUalign __attribute__((aligned(ALIGNMENT)))
+#else
+  #define GLUalign
+#endif
+
 /**
    @def GLU_RESTRICT
    @brief restrict flag
@@ -95,8 +103,8 @@
 #define GLU_SUCCESS !GLU_FAILURE
 
 // some generic constants I use all over the place
-#define OneOI2 -0.5 * I
-#define OneO3 0.3333333333333333
+#define OneOI2 (-0.5 * I)
+#define OneO3 (0.3333333333333333)
 
 /**
    @def MPI
@@ -125,13 +133,13 @@
    @def SINTOLSU2
    @brief we can be more lax with SU(2), in fact we usually have to be
  */
-#define SINTOL 0.05
+#define SINTOL (0.05)
 #ifdef SINGLE_PREC
-  #define STOL 1E-6
-  #define SINTOLSU2 0.05 // this is for the su(2)
+  #define STOL (1E-6)
+  #define SINTOLSU2 (0.05) // this is for the su(2)
 #else
-  #define STOL 1E-13
-  #define SINTOLSU2 1E-4 // this is for the su(2)
+  #define STOL (1E-13)
+  #define SINTOLSU2 (1E-4) // this is for the su(2)
 #endif
 
 /**
@@ -139,7 +147,7 @@
    @brief the smallest representable double used forexact exponentiation tolerance
  */
 #ifndef __DBL_MIN__
-  #define DBL_MIN 2.2250738585072014e-308
+  #define DBL_MIN (2.2250738585072014e-308)
 #else
   #define DBL_MIN __DBL_MIN__
 #endif
@@ -165,7 +173,7 @@
    @brief number of colors of our theory, if not specified default to 3
  */
 #ifndef NC
-  #define NC 3
+  #define NC (3)
 #endif
 
 /**
@@ -173,14 +181,14 @@
    @brief we only use square matrices, so they are always \f$ NC^2 \f$
    size of our gauge matrices
  */
-#define NCNC NC * NC
+#define NCNC (NC * NC)
 
 /**
    @def ND
    @brief dimensions of our theory, if not specified default to 4
  */ 
 #ifndef ND
-  #define ND 4
+  #define ND (4)
 #endif
 
 /**
@@ -198,9 +206,9 @@
    @warning brackets are a must!
  */
 #if NC == 3
-#define TRUE_HERM ( HERMSIZE-1 )
+#define TRUE_HERM (HERMSIZE-1)
 #else
-  #define TRUE_HERM HERMSIZE
+#define TRUE_HERM (HERMSIZE)
 #endif
 
 /**
@@ -651,7 +659,7 @@ Defines for the gauge fixing routines ( Landau/{}.c )
 #endif
 
 /*******************************************************
-  O(a^4) clover-improvement measure ( Landau/clover.c )
+  O(a^4) clover-improvement measure ( Fields/clover.c )
 ********************************************************/
 
 /**
@@ -720,12 +728,9 @@ Defines for the gauge fixing routines ( Landau/{}.c )
  #define OUT_DOUBLE
 #endif
 
-/**************************
-
-    Control for the RNG
-
-**************************/
-
+/////
+// Control for the RNG
+/////
 /**
    @def UINT_MAX
    @brief maximum unsigned integer
@@ -750,7 +755,6 @@ Defines for the gauge fixing routines ( Landau/{}.c )
 
    @warning defaults to the WELL_RNG
  */
-
 // Default to the WELL RNG if gsl is specified but no header found
 #if ( defined GSL_RNG ) && ( defined HAVE_GSL )  
   #include <gsl/gsl_rng.h>
@@ -766,11 +770,9 @@ Defines for the gauge fixing routines ( Landau/{}.c )
   #define RNG_TABLE 624
 #endif
 
-/******************************
-
-    Control for the U(1) code
-
-*******************************/
+/////
+// Control for the U(1) code
+/////
 
 /**
    @def U1_DFT

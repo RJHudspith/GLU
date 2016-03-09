@@ -65,7 +65,7 @@ mom_gauge( struct site *__restrict A ,
   size_t i ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) { 
-    GLU_complex temp[ NCNC ] ;
+    GLU_complex temp[ NCNC ] GLUalign ;
     size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       log( temp , A[i].O[mu] ) ;
@@ -202,7 +202,7 @@ create_weak_field( struct site *__restrict A )
   size_t j ; 
 #pragma omp parallel for private(j)
   for( j = 0 ; j < LVOLUME ; j++ ) {
-    GLU_complex temp[ NCNC ] ;
+    GLU_complex temp[ NCNC ] GLUalign ;
     size_t mu , k ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       exact_log_slow( temp , A[j].O[mu] ) ;

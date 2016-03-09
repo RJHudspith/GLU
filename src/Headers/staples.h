@@ -25,7 +25,7 @@
 #define GLU_STAPLES_H
 
 /**
-   @fn void all_staples( GLU_complex stap[ NCNC ] , const struct site *__restrict lat , const size_t i , const size_t mu , const size_t dir , const size_t type )
+   @fn void all_staples( GLU_complex stap[ NCNC ] , const struct site *__restrict lat , const size_t i , const size_t mu , const size_t dir , const smearing types type )
    @brief the computation of the basic unimproved staple.
    @param stap :: sum of the contributing mu-nu staples
    @param lat :: lattice gauge field
@@ -40,7 +40,7 @@ all_staples( GLU_complex stap[ NCNC ] ,
 	     const size_t i , 
 	     const size_t mu , 
 	     const size_t dir , 
-	     const size_t type ) ;
+	     const smearing_types type ) ;
 
 /**
    @fn void all_staples_improve( GLU_complex stap[ NCNC ] , const struct site *__restrict lat , const size_t i , const size_t mu , const size_t dir , const size_t type )

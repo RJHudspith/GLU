@@ -32,11 +32,6 @@
 #include "plaqs_links.h"
 #include "projectors.h"
 
-// If we are using the dangerous smearing routines ...
-#ifdef FAST_SMEAR
-  #include "random_config.h"
-#endif
-
 #if ND == 4
 // 3D level-1 staples for timeslice t
 static void 
@@ -55,8 +50,8 @@ get_spatial_lv1( struct spatial_lv1 *__restrict lev1 ,
   //do a slice
 #pragma omp parallel for private(it) SCHED
   PFOR( it = 0  ;  it < LCU  ;  it++ )  {
-    GLU_complex a[ NCNC ] ;
-    GLU_complex c[ NCNC ] ;
+    GLU_complex a[ NCNC ] GLUalign , b[ NCNC ] GLUalign , 
+      c[ NCNC ] GLUalign ;
     const size_t i = slice + it ;
     size_t j = 0 , mu , nu ; 
     //calculate the level1 staples
@@ -64,19 +59,14 @@ get_spatial_lv1( struct spatial_lv1 *__restrict lev1 ,
       for( nu = 0 ; nu < ND - 1 ; nu++ ) {
 	if( likely( nu != mu ) ) {
 	  // b is our staple
-	  GLU_complex b[ NCNC ] ;
 	  // j is our staple counter	    
-	  int temp = lat[i].neighbor[nu] ; 
+	  size_t temp = lat[i].neighbor[nu] ; 
 	  multab_suNC( a , lat[i].O[nu] , lat[temp].O[mu] ) ; 
 	  temp = lat[i].neighbor[mu] ; 
 	  multab_dag_suNC( b , a , lat[temp].O[nu] ) ; 
 	  if( type == SM_LOG ) {
 	    multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-            #ifdef SLOW_SMEAR
 	    exact_log_slow( b , a ) ; 
-            #else
-	    exact_log_fast( b , a ) ; 
-            #endif
 	  }
 	  // put the bottom staple in "c"
 	  //bottom staple
@@ -86,11 +76,7 @@ get_spatial_lv1( struct spatial_lv1 *__restrict lev1 ,
 	  multab_suNC( c , a , lat[temp].O[nu] ) ; 
 	  if( type == SM_LOG ) {
 	    multab_dag_suNC( a , c , lat[i].O[mu] ) ; 
-            #ifdef SLOW_SMEAR
-	    exact_log_slow( c , a ) ; 
-            #else
-	    exact_log_fast( c , a ) ; 
-            #endif	      
+	    exact_log_slow( c , a ) ; 	      
 	  }
 	  a_plus_b( b , c ) ; 
 	  project( lev1[it].O[j] , b , lat[i].O[mu] , alpha2 , one_min_a2 ) ; 
@@ -111,7 +97,7 @@ staples3D( GLU_complex stap[ NCNC ] ,
 	   const size_t t , 
 	   const size_t type ) 
 { 
-  GLU_complex a[ NCNC ] , b[ NCNC ] ;
+  GLU_complex a[ NCNC ] GLUalign , b[ NCNC ] GLUalign ;
   size_t nu ;
   const size_t it = LCU * t + i ; 
 
@@ -138,11 +124,7 @@ staples3D( GLU_complex stap[ NCNC ] ,
       multab_dag_suNC( b , a , lev1[temp].O[kk] ) ; 
       if( type == SM_LOG ) {
 	multab_dag_suNC( a , b , lat[it].O[mu] ) ; 
-        #ifdef SLOW_SMEAR
 	exact_log_slow( b , a ) ; 
-        #else 
-	exact_log_fast( b , a ) ; 
-        #endif
       }
       a_plus_b( stap , b ) ;
       //bottom staple
@@ -152,11 +134,7 @@ staples3D( GLU_complex stap[ NCNC ] ,
       multab_suNC( b , a , lev1[temp].O[kk] ) ; 
       if( type == SM_LOG ) {
 	multab_dag_suNC( a , b , lat[it].O[mu] ) ; 
-        #ifdef SLOW_SMEAR
 	exact_log_slow( b , a ) ; 
-        #else
-	exact_log_fast( b , a ) ; 
-        #endif
       }
       a_plus_b( stap , b ) ; 
     }
@@ -223,10 +201,10 @@ HYPSLsmear3D( struct site *__restrict lat ,
       const size_t slice = LCU * t ; 
       #pragma omp parallel for private(i) SCHED
       PFOR( i = 0 ; i < LCU ; i++ )  {
+	GLU_complex stap[ NCNC ] GLUalign ;
 	const size_t it = slice + i ;
 	size_t mu ;
 	for( mu = 0 ; mu < ND - 1 ; mu++ ) {
-	  GLU_complex stap[ NCNC ] ;
 	  zero_mat( stap ) ;
 	  staples3D( stap , lev1 , lat , i , mu , t , type ) ; 
 	  project( lat2[ i ].O[ mu ] , stap , lat[ it ].O[ mu ] , 

@@ -20,14 +20,12 @@
    @file CG.c
    @brief common code for the the CG routines
  */
-
 #include "Mainfile.h"    // general definitions
 
 #include "GLU_splines.h" // GLUbic spline interpolation code
 #include "GLU_sums.h"    // round-off resistant summations
 #include "gramschmidt.h" // for reunitarisation
 #include "gtrans.h"      // gauge transformations
-#include "SSE2_OPS.h"    // SSE operations
 
 // this is the point where the gram-schmidt loses out
 // to the n-ape det-rescaled projection
@@ -38,47 +36,6 @@
 // some small memory for the stabler average
 static double *traces = NULL ;
 
-#ifdef exp_a2_approx
-// expansion :: 1 + i du Au - 0.5 * ( du Au ) ^ 2, must have A2_APPROX_EXPAND defined
-static void
-a2_approx_expand( GLU_complex dA[ NCNC ] )
-{
-#if NC==3
-  const double QQ0 = 1.0 - 0.5 * ( cimag( dA[0] ) * cimag( dA[0] ) +		\
-				   creal( dA[1] ) * creal( dA[1] ) + cimag( dA[1] ) * cimag( dA[1] ) +
-				   creal( dA[2] ) * creal( dA[2] ) + cimag( dA[2] ) * cimag( dA[2] ) ) ;
-  const double QQ4 = 1.0 - 0.5 * ( cimag( dA[4] ) * cimag( dA[4] ) +
-				   creal( dA[1] ) * creal( dA[1] ) + cimag( dA[1] ) * cimag( dA[1] ) +
-				   creal( dA[5] ) * creal( dA[5] ) + cimag( dA[5] ) * cimag( dA[5] ) ) ;
-  const double complex QQ1 = 0.5 * ( I * dA[1] * ( cimag( dA[0] ) + cimag( dA[4] ) ) - dA[2] * conj( dA[5] ) ) ;
-  const double complex QQ3 = -0.5 * ( conj( dA[1] ) * I * ( cimag( dA[0] ) + cimag( dA[4] ) ) + dA[5] * conj( dA[2] ) ) ;
-  const double complex QQ6 = -0.5 * ( conj( dA[2] ) * I * ( cimag( dA[0] ) + cimag( dA[8] ) ) - conj( dA[5] ) * conj( dA[1] ) ) ;
-  const double complex QQ7 = -0.5 * ( conj( dA[5] ) * I * ( cimag( dA[4] ) + cimag( dA[8] ) ) + conj( dA[2] ) * dA[1] ) ;
-  dA[0] += QQ0 ;
-  dA[1] += QQ1 ;
-  dA[3] += QQ3 ;
-  dA[4] += QQ4 ;
-  dA[6] += QQ6 ;
-  dA[7] += QQ7 ;
-#elif NC==2
-  // compact little result, checked. (dA[1])^2==0, sign is due to antihermiticity 
-  *( dA + 0 ) += 1.0 - 0.5 * ( cimag( dA[0] ) * cimag( dA[0] ) +
-			       creal( dA[1] ) * creal( dA[1] ) +
-			       cimag( dA[1] ) * cimag( dA[1] ) ) ;
-#else
-  GLU_complex dAdA[ NCNC ] ;
-  register GLU_complex cache ;
-  multab( dAdA , dA , dA ) ;
-  size_t mu ;
-  for( mu = 0 ; mu < NCNC ; mu++ ) {
-    cache = dA[mu] - 0.5*dAdA[mu] ;
-    dA[mu] = ( mu%( NC+1 ) == 0 ) ? 1.0 + cache : cache ;
-  }
-#endif
-  return ;
-}
-#endif
-
 // gauge transformation and a log
 #if (defined deriv_full) || (defined deriv_fulln)
 static void
@@ -87,181 +44,11 @@ gtrans_log( GLU_complex A[ NCNC ] ,
 	    const GLU_complex b[ NCNC ] ,
 	    const GLU_complex c[ NCNC ] )
 {
-  GLU_complex temp[ NCNC ] ;
+  GLU_complex temp[ NCNC ] GLUalign ;
   equiv( temp , b ) ;
   gtransform_local( a , temp , c ) ;
   exact_log_slow( A , temp ) ;
   return ;
-}
-#endif
-
-// trace of an SU(NC) gauge transformation
-#if (defined HAVE_IMMINTRIN_H ) && !( defined SINGLE_PREC )
-
-#include <immintrin.h>
-#include "SSE2_OPS.h"
-
-static inline double
-Re_trace_abc_dag_suNC( const GLU_complex a[ NCNC ] , 
-		       const GLU_complex b[ NCNC ] , 
-		       const GLU_complex c[ NCNC ] )
-{
-#if NC == 3
-  __m128d *A = ( __m128d* )a ;
-  const __m128d *B = ( const __m128d* )b ;
-  const __m128d *C = ( const __m128d* )c ;
-  //const GLU_complex a0 = ( a[0] * b[0] + a[1] * b[3] + a[2] * b[6] ) ;
-  const __m128d a0 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 0 ) ) ,
-				 _mm_add_pd( SSE2_MUL( *( A + 1 ) , *( B + 3 ) ) ,
-					     SSE2_MUL( *( A + 2 ) , *( B + 6 ) ) ) ) ;
-  const __m128d a1 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 1 ) ) ,
-				 _mm_add_pd( SSE2_MUL( *( A + 1 ) , *( B + 4 ) ) ,
-					     SSE2_MUL( *( A + 2 ) , *( B + 7 ) ) ) ) ;
-  const __m128d a2 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 2 ) ) ,
-				 _mm_add_pd( SSE2_MUL( *( A + 1 ) , *( B + 5 ) ) ,
-					     SSE2_MUL( *( A + 2 ) , *( B + 8 ) ) ) ) ;
-  // second row
-  const __m128d a3 = _mm_add_pd( SSE2_MUL( *( A + 3 ) , *( B + 0 ) ) ,
-				 _mm_add_pd( SSE2_MUL( *( A + 4 ) , *( B + 3 ) ) ,
-					     SSE2_MUL( *( A + 5 ) , *( B + 6 ) ) ) ) ;
-  const __m128d a4 = _mm_add_pd( SSE2_MUL( *( A + 3 ) , *( B + 1 ) ) ,
-				 _mm_add_pd( SSE2_MUL( *( A + 4 ) , *( B + 4 ) ) ,
-					     SSE2_MUL( *( A + 5 ) , *( B + 7 ) ) ) ) ;
-  const __m128d a5 = _mm_add_pd( SSE2_MUL( *( A + 3 ) , *( B + 2 ) ) ,
-				 _mm_add_pd( SSE2_MUL( *( A + 4 ) , *( B + 5 ) ) ,
-					     SSE2_MUL( *( A + 5 ) , *( B + 8 ) ) ) ) ;
-  // last row is always a completion
-  //const GLU_complex a6 = conj( a1 * a5 - a2 * a4 ) ;
-  const __m128d a6 = SSE2_CONJ( _mm_sub_pd( SSE2_MUL( a1 , a5 ) ,
-					    SSE2_MUL( a2 , a4 ) ) ) ;
-  const __m128d a7 = SSE2_CONJ( _mm_sub_pd( SSE2_MUL( a2 , a3 ) ,
-					    SSE2_MUL( a0 , a5 ) ) ) ;
-  const __m128d a8 = SSE2_CONJ( _mm_sub_pd( SSE2_MUL( a0 , a4 ) ,
-					    SSE2_MUL( a1 , a3 ) ) ) ;
-
-  // and compute the real part of the trace
-  register __m128d sum = _mm_setzero_pd( ) ;
-  sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a0 , *( C + 0 ) ) ) ;
-  sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a1 , *( C + 1 ) ) ) ;
-  sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a2 , *( C + 2 ) ) ) ;
-  sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a3 , *( C + 3 ) ) ) ;
-  sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a4 , *( C + 4 ) ) ) ;
-  sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a5 , *( C + 5 ) ) ) ;
-  sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a6 , *( C + 6 ) ) ) ;
-  sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a7 , *( C + 7 ) ) ) ;
-  sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a8 , *( C + 8 ) ) ) ;
-
-  double complex csum ;
-  _mm_store_pd( (void*)&csum , sum ) ;
-  return creal( csum ) ;  
-#elif NC==2
-  __m128d *A = ( __m128d* )a ;
-  const __m128d *B = ( const __m128d* )b ;
-  const __m128d *C = ( const __m128d* )c ;
-  // puts the four parts of the sum into the upper and lower parts of 
-  // two SSE-packed double words
-  const __m128d a0 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 0 ) ) ,
-				 SSE2_MUL( *( A + 1 ) , *( B + 2 ) ) ) ;
-  const __m128d a1 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 1 ) ) ,
-				 SSE2_MUL( *( A + 1 ) , *( B + 3 ) ) ) ;
-  register __m128d sum1 , sum2 ;
-  sum1 = _mm_add_pd( _mm_mul_pd( a0 , *( C + 0 ) ) , 
-		     _mm_mul_pd( a0 , SSE2_CONJ( *( C + 3 ) ) ) ) ;
-  sum2 = _mm_sub_pd( _mm_mul_pd( a1 , *( C + 1 ) ) ,
-		     _mm_mul_pd( a1 , SSE2_CONJ( *( C + 2 ) ) ) ) ;
-  double complex csum ;
-  _mm_store_pd( (void*)&csum , _mm_add_pd( sum1 , sum2 )  ) ;
-  return creal( csum ) + cimag( csum ) ;  
-#else
-  GLU_real trABCdag ;
-  trace_abc_dag_Re( &trABCdag , a , b , c ) ;
-  return (double)trABCdag ;
-#endif
-}
-
-#else
-
-static inline double
-Re_trace_abc_dag_suNC( const GLU_complex a[ NCNC ] , 
-		       const GLU_complex b[ NCNC ] , 
-		       const GLU_complex c[ NCNC ] )
-{
-  register double sum ;
-#if NC == 3
-  //const GLU_complex a0 = ( a[0] * b[0] + a[1] * b[3] + a[2] * b[6] ) ;
-  const GLU_real Ra0 = creal( a[0] ) * creal( b[0] ) - cimag( a[0] ) * cimag( b[0] ) +\
-                       creal( a[1] ) * creal( b[3] ) - cimag( a[1] ) * cimag( b[3] ) +\
-                       creal( a[2] ) * creal( b[6] ) - cimag( a[2] ) * cimag( b[6] ) ;
-  const GLU_real Ia0 = creal( a[0] ) * cimag( b[0] ) + cimag( a[0] ) * creal( b[0] ) +\
-                       creal( a[1] ) * cimag( b[3] ) + cimag( a[1] ) * creal( b[3] ) +\
-                       creal( a[2] ) * cimag( b[6] ) + cimag( a[2] ) * creal( b[6] ) ;
-  //const GLU_complex a1 = ( a[0] * b[1] + a[1] * b[4] + a[2] * b[7] ) ;
-  const GLU_real Ra1 = creal( a[0] ) * creal( b[1] ) - cimag( a[0] ) * cimag( b[1] ) +\
-                       creal( a[1] ) * creal( b[4] ) - cimag( a[1] ) * cimag( b[4] ) +\
-                       creal( a[2] ) * creal( b[7] ) - cimag( a[2] ) * cimag( b[7] ) ;
-  const GLU_real Ia1 = creal( a[0] ) * cimag( b[1] ) + cimag( a[0] ) * creal( b[1] ) +\
-                       creal( a[1] ) * cimag( b[4] ) + cimag( a[1] ) * creal( b[4] ) +\
-                       creal( a[2] ) * cimag( b[7] ) + cimag( a[2] ) * creal( b[7] ) ;
-  //const GLU_complex a2 = ( a[0] * b[2] + a[1] * b[5] + a[2] * b[8] ) ;
-  const GLU_real Ra2 = creal( a[0] ) * creal( b[2] ) - cimag( a[0] ) * cimag( b[2] ) +\
-                       creal( a[1] ) * creal( b[5] ) - cimag( a[1] ) * cimag( b[5] ) +\
-                       creal( a[2] ) * creal( b[8] ) - cimag( a[2] ) * cimag( b[8] ) ;
-  const GLU_real Ia2 = creal( a[0] ) * cimag( b[2] ) + cimag( a[0] ) * creal( b[2] ) +\
-                       creal( a[1] ) * cimag( b[5] ) + cimag( a[1] ) * creal( b[5] ) +\
-                       creal( a[2] ) * cimag( b[8] ) + cimag( a[2] ) * creal( b[8] ) ;
-  //const GLU_complex a3 = ( a[3] * b[0] + a[4] * b[3] + a[5] * b[6] ) ;
-  const GLU_real Ra3 = creal( a[3] ) * creal( b[0] ) - cimag( a[3] ) * cimag( b[0] ) +\
-                       creal( a[4] ) * creal( b[3] ) - cimag( a[4] ) * cimag( b[3] ) +\
-                       creal( a[5] ) * creal( b[6] ) - cimag( a[5] ) * cimag( b[6] ) ;
-  const GLU_real Ia3 = creal( a[3] ) * cimag( b[0] ) + cimag( a[3] ) * creal( b[0] ) +\
-                       creal( a[4] ) * cimag( b[3] ) + cimag( a[4] ) * creal( b[3] ) +\
-                       creal( a[5] ) * cimag( b[6] ) + cimag( a[5] ) * creal( b[6] ) ;
-  //const GLU_complex a4 = ( a[3] * b[1] + a[4] * b[4] + a[5] * b[7] ) ;
-  const GLU_real Ra4 = creal( a[3] ) * creal( b[1] ) - cimag( a[3] ) * cimag( b[1] ) +\
-                       creal( a[4] ) * creal( b[4] ) - cimag( a[4] ) * cimag( b[4] ) +\
-                       creal( a[5] ) * creal( b[7] ) - cimag( a[5] ) * cimag( b[7] ) ;
-  const GLU_real Ia4 = creal( a[3] ) * cimag( b[1] ) + cimag( a[3] ) * creal( b[1] ) +\
-                       creal( a[4] ) * cimag( b[4] ) + cimag( a[4] ) * creal( b[4] ) +\
-                       creal( a[5] ) * cimag( b[7] ) + cimag( a[5] ) * creal( b[7] ) ;
-  //const GLU_complex a5 = ( a[3] * b[2] + a[4] * b[5] + a[5] * b[8] ) ;
-  const GLU_real Ra5 = creal( a[3] ) * creal( b[2] ) - cimag( a[3] ) * cimag( b[2] ) +\
-                       creal( a[4] ) * creal( b[5] ) - cimag( a[4] ) * cimag( b[5] ) +\
-                       creal( a[5] ) * creal( b[8] ) - cimag( a[5] ) * cimag( b[8] ) ;
-  const GLU_real Ia5 = creal( a[3] ) * cimag( b[2] ) + cimag( a[3] ) * creal( b[2] ) +\
-                       creal( a[4] ) * cimag( b[5] ) + cimag( a[4] ) * creal( b[5] ) +\
-                       creal( a[5] ) * cimag( b[8] ) + cimag( a[5] ) * creal( b[8] ) ;
-  //const GLU_complex a6 = conj( a1 * a5 - a2 * a4 ) ;
-  const GLU_real Ra6 = +( Ra1 * Ra5 - Ia1 * Ia5 - Ra2 * Ra4 + Ia2 * Ia4 ) ;
-  const GLU_real Ia6 = -( Ra1 * Ia5 + Ia1 * Ra5 - Ra2 * Ia4 - Ia2 * Ra4 ) ;
-  //const GLU_complex a7 = conj( a2 * a3 - a0 * a5 ) ;
-  const GLU_real Ra7 = +( Ra2 * Ra3 - Ia2 * Ia3 - Ra0 * Ra5 + Ia0 * Ia5 ) ;
-  const GLU_real Ia7 = -( Ra2 * Ia3 + Ia2 * Ra3 - Ra0 * Ia5 - Ia0 * Ra5 ) ;
-  //const GLU_complex a8 = conj( a0 * a4 - a1 * a3 ) ;
-  const GLU_real Ra8 = +( Ra0 * Ra4 - Ia0 * Ia4 - Ra1 * Ra3 + Ia1 * Ia3 ) ;
-  const GLU_real Ia8 = -( Ra0 * Ia4 + Ia0 * Ra4 - Ra1 * Ia3 - Ia1 * Ra3 ) ;
-  // and compute the trace
-  sum = Ra0 * creal( c[0] ) + Ia0 * cimag( c[0] ) ; 
-  sum = Ra1 * creal( c[1] ) + Ia1 * cimag( c[1] ) + sum ; 
-  sum = Ra2 * creal( c[2] ) + Ia2 * cimag( c[2] ) + sum ; 
-  sum = Ra3 * creal( c[3] ) + Ia3 * cimag( c[3] ) + sum ; 
-  sum = Ra4 * creal( c[4] ) + Ia4 * cimag( c[4] ) + sum ; 
-  sum = Ra5 * creal( c[5] ) + Ia5 * cimag( c[5] ) + sum ; 
-  sum = Ra6 * creal( c[6] ) + Ia6 * cimag( c[6] ) + sum ; 
-  sum = Ra7 * creal( c[7] ) + Ia7 * cimag( c[7] ) + sum ; 
-  sum = Ra8 * creal( c[8] ) + Ia8 * cimag( c[8] ) + sum ; 
-#elif NC == 2
-  const GLU_complex a0 = a[0] * b[0] + a[1] * b[2] ;
-  const GLU_complex a1 = a[0] * b[1] + a[1] * b[3] ;
-  sum  = creal( a0 ) * creal( c[0] ) + cimag( a0 ) * cimag( c[0] ) ;
-  sum += creal( a1 ) * creal( c[1] ) + cimag( a1 ) * cimag( c[1] ) ;
-  sum -= creal( a1 ) * creal( c[2] ) - cimag( a1 ) * cimag( c[2] ) ;
-  sum += creal( a0 ) * creal( c[3] ) - cimag( a0 ) * cimag( c[3] ) ;
-#else
-  GLU_real trABCdag ;
-  trace_abc_dag_Re( &trABCdag , a , b , c ) ;
-  sum = (double)trABCdag ;
-#endif
-  return sum ;
 }
 #endif
 
@@ -442,7 +229,7 @@ evaluate_alpha( const GLU_complex *__restrict *__restrict gauge ,
   for( i = 0 ; i < LENGTH ; i++ ) {
     // some stacked allocations
     #if (defined deriv_full) || (defined deriv_fulln) || (defined deriv_fullnn)
-    GLU_complex A[ NCNC ] ;
+    GLU_complex A[ NCNC ] GLUalign ;
     GLU_real trAA ;
     #endif
     // and compute the relevant slice
@@ -536,8 +323,7 @@ gauge_functional_fast( const struct site *__restrict lat )
   #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     #if (defined deriv_full) || (defined deriv_fulln) || (defined deriv_fullnn)
-    //GLU_complex A[ HERMSIZE ] ;
-    GLU_complex A[ NCNC ] ;
+    GLU_complex A[ HERMSIZE ] ;
     GLU_real trAA ;
     #endif
     register double loc_sum = 0.0 ;
@@ -626,7 +412,7 @@ set_gauge_matrix( GLU_complex *__restrict gx ,
   #if NC > 18
   nape_reunit( gx ) ; 
   #else
-  reunit2( gx ) ; 
+  gram_reunit( gx ) ; 
   #endif
 #endif
 }
@@ -634,7 +420,7 @@ set_gauge_matrix( GLU_complex *__restrict gx ,
 // derivative
 double
 sum_deriv( const GLU_complex *__restrict *__restrict in , 
-	   const int LENGTH )
+	   const size_t LENGTH )
 {
   size_t i ;
   #pragma omp parallel for private(i)
@@ -668,7 +454,7 @@ sum_deriv( const GLU_complex *__restrict *__restrict in ,
 double
 sum_PR_numerator( const GLU_complex *__restrict *__restrict in , 
 		  const GLU_complex *__restrict *__restrict in_old ,
-		  const int LENGTH ) 
+		  const size_t LENGTH ) 
 {
   size_t i ;
   #pragma omp parallel for private(i)

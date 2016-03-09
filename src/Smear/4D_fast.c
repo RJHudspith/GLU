@@ -30,11 +30,6 @@
 #include "plaqs_links.h"
 #include "projectors.h"
 
-// If we are using the dangerous smearing routines ...
-#ifdef FAST_SMEAR
-  #include "random_config.h"
-#endif
-
 #if ND == 4
 // precompute the level 1 dressed links ....
 
@@ -52,10 +47,9 @@ get_lv1( struct lv1 *__restrict lev1 ,
   //do the whole lattice
 #pragma omp parallel for private(i) SCHED
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-    GLU_complex a[ NCNC ] ;
-    GLU_complex b[ NCNC ] ;
-    size_t j = 0 ;
-    size_t mu , nu ;
+    GLU_complex a[ NCNC ] GLUalign , b[ NCNC ] GLUalign ;
+    GLU_complex c[ NCNC ] GLUalign ;
+    size_t j = 0 , mu , nu ;
     //calculate the level1 staples
     for( mu = 0  ;  mu < ND  ;  mu++  ) {
       for( nu = 0  ;  nu < ND  ;  nu++ ) {
@@ -66,25 +60,16 @@ get_lv1( struct lv1 *__restrict lev1 ,
 	  multab_dag_suNC( b , a , lat[temp].O[nu] ) ;	
 	  if( type == SM_LOG ) {
 	    multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-            #ifdef FAST_SMEAR
-	    exact_log_fast( b , a ) ; 
-            #else
 	    exact_log_slow( b , a ) ; 
-            #endif
 	  }
 	  //bottom staple
-	  GLU_complex c[ NCNC ] ;
 	  temp = lat[i].back[nu] ; 
 	  multabdag_suNC( a , lat[temp].O[nu] , lat[temp].O[mu] ) ; 
 	  temp = lat[temp].neighbor[mu] ; 
 	  multab_suNC( c , a , lat[temp].O[nu] ) ; 
 	  if( type == SM_LOG ) {
 	    multab_dag_suNC( a , c , lat[i].O[mu] ) ; 
-            #ifdef FAST_SMEAR
-	    exact_log_fast( c , a ) ; 
-            #else
 	    exact_log_slow( c , a ) ; 
-            #endif
 	  }
 	  a_plus_b( b , c ) ; 
 	  project( lev1[i].O[j] , b , lat[i].O[mu] , 
@@ -114,16 +99,15 @@ get_lv2( struct lv1 *__restrict lev2 ,
 #pragma omp parallel for private(i) SCHED
   PFOR( i = 0  ;  i < LVOLUME  ;  i++ ) {
     int rho  = -1 , sigma = 0 ;
-    size_t ii = 0 ;
-    size_t mu , nu ;
-    GLU_complex b[ NCNC ] ;
+    size_t ii = 0 , mu , nu ;
+    GLU_complex b[ NCNC ] GLUalign , a[ NCNC ] GLUalign ;
+    GLU_complex stap[ NCNC ] GLUalign ;
 
     for( mu = 0  ;  mu < ND  ;  mu++  ) {
       //calculate the staples using the dressed links
       for( nu = 0 ;  nu < ND ;  ++nu )  {
 	if( unlikely( nu == mu ) ) { continue ; } 
 	// int rho  = -1 , sigma = 0 ;
-	GLU_complex stap[ NCNC ] ;
 	zero_mat( stap ) ;
 
 	for( rho = 0 ;  rho < ND ;  ++rho ) {
@@ -136,8 +120,6 @@ get_lv2( struct lv1 *__restrict lev2 ,
 	      sigma = jj ; 
 	    }
 	  }
-
-	  GLU_complex a[ NCNC ] ;
 		
 	  jj = ( ND - 1 )*mu + sigma ; 
 	  if( sigma > mu  ) { jj-- ; } 
@@ -153,11 +135,7 @@ get_lv2( struct lv1 *__restrict lev2 ,
 		
 	  if( type == SM_LOG ) {
 	    multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-            #ifdef FAST_SMEAR
-	    exact_log_fast( b , a ) ; 
-            #else
 	    exact_log_slow( b , a ) ; 
-            #endif
 	  }
 	  a_plus_b( stap , b ) ; 
 
@@ -169,11 +147,7 @@ get_lv2( struct lv1 *__restrict lev2 ,
 		
 	  if( type == SM_LOG ) {
 	    multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-            #ifdef FAST_SMEAR
-	    exact_log_fast( b , a ) ; 
-            #else
 	    exact_log_slow( b , a ) ; 
-            #endif
 	  }
 	  a_plus_b( stap , b ) ; 
 	}
@@ -197,8 +171,7 @@ gen_staples_4D( GLU_complex *__restrict stap ,
 		const size_t mu , 
 		const int type )
 {
-  GLU_complex a[ NCNC ] ;
-  GLU_complex b[ NCNC ] ; 
+  GLU_complex a[ NCNC ] GLUalign , b[ NCNC ] GLUalign ;
   size_t nu ;
   //calculate the staples using the dressed links
   for( nu = 0 ;  nu < ND ;  ++nu ) {
@@ -217,11 +190,7 @@ gen_staples_4D( GLU_complex *__restrict stap ,
 
       if( type == SM_LOG ) {
 	multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-        #ifdef FAST_SMEAR
-	exact_log_fast( b , a ) ; 
-        #else
 	exact_log_slow( b , a ) ; 
-        #endif
       }
       a_plus_b( stap , b ) ; 
 
@@ -232,11 +201,7 @@ gen_staples_4D( GLU_complex *__restrict stap ,
 
       if( type == SM_LOG ) {
 	multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-        #ifdef FAST_SMEAR
-	exact_log_fast( b , a ) ; 
-        #else
 	exact_log_slow( b , a ) ; 
-        #endif
       }
       a_plus_b( stap , b ) ; 
     }
@@ -320,7 +285,7 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
     PFOR( i = 0 ; i < LCU ; i++ ) {
       const size_t back = bck + i ;
       size_t mu ;
-      GLU_complex stap[ NCNC ] ;
+      GLU_complex stap[ NCNC ] GLUalign ;
       for( mu = 0 ; mu < ND ; mu++ ) {
 	zero_mat( stap ) ;
 	gen_staples_4D( stap , lev2 , lat , back , mu , type ) ; 
@@ -337,9 +302,9 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
       #pragma omp parallel for private(i) SCHED
       PFOR( i = 0 ; i < LCU ; i++ )  {
 	const size_t it = slice + i ; 
+	GLU_complex stap[ NCNC ] GLUalign ;
 	size_t mu ;
 	for( mu = 0 ; mu < ND ; mu++ ) {
-	  GLU_complex stap[ NCNC ] ;
 	  zero_mat( stap ) ;
 	  gen_staples_4D( stap , lev2 , lat , it , mu , type ) ; 
 	  project( lat2[i].O[mu] , stap , lat[it].O[mu] , alpha1 , 

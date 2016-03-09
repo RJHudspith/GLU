@@ -23,7 +23,7 @@
 #include "Mainfile.h"
 
 #include "effs.h"     // compute the f-constants of Cayley-Hamilton
-#include "solver.h"   // characteristic equation eigensolver
+#include "evalues.h"   // characteristic equation eigensolver
 
 // sqrt of three appears everywhere
 #define r3 (1.7320508075688772935)
@@ -301,8 +301,8 @@ exponentiate( GLU_complex U[ NCNC ] ,
   // exponentiate routine from stephan durr's paper
   // Performs the nesting
   // U = ( exp{ A / DIV^n ) ) ^ ( DIV * n )
-  GLU_complex EOLD[ NCNC ] , SN[ NCNC ] ;
-  GLU_complex RN_MIN[ NCNC ] , RN[ NCNC ] ;
+  GLU_complex EOLD[ NCNC ] GLU_align , SN[ NCNC ] GLU_align ;
+  GLU_complex RN_MIN[ NCNC ] GLU_align , RN[ NCNC ] GLU_align ;
 
   // set to zero
   zero_mat( EOLD ) ;
@@ -504,7 +504,7 @@ exponentiate_short( GLU_complex U[ NCNC ] ,
   *( U + 3 ) = (GLU_complex)( f0 - f1Q0 ) ; 
 #else
   // hmmm could be a toughy, wrap to exponentiate
-  GLU_complex temp[ NCNC ] ;
+  GLU_complex temp[ NCNC ] GLU_align ;
   rebuild_hermitian( temp , Q ) ;
   exponentiate( U , temp ) ;
 #endif

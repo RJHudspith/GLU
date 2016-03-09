@@ -39,7 +39,7 @@ const_time( const struct site *__restrict lat ,
 	    double *const_lin ,
 	    double *const_log )
 {
-  GLU_complex sum1[ NCNC ] , sum1_log[ NCNC ];
+  GLU_complex sum1[ NCNC ] GLUalign , sum1_log[ NCNC ] GLUalign ;
   zero_mat( sum1 ) ; zero_mat( sum1_log ) ;
 
   // initialise the first layer
@@ -62,7 +62,7 @@ const_time( const struct site *__restrict lat ,
 
       double av = 0. , avlog = 0. ; 
 
-      GLU_complex sum2[ NCNC ] , sum2_log[ NCNC ] ;
+      GLU_complex sum2[ NCNC ] GLUalign , sum2_log[ NCNC ] GLUalign ;
       zero_mat( sum2 ) ; zero_mat( sum2_log ) ;
       //loop inner cube
       size_t i ;
@@ -141,7 +141,7 @@ gauge_functional( const struct site *__restrict lat )
   for( i = 0 ; i < LVOLUME ; i++ ) {
     // removes unused variable warning ...
     #if ( defined deriv_full ) || ( defined deriv_fulln ) || ( defined deriv_fullnn ) 
-    GLU_complex A[ NCNC ] ;
+    GLU_complex A[ NCNC ] GLUalign ;
     #endif
     GLU_real tr ;
     register double loc_tr = 0.0 ;
@@ -206,7 +206,8 @@ gtrans_functional( const struct site *__restrict lat ,
   // actually have to do the multiplications, yuck
   #pragma omp parallel for private(i) reduction(+:tr)
   for( i = 0 ; i < LCU ; i++ ) {
-    GLU_complex A[ NCNC ] , temp[ NCNC ] , temp2[ NCNC ] ;
+    GLU_complex A[ NCNC ] GLUalign , temp[ NCNC ] GLUalign , 
+      temp2[ NCNC ] GLU_align ;
     GLU_real trAA ;
     double loc_tr = 0. ;
     const size_t j = slice_idx + i ;

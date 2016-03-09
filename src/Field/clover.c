@@ -819,8 +819,8 @@ compute_GG_q( const GLU_complex sum_1[ NCNC ] ,
 	      double *__restrict Q )
 {
   // take the antihermitian projection, could perform the exact log here?
-  GLU_complex GMUNU_1[ NCNC ] ;
-  GLU_complex GMUNU_2[ NCNC ] ;
+  GLU_complex GMUNU_1[ NCNC ] GLUalign ;
+  GLU_complex GMUNU_2[ NCNC ] GLUalign ;
   #ifdef CLOVER_LOG_DEF
   equiv( GMUNU_1 , sum_1 ) ;
   equiv( GMUNU_2 , sum_2 ) ;
@@ -882,10 +882,10 @@ compute_q( GLU_complex q[ NCNC ] ,
 {
 #if ND == 4 
   // accumulated mu-nu in sum_1 and rho-delta in sum_2
-  GLU_complex sum_1[ NCNC ] , sum_2[ NCNC ] ;
+  GLU_complex sum_1[ NCNC ] GLUalign , sum_2[ NCNC ] GLUalign ;
   zero_mat( sum_1 ) ; zero_mat( sum_2 ) ;
   // temp matrices in u and v
-  GLU_complex u[ NCNC ] , v[ NCNC ] ;
+  GLU_complex u[ NCNC ] GLUalign , v[ NCNC ] GLUalign ;
 #ifdef CLOVER_IMPROVE
   // highly improved clover definition
   compute_clover_s1( sum_1 , u , v , lat , i , mu , nu ) ;
@@ -912,8 +912,8 @@ compute_q( GLU_complex q[ NCNC ] ,
   compute_s4( sum_2 , u , v , lat , i , rho , delta , 1.0 ) ;
 #endif
   // take the antihermitian projection, could perform the exact log here?
-  GLU_complex GMUNU_1[ NCNC ] ;
-  GLU_complex GMUNU_2[ NCNC ] ;
+  GLU_complex GMUNU_1[ NCNC ] GLUalign ;
+  GLU_complex GMUNU_2[ NCNC ] GLUalign ;
   #ifdef CLOVER_LOG_DEF
   equiv( GMUNU_1 , sum_1 ) ;
   equiv( GMUNU_2 , sum_2 ) ;
@@ -947,10 +947,10 @@ compute_Gmunu_kernel( double *__restrict plaq_t ,
 {
 #if ND == 4
   // accumulated mu-nu in sum_1 and rho-delta in sum_2
-  GLU_complex sum_1[ NCNC ] , sum_2[ NCNC ] ;
+  GLU_complex sum_1[ NCNC ] GLUalign , sum_2[ NCNC ] GLUalign ;
   zero_mat( sum_1 ) ; zero_mat( sum_2 ) ;
   // temp matrices in u and v
-  GLU_complex u[ NCNC ] , v[ NCNC ] ;
+  GLU_complex u[ NCNC ] GLUalign , v[ NCNC ] GLUalign ;
 #ifdef CLOVER_IMPROVE
   // highly improved clover definition
   compute_clover_s1( sum_1 , u , v , lat , i , mu , nu ) ;
@@ -1053,7 +1053,7 @@ compute_Gmunu_array( GLU_complex *__restrict qtop , // an LVOLUME array for the 
 
 #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    GLU_complex Qmat[ NCNC ] ;
+    GLU_complex Qmat[ NCNC ] GLUalign ;
     compute_q( Qmat , lat , i , 3 , 0 , 1 , 2  ) ;
     qtop[i] = trace( Qmat ) ;
     //
