@@ -138,11 +138,11 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   print_GG_info( SM_TYPE , RK4_ADAPTIVE ) ;
 
   // the error between the two plaquettes
-  const double ADAPTIVE_EPS = 1E-7 ;
+  const double ADAPTIVE_EPS = 1E-5 ;
   // Standard shrink and factor from NRC RK4
-  const double ADAPTIVE_SHRINK = -0.25 ; // 0.33?
+  const double ADAPTIVE_SHRINK = -0.32 ; // 0.33?
   // Standard growth and factor from NRC RK4
-  const double ADAPTIVE_GROWTH = -0.20 ; // 0.25?
+  const double ADAPTIVE_GROWTH = -0.24 ; // 0.25?
   // define adaptive safe
   const double ADAPTIVE_SAFE = 0.9 ;
   // adaptive error conserving
@@ -306,10 +306,15 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
     yscal = 2.0 * yscal_new - yscal ;
 
     // overwrite lat .. 
+#pragma omp parallel for private(i)
+    PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+      memcpy( &lat[i] , &lat_two[i] , sizeof( struct site ) ) ; 
+    }
+    /*
     struct site *ptr = lat ;
     lat = lat_two ;
     lat_two = ptr ;
-
+    */
     t += delta_t ; // add one time step to the overall time 
 
     curr -> time = t ;
@@ -405,13 +410,6 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   FLAG = GLU_SUCCESS ;
 
  memfree :
-
-  // reswap pointers if we took a step, lat is freed elsewhere
-  if( count > 1 ) {
-    struct site *ptr = lat_two ;
-    lat_two = lat ;
-    lat = ptr ;
-  }
 
   // and free the list
   while( ( curr = head ) != NULL ) {

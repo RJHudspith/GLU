@@ -332,7 +332,7 @@ evaluate_scale( double *der ,
     }
   }
   // evaluate at "scale" error flag is -1
-  return solve_spline( x , meas , der , scale , change_up ) ;
+  return solve_spline( x , meas , der , scale , change_up+1 ) ;
 }
 
 // print out the general beginning information

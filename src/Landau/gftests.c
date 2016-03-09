@@ -45,7 +45,7 @@ const_time( const struct site *__restrict lat ,
   // initialise the first layer
   size_t j ;
   for( j = 0 ; j < LCU ; j++ ) {
-    GLU_complex A[ NCNC ] ;
+    GLU_complex A[ NCNC ] GLUalign ;
     Hermitian_proj( A , lat[j].O[ ND - 1 ] ) ; 
     a_plus_b( sum1 , A ) ; 
       
@@ -67,7 +67,7 @@ const_time( const struct site *__restrict lat ,
       //loop inner cube
       size_t i ;
       for( i = LCU * t ; i < LCU * t + LCU ; i++ ) {
-	GLU_complex A[ NCNC ] ;
+	GLU_complex A[ NCNC ] GLUalign ;
 	Hermitian_proj( A , lat[i].O[ ND - 1 ] ) ; 
 	a_plus_b( sum2 , A ) ; 
 	
@@ -106,8 +106,8 @@ const_time( const struct site *__restrict lat ,
 
       #else
   
-      GLU_complex dif[ NCNC ] ; 
-      GLU_complex dif_log[ NCNC ] ; 
+      GLU_complex dif[ NCNC ] GLUalign ; 
+      GLU_complex dif_log[ NCNC ] GLUalign ; 
       b_min_c( dif , sum1 , sum2 ) ; 
       b_min_c( dif_log , sum1_log , sum2_log ) ; 
       for( i = 0 ; i < NCNC ; i++ ) {

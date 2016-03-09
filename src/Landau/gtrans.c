@@ -36,7 +36,7 @@ gtransform_local( const GLU_complex *__restrict a ,
 		  const GLU_complex *__restrict c )
 {
   // standard gauge transform
-  GLU_complex temp[ NCNC ] ;
+  GLU_complex temp[ NCNC ] GLUalign ;
   multab_dag_suNC( temp , b , c ) ;
   multab_suNC( b , a , temp ) ; 
   return ;

@@ -149,7 +149,7 @@ coul_gtrans_fields( struct sp_site_herm *__restrict rotato ,
   size_t i ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LCU ; i ++ ) {
-    GLU_complex temp[ NCNC ] ;
+    GLU_complex temp[ NCNC ] GLUalign ;
     #ifdef deriv_lin
     double loc_sum = 0.0 ;
     #endif
@@ -341,7 +341,7 @@ gauge_functional_fast( const struct site *__restrict lat )
 	loc_sum += creal( trace( lat[i].O[mu] ) ) ;
         #endif
       #elif (defined deriv_linn )
-	GLU_complex temp[ NCNC ] ;
+	GLU_complex temp[ NCNC ] GLUalign ;
 	multab_suNC( temp , lat[i].O[mu] , lat[lat[i].neighbor[mu]].O[mu] ) ;
 	loc_sum += creal( trace( temp ) ) ;
       #else
@@ -476,7 +476,7 @@ sum_PR_numerator( const GLU_complex *__restrict *__restrict in ,
     temp = in[1][i] - in_old[1][i] ;
     loc_sum += 2.0 * ( creal( in[1][i] ) * creal( temp ) + cimag( in[1][i] ) * cimag( temp ) ) ;
 #else
-    GLU_complex temp[ HERMSIZE ] , temp2[ NCNC ] ;
+    GLU_complex temp[ HERMSIZE ] GLUalign , temp2[ NCNC ] GLUalign ;
     size_t mu ;
     for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
       temp[mu] = in[mu][i] - in_old[mu][i] ;
