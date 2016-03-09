@@ -535,9 +535,9 @@ read_triplet_and_proj( int *__restrict *__restrict triplet ,
 	   #endif 
 	   ) ;
   for( mu = 0 ; mu < ND - 1 ; mu++ ) {
-    sprintf( str , "%s%dx" , str , Latt.dims[mu] ) ;
+    sprintf( str , "%s%zux" , str , Latt.dims[mu] ) ;
   }
-  sprintf( str , "%s%d_%d.config" , str , Latt.dims[ ND - 1 ] , nnmax ) ;
+  sprintf( str , "%s%zu_%zu.config" , str , Latt.dims[ ND - 1 ] , nnmax ) ;
 
   FILE *config = fopen( str , "rb" ) ;
   //force it to open ->create a file if needed

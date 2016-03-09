@@ -107,7 +107,7 @@ construct_loop_variables( size_t *LATT_LOOP ,
 static void
 grab_sitedata( GLU_real *__restrict chunk , 
 	       const struct site lat ,
-	       const int LOOP_VAR , 
+	       const size_t LOOP_VAR , 
 	       const GLU_output checktype )
 {
   GLU_real tmp[ LOOP_VAR ] ;
@@ -133,7 +133,7 @@ grab_sitedata( GLU_real *__restrict chunk ,
 // byteswap for output
 static void
 swap_for_output( GLU_real *uout , 
-		 const int SIZE )
+		 const size_t SIZE )
 {
   // byte swaps
 #ifdef OUT_BIG
@@ -274,7 +274,7 @@ static void
 write_binary_data( const struct site *__restrict lat ,
 		   FILE *__restrict outfile ,
 		   const char *__restrict details ,
-		   const short int type ,
+		   const GLU_output checktype ,
 		   const size_t LATT_LOOP ,
 		   const size_t LOOP_VAR )
 { 
@@ -282,7 +282,7 @@ write_binary_data( const struct site *__restrict lat ,
   GLU_real *uout = ( GLU_real* ) malloc( LATT_LOOP  * sizeof( GLU_real ) ) ; 
 
   // copy lattice data into uout 
-  copy_data( uout , lat , 0 , LVOLUME , LOOP_VAR , type ) ;
+  copy_data( uout , lat , 0 , LVOLUME , LOOP_VAR , checktype ) ;
 
   // and write it out
   byteswap_and_write( outfile , uout , LATT_LOOP ) ;
@@ -296,7 +296,7 @@ static void
 write_binary_data_cheap( const struct site *__restrict lat ,
 			 FILE *__restrict outfile ,
 			 const char *__restrict details ,
-			 const short int type ,
+			 const GLU_output checktype ,
 			 const size_t LOOP_VAR )
 { 
   // write out in working precision
@@ -307,7 +307,7 @@ write_binary_data_cheap( const struct site *__restrict lat ,
   for( t = 0 ; t < Latt.dims[ ND - 1 ] ; t++ ) {
     
     // copy lattice data into uout 
-    copy_data( uout , lat , LCU*t , LCU*(t+1) , LOOP_VAR , type ) ;
+    copy_data( uout , lat , LCU*t , LCU*(t+1) , LOOP_VAR , checktype ) ;
     
     // and write it out
     byteswap_and_write( outfile , uout , LCU * LOOP_VAR * ND ) ;

@@ -129,7 +129,7 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
 		    const size_t smiters ,
 		    const size_t DIR ,
 		    const int SIGN ,
-		    const size_t SM_TYPE )
+		    const smearing_types SM_TYPE )
 {  
   // set this for the coupling measurement
   //set_TMEAS_STOP( 0.4 ) ;

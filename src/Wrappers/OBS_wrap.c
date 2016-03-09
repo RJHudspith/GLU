@@ -44,7 +44,7 @@ typedef enum { EXACT_FAST , EXACT_SLOW ,
 static void
 check_links( const struct site *__restrict lat )
 {
-  const GLU_bool FUCKED = GLU_TRUE ;
+  const GLU_bool FUCKED = GLU_FALSE ;
   size_t i , NBADLINKS = 0 ;
   fprintf( stdout , "\n[UNITARY] Checking for Unitary link matrices ...\n" ) ;
   #pragma omp parallel for private(i) reduction(+:NBADLINKS)
