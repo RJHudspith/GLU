@@ -30,7 +30,7 @@
 
 #ifndef multabdag_suNC
 
-void //__attribute__((hot))
+void
 multabdag_suNC( GLU_complex a[ NCNC ] , 
 		const GLU_complex b[ NCNC ] , 
 		const GLU_complex c[ NCNC ] ) 
@@ -77,6 +77,10 @@ multabdag_suNC( GLU_complex a[ NCNC ] ,
   *( A + 8 ) = SSE2_CONJ( _mm_sub_pd( SSE2_MUL( *( A + 0 ) , *( A + 4 ) ) ,
 				      SSE2_MUL( *( A + 1 ) , *( A + 3 ) ) ) ) ;
 #elif NC == 2
+  *( A + 0 ) = _mm_add_pd( SSE2_MUL_CONJ( *( B + 0 ) , *( C + 0 ) ) ,
+			   SSE2_MUL_CONJ( *( B + 1 ) , *( C + 1 ) ) ) ;
+  *( A + 1 ) = _mm_add_pd( SSE2_MUL_CONJ( *( B + 0 ) , *( C + 2 ) ) , 
+			   SSE2_MUL_CONJ( *( B + 1 ) , *( C + 3 ) ) ) ;
   //a[0] = conj(b[0])*c[0] + conj(b[2]) * c[2]
   *( A + 0 ) = _mm_add_pd( SSE2_MULCONJ( *( B + 0 ) , *( C + 0 ) ) ,
 			   SSE2_MULCONJ( *( B + 2 ) , *( C + 2 ) ) ) ;

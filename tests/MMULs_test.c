@@ -118,6 +118,7 @@ static char *multab_dag_test( void )
 {
   multab_dag_suNC( res1 , Ua , Ub ) ;
   multab_dag( res2 , Ua , Ub ) ;
+
   if( are_equal( res1 , res2 ) == GLU_FALSE ) {
     write_matrix( res1 ) ;
     write_matrix( res2 ) ;

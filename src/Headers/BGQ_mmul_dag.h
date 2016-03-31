@@ -42,7 +42,7 @@ multab_dag( GLU_complex a[ NCNC ] ,
   a[8] = conj( a[0] * a[4] - a[1] * a[3] ) ;
 #elif NC==2
 #define multab_dag_suNC( a , b , c )			\
-  a[0] = b[0] * conj( c[0] ) + b[1] * conj( c[2] ) ;	\
+  a[0] = b[0] * conj( c[0] ) + b[1] * conj( c[1] ) ;	\
   a[1] = b[0] * conj( c[2] ) + b[1] * conj( c[3] ) ;	\
   a[2] = -conj( a[1] ) ;				\
   a[3] = conj( a[0] ) ;

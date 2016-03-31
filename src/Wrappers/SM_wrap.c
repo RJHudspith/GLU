@@ -74,7 +74,7 @@ hyp_chooser( struct site *__restrict lat ,
     }
   }
   // The original decision for the smearing methods
-  const smearing_types GENTYPE = ( SMINFO.type - 1 ) % 3 + 1 ;
+  const smearing_types GENTYPE = (smearing_types)(( SMINFO.type - 1 ) % 3 + 1 );
 
   if( SMINFO.type == SM_APE || SMINFO.type == SM_STOUT 
       || SMINFO.type == SM_LOG ) {

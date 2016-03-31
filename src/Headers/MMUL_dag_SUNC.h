@@ -25,7 +25,7 @@
 
 #ifndef GLU_BGQ // inlining matrix multiplies for the Q
 
-#if NC < 4
+   #if NC < 4
 /**
    @fn void multab_dag_suNC( GLU_complex a[ NCNC ] , const GLU_complex b[ NCNC ] , const GLU_complex c[ NCNC ] ) 
    @brief SU( Nc ) - tuned  matrix multiply \f$ a = b \times c^{\dagger}\f$
@@ -38,9 +38,11 @@ void
 multab_dag_suNC( GLU_complex a[ NCNC ] , 
 		 const GLU_complex b[ NCNC ] , 
 		 const GLU_complex c[ NCNC ] ) ;
+  #else
+    #define multab_dag_suNC multab_dag
+  #endif
+
 #else
-  #define multab_dag_suNC multab_dag
-#endif
 
 // include the macros
 #include "BGQ_mmul_dag.h"
