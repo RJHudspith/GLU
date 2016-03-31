@@ -25,14 +25,12 @@
 #define GLU_PROJECTORS_H
 
 /**
-   @fn void print_smearing_obs( const struct site *__restrict lat , const int type , const size_t count , const GLU_bool hypercubically_blocked )
+   @fn void print_smearing_obs( const struct site *__restrict lat , const size_t count )
    @brief prints to stdout the links and plaquettes
  */
 void
 print_smearing_obs( const struct site *__restrict lat , 
-		    const int type ,
-		    const size_t count ,
-		    const GLU_bool hypercubically_blocked ) ;
+		    const size_t count ) ;
 
 /**
    @fn void project_APE( GLU_complex smeared_link[ NCNC ] , GLU_complex staple[ NCNC ] , const GLU_complex link[ NCNC ] , const double smear_alpha , const double al )

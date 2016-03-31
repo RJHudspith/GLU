@@ -52,10 +52,9 @@ mom_gauge( struct site *__restrict A ,
 
   // callback for the log definition
   void (*log)( GLU_complex Q[ NCNC ] ,
-	       const GLU_complex U[ NCNC ] ) ;
+	       const GLU_complex U[ NCNC ] ) = Hermitian_proj ;
   switch( def ) {
   case LINEAR_DEF :
-    log = Hermitian_proj ;
     break ;
   case LOG_DEF : 
     log = exact_log_slow ; 
@@ -256,7 +255,7 @@ cuts_struct_smeared( struct site *__restrict A ,
   mom_gauge( SM_A , CUTINFO.definition ) ;
   
   // this contains the length of the momentum list
-  int *in = (int*)malloc( 1 * sizeof(int) ) ;
+  size_t *in = malloc( sizeof(size_t) ) ;
   const struct veclist *list = compute_veclist( in , CUTINFO , 
 						ND , GLU_FALSE) ;
 

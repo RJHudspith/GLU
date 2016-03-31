@@ -20,8 +20,6 @@
    @file Mainfile.h
    @brief the header that most files include, has all the definitions and matrix op libraries
  */
-///////////////////////////////////
-
 #ifndef GLU_MAINFILE_H
 #define GLU_MAINFILE_H
 

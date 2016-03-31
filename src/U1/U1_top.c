@@ -31,7 +31,7 @@ current( const int *__restrict *__restrict M )
   size_t mu , monopole = 0 ;
 #pragma omp parallel for private(mu) reduction(+:monopole)
   for( mu = 0 ; mu < ND ; mu++ ) {
-    int loc_monopole = 0 , i ;
+    size_t loc_monopole = 0 , i ;
     for( i = 0 ; i < LVOLUME ; i++ )  {
       loc_monopole += abs( M[ mu ][ i ] ) ;
     }

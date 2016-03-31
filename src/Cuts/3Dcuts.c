@@ -50,12 +50,12 @@ mom_gauge_spatial( struct site *__restrict A ,
   // callback for the log definition
   void (*log)( GLU_complex Q[ NCNC ] ,
 	       const GLU_complex U[ NCNC ] ) ;
+  log = Hermitian_proj ;
   switch( def ) {
-  case LINEAR_DEF :
-    log = Hermitian_proj ;
-    break ;
   case LOG_DEF : 
     log = exact_log_slow ; 
+    break ;
+  case LINEAR_DEF :
     break ;
   }
 
@@ -152,7 +152,7 @@ cuts_spatial ( struct site *__restrict A ,
   }
   
   // calculate the momentum list
-  int *num_mom = ( int* )malloc( sizeof( int ) ) ; 
+  size_t *num_mom = malloc( sizeof( size_t ) ) ; 
   const struct veclist *list = compute_veclist( num_mom , CUTINFO ,
 						ND-1 , GLU_FALSE ) ;
 

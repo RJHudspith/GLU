@@ -62,7 +62,7 @@ log_deriv_nn( GLU_complex sum[ HERMSIZE ] ,
 {
   GLU_complex shiftA[ HERMSIZE ] , A[ HERMSIZE ] ;
   size_t mu ; 
-  for( mu = 0 ; mu < ND ; mu++ ) {
+  for( mu = 0 ; mu < MAX_DIR ; mu++ ) {
     // first deriv
     exact_log_slow_short( A , lat[i].O[mu] ) ; 
     exact_log_slow_short( shiftA , lat[lat[i].back[mu]].O[mu] ) ; 
@@ -84,7 +84,7 @@ log_deriv_nnn( GLU_complex sum[ HERMSIZE ] ,
 {
   GLU_complex shiftA[ HERMSIZE ] , A[ HERMSIZE ] ;
   size_t mu ; 
-  for( mu = 0 ; mu < ND ; mu++ ) {
+  for( mu = 0 ; mu < MAX_DIR ; mu++ ) {
     // first deriv
     exact_log_slow_short( A , lat[i].O[mu] ) ; 
     exact_log_slow_short( shiftA , lat[lat[i].back[mu]].O[mu] ) ; 

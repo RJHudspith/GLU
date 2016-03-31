@@ -20,7 +20,6 @@
    @file plan_ffts.c
    @brief planner for the FFTS we use everywhere
  */
-
 #include "Mainfile.h"
 
 #include "GLU_timer.h" // tells us how long we spent planning FFTs
@@ -42,8 +41,8 @@
 enum{ NOPLAN = 0 } ;
 
 // have a look for parallel ffts
-short int
-parallel_ffts()
+int
+parallel_ffts( void )
 {
   // initialise parallel fft ?
 #ifdef OMP_FFTW
@@ -67,7 +66,10 @@ obtain_wisdom( int *planflag ,
 	       const int DIR , 
 	       const char *type )
 {
+  *planflag = NOPLAN ;
   char *str = malloc( 256 * sizeof( char ) ) ;
+  sprintf( str , "%s" , type ) ;
+  if( DIR < 0 ) return str ;
 #ifndef CONDOR_MODE
   FILE *wizzard ;
   size_t mu ;

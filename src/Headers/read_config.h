@@ -33,20 +33,20 @@
    @warning I am optimistic here, I only claim we are a #GLU_FAILURE if all the checksums fail
    @returns the #GLU_SUCCESS or #GLU_FAILURE
  **/
-short int 
+int 
 checks( struct site *__restrict lat , 
 	uint32_t chksum ,
 	struct head_data HEAD_DATA ) ;
 
 /**
-   @fn uint32_t get_config_SUNC( FILE *__restrict CONFIG , struct site *__restrict lat , const struct head_data HEAD_DATA )
+   @fn int get_config_SUNC( FILE *__restrict CONFIG , struct site *__restrict lat , const struct head_data HEAD_DATA )
    @brief wrapper for reading a configuration
    @param CONFIG :: our configuration file
    @param lat :: the lattice gauge field being read
    @param HEAD_DATA :: uses the header data
    @returns #GLU_SUCCESS or #GLU_FAILURE
  **/
-uint32_t
+int
 get_config_SUNC( FILE *__restrict CONFIG , 
 		 struct site *__restrict lat ,
 		 const struct head_data HEAD_DATA ) ;

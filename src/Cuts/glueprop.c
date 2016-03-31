@@ -94,7 +94,7 @@ int
 compute_gluon_prop( FILE *__restrict Ap , 
 		    const struct site *__restrict A ,
 		    const struct veclist *__restrict list ,
-		    int num_mom[1] )
+		    size_t num_mom[1] )
 {
   fprintf( stdout , "\n[CUTS] computing the transverse and "
 	            "longitudinal gluon propagators \n" ) ;
@@ -109,8 +109,8 @@ compute_gluon_prop( FILE *__restrict Ap ,
   double *longitudinal = malloc( num_mom[0] * sizeof( double ) ) ;
 
   // set up the zero position
-  const int zero_pos = ( num_mom[0] ) >> 1 ;
-  const int zero_mom = list[ zero_pos ].idx ; // ist das wahr?
+  const size_t zero_pos = ( num_mom[0] ) >> 1 ;
+  const size_t zero_mom = list[ zero_pos ].idx ; // ist das wahr?
 
   // obviously only need to compute num_mom[0]/2 of these due to symmetry
   size_t i ;

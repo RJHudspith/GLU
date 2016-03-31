@@ -51,7 +51,7 @@ hyp_chooser( struct site *__restrict lat ,
     if( SMINFO.type == SM_ADAPTWFLOW_LOG ) {
       GENTYPE = SM_LOG ;
     }
-    flow4d_adaptive_RK( lat , SMINFO.smiters , ND , 
+    flow4d_adaptive_RK( lat , SMINFO.smiters , 
 			GLU_FORWARD , GENTYPE ) ;
     return ;
   }
@@ -64,11 +64,11 @@ hyp_chooser( struct site *__restrict lat ,
     }
     switch( meminfo ){
     case FAST :
-      flow4d_RK_fast( lat , SMINFO.smiters , ND , 
+      flow4d_RK_fast( lat , SMINFO.smiters , 
 		      GLU_FORWARD , GENTYPE ) ;
       return ;
     case MODERATE :
-      flow4d_RK_slow( lat , SMINFO.smiters , ND , 
+      flow4d_RK_slow( lat , SMINFO.smiters , 
 		      GLU_FORWARD , GENTYPE ) ;
       return ;
     }

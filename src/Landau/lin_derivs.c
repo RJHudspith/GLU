@@ -144,7 +144,7 @@ fast_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
 
 #if NC == 3 
     // cache some stuff in ....
-    GLU_real *qq = ( GLU_real* )lat[i].O[mu] ;
+    const GLU_real *qq = (const GLU_real*)lat[i].O[mu] ;
     Ai0 = *( qq + 1 )  ;
     Ar1 = *( qq + 2 )  ; Ai1 = *( qq + 3 ) ;
     Ar2 = *( qq + 4 )  ; Ai2 = *( qq + 5 ) ;
@@ -155,7 +155,7 @@ fast_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
     Ar7 = *( qq + 14 ) ; Ai7 = *( qq + 15 ) ;
     Ai8 = *( qq + 17 ) ;
 
-    GLU_real *shqq = ( GLU_real* )lat[ lat[i].back[mu] ].O[mu] ;
+    const GLU_real *shqq = (const GLU_real*)lat[ lat[i].back[mu] ].O[mu] ;
     shAi0 = *( shqq + 1 )  ;
     shAr1 = *( shqq + 2 )  ; shAi1 = *( shqq + 3 )  ;
     shAr2 = *( shqq + 4 )  ; shAi2 = *( shqq + 5 )  ;
@@ -183,12 +183,12 @@ fast_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
 
 #elif NC == 2
 
-    GLU_real *qq = ( GLU_real* )lat[i].O[mu] ;
+    const GLU_real *qq = (const GLU_real*)lat[i].O[mu] ;
     Ai0 = *( qq + 1 ) ;
     Ar1 = *( qq + 2 ) ; Ai1 = *( qq + 3 ) ;
  
     // and the backward one
-    GLU_real *shqq = ( GLU_real* )lat[ lat[i].back[mu] ].O[mu] ;
+    const GLU_real *shqq = (const GLU_real*)lat[ lat[i].back[mu] ].O[mu] ;
     shAi0 = *( shqq + 1 ) ;
     shAr1 = *( shqq + 2 ) ; shAi1 = *( shqq + 3 ) ;
 
@@ -270,7 +270,7 @@ fast_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
   for( mu = 0 ; mu < ND ; mu++ ) {
 #if NC == 3
     // cache some stuff in ....
-    const GLU_real *qq = ( GLU_real* )lat[i].O[mu] ;
+    const GLU_real *qq = (const GLU_real*)lat[i].O[mu] ;
     //register GLU_real t = *qq++ ; //increment useless pointer
     Ai0 = *( qq + 1 )  ;
     Ar1 = *( qq + 2 )  ; Ai1 = *( qq + 3 ) ;
@@ -283,7 +283,7 @@ fast_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
     Ai8 = *( qq + 17 ) ;
 
     register const size_t it = lat[i].back[mu] ;
-    const GLU_real *shqq = ( GLU_real* )lat[ it ].O[mu] ;
+    const GLU_real *shqq = (const GLU_real*)lat[ it ].O[mu] ;
     shAi0 = *( shqq + 1 )  ;
     shAr1 = *( shqq + 2 )  ; shAi1 = *( shqq + 3 ) ;
     shAr2 = *( shqq + 4 )  ; shAi2 = *( shqq + 5 ) ;
@@ -311,7 +311,7 @@ fast_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
 
     // second deriv
     // cache some stuff in ....
-    GLU_real *qq2 = ( GLU_real* )lat[ lat[i].neighbor[mu] ].O[mu] ;
+    const GLU_real *qq2 = (const GLU_real*)lat[ lat[i].neighbor[mu] ].O[mu] ;
     Ai0 = *( qq2 + 1 )  ;
     Ar1 = *( qq2 + 2 )  ; Ai1 = *( qq2 + 3 ) ;
     Ar2 = *( qq2 + 4 )  ; Ai2 = *( qq2 + 5 ) ;
@@ -323,7 +323,7 @@ fast_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
     Ai8 = *( qq2 + 17 ) ;
 
     register const size_t it2b = lat[it].back[mu] ;
-    GLU_real *shqq2 = ( GLU_real* )lat[it2b].O[mu] ;
+    const GLU_real *shqq2 = (const GLU_real*)lat[it2b].O[mu] ;
     shAi0 = *( shqq2 + 1 )  ;
     shAr1 = *( shqq2 + 2 )  ; shAi1 = *( shqq2 + 3 ) ;
     shAr2 = *( shqq2 + 4 )  ; shAi2 = *( shqq2 + 5 ) ;
@@ -351,13 +351,13 @@ fast_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
 
 #elif NC == 2
 
-    const GLU_real *qq = ( GLU_real* )lat[i].O[mu] ;
+    const GLU_real *qq = (const GLU_real*)lat[i].O[mu] ;
     Ai0 = *( qq + 1 ) ;
     Ar1 = *( qq + 2 ) ; Ai1 = *( qq + 3 ) ;
  
     // and the backward one
     const size_t it = lat[i].back[mu] ;
-    const GLU_real *shqq = ( GLU_real* )lat[it].O[mu] ;
+    const GLU_real *shqq = (const GLU_real*)lat[it].O[mu] ;
     shAi0 = *( shqq + 1 ) ;
     shAr1 = *( shqq + 2 ) ; shAi1 = *( shqq + 3 ) ;
 
@@ -366,12 +366,12 @@ fast_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
     IMsum1 += shAi1 - Ai1 ;
 
     register const size_t it2f = lat[i].neighbor[mu] ;
-    const GLU_real *qq2 = ( GLU_real* )lat[it2f].O[mu] ;
+    const GLU_real *qq2 = (const GLU_real*)lat[it2f].O[mu] ;
     Ai0 = *( qq2 + 1 ) ;
     Ar1 = *( qq2 + 2 ) ; Ai1 = *( qq2 + 3 ) ;
 
     register const size_t it2b = lat[it].back[mu] ;
-    const GLU_real *shqq2 = ( GLU_real* )lat[it2b].O[mu] ;
+    const GLU_real *shqq2 = (const GLU_real*)lat[it2b].O[mu] ;
     shAi0 = *( shqq2 + 1 ) ;
     shAr1 = *( shqq2 + 2 ) ; shAi1 = *( shqq2 + 3 ) ;
 

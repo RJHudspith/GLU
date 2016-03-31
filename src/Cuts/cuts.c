@@ -45,10 +45,9 @@ mom_gauge( struct site *__restrict A ,
 
   // callback for the log definition
   void (*log)( GLU_complex Q[ NCNC ] ,
-	       const GLU_complex U[ NCNC ] ) ;
+	       const GLU_complex U[ NCNC ] ) = Hermitian_proj ;
   switch( def ) {
   case LINEAR_DEF :
-    log = Hermitian_proj ;
     break ;
   case LOG_DEF : 
     log = exact_log_slow ; 
@@ -56,8 +55,7 @@ mom_gauge( struct site *__restrict A ,
   }
 
   size_t i ;
-  int flag = 0 ;
-  #pragma omp parallel for private(i) shared(A)
+  #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) { 
     GLU_complex temp[ NCNC ] GLUalign ;
     size_t mu ;
@@ -66,9 +64,6 @@ mom_gauge( struct site *__restrict A ,
       equiv( A[i].O[mu] , temp ) ;
     }
   }
-
-  // because we can't break out of a parallel loop we must do it here
-  if( flag == 1 ) return GLU_FAILURE ;
   
   // FFTW routines
   GLU_complex *out = fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
@@ -150,7 +145,7 @@ cuts_struct( struct site *__restrict A ,
   }
 
   // this contains the momentum list
-  int *in = (int*)malloc( 1 * sizeof(int) ) ;
+  size_t *in = malloc( sizeof(size_t) ) ;
  
   struct cut_info TEMP = CUTINFO ;
   // NONEXCEPTIONAL MUST USE PSQ TO CONSERVE MOMENTUM

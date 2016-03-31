@@ -132,13 +132,13 @@ smear3D( struct site *__restrict lat ,
     #endif
       
     #ifdef verbose
-    print_smearing_obs( lat , type , count , GLU_TRUE ) ;
+    print_smearing_obs( lat , count ) ;
     #endif
   }
 
 #ifndef verbose
   // -- the counter here as we stop at smiters not simters+1
-  print_smearing_obs( lat , type , count-1 , GLU_TRUE ) ;
+  print_smearing_obs( lat , count-1 ) ;
 #endif
 
   // free our temporary lattice
@@ -324,13 +324,13 @@ smear4D( struct site *__restrict lat ,
     #endif
  
     #ifdef verbose
-    print_smearing_obs( lat , type , count , GLU_TRUE ) ;
+    print_smearing_obs( lat , count ) ;
     #endif
     // end of iterations loop
   }
 
 #ifndef verbose
- print_smearing_obs( lat , type , count-1 , GLU_TRUE ) ;
+ print_smearing_obs( lat , count-1 ) ;
 #endif
 
   // free stuff !

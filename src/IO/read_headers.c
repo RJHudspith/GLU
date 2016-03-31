@@ -179,7 +179,7 @@ get_header_data_NERSC( FILE *__restrict CONFIG ,
 		       struct head_data *__restrict HEAD_DATA ,
 		       const GLU_bool VERB )
 {
-  struct QCDheader *get_header( ) , * hdr ; 
+  struct QCDheader *get_header( FILE *__restrict in ) , * hdr ; 
   char *str ; 
 
   hdr = get_header( CONFIG ) ; 
@@ -197,7 +197,7 @@ get_header_data_NERSC( FILE *__restrict CONFIG ,
   if( str == NULL ) { str = "(not specified)" ; }
 
   size_t i = get_size_t( "SEQUENCE_NUMBER" , hdr , &Latt.flow ) ; 
-  if ( i == GLU_FAILURE || Latt.flow == 0 ) {
+  if ( i == 0 || Latt.flow == 0 ) {
     fprintf( stderr , "[IO] Unknown sequence number.... \n" ) ; 
     return GLU_FAILURE ;
   }
@@ -220,27 +220,27 @@ get_header_data_NERSC( FILE *__restrict CONFIG ,
   }
   
   // What precision and type of storage are we reading? Don't recognise we leave
-  i = get_string( "FLOATING_POINT" , hdr , &str ) ; 
-  if( unlikely( i == GLU_FAILURE ) ) {
+  int flag = get_string( "FLOATING_POINT" , hdr , &str ) ; 
+  if( unlikely( flag == GLU_FAILURE ) ) {
     fprintf( stderr , "[IO] FP precision not recognised in file"
 	     "... leaving \n ") ; 
     return GLU_FAILURE ;
   }
 
   // size 1 is 64bit end 1 is big-endian default output for us is big-endian
-  if( i == strcmp(  " IEEE64BIG" , str ) ) {
+  if( !strcmp(  " IEEE64BIG" , str ) ) {
     HEAD_DATA -> precision = DOUBLE_PREC ; 
     HEAD_DATA -> endianess = B_ENDIAN ; 
-  } else if( i == strcmp(  " IEEE32BIG" , str ) ) {
+  } else if( !strcmp(  " IEEE32BIG" , str ) ) {
     HEAD_DATA -> precision = FLOAT_PREC ; 
     HEAD_DATA -> endianess = B_ENDIAN ; 
-  } else if( i == strcmp(  " IEEE32" , str ) ) {
+  } else if( !strcmp(  " IEEE32" , str ) ) {
     HEAD_DATA -> precision = FLOAT_PREC ; 
     HEAD_DATA -> endianess = B_ENDIAN ; 
-  } else if( i == strcmp(  " IEEE64LITTLE" , str ) ){      
+  } else if( !strcmp(  " IEEE64LITTLE" , str ) ){      
     HEAD_DATA -> precision = DOUBLE_PREC ; 
     HEAD_DATA -> endianess = L_ENDIAN ; 
-  } else if(  i == strcmp(  " IEEE32LITTLE" , str ) ){
+  } else if( !strcmp(  " IEEE32LITTLE" , str ) ){
     HEAD_DATA -> precision = FLOAT_PREC ; 
     HEAD_DATA -> endianess = L_ENDIAN ; 
   } else {
@@ -298,7 +298,7 @@ get_header_data_NERSC( FILE *__restrict CONFIG ,
   }
   HEAD_DATA -> trace = (double)tr ;
 
-  for( i = 0 ; i < (*hdr).ntoken ; i++ ) {
+  for( i = 0 ; i < (size_t)(*hdr).ntoken ; i++ ) {
     free( hdr -> token[ i ] ) ;
     free( hdr -> value[ i ] ) ;
   }

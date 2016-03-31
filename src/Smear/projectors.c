@@ -29,10 +29,8 @@
 
 // this is a common IO pattern for all the smearings
 void
-print_smearing_obs( const struct site *__restrict lat , 
-		    const int type ,
-		    const size_t count ,
-		    const GLU_bool hypercubically_blocked )
+print_smearing_obs( const struct site *__restrict lat ,
+		    const size_t count )
 {
   fprintf( stdout , "[SMEAR] {Iteration} %zu {Link trace} %1.15f \n" , 
 	   count , links( lat ) ) ; 
@@ -137,7 +135,7 @@ project_LOG_wflow_short( GLU_complex log[ NCNC ] ,
   *( a + 0 ) = creal( staple[0] ) * smear_alpha ; 
   *( a + 1 ) = staple[1] * smear_alpha ; 
   #else
-  int elem ;
+  size_t elem ;
   for( elem = 0 ; elem < HERMSIZE ; elem++ ) {
     *( a + elem ) = staple[elem] * smear_alpha ;
   }

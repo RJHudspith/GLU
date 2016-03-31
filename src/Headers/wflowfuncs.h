@@ -76,14 +76,11 @@ evaluate_scale( double *der ,
 		const char *message ) ;
 
 /**
-   @fn void print_GG_info( const int SM_TYPE , const wflow_type WFLOW_TYPE )
+   @fn void print_GG_info( void )
    @brief prints out some relevant information for the flow routines
-   @param SM_TYPE :: smearing type
-   @param WFLOW_TYPE :: type of the wilson flow routine
  */
 void
-print_GG_info( const int SM_TYPE , 
-	       const wflow_type WFLOW_TYPE ) ;
+print_GG_info( void ) ;
 
 /**
    @fn void scaleset( struct wfmeas *curr , const double W0 , const double T0 , const size_t count ) 

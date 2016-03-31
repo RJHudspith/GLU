@@ -62,11 +62,11 @@ Re_trace_abc_dag_suNC( const GLU_complex a[ NCNC ] ,
 #elif NC == 2
   // puts the four parts of the sum into the upper and lower parts of 
   // two SSE-packed double words
-  const register __m128d a0 = _mm_sub_pd( SSE2_MUL( *( A + 0 ) , *( B + 0 ) ) ,
+  register const __m128d a0 = _mm_sub_pd( SSE2_MUL( *( A + 0 ) , *( B + 0 ) ) ,
 					  SSE2_MUL_CONJ( *( A + 1 ) , *( B + 1 ) ) ) ;
-  const register __m128d a1 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 1 ) ) ,
+  register const __m128d a1 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 1 ) ) ,
 					  SSE2_MUL_CONJ( *( A + 1 ) , *( B + 0 ) ) ) ;
-  const register __m128d sum = _mm_add_pd( _mm_mul_pd( a0 , *( C + 0 ) ) , 
+  register const __m128d sum = _mm_add_pd( _mm_mul_pd( a0 , *( C + 0 ) ) , 
 					   _mm_mul_pd( a1 , *( C + 1 ) ) ) ;
   // multiply sum by 2
   _mm_store_pd( (void*)&csum , _mm_add_pd( sum , sum ) ) ; 

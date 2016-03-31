@@ -81,9 +81,9 @@ AntiHermitian_proj( GLU_complex Q[ NCNC ] ,
 		    const GLU_complex U[ NCNC ] )
 {
 #if NC == 3
-  register GLU_real cimU0 = cimag( *( U + 0 ) ) ;
-  register GLU_real cimU4 = cimag( *( U + 4 ) ) ;
-  register GLU_real cimU8 = cimag( *( U + 8 ) ) ;
+  register const GLU_real cimU0 = cimag( *( U + 0 ) ) ;
+  register const GLU_real cimU4 = cimag( *( U + 4 ) ) ;
+  register const GLU_real cimU8 = cimag( *( U + 8 ) ) ;
   *( Q + 0 ) = I * cimU0 ;
   *( Q + 1 ) = 0.5 * ( U[1] - conj( U[3] ) ) ;  
   *( Q + 2 ) = 0.5 * ( U[2] - conj( U[6] ) ) ; 
@@ -94,8 +94,8 @@ AntiHermitian_proj( GLU_complex Q[ NCNC ] ,
   *( Q + 7 ) = -conj( Q[5] ) ;  
   *( Q + 8 ) = I * cimU8 ;
 #elif NC == 2
-  register GLU_real cimU0 = cimag( *( U + 0 ) ) ;
-  register GLU_real cimU3 = cimag( *( U + 3 ) ) ;
+  register const GLU_real cimU0 = cimag( *( U + 0 ) ) ;
+  register const GLU_real cimU3 = cimag( *( U + 3 ) ) ;
   *( Q + 0 ) = I * cimU0 ;
   *( Q + 1 ) = U[1] ; //0.5 * ( U[1] - conj( U[2] ) ) ;  
   *( Q + 2 ) = -conj( Q[1] )  ; 
@@ -117,16 +117,16 @@ AntiHermitian_proj_short( GLU_complex Q[ HERMSIZE ] ,
 			  const GLU_complex U[ NCNC ] ) 
 {
 #if NC == 3
-  register GLU_real cimU0 = cimag( *( U + 0 ) ) ;
-  register GLU_real cimU4 = cimag( *( U + 4 ) ) ;
-  register GLU_real cimU8 = cimag( *( U + 8 ) ) ;
+  register const GLU_real cimU0 = cimag( *( U + 0 ) ) ;
+  register const GLU_real cimU4 = cimag( *( U + 4 ) ) ;
+  register const GLU_real cimU8 = cimag( *( U + 8 ) ) ;
   *( Q + 0 ) = I * OneO3 * ( 2. * cimU0 - cimU4 - cimU8 ) ; 
   *( Q + 1 ) = 0.5 * ( U[1] - conj( U[3] ) ) ;  
   *( Q + 2 ) = 0.5 * ( U[2] - conj( U[6] ) ) ; 
   *( Q + 3 ) = I * OneO3 * ( 2. * cimU4 - cimU0 - cimU8 ) ;
   *( Q + 4 ) = 0.5 * ( U[5] - conj( U[7] ) ) ; 
 #elif NC == 2
-  register GLU_real cimU0 = cimag( *( U + 0 ) ) ;
+  register const GLU_real cimU0 = cimag( *( U + 0 ) ) ;
   *( Q + 0 ) = I * cimU0 ;
   *( Q + 1 ) = U[1] ; //0.5 * ( U[1] - conj( U[2] ) ) ;  
 #else
@@ -160,7 +160,7 @@ get_iQ( GLU_complex Q[ NCNC ] ,
   vectors( v , U , z ) ; 
   // Finally compute V.Delta.V^{\dagger} //
   for( i = 0 ; i < NC ; i++ ) {
-    const register double Z = carg( z[i] ) ;
+    register const double Z = carg( z[i] ) ;
     for( j = 0 ; j < NC ; j++ ) {
       delta[ j + i*NC ] = Z * conj( v[ i + j*NC ] ) ;
     }

@@ -29,7 +29,7 @@
 void
 correct_pspace_landau( struct site *__restrict A ,
 		       const struct veclist *__restrict list ,
-		       const int *__restrict in ,
+		       const size_t *__restrict in ,
 		       const size_t DIMS )
 {
   double ave_err = 0. ;

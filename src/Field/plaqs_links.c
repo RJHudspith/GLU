@@ -343,7 +343,7 @@ double
 s_links( const struct site *__restrict lat )
 {
   double link = 0.0 ; 
-  int i ; 
+  size_t i ; 
 #pragma omp parallel for private(i) reduction(+:link)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     double p = 0. , res ;

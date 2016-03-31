@@ -47,7 +47,7 @@ GLU_real rats[ ND ] ; // asymmetry ratios
    @brief smallest lattice side length
  */
 static double norm = 0.0 ;
-static int small = 1 ; // smallest lattice size
+static size_t small = 1 ; // smallest lattice size
 
 ////////////////////////////////////////////
 // angle to radian conversion
@@ -93,12 +93,12 @@ simorb_ratios( const int DIMS )
 
 ////////// Cylinder cutting procedurals //////////
 // gets the body diagonal vectors for our lattice
-static inline void
-get_diagonal( n , i , DIMS )
-     GLU_real n[ ND ] ;
-     const int i , DIMS ;
+static void
+get_diagonal( GLU_real n[ ND ] ,
+	      const size_t i , 
+	      const size_t DIMS )
 {
-  int mu , subvol = 1 ;
+  size_t mu , subvol = 1 ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     if( mu < DIMS ) {
       n[ mu ] = ( ( i - i % subvol ) / subvol ) % 2 ;
@@ -481,12 +481,12 @@ get_veclist( struct veclist *__restrict kept ,
 
 // Computes the momentum list
 struct veclist*
-compute_veclist( int *__restrict list_size , 
+compute_veclist( size_t *__restrict list_size , 
 		 const struct cut_info CUTINFO ,
 		 const size_t DIMS ,
 		 const GLU_bool CONFIGSPACE )
 {
-  int in[1] = { 1 } ;
+  size_t in[1] = { 1 } ;
   struct veclist *list = NULL ;
 
   // loop up to DIMS

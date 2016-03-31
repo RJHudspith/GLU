@@ -207,10 +207,10 @@ compute_spacing_test( void )
 static char*
 gen_shift_test( void )
 {
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     // shift forward Latt.dims times puts you back where you were
-    int nu , i = 0 ;
+    size_t nu , i = 0 ;
     for( nu = 0 ; nu < Latt.dims[mu] ; nu++ ) {
       i = gen_shift( i , mu ) ;
     }

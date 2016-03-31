@@ -335,7 +335,7 @@ Coul_staticpot( struct site *__restrict lat ,
   }
 
   // compute the momentum list
-  int size[1] = { 0 } ;
+  size_t size[1] = { 0 } ;
   struct veclist *list = compute_veclist( size , CUTINFO , ND-1 , GLU_TRUE ) ;
 
   // set up the outputs

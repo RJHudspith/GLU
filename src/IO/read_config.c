@@ -34,10 +34,10 @@
 
 // comparison between checksums
 static int 
-check_sums( plaq , tr , chksum , HEAD_DATA )
-     const double plaq , tr ;
-     const uint32_t chksum ; 
-     const struct head_data HEAD_DATA ;
+check_sums( const double plaq , 
+	    const double tr ,
+	    const uint32_t chksum ,
+	    const struct head_data HEAD_DATA )
 {
   // these headers I use the same check, the %29 one
   if( Latt.head == MILC_HEADER || Latt.head == ILDG_SCIDAC_HEADER || 
@@ -121,7 +121,7 @@ checks( struct site *__restrict lat ,
 }
 
 // we wrap this one to our new reader ... 
-uint32_t
+int
 get_config_SUNC( FILE *__restrict CONFIG , 
 		 struct site *__restrict lat ,
 		 const struct head_data HEAD_DATA )

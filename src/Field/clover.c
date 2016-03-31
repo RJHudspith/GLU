@@ -164,9 +164,9 @@ compute_s4( GLU_complex *__restrict sum ,
   multab_suNC( u , v , lat[s2].O[mu] ) ;
 #ifdef CLOVER_LOG_DEF
   exact_log_slow( v , u ) ;
-  a_plus_b( sum , v ) ;
+  a_plus_Sxb( sum , v , mul ) ;
 #else
-  a_plus_b( sum , u ) ;
+  a_plus_Sxb( sum , u , mul ) ;
 #endif
   return ;
 }

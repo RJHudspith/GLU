@@ -167,7 +167,7 @@ compute_checksum( uint32_t *nersc_cksum ,
 		  const GLU_output checktype )
 {
   // initialise
-  int i ;
+  size_t i ;
   uint32_t k = 0 , sum29 = 0 , sum31 = 0 , CRCsum29 = 0 , CRCsum31 = 0 ;
 
   // loop some arbitrary length
@@ -273,7 +273,6 @@ copy_data( GLU_real *uout ,
 static void
 write_binary_data( const struct site *__restrict lat ,
 		   FILE *__restrict outfile ,
-		   const char *__restrict details ,
 		   const GLU_output checktype ,
 		   const size_t LATT_LOOP ,
 		   const size_t LOOP_VAR )
@@ -295,7 +294,6 @@ write_binary_data( const struct site *__restrict lat ,
 static void
 write_binary_data_cheap( const struct site *__restrict lat ,
 			 FILE *__restrict outfile ,
-			 const char *__restrict details ,
 			 const GLU_output checktype ,
 			 const size_t LOOP_VAR )
 { 
@@ -371,10 +369,10 @@ write_lat( struct site *__restrict lat ,
   const int SAFETY = have_memory_readers_writers( type ) ;
   if( SAFETY != FAST ) {
     fprintf( stdout , "[IO] Using the slower/memory cheaper code \n" ) ;
-    write_binary_data_cheap( lat , out , details , type , LOOP_VAR ) ;
+    write_binary_data_cheap( lat , out , type , LOOP_VAR ) ;
   } else {
     fprintf( stdout , "[IO] Using the faster/memory expensive code \n" ) ;
-    write_binary_data( lat , out , details , type , LATT_LOOP , LOOP_VAR ) ;
+    write_binary_data( lat , out , type , LATT_LOOP , LOOP_VAR ) ;
   }
 
   // need to write out the scidac checksums here

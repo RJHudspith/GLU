@@ -54,7 +54,7 @@ compute_Qsusc( struct site *__restrict lat ,
   simorb_ratios( ND ) ;
 
   // if we already have a file, read it
-  int size[1] = { 0 } ;
+  size_t size[1] = { 0 } ;
   struct veclist *list = compute_veclist( size , CUTINFO , ND , GLU_TRUE ) ;
 
   // set up the outputs

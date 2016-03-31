@@ -43,12 +43,11 @@
 int
 flow4d_RK_fast( struct site *__restrict lat , 
 		const size_t smiters ,
-		const size_t DIR ,
 		const int SIGN ,
 		const smearing_types SM_TYPE )
 {
   /////// Initial information //////////
-  print_GG_info( SM_TYPE , RK4_FAST ) ;
+  print_GG_info( ) ;
   //////////////////////////////////////
 
   // Set up the temporary fields ...
@@ -107,7 +106,7 @@ flow4d_RK_fast( struct site *__restrict lat ,
 
     curr -> time = count * delta_t ; // add one time step to the overall time 
 
-    // flow forwards using the RK4
+    // flow forwards using the RK3
     step_distance( lat , lat2 , Z , rk1 , rk2 , rk3 , SM_TYPE , project ) ;
 
     // update the linked list
@@ -177,12 +176,11 @@ flow4d_RK_fast( struct site *__restrict lat ,
 int
 flow4d_RK_slow( struct site *__restrict lat , 
 		const size_t smiters ,
-		const size_t DIR ,
 		const int SIGN ,
 		const smearing_types SM_TYPE )
 {
   ///// USUAL STARTUP INFORMATION //////
-  print_GG_info( SM_TYPE , RK4_SLOW ) ;
+  print_GG_info( ) ;
   //////////////////////////////////////
 
   struct spt_site_herm *Z = NULL ;

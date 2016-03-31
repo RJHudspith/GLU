@@ -48,7 +48,7 @@ int tests_run = 0 ;
 int tests_fail = 0 ;
 
 // test the rng
-static char *rng_test( ) {
+static char *rng_test( void ) {
   const double res = 
 #ifdef GSL_RNG
     0.0
@@ -67,13 +67,13 @@ static char *rng_test( ) {
 }
 
 // test our random numbers
-static char *rng_tests( ) {
+static char *rng_tests( void ) {
   mu_run_test( rng_test ) ;
   return 0 ;
 }
 
 // test the exponential e^{0} = Identity?
-static char *exponentiate_test(  ) {
+static char *exponentiate_test( void ) {
   GLU_complex A[ NCNC ] GLUalign , Id[ NCNC ] GLUalign ;
   zero_mat( A ) ;
   exponentiate( Id , A ) ;
@@ -117,7 +117,7 @@ static char *exponentiate_short_test( void )
 }
 
 // log and exponentiate should be equivalent
-static char *exact_log_test(  ) {
+static char *exact_log_test( void ) {
   GLU_complex A[ NCNC ] , Ua[ NCNC ] , eA[ NCNC ] ;
 
   // create a unitary matrix
@@ -139,7 +139,7 @@ static char *exact_log_test(  ) {
 }
 
 // log and exponentiate should be equivalent
-static char *exact_log_short_test(  ) {
+static char *exact_log_short_test( void ) {
   GLU_complex A[ NCNC ] GLUalign , Ua[ NCNC ] GLUalign , 
     eA[ NCNC ] GLUalign ;
   GLU_complex hA[ NCNC ] GLUalign , heA[ NCNC ] GLUalign ;
@@ -154,7 +154,7 @@ static char *exact_log_short_test(  ) {
   exponentiate( eA , A ) ;
   exponentiate_short( heA , hA ) ;
 
-  int i ;
+  size_t i ;
   GLU_bool is_ok = GLU_TRUE ;
   for( i = 0 ; i < NCNC ; i++ ) {
     if( cabs( eA[i] - heA[i] ) > NC*PREC_TOL ) is_ok = GLU_FALSE ;
@@ -166,7 +166,7 @@ static char *exact_log_short_test(  ) {
 }
 
 // log-exponential tests
-static char *logexp_tests( ) {
+static char *logexp_tests( void ) {
   mu_run_test( exponentiate_test ) ;
   mu_run_test( exponentiate_short_test ) ;
   mu_run_test( exact_log_test ) ;
@@ -175,7 +175,7 @@ static char *logexp_tests( ) {
 }
 
 // matrix inverse tests
-static char *inverse_test( ) {
+static char *inverse_test( void ) {
   GLU_complex Ua[ NCNC ] GLUalign ;
 
   // have been checked already
@@ -204,12 +204,12 @@ static char *inverse_test( ) {
 }
 
 // matrix inverse tests
-static char *inversion_tests( ) {
+static char *inversion_tests( void ) {
   mu_run_test( inverse_test ) ;
   return 0 ;
 }
 
-static char *av_plaquette_test( ) {
+static char *av_plaquette_test( void ) {
   GLU_bool is_ok = GLU_TRUE ;
 
   double sp_plaq , t_plaq , gsp_plaq , gt_plaq ;
@@ -227,7 +227,7 @@ static char *av_plaquette_test( ) {
 
 // test the gauge invariance of the polyakov loops in each direction
 // after a gauge transformation
-static char *polyakov_test( ) {
+static char *polyakov_test( void ) {
   GLU_bool is_ok = GLU_TRUE ;
   int mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
@@ -276,7 +276,7 @@ static char *config_tests( void )
 }
 
 // main
-int main( const int argc , const char *argv[] )
+int main( void )
 {
   // inits
   attach_GLU( ) ;

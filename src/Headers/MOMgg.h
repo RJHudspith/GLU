@@ -27,7 +27,7 @@
 #define GLU_MOMGG_H
 
 /**
-   @fn int write_exceptional_g2g3_MOMgg( FILE *__restrict Ap , const struct site *__restrict A , const struct veclist *__restrict list , int num_mom[1] )
+   @fn int write_exceptional_g2g3_MOMgg( FILE *__restrict Ap , const struct site *__restrict A , const struct veclist *__restrict list , size_t num_mom[1] )
    @brief gluon propagator and exceptional three point   
    @param Ap :: file we write out to
    @param A :: lie-algebra field
@@ -42,6 +42,6 @@ int
 write_exceptional_g2g3_MOMgg( FILE *__restrict Ap , 
 			      const struct site *__restrict A , 
 			      const struct veclist *__restrict list , 
-			      int num_mom[1] ) ;
+			      size_t num_mom[1] ) ;
 
 #endif

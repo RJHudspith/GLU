@@ -160,7 +160,7 @@ precompute_taylor_factors( void )
 #pragma omp critical
   {
     fact = malloc( NMAX * sizeof( double ) ) ;
-    int n ;
+    size_t n ;
     for( n = 0 ; n < NMAX ; n++ ) {
       fact[ n ] = 1.0 / (double)( 2 * ( n ) - 1 ) ;
     }
@@ -217,7 +217,7 @@ log_asinh( GLU_complex *__restrict Q ,
   }
   // horner's rule for the series of numerator 
   // and denominator
-  for( roots = NPADE-1 ; roots > -1 ; roots-- ) {
+  for( roots = NPADE-1 ; roots == 0 ; roots-- ) {
     for( i = 0 ; i < NC ; i++ ) {
       numerator[i*(NC+1)]   += num[roots] ;
       denominator[i*(NC+1)] += dum[roots] ;
@@ -321,7 +321,7 @@ asinh_log( GLU_complex *__restrict Q ,
 int
 brute_force_log( GLU_complex *__restrict Q , 
 		 const GLU_complex *__restrict U ,
-		 const int NROOTS )
+		 const size_t NROOTS )
 {
   // check to see if we can do precomputations
   if( TAYLOR_SET == GLU_FALSE ) { precompute_taylor_factors( ) ; } 
@@ -461,7 +461,7 @@ brute_force_log( GLU_complex *__restrict Q ,
 
 // we free this in Mainfile.c
 void
-free_taylors( )
+free_taylors( void )
 {
   if( TAYLOR_SET == GLU_TRUE ) {
     free( fact ) ;

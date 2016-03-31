@@ -14,7 +14,7 @@ static GLU_complex a[ NCNC ] GLUalign , b[ NCNC ] GLUalign ,
   c[ NCNC ] GLUalign ;
 
 // test the add constant routine
-static char *add_constant_test( ) {
+static char *add_constant_test( void ) {
   GLU_bool is_ok = GLU_TRUE ;
   GLU_complex A[ NCNC ] GLUalign ;
   equiv( A , a ) ;
@@ -25,7 +25,7 @@ static char *add_constant_test( ) {
 }
 
 // test the a+b routine
-static char *a_plus_b_test( ) {
+static char *a_plus_b_test( void ) {
   GLU_bool is_ok = GLU_TRUE ;
   GLU_complex d[ NCNC ] GLUalign ;
   equiv( d , b ) ;
@@ -39,7 +39,7 @@ static char *a_plus_b_test( ) {
 }
 
 // test the add constant routine
-static char *a_plus_CSxb_test( ) {
+static char *a_plus_CSxb_test( void ) {
   GLU_bool is_ok = GLU_TRUE ;
   GLU_complex d[ NCNC ] GLUalign ;
   equiv( d , a ) ;
@@ -54,7 +54,7 @@ static char *a_plus_CSxb_test( ) {
 }
 
 // test the add constant routine
-static char *a_plus_Sxb_test( ) {
+static char *a_plus_Sxb_test( void ) {
   GLU_bool is_ok = GLU_TRUE ;
   GLU_complex d[ NCNC ] ;
   equiv( d , a ) ;
@@ -92,7 +92,7 @@ static char *a_plus_Sxbminc_short_test( void ) {
 }
 
 // test the a=b-c routine
-static char *b_min_c_test( ) {
+static char *b_min_c_test( void ) {
   GLU_bool is_ok = GLU_TRUE ;
   GLU_complex d[ NCNC ] GLUalign ;
   b_min_c( d , b , c ) ;
@@ -105,7 +105,7 @@ static char *b_min_c_test( ) {
 }
 
 // test the cofactor transpose? -> probably dated
-static char *cofactor_transpose_test( ) {
+static char *cofactor_transpose_test( void ) {
   // cofactor_transpose / determinant is the inverse!
   GLU_complex Ua[ NCNC ] GLUalign ;
 
@@ -130,7 +130,7 @@ static char *cofactor_transpose_test( ) {
 }
 
 // test the equivalence of matrices
-static char *equiv_test( ) {
+static char *equiv_test( void ) {
   GLU_complex d[ NCNC ] GLUalign ;
   identity( d ) ;
   equiv( d , a ) ;
@@ -142,7 +142,7 @@ static char *equiv_test( ) {
 }
 
 // test the daggering
-static char *dagger_test( ) {
+static char *dagger_test( void ) {
   GLU_bool is_ok = GLU_TRUE ;
   GLU_complex d[ NCNC ] GLUalign ;
   dagger( d , a ) ;
@@ -158,7 +158,7 @@ static char *dagger_test( ) {
 }
 
 // test the diagonal routine
-static char *diag_test( ) {
+static char *diag_test( void ) {
   GLU_bool is_ok = GLU_TRUE ;
   GLU_complex d[ NCNC ] GLUalign , sum = 0.0 ;
   diag( d , 0.5 ) ;
@@ -172,7 +172,7 @@ static char *diag_test( ) {
 }
 
 // test the add constant routine
-static char *diag_vect_test( ) {
+static char *diag_vect_test( void ) {
   GLU_bool is_ok = GLU_TRUE ;
   GLU_complex d[ NCNC ] GLUalign , v[ NC ] , sum = 0.0 ;
   int i ;
@@ -189,7 +189,7 @@ static char *diag_vect_test( ) {
 }
 
 // test the identity routine
-static char *identity_test(  ) {
+static char *identity_test( void ) {
   GLU_bool is_ok = GLU_TRUE ;
   GLU_complex d[ NCNC ] GLUalign ;
   identity( d ) ;
@@ -215,7 +215,7 @@ static char *identity_test(  ) {
 }
 
 // test the is unitary test
-static char *is_unitary_test( ) {
+static char *is_unitary_test( void ) {
   GLU_complex d[ NCNC ] ;
   identity( d ) ;
   mu_assert("[GLUnit] error : is_unitary broken", is_unitary( d ) );
@@ -224,7 +224,7 @@ static char *is_unitary_test( ) {
 
 #if NC > 3
 // test the LU_det comparing to the identity for now
-static char *LU_det_test( ) {
+static char *LU_det_test( void ) {
   GLU_complex d[ NCNC ] ;
   identity( d ) ;
   mu_assert("[GLUnit] error : LU_det broken", 
@@ -234,7 +234,7 @@ static char *LU_det_test( ) {
 #endif
 
 // test the determinant of the identity
-static char *det_test( ) {
+static char *det_test( void ) {
   GLU_complex d[ NCNC ] GLUalign ;
   identity( d ) ;
   mu_assert("[GLUnit] error : det broken", 
@@ -243,7 +243,7 @@ static char *det_test( ) {
 }
 
 // test matrix multiply a vector
-static char *mat_mult_vec_test(  ) {
+static char *mat_mult_vec_test( void ) {
   GLU_complex v[ NC ] , rv[ NC ] ;
   int i ;
   for( i = 0 ; i < NC ; i++ ) {
@@ -255,7 +255,7 @@ static char *mat_mult_vec_test(  ) {
 }
 
 // test the identity routine
-static char *M_times_c_test(  ) {
+static char *M_times_c_test( void ) {
   GLU_complex d[ NCNC ] GLUalign ;
   int i ;
   GLU_bool is_ok = GLU_TRUE ;
@@ -269,7 +269,7 @@ static char *M_times_c_test(  ) {
 }
 
 // matrix power
-static char *matrix_power_test(  ) {
+static char *matrix_power_test( void ) {
   GLU_complex Ua[ NCNC ] GLUalign , Ub[ NCNC ] GLUalign ;
 
   // generate a random matrix
@@ -294,7 +294,7 @@ static char *matrix_power_test(  ) {
 }
 
 // test the outerproduct should all be ones!
-static char *outerproduct_test(  ) {
+static char *outerproduct_test( void ) {
   GLU_complex o[ NC ] , v[ NC ] ;
   int i ;
   GLU_bool is_ok = GLU_TRUE ;
@@ -311,7 +311,7 @@ static char *outerproduct_test(  ) {
 }
 
 // test the hermitian packing
-static char *pack_hermitian_test(  ) {
+static char *pack_hermitian_test( void ) {
   GLU_complex Ha[ NCNC ] GLUalign , sHa[ HERMSIZE ] ;
   Hermitian_proj( Ha , a ) ;
   pack_hermitian( sHa , Ha ) ;
@@ -328,7 +328,7 @@ static char *pack_hermitian_test(  ) {
 }
 
 // test the rebuilding antihermitian
-static char *rebuild_antihermitian_test(  ) {
+static char *rebuild_antihermitian_test( void ) {
   GLU_complex Ha[ NCNC ] GLUalign , sHa[ HERMSIZE ] , 
     rHa[ NCNC ] GLUalign ;
   Hermitian_proj( Ha , a ) ;
@@ -347,7 +347,7 @@ static char *rebuild_antihermitian_test(  ) {
 }
 
 // test the rebuilding hermitian
-static char *rebuild_hermitian_test(  ) {
+static char *rebuild_hermitian_test( void ) {
   GLU_complex Ha[ NCNC ] , sHa[ HERMSIZE ] , rHa[ NCNC ];
   Hermitian_proj( Ha , a ) ;
   pack_hermitian( sHa , Ha ) ;
@@ -362,7 +362,7 @@ static char *rebuild_hermitian_test(  ) {
 }
 
 // test the identity routine
-static char *Re_trace_abc_dag_test(  ) {
+static char *Re_trace_abc_dag_test( void ) {
   GLU_complex A[ NCNC ] GLUalign , B[ NCNC ] GLUalign ,
     C[ NCNC ] GLUalign ;
   Sunitary_gen( A ) ; Sunitary_gen( B ) ; Sunitary_gen( C ) ;
@@ -375,7 +375,7 @@ static char *Re_trace_abc_dag_test(  ) {
 }
 
 // test the shortening and rebuilding
-static char *shorten_test(  ) {
+static char *shorten_test( void ) {
   GLU_bool is_ok = GLU_TRUE ;
 #if NC < 4
   GLU_real sA[ NCNC-1 ] ;
@@ -399,7 +399,7 @@ static char *shorten_test(  ) {
 }
 
 // test the identity routine
-static char *speed_det_test(  ) {
+static char *speed_det_test( void ) {
   GLU_complex d[ NCNC ] GLUalign , s ;
   identity( d ) ;
   speed_det( &s , d ) ;
@@ -409,7 +409,7 @@ static char *speed_det_test(  ) {
 }
 
 // test the identity routine
-static char *speed_trace_test(  ) {
+static char *speed_trace_test( void ) {
   GLU_complex tr ;
   int sum = 0 , i ;  
   speed_trace( &tr , b ) ;
@@ -423,7 +423,7 @@ static char *speed_trace_test(  ) {
 }
 
 // test the identity routine
-static char *trace_test(  ) {
+static char *trace_test( void ) {
   int sum = 0 ; 
   int i ;  
   for( i = 0 ; i < NC ; i++ ) sum += i ;
@@ -432,7 +432,7 @@ static char *trace_test(  ) {
 }
 
 // test the identity routine
-static char *trace_ab_test(  ) {
+static char *trace_ab_test( void ) {
   // multiply
   GLU_complex d[ NCNC ] GLUalign , tr ;
   GLU_bool is_ok = GLU_TRUE ;
@@ -444,7 +444,7 @@ static char *trace_ab_test(  ) {
 }
 
 // test the identity routine
-static char *trace_abc_test(  ) {
+static char *trace_abc_test( void ) {
   GLU_complex d[ NCNC ] GLUalign , e[ NCNC ] GLUalign , tr ;
   GLU_bool is_ok = GLU_TRUE ;
   multab( d , b , c ) ;
@@ -456,7 +456,7 @@ static char *trace_abc_test(  ) {
 }
 
 // test the tr[ a.b.c^dag ] routine
-static char *trace_abc_dag_test(  ) {
+static char *trace_abc_dag_test( void ) {
   GLU_complex d[ NCNC ] GLUalign , e[ NCNC ] GLUalign , tr ;
   GLU_bool is_ok = GLU_TRUE ;
   multab_dag( d , b , c ) ;
@@ -479,7 +479,7 @@ static char *trace_abc_dag_test(  ) {
 }
 
 // test the identity routine
-static char *trace_ab_herm_test(  ) {
+static char *trace_ab_herm_test( void ) {
   // need two hermitian matrices and to multiply them
   GLU_complex Ua[ NCNC ] GLUalign , Ub[ NCNC ] GLUalign ;
   GLU_complex Ha[ NCNC ] GLUalign , Hb[ NCNC ] GLUalign ;
@@ -510,7 +510,7 @@ static char *trace_ab_herm_test(  ) {
 }
 
 // test the trace of ab_dag
-static char *trace_ab_dag_test(  ) {
+static char *trace_ab_dag_test( void ) {
   GLU_complex Ua[ NCNC ] GLUalign , Ub[ NCNC ] GLUalign , 
     Uab[ NCNC ] GLUalign ;
   // random gaussians have had RNG checked
@@ -541,7 +541,7 @@ static char *trace_ab_dag_test(  ) {
 }
 
 // test the trace of two hermitian matrices
-static char *trace_ab_herm_short_test(  ) {
+static char *trace_ab_herm_short_test( void ) {
   // need two hermitian matrices and to multiply them
   GLU_complex Ua[ NCNC ] GLUalign , Ub[ NCNC ] GLUalign ;
   GLU_complex Ha[ NCNC ] GLUalign , Hb[ NCNC ] GLUalign ;
@@ -575,7 +575,7 @@ static char *trace_ab_herm_short_test(  ) {
 }
 
 // test the identity routine
-static char *transpose_test(  ) {
+static char *transpose_test( void ) {
   GLU_complex d[ NCNC ] ;
   GLU_bool is_ok = GLU_TRUE ;
   transpose( d , a ) ;
@@ -591,7 +591,7 @@ static char *transpose_test(  ) {
 }
 
 // test the identity routine
-static char *zero_mat_test(  ) {
+static char *zero_mat_test( void ) {
   GLU_complex d[ NCNC ] GLUalign ;
   double sum = 0.0 ;
   int i ;

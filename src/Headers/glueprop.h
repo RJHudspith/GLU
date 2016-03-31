@@ -26,7 +26,7 @@
 #define GLU_GLUEPROP_H
 
 /**
-   @fn int compute_gluon_prop( FILE *__restrict Ap , const struct site *__restrict A , const struct veclist *__restrict list , int num_mom[1] )
+   @fn int compute_gluon_prop( FILE *__restrict Ap , const struct site *__restrict A , const struct veclist *__restrict list , size_t num_mom[1] )
    @brief computes the transverse and longitudinal gluon propagator scalar functions
    @param Ap :: file being written out to
    @param A :: Momentum space gluon fields
@@ -39,6 +39,6 @@ int
 compute_gluon_prop( FILE *__restrict Ap , 
 		    const struct site *__restrict A ,
 		    const struct veclist *__restrict list ,
-		    int num_mom[1] ) ;
+		    size_t num_mom[1] ) ;
 
 #endif

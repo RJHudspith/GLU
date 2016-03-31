@@ -41,7 +41,7 @@ int
 write_nonexceptional_g2g3( FILE *__restrict Ap , 
 			   const struct site *__restrict A , 
 			   const struct veclist *__restrict list , 
-			   int num_mom[ 1 ] , 
+			   size_t num_mom[ 1 ] , 
 			   const int nnmax ) ;
 
 #endif

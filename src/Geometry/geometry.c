@@ -41,17 +41,18 @@ gen_site( const int x[ ND ] )
 // defined in the 0 -> 2pi BZ.
 size_t
 get_site_2piBZ( int x[ ND ] , 
-		const int DIMS )
+		const size_t DIMS )
 {
-  int temp[ND] , mu , L_2 = 1 ;
+  int temp[ND] ;
+  size_t mu , L_2 = 1 ;
   for( mu = 0 ; mu < ND ; mu ++ ) {
     L_2 = Latt.dims[ mu ] >> 1 ;
     temp[mu] = x[mu] ;
     if( mu != DIMS ) {
-      if( temp[ mu ] >= L_2 ) {
+      if( temp[ mu ] >= (int)L_2 ) {
 	temp [ mu ] -= (int)Latt.dims[ mu ] ;
       } 
-      if( temp[ mu ] < L_2 ) {
+      if( temp[ mu ] < (int)L_2 ) {
 	temp [ mu ] += (int)L_2 ;
       }
     } else { // fill the rest with 0's
@@ -65,7 +66,7 @@ get_site_2piBZ( int x[ ND ] ,
 // from the momentum defined in the -Pi to Pi BZ
 int
 get_site_pipiBZ( int x[ ND ] , 
-		 const int DIMS )
+		 const size_t DIMS )
 {
   int temp[ ND ] ;
   size_t mu ;
@@ -108,7 +109,7 @@ get_mom_2piBZ( int x[ ND ] ,
 {
   int mu , subvol = 1 ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    if( mu != DIMS ) {
+    if( mu != (int)DIMS ) {
       x[ mu ] = ( ( i - i % subvol ) / subvol ) % Latt.dims[ mu ] ;
       subvol *= Latt.dims[ mu ] ;
     } else {// set it to 0?
@@ -152,10 +153,14 @@ compute_p( GLU_real p[ ND ] ,
 {
   size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    p[ mu ] = n[mu] * Latt.twiddles[mu] ; 
-    #ifdef SIN_MOM
-    p[ mu ] = 2. * sin ( p[mu] * 0.5 ) ; 
-    #endif
+    if( mu < DIMS ) {
+      p[ mu ] = n[mu] * Latt.twiddles[mu] ; 
+      #ifdef SIN_MOM
+      p[ mu ] = 2. * sin ( p[mu] * 0.5 ) ; 
+      #endif
+    } else {
+      p[mu] = 0.0 ;
+    }
   }
   return ;
 }
@@ -262,7 +267,7 @@ get_vec_from_origin( int n[ ND ] ,
   // periodicity enforcement
   size_t mu ;
   for( mu = 0 ; mu < DIMS ; mu++ ) {
-    if( n[mu] > ( Latt.dims[mu] >> 1 ) ) {
+    if( n[mu] > (int)( Latt.dims[mu] >> 1 ) ) {
       n[mu] -= (int)( Latt.dims[mu] ) ;
     }
   }

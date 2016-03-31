@@ -44,7 +44,7 @@ free_cb( void )
 
 // initialise the draughtboarding
 static void
-init_cb( const int LENGTH ) 
+init_cb( const size_t LENGTH ) 
 {
   size_t i ;
   int n[ ND ] ;

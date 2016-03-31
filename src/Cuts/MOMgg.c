@@ -150,7 +150,7 @@ int
 write_exceptional_g2g3_MOMgg( FILE *__restrict Ap , 
 			      const struct site *__restrict A , 
 			      const struct veclist *__restrict list , 
-			      int num_mom[1] )
+			      size_t num_mom[1] )
 {  
 #ifdef LIE_PROJECTION
   init_generators() ;

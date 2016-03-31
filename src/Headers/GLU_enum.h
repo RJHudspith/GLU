@@ -204,9 +204,9 @@ enum config_size
  */
 typedef enum 
   { EULER ,
-    RK4_FAST ,
-    RK4_SLOW , 
-    RK4_ADAPTIVE } wflow_type ;
+    RK3_FAST ,
+    RK3_SLOW , 
+    RK3_ADAPTIVE } wflow_type ;
 
 /**
    @enum U1_meas

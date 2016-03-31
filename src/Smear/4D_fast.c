@@ -98,7 +98,7 @@ get_lv2( struct lv1 *__restrict lev2 ,
   size_t i ;
 #pragma omp parallel for private(i) SCHED
   PFOR( i = 0  ;  i < LVOLUME  ;  i++ ) {
-    int rho  = -1 , sigma = 0 ;
+    size_t rho = 0 , sigma = 0 ;
     size_t ii = 0 , mu , nu ;
     GLU_complex b[ NCNC ] GLUalign , a[ NCNC ] GLUalign ;
     GLU_complex stap[ NCNC ] GLUalign ;
@@ -107,15 +107,14 @@ get_lv2( struct lv1 *__restrict lev2 ,
       //calculate the staples using the dressed links
       for( nu = 0 ;  nu < ND ;  ++nu )  {
 	if( unlikely( nu == mu ) ) { continue ; } 
-	// int rho  = -1 , sigma = 0 ;
 	zero_mat( stap ) ;
 
-	for( rho = 0 ;  rho < ND ;  ++rho ) {
+	for( rho = 0 ; rho < ND ; rho++ ) {
 
 	  size_t jj = 0 ;
 	  if( rho == mu || rho == nu ) { continue ; } 
 
-	  for( jj = 0 ;  jj < ND ;  ++jj ) {
+	  for( jj = 0 ;  jj < ND ;  jj++ ) {
 	    if( jj != mu && jj != nu && jj != rho ) {
 	      sigma = jj ; 
 	    }
@@ -125,7 +124,7 @@ get_lv2( struct lv1 *__restrict lev2 ,
 	  if( sigma > mu  ) { jj-- ; } 
 
 	  size_t kk = ( ND - 1 )*rho + sigma ; 
-	  if( sigma > rho  ) { kk-- ; } 
+	  if( sigma > rho ) { kk-- ; } 
 		
 	  //kk , jj , kk are the correct steps for the staples rho-mu plane	
 	  size_t temp = lat[i].neighbor[rho] ; 
@@ -343,12 +342,12 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
     #endif
 
     #ifdef verbose
-    print_smearing_obs( lat , type , count , GLU_TRUE ) ;
+    print_smearing_obs( lat , count ) ;
     #endif
   }
 
   #ifndef verbose
-  print_smearing_obs( lat , type , count , GLU_TRUE ) ;
+  print_smearing_obs( lat , count ) ;
   #endif
   
   // free that memory //

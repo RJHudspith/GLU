@@ -242,10 +242,10 @@ HYsmearND( struct site *__restrict lat ,
     const size_t back = lat[ 0 ].back[ ND - 1 ] ;
     #pragma omp parallel for private(i) SCHED
     PFOR( i = 0 ; i < LCU ; i++ ) {
-      const int bck = back + i ;
+      const size_t bck = back + i ;
       size_t mu , list_dirs[ directions - lev ] ;
       for( mu = 0 ; mu < directions ; mu++ ) {
-	int d = 0 ;
+	size_t d ;
 	for( d = 0 ; d < directions-lev ; d++ ) { list_dirs[d] = mu ; }
 	recurse_staples( lat4[i].O[mu] , lat , bck , lev ,
 			 directions , list_dirs , type , project ) ; 
@@ -253,11 +253,11 @@ HYsmearND( struct site *__restrict lat ,
     }
     //loop time slices
     for( t = 0 ; t < ( Latt.dims[ ND - 1 ] - 1 ) ; t++ ) {
-      const int slice = LCU * t ;
+      const size_t slice = LCU * t ;
 
       #pragma omp parallel for private(i) SCHED
       PFOR( i = 0 ; i < LCU ; i++ ) {
-	const int it = slice + i ; 
+	const size_t it = slice + i ; 
 	size_t mu , list_dirs[ directions - lev ] , d ;
 	for( mu = 0 ; mu < directions ; mu++ ) {
 	  for( d = 0 ; d < directions-lev ; d++ ) { list_dirs[d] = mu ; }
@@ -307,12 +307,12 @@ HYsmearND( struct site *__restrict lat ,
     #endif
 
     #ifdef verbose
-    print_smearing_obs( lat , type , count , GLU_TRUE ) ;
+    print_smearing_obs( lat , count ) ;
     #endif
   }
 
   #ifndef verbose
-  print_smearing_obs( lat , type , count , GLU_TRUE ) ;
+  print_smearing_obs( lat , count ) ;
   #endif 
 
   // FREE STUFF !! //

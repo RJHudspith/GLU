@@ -55,7 +55,7 @@ GF_wrap_coulomb( struct site *__restrict lat ,
     #if !(defined deriv_full || defined deriv_fulln )
     /// ewww! have to both malloc and free gauge here -> Memory dangerous?
     GLU_complex **gauge = malloc( LVOLUME * sizeof( GLU_complex* ) ) ; 
-    int i ;
+    size_t i ;
     #pragma omp parallel for private(i)
     for( i = 0 ; i < LVOLUME ; i++ ) {
       GLU_malloc( (void**)&gauge[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
@@ -104,7 +104,7 @@ GF_wrap_landau( struct site *__restrict lat ,
 		const struct gf_info GFINFO ,
 		const GF_improvements improvement )
 {
-  int iters = 0 ;
+  size_t iters = 0 ;
   start_timer( ) ;
 #ifdef OVERRELAXED_GF
   // have to alloc a temporary gauge field for this
@@ -177,8 +177,7 @@ GF_wrap_landau( struct site *__restrict lat ,
 
 // print out the details
 static void
-print_fixing_info( const struct gf_info GFINFO ,
-		   const struct sm_info SMINFO )
+print_fixing_info( const struct gf_info GFINFO )
 {
 #ifdef OVERRELAXED_GF
   fprintf( stdout , "\n[GF] Using the Over-Relaxation routines\n[GF] " ) ;
@@ -290,15 +289,12 @@ print_fixing_info( const struct gf_info GFINFO ,
 
 // smeared preconditioned step
 static int
-smeared_prec_step( lat , gauge , SMINFO , HEAD_DATA , infile , Local_maxiters , Local_accuracy , improvement )
-     struct site *__restrict lat ;
-     GLU_complex *__restrict *__restrict gauge ;
-     const struct sm_info SMINFO ; 
-     struct head_data HEAD_DATA ;
-     const char *__restrict infile ;
-     const int Local_maxiters ;
-     const double Local_accuracy ;
-     const int improvement ;
+smeared_prec_step( struct site *__restrict lat ,
+		   GLU_complex *__restrict *__restrict gauge ,
+		   const struct sm_info SMINFO ,
+		   const char *__restrict infile ,
+		   const size_t Local_maxiters ,
+		   const double Local_accuracy )
 {
   if( SM_wrap_struct( lat , SMINFO ) == GLU_FAILURE ) { return GLU_FAILURE ; } 
 
@@ -315,6 +311,7 @@ smeared_prec_step( lat , gauge , SMINFO , HEAD_DATA , infile , Local_maxiters , 
   if( read_header( config , &temp_head , GLU_FALSE ) == GLU_FAILURE ) return GLU_FAILURE ; 
   if( get_config_SUNC( config , lat , temp_head ) == GLU_FAILURE ) return GLU_FAILURE ;
   gtransform( lat , (const GLU_complex **)gauge ) ; 
+  fclose( config ) ;
 
   return GLU_SUCCESS ;
 }
@@ -355,25 +352,24 @@ GF_wrap_smprec_luxury( struct site *__restrict lat ,
   double MIN_GFUNC = 1.0 ;
 
   // loop over the number of gribov copies ...
-  int copies , cpy_idx = 0 ;
+  size_t copies , cpy_idx = 0 ;
   for( copies = 0 ; copies < LUXURY_GAUGE ; copies++ ) {
     // read in the lattice an perform a random transform
     if( grab_file( lat_cpy , gauge , infile ) == GLU_FAILURE ) { 
       return GLU_FAILURE ; }
 
-    smeared_prec_step( lat_cpy , gauge , SMINFO , HEAD_DATA , 
-		       infile , Local_maxiters , Local_accuracy , 
-		       GFINFO.improve ) ;
+    smeared_prec_step( lat_cpy , gauge , SMINFO , 
+		       infile , Local_maxiters , Local_accuracy ) ;
 
     // set gauge to the identity
     #pragma omp parallel for private(i)
     for( i = 0 ; i < LVOLUME ; i++ ) { identity( gauge[i] ) ; }
 
     // this can be done roughly too
-    const int iters = Landau( lat_cpy , gauge , 
-			      Local_accuracy , Local_maxiters , 
-			      infile , SMPREC_IMPROVE ) ; 
-
+    const size_t iters = Landau( lat_cpy , gauge , 
+				 Local_accuracy , Local_maxiters , 
+				 infile , SMPREC_IMPROVE ) ; 
+    
     // compute the gauge functional
     const double GFUNC = links( lat ) ;
     fprintf( stdout , "\n   [COPY] %d [FUNCTIONAL] %1.15f [ITER] %d " , 
@@ -424,7 +420,7 @@ GF_wrap_smprec( struct site *__restrict lat ,
 		const struct gf_info GFINFO ,
 		const struct sm_info SMINFO ,
 		const struct head_data HEAD_DATA ,
-		int recurses )
+		size_t recurses )
 {
   GLU_complex **gauge = NULL ;
   if( GLU_malloc( (void**)&gauge , 16 , LVOLUME*sizeof( GLU_complex ) ) != 0 ) {
@@ -438,18 +434,16 @@ GF_wrap_smprec( struct site *__restrict lat ,
     gauge[i] = ( GLU_complex* )malloc( NCNC * sizeof( GLU_complex ) ) ; 
   }
   // set up a local number of iterations and a local smearing accuracy why not?
-  const int Local_maxiters = 1500 ;
+  const size_t Local_maxiters = 1500 ;
   const double Local_accuracy = 1E-8 ;
 
-  smeared_prec_step( lat , gauge , SMINFO , HEAD_DATA , 
-		     infile , Local_maxiters , Local_accuracy ,
-		     SMPREC_IMPROVE ) ;
+  smeared_prec_step( lat , gauge , SMINFO , 
+		     infile , Local_maxiters , Local_accuracy ) ;
 
   // if this fails we reread and call the whole thing again
   GLU_bool restart = GLU_FALSE ;
   if( GF_wrap_landau( lat , infile , GFINFO , NO_IMPROVE ) == 
-      GFINFO.max_iters && 
-      ( recurses < GF_GLU_FAILURES ) ) {
+      GLU_FAILURE && ( recurses < GF_GLU_FAILURES ) ) {
     if( grab_file( lat , gauge , infile ) == GLU_FAILURE ) {
       fprintf( stderr , "[GF] Error in (re)reading the file ..."
 	       "Leaving in a state of disarray\n" ) ;
@@ -457,7 +451,7 @@ GF_wrap_smprec( struct site *__restrict lat ,
       restart = GLU_TRUE ;
     }
   } if( recurses == GF_GLU_FAILURES ) {
-    fprintf( stderr , "\n[GF] We have failed enough! %d Strongly consider"
+    fprintf( stderr , "\n[GF] We have failed enough! %zu Strongly consider"
 	     "increasing the tuning parameter"
 	    " and/or increasing the number of gauge-fixing iterations.\n" , 
 	     recurses ) ;
@@ -473,7 +467,7 @@ GF_wrap_smprec( struct site *__restrict lat ,
   
   // here is the call
   if( restart == GLU_TRUE ) {
-    fprintf( stdout , "\n\n ************ GLU_FAILURE %d **************** \n\n" ,
+    fprintf( stdout , "\n\n ************ GLU_FAILURE %zu *************** \n\n" ,
 	     recurses ) ;
     GF_wrap_smprec( lat , infile , GFINFO , SMINFO , HEAD_DATA , ++recurses ) ;
   }
@@ -483,7 +477,7 @@ GF_wrap_smprec( struct site *__restrict lat ,
 #endif
 
 // have a wrapper for the above functions here ...
-int 
+int
 GF_wrap( const char *infile , 
 	 struct site *__restrict lat , 
 	 const struct gf_info GFINFO , 
@@ -491,7 +485,7 @@ GF_wrap( const char *infile ,
 	 const struct head_data HEAD_DATA )
 {
   if( GFINFO.type == DEFAULT_NOFIX ) return GLU_SUCCESS ;
-  print_fixing_info( GFINFO , SMINFO ) ;
+  print_fixing_info( GFINFO ) ;
   // setup for Landau - Coulomb
   if( GFINFO.type == GLU_LANDAU_FIX ) {
     if( GFINFO.improve == SMPREC_IMPROVE ) {
@@ -499,7 +493,7 @@ GF_wrap( const char *infile ,
       return GF_wrap_smprec_luxury( lat , infile , GFINFO , 
 				    SMINFO , HEAD_DATA ) ;
       #else
-      int recurses = 0 ;
+      size_t recurses = 0 ;
       return GF_wrap_smprec( lat , infile , GFINFO , SMINFO , 
 			     HEAD_DATA , recurses ) ;
       #endif 

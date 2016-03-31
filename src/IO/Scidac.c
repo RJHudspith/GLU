@@ -67,8 +67,7 @@ static unsigned char *lime_hdr_rec_type = &header.uchr[16] ;
  */
 static int
 parse_SCIDAC_hdr( FILE *infile , 
-		  struct head_data *HEAD_DATA , 
-		  const int record )
+		  struct head_data *HEAD_DATA )
 {
   // assumes we have opened it fine and are at the start of the file
   const char myname[] = "GLU::parse_SCIDAC_hdr";
@@ -94,7 +93,7 @@ parse_SCIDAC_hdr( FILE *infile ,
   uint64_t i_data_length[1] = { header_datalength() } ;
   if( !WORDS_BIGENDIAN ) { bswap_64( 1 , i_data_length ) ; }
 
-  const int padding = lime_padding( (size_t)i_data_length[0] ) ;
+  const size_t padding = lime_padding( (size_t)i_data_length[0] ) ;
 
   // again, typebuf is uninteresting ...
   unsigned char *typebuf = (unsigned char*)lime_hdr_rec_type ;
@@ -176,7 +175,7 @@ write_SCIDAC_binary( FILE *__restrict out ,
   if( !WORDS_BIGENDIAN ) { bswap_64( 1 , datalength ) ; }
   header.int64[1] = datalength[0] ;
   // poke in some stuff for the header
-  int chr , ref = 16 ; // this is where the useful info stops
+  size_t chr , ref = 16 ; // this is where the useful info stops
   for( chr = 0 ; chr < strlen( banf ) ; chr++ ) {
     header.uchr[ ref + chr ] = banf[ chr ] ;
   }
@@ -202,7 +201,7 @@ get_header_data_SCIDAC( FILE *infile ,
   // loop the records, zealously set max number to be 12
   int record = 0 , validity ;
   while( record < 12 ) { // hmmm
-    validity = parse_SCIDAC_hdr( infile , HEAD_DATA , record++ ) ;
+    validity = parse_SCIDAC_hdr( infile , HEAD_DATA ) ; record++ ;
     if( validity == GLU_FAILURE ) { // if the reader doesn't work
       return GLU_FAILURE ;
     } else if( validity == GLU_EOF ) {

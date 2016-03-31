@@ -131,7 +131,7 @@ approx_minimum( const size_t nmeas ,
 
 // little wrapper for the traces array
 void 
-allocate_traces( const int LENGTH )
+allocate_traces( const size_t LENGTH )
 {
   traces = malloc( LENGTH * sizeof( double ) ) ;
   return ;
@@ -142,8 +142,7 @@ double
 coul_gtrans_fields( struct sp_site_herm *__restrict rotato ,
 		    const struct site *__restrict lat ,
 		    const GLU_complex *__restrict *__restrict slice_gauge ,
-		    const size_t t ,
-		    const double acc )
+		    const size_t t )
 {
   const double fact = 1.0 / (double)( ( ND - 1 ) * NC ) ;
   size_t i ;
@@ -216,9 +215,9 @@ PRfmax( const double a , const double b )
 double
 evaluate_alpha( const GLU_complex *__restrict *__restrict gauge , 
 		const struct site *__restrict lat ,
-		const int DIR ,
-		const int LENGTH ,
-		const int t ) 
+		const size_t DIR ,
+		const size_t LENGTH ,
+		const size_t t ) 
 {
   const double fact = 1.0 / (double)( NC * DIR ) ;
 

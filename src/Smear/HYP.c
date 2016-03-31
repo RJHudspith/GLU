@@ -217,12 +217,12 @@ HYPSLsmear3D( struct site *__restrict lat ,
 
     // only write these out if we are not doing this in parallel ...
     #ifdef verbose
-    print_smearing_obs( lat , type , count , GLU_TRUE ) ;
+    print_smearing_obs( lat , count ) ;
     #endif
   }
 
 #ifndef verbose
-  print_smearing_obs( lat , type , count , GLU_TRUE ) ;
+  print_smearing_obs( lat , count ) ;
 #endif
 
   free( lat2 ) ; 

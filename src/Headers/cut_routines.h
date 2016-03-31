@@ -52,7 +52,7 @@ simorb_ratios( const int DIMS ) ;
    @param CONFIGSPACE :: Qsusc and Statpot have different momenta look-up
  */
 struct veclist*
-compute_veclist( int *__restrict list_size , 
+compute_veclist( size_t *__restrict list_size , 
 		 const struct cut_info CUTINFO ,
 		 const int DIMS ,
 		 const GLU_bool CONFIGSPACE ) ;

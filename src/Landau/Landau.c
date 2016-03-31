@@ -336,7 +336,7 @@ Landau( struct site *__restrict lat ,
 			      &theta , accuracy , iter ) ;
 
   // random restart portion of the code
-  if( unlikely( iters == GLU_FAILURE ) && ( improvement != SMPREC_IMPROVE ) ) {
+  if( unlikely( iters == 0 ) && ( improvement != SMPREC_IMPROVE ) ) {
     size_t failure = 0 ; 
     size_t iters2 = iters ; 
     for( failure = 1 ; failure < GF_GLU_FAILURES ; failure++ ) {
@@ -355,7 +355,7 @@ Landau( struct site *__restrict lat ,
 			   &theta , accuracy , iter ) ;
 
       // if we hit a failure, check
-      if( iters != GLU_FAILURE ) {
+      if( iters == 0 ) {
 	iters2 += iters ; 
 	break ;
       } else {// print information about the last failure

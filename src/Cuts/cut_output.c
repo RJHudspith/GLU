@@ -165,7 +165,7 @@ output_str_struct( const struct cut_info CUTINFO )
   sprintf( str , "%s_SU%d_" , str , NC ) ;
 
   // print out the dimensions of the lattice used for the cut
-  int mu ;
+  size_t mu ;
   for( mu = 0 ; mu < ND - 1 ; mu++ ) {
     sprintf( str , "%s%zux" , str , Latt.dims[mu] ) ;
   }
@@ -251,19 +251,20 @@ void
 write_complex_g2g3_to_list( FILE *__restrict Ap , 
 			    double complex *__restrict g2 , 
 			    double complex *__restrict g3 , 
-			    int num_mom[ 1 ] ) 
+			    size_t num_mom[ 1 ] ) 
 {
 #ifdef ASCII_CHECK
   printf("%d \n", num_mom[ 0 ] ) ;
-  int i ;
+  size_t i ;
   for( i = 0 ; i < num_mom[0] ; i++ ) { printf("%e \n", g2[i] ) ; }
   printf("%d \n", num_mom[ 0 ] ) ;
   for( i = 0 ; i < num_mom[0] ; i++ ) { printf("%e \n", g3[i] ) ; }
 #else
+  uint32_t nmom[1] = { num_mom[0] } ;
   // write NUM_MOM[0] , G2 , NUM_MOM[0] , G3
-  FWRITE( num_mom , sizeof(int) , 1 , Ap ) ;
+  FWRITE( nmom , sizeof(uint32_t) , 1 , Ap ) ;
   FWRITE( g2 , sizeof(double) , 2 * num_mom[0] , Ap ) ;
-  FWRITE( num_mom , sizeof(int) , 1 , Ap ) ;
+  FWRITE( nmom , sizeof(uint32_t) , 1 , Ap ) ;
   FWRITE( g3 , sizeof(double) , 2 * num_mom[0] , Ap ) ;
 #endif
   return ;
@@ -273,7 +274,7 @@ write_complex_g2g3_to_list( FILE *__restrict Ap ,
 void
 write_g2_to_list( FILE *__restrict Ap , 
 		  double *__restrict g2 , 
-		  int num_mom[ 1 ] ) 
+		  size_t num_mom[ 1 ] ) 
 {
 #ifdef ASCII_CHECK
   size_t i ;
@@ -284,7 +285,8 @@ write_g2_to_list( FILE *__restrict Ap ,
   fprintf( stdout , "%d\n", num_mom[ 0 ] ) ;
 #else
   // write NUM_MOM[0] , G2
-  FWRITE( num_mom , sizeof(int) , 1 , Ap ) ;
+  uint32_t nmom[ 1 ] = { num_mom[0] } ;
+  FWRITE( nmom , sizeof(uint32_t) , 1 , Ap ) ;
   FWRITE( g2 , sizeof(double) , num_mom[0] , Ap ) ;
 #endif
   return ;
@@ -295,7 +297,7 @@ void
 write_g2g3_to_list( FILE *__restrict Ap , 
 		    double *__restrict g2 , 
 		    double *__restrict g3 , 
-		    int num_mom[ 1 ] ) 
+		    size_t num_mom[ 1 ] ) 
 {
 #ifdef ASCII_CHECK
   fprintf( stout , "[CUTS] g2g3\n%d\n", num_mom[ 0 ] ) ;
@@ -308,11 +310,12 @@ write_g2g3_to_list( FILE *__restrict Ap ,
     printf( stdout , "%e\n", g3[i] ) ; 
   }
 #else
+  uint32_t nmom[1] = { num_mom[0] } ;
   // write NUM_MOM[0] , G2 , NUM_MOM[0] , G3
-  FWRITE( num_mom , sizeof(int) , 1 , Ap ) ;
-  FWRITE( g2 , sizeof(double) , num_mom[0] , Ap ) ;
-  FWRITE( num_mom , sizeof(int) , 1 , Ap ) ;
-  FWRITE( g3 , sizeof(double) , num_mom[0] , Ap ) ;
+  FWRITE( nmom , sizeof(uint32_t) , 1 , Ap ) ;
+  FWRITE( g2 , sizeof(double) , nmom[0] , Ap ) ;
+  FWRITE( nmom , sizeof(uint32_t) , 1 , Ap ) ;
+  FWRITE( g3 , sizeof(double) , nmom[0] , Ap ) ;
 #endif
   return ;
 }
@@ -321,10 +324,11 @@ void
 write_lattice_fields( FILE *__restrict Ap , 
 		      const struct site *__restrict A , 
 		      const struct veclist *__restrict list , 
-		      int num_mom[1] )
+		      size_t num_mom[1] )
 {
+  uint32_t nmom[1] = { num_mom[0] } ;
   // write the length of the array
-  FWRITE( num_mom , sizeof(int) , 1 , Ap ) ;
+  FWRITE( nmom , sizeof(uint32_t) , 1 , Ap ) ;
 
   //write lattice fields
   const size_t stride = ND * NCNC * 2 ; // the 2 is for the re/im parts
@@ -351,14 +355,15 @@ write_lattice_fields( FILE *__restrict Ap ,
 // Support for writing our momentum list
 void
 write_mom_veclist( FILE *__restrict Ap , 
-		   int *__restrict num_mom , 
+		   size_t *__restrict num_mom , 
 		   const struct veclist *__restrict list ,
-		   const int DIR )
+		   const size_t DIR )
 {
   const int stride = ( DIR + 1 ) * num_mom[ 0 ] ;
-  int *kall = (int*)malloc( stride * sizeof(int) ) ;
+  int *kall = malloc( stride * sizeof(int) ) ;
 
-  FWRITE( num_mom , sizeof(int) , 1 , Ap ) ;
+  uint32_t nmom[1] = { num_mom[0] } ;
+  FWRITE( nmom , sizeof(int) , 1 , Ap ) ;
 
   size_t i ;
   //write momenta
@@ -381,7 +386,7 @@ write_mom_veclist( FILE *__restrict Ap ,
 // write out rsq's for the correlator
 void
 write_rr_values( FILE *__restrict Ap ,
-		 int size[1] ,
+		 size_t size[1] ,
 		 const size_t *__restrict rsq ,
 		 const size_t max_r2 ,
 		 const size_t ARR_SIZE )
@@ -397,14 +402,15 @@ write_rr_values( FILE *__restrict Ap ,
     }
   }
 #endif
+  uint32_t nmom[1] = { size[0] } ;
   // output to a file ... for reading in with UKhadron or something
   // write out the length of the array ...
-  FWRITE( size , sizeof( int ) , 1 , Ap ) ;
+  FWRITE( nmom , sizeof( uint32_t ) , 1 , Ap ) ;
   // loop the possible rsq's
   for( i = 0 ; i < ARR_SIZE ; i++ ) {
     if( rsq[i] < max_r2 ) {
-      int rr[1] = { rsq[i] } ;
-      FWRITE( rr , sizeof(int) , 1 , Ap ) ;
+      uint32_t rr[1] = { rsq[i] } ;
+      FWRITE( rr , sizeof(uint32_t) , 1 , Ap ) ;
     }
   }
 }
@@ -412,10 +418,9 @@ write_rr_values( FILE *__restrict Ap ,
 // Support for writing our triplets momentum
 void
 write_triplet_mom_list( FILE *__restrict Ap , 
-			int *__restrict num_mom , 
+			size_t *__restrict num_mom , 
 			int *__restrict *__restrict momentum ,
-			int *__restrict *__restrict triplet ,
-			const size_t DIR )
+			int *__restrict *__restrict triplet )
 {
   const size_t stride = ( ND + 1 ) * num_mom[0] ;
   int *kall = malloc( stride * sizeof( int ) ) ;
@@ -424,7 +429,8 @@ write_triplet_mom_list( FILE *__restrict Ap ,
   fprintf( stdout , "[CUTS] triplet momlist\n%d\n", num_mom[0] ) ;
 #endif
 
-  FWRITE( num_mom , sizeof(int) , 1 , Ap ) ;
+  uint32_t nmom[1] = { num_mom[0] } ;
+  FWRITE( nmom , sizeof(int) , 1 , Ap ) ;
 
   // start writing the momenta to the list, we just write the first momentum of the triplet...
   size_t i ;
@@ -449,7 +455,7 @@ write_triplet_mom_list( FILE *__restrict Ap ,
     fprintf( stdout , "\n" ) ;
   }
   fprintf( stdout , "%d \n", kall[b] ) ;
-  fprintf( stdout , "%d \n", num_mom[0] ) ;
+  fprintf( stdout , "%zu \n", num_mom[0] ) ;
 #endif
   FWRITE( kall , sizeof(int) , stride , Ap ) ;
   free( kall ) ;
@@ -459,10 +465,10 @@ write_triplet_mom_list( FILE *__restrict Ap ,
 // write the timeslices, LT[0] is the size of the array
 void
 write_tslice_list( FILE *__restrict Ap , 
-		   int *__restrict LT )
+		   size_t *__restrict LT )
 {
   size_t t ;
-  int T[ LT[0] ] ;
+  uint32_t T[ LT[0] ] , lt[1] = { *LT } ;
 #ifdef ASCII_CHECK
   fprintf( stdout , "[CUTS] tslice list\n%d\n" , LT[0] ) ;
   for( t = 0 ; t < LT[0] ; t++ ) { 
@@ -470,9 +476,9 @@ write_tslice_list( FILE *__restrict Ap ,
   }
   fprintf( stdout , "%d\n" , LT[0] ) ;
 #endif
-  FWRITE( LT , sizeof(int) , 1 , Ap ) ;
+  FWRITE( lt , sizeof(uint32_t) , 1 , Ap ) ;
   for( t = 0 ; t < LT[0] ; t++ ) { T[ t ] = t ; }
-  FWRITE( T , sizeof(int) , LT[0] , Ap ) ;
+  FWRITE( T , sizeof(uint32_t) , LT[0] , Ap ) ;
   return ;
 }
 

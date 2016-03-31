@@ -73,7 +73,7 @@ actually_compute_fs_and_ds( void )
   dcount = 58 ;
   f = ( struct struc_func* )malloc( fcount * sizeof( struct struc_func ) ) ;
   d = ( struct struc_func* )malloc( dcount * sizeof( struct struc_func ) ) ;
-  const register GLU_real r3_two = 0.8660254037844386 ;
+  register const GLU_real r3_two = 0.8660254037844386 ;
   f[0].val = 1.0      ; f[0].a = 0 ; f[0].b = 1 ; f[0].c = 2 ; 
   f[1].val = -1.0     ; f[1].a = 0 ; f[1].b = 2 ; f[1].c = 1 ; 
   f[2].val = 0.5      ; f[2].a = 0 ; f[2].b = 3 ; f[2].c = 6 ; 
@@ -414,7 +414,8 @@ init_generators( void )
       lambda[idx][ mat_idx(k,j) ] = -I * 0.5 ;
       idx ++ ;
     } // fill in the final diagonal for this sub-block
-    const register GLU_real fact = sqrt( 1.0 / (GLU_real)( 2.0 * (subblock) * ( subblock-1 ) ) ) ; 
+    register const GLU_real fact = 
+      sqrt( 1.0 / (GLU_real)( 2.0 * (subblock) * ( subblock-1 ) ) ) ; 
     for( i = 0 ; i < subblock-1 ; i++ ) {
       lambda[idx][ mat_idx(i,i) ] = fact ;
     }

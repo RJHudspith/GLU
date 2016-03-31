@@ -232,8 +232,6 @@ get_triplet( int *__restrict *__restrict triplet ,
     count = recurse_p( triplet , momentum , p , 
 		       nn , root_nn , nmom , 
 		       count , GLU_FALSE ) ;
-
-    if( count == GLU_FAILURE ) return GLU_FAILURE ; 
     free( p ) ;
 
     printf( "Checking mom-conservation orbit :: %zu \n" , nn ) ; 
@@ -273,7 +271,6 @@ get_trip( int *__restrict trip ,
 			     nn , root_nn , nmom , 
 			     count , GLU_TRUE ) ;
 
-    if( this == GLU_FAILURE ) return GLU_FAILURE ;
     free( p ) ;
     count = this ;
     trip[nn/2] = count - check ;

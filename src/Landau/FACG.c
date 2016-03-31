@@ -93,14 +93,9 @@ check_info2( const struct site *__restrict lat ,
 }
 #endif
 
-/**
-   @fn static void FA_deriv( struct site *__restrict lat , const void forward[ HERMSIZE ] , const void backward[ HERMSIZE ] , GLU_complex *__restrict *__restrict out , GLU_complex *__restrict *__restrict in , const GLU_real *psq , double *tr )
-   @brief Fourier Accelerated steepest descent Landau gauge fixing routine
- */
 static int
 FA_deriv(  GLU_complex *__restrict *__restrict in , 
-	   struct site *__restrict lat ,
-	   const GLU_real *psq , 
+	   struct site *__restrict lat , 
 	   double *tr )
 {
   size_t i ;
@@ -246,7 +241,7 @@ steep_Landau_FA( GLU_complex *__restrict *__restrict gauge ,
 		 double *tr )
 {
   // do a steepest-descents step with the result in "out"
-  FA_deriv( in , lat , psq , tr ) ;
+  FA_deriv( in , lat , tr ) ;
 
   // and do the fourier acceleration
   FOURIER_ACCELERATE( in , out , forward , backward ,
@@ -284,7 +279,7 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
 		   const GLU_real *psq , 
 		   double *tr ,
 		   const double acc ,
-		   const int max_iters )
+		   const size_t max_iters )
 {
   // perform an SD start
   steep_Landau_FA( gauge , lat , forward , backward , out , in , psq , tr ) ;
@@ -307,7 +302,7 @@ steep_Landau_FACG( GLU_complex *__restrict *__restrict gauge ,
   while( ( *tr > acc ) && ( iters < max_iters ) ) {
 
     // this ONLY works with out and in, make sure that is what we use
-    FA_deriv( in , lat , psq , tr ) ;
+    FA_deriv( in , lat , tr ) ;
 
     // and FA
     FOURIER_ACCELERATE( in , out , forward , backward , psq , LVOLUME ) ;

@@ -44,10 +44,9 @@ Amu_fields( struct site *__restrict A ,
 
   // callback for the log definition
   void (*log)( GLU_complex Q[ NCNC ] ,
-	       const GLU_complex U[ NCNC ] ) ;
+	       const GLU_complex U[ NCNC ] ) = Hermitian_proj ;
   switch( def ) {
   case LINEAR_DEF :
-    log = Hermitian_proj ;
     break ;
   case LOG_DEF : 
     log = exact_log_slow ; 
@@ -100,8 +99,9 @@ static int
 spatial_correlator( struct site *__restrict A ,
 		    double *gsp ,
 		    const double gsnorm ,
-		    const int spacing )
+		    const size_t spacing )
 {
+  if( spacing > Latt.dims[ND-1] ) { return GLU_FAILURE ; }
   // init parallel threads, maybe
   if( parallel_ffts( ) == GLU_FAILURE ) {
     fprintf( stderr , "[PAR] Problem with initialising "
@@ -322,7 +322,7 @@ static int
 spatial_correlator( const struct site *__restrict A ,
 		    double *__restrict gs ,
 		    const double gsnorm ,
-		    const int spacing )
+		    const size_t spacing )
 {
   // this one is more effective
   if( spacing == 1 ) {
@@ -387,7 +387,7 @@ cuts_struct_configspace( struct site *__restrict A ,
   int FLAG = GLU_FAILURE ;
 
   // timeslice length
-  int lt[ 1 ] = { LT } ;
+  size_t lt[ 1 ] = { LT } ;
 
   // spatial correlator from the convolution in momentum space
   if( spatial_correlator( A , gsp , spat_norm , 

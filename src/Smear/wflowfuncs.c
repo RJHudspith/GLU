@@ -314,10 +314,8 @@ evaluate_scale( double *der ,
   for( i = 0 ; i < Nmeas ; i++ ) {
     spline_derivative( der , x , meas , Nmeas ) ;
     // W_0 scale
-    if( i > 0 ) {
-      if( ( ( meas[ i ] ) > scale && ( meas[ i - 1 ] ) ) < scale ) {
-	change_up = i ;
-      }
+    if( i > 0 && ( meas[ i ] > scale ) && ( meas[ i - 1 ] < scale ) ) {
+      change_up = i ;
     }
     #ifdef verbose
     fprintf( stdout , "[%s] %g %g \n" , message , x[ i ] , meas[ i ] ) ;
@@ -337,8 +335,7 @@ evaluate_scale( double *der ,
 
 // print out the general beginning information
 void
-print_GG_info( const int SM_TYPE , 
-	       const wflow_type WFLOW_TYPE ) 
+print_GG_info( void ) 
 {
   fprintf( stdout , "[WFLOW] Taking ({W},{GG} and {Qtop}) measurements"
 	   "from t >= %g \n" , MEAS_START ) ; 
@@ -365,12 +362,15 @@ scaleset( struct wfmeas *curr ,
   int flag = GLU_SUCCESS ;
   // traverse the list backwards setting the time and GT
   size_t i ;
+  // traverse back down the linked list
   for( i = 0 ; i < ( count + 1 ) ; i++ ) {
     time[ ( count + 1 ) - i - 1 ] = curr -> time ;
     GT[ ( count + 1 ) - i - 1 ] = curr -> Gt ;
     curr = curr -> next ;
   }
-  t0 = evaluate_scale( der , time , GT , ( count ) , T_0 , "GT" ) ;
+  if( count > 0 ) {
+    t0 = evaluate_scale( der , time , GT , count , T_0 , "GT" ) ;
+  }
   if( t0 == -1 ) {
     fprintf( stderr , "[WFLOW] cubic solve failure (gt)\n" ) ;
     fprintf( stderr , "[WFLOW] solve needs to bound the value you "
@@ -380,8 +380,10 @@ scaleset( struct wfmeas *curr ,
   }
   fprintf( stdout , "[GT-scale] G(%g) %f \n" , T_0 , sqrt( t0 ) ) ;
   // W(t) = t ( dG(t) / dt )
-  for( i = 0 ; i < ( count + 1 ) ; i++ ) {
-    GT[ i ] = time[ i ] * der[ i ] ;
+  if( count > 0 ) {
+    for( i = 0 ; i < ( count + 1 ) ; i++ ) {
+      GT[ i ] = time[ i ] * der[ i ] ;
+    }
   }
   w0 = evaluate_scale( der , time , GT , ( count ) , W_0 , "WT" ) ;
   if( w0 == -1 ) {

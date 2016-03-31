@@ -266,38 +266,38 @@ header_type( header_mode *HEADINFO )
       fprintf( stdout , "[IO] Attempting to read a NERSC file \n" ) ;
       *HEADINFO = NERSC_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "HIREP" ) ) {
-      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return GLU_FAILURE ;
+      if( ( Latt.flow = confno( ) ) == 0 ) return GLU_FAILURE ;
       fprintf( stdout , "[IO] Attempting to read a HIREP file \n" ) ;
       fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       *HEADINFO = HIREP_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "MILC" ) ) {
-      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return GLU_FAILURE ;
+      if( ( Latt.flow = confno( ) ) == 0 ) return GLU_FAILURE ;
       fprintf( stdout , "[IO] Attempting to read a MILC file \n" ) ;
       fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       *HEADINFO = MILC_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "SCIDAC" ) ) {
-      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return GLU_FAILURE ;
+      if( ( Latt.flow = confno( ) ) == 0 ) return GLU_FAILURE ;
       fprintf( stdout , "[IO] Attempting to read a SCIDAC file \n" ) ;
       fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       *HEADINFO = SCIDAC_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "LIME" ) ) {
-      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return GLU_FAILURE ;
+      if( ( Latt.flow = confno( ) ) == 0 ) return GLU_FAILURE ;
       fprintf( stdout , "[IO] Attempting to read an LIME file \n" ) ;
       fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       fprintf( stdout , "[IO] WARNING!! NOT CHECKING ANY CHECKSUMS!! \n" ) ;
       *HEADINFO = LIME_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "ILDG_SCIDAC" ) ) {
-      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return GLU_FAILURE ;
+      if( ( Latt.flow = confno( ) ) == 0 ) return GLU_FAILURE ;
       fprintf( stdout , "[IO] Attempting to read an ILDG (Scidac) file \n" ) ;
       fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       *HEADINFO = ILDG_SCIDAC_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "ILDG_BQCD" ) ) {
-      if( ( Latt.flow = confno( ) ) == GLU_FAILURE ) return GLU_FAILURE ;
+      if( ( Latt.flow = confno( ) ) == 0 ) return GLU_FAILURE ;
       fprintf( stdout , "[IO] Attempting to read an ILDG (BQCD) file \n" ) ;
       fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;

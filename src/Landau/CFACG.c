@@ -135,7 +135,7 @@ steep_deriv_CG( GLU_complex *__restrict *__restrict in ,
 		double *tr )
 {
   // sets the gtrans'd field into the temporary "rotato"
-  zero_alpha = coul_gtrans_fields( rotato , lat , slice_gauge , t , *tr ) ;
+  zero_alpha = coul_gtrans_fields( rotato , lat , slice_gauge , t ) ;
 
   // gauge transform the whole slice
   double *trAA = malloc( LCU * sizeof( double ) ) ;

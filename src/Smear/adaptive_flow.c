@@ -44,9 +44,7 @@
    what would you do with them?
  */
 static inline double
-adaptfmax( a , b )
-     const double a ;
-     const double b ;
+adaptfmax( const double a , const double b )
 {
   return ( b < a ? a : b ) ;
 }
@@ -57,9 +55,7 @@ adaptfmax( a , b )
    Again probably unsafe
  */
 static inline double
-adaptfmin( a , b )
-     const double a ;
-     const double b ;
+adaptfmin( const double a , const double b )
 {
   return ( a < b ? a : b ) ;
 }
@@ -127,7 +123,6 @@ fine_measurement( struct site *lat ,
 int 
 flow4d_adaptive_RK( struct site *__restrict lat , 
 		    const size_t smiters ,
-		    const size_t DIR ,
 		    const int SIGN ,
 		    const smearing_types SM_TYPE )
 {  
@@ -135,7 +130,7 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   //set_TMEAS_STOP( 0.4 ) ;
 
   ////// USUAL STARTUP INFORMATION /////////
-  print_GG_info( SM_TYPE , RK4_ADAPTIVE ) ;
+  print_GG_info( ) ;
 
   // the error between the two plaquettes
   const double ADAPTIVE_EPS = 1E-7 ;

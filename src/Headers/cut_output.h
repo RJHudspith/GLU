@@ -44,7 +44,7 @@ char*
 output_str_struct( const struct cut_info CUTINFO ) ;
 
 /**
-   @fn void write_complex_g2g3_to_list( FILE *__restrict Ap , double complex *__restrict g2 , double complex *__restrict g3 , int num_mom[ 1 ] ) ;
+   @fn void write_complex_g2g3_to_list( FILE *__restrict Ap , double complex *__restrict g2 , double complex *__restrict g3 , size_t num_mom[ 1 ] ) ;
 
    @brief This function writes out the real part of the trace of the gluonic two and three point functions.
    
@@ -61,10 +61,10 @@ void
 write_complex_g2g3_to_list( FILE *__restrict Ap , 
 			    double complex *__restrict g2 , 
 			    double complex *__restrict g3 , 
-			    int num_mom[ 1 ] ) ;
+			    size_t num_mom[ 1 ] ) ;
 
 /**
-   @fn void write_g2_to_list( FILE *__restrict Ap , double *__restrict g2 , int num_mom[ 1 ] ) ;
+   @fn void write_g2_to_list( FILE *__restrict Ap , double *__restrict g2 , size_t num_mom[ 1 ] ) ;
 
    @brief This function writes out the real part of the trace of the gluonic two and three point functions.
    
@@ -77,10 +77,10 @@ write_complex_g2g3_to_list( FILE *__restrict Ap ,
 void
 write_g2_to_list( FILE *__restrict Ap , 
 		  double *__restrict g2 , 
-		  int num_mom[ 1 ] ) ;
+		  size_t num_mom[ 1 ] ) ;
 
 /**
-   @fn void write_g2g3_to_list( FILE *__restrict Ap , double *__restrict g2 , double *__restrict g3 , int num_mom[ 1 ] ) ;
+   @fn void write_g2g3_to_list( FILE *__restrict Ap , double *__restrict g2 , double *__restrict g3 , size_t num_mom[ 1 ] ) ;
 
    @brief This function writes out the real part of the trace of the gluonic two and three point functions.
    
@@ -97,10 +97,10 @@ void
 write_g2g3_to_list( FILE *__restrict Ap , 
 		    double *__restrict g2 , 
 		    double *__restrict g3 , 
-		    int num_mom[ 1 ] ) ;
+		    size_t num_mom[ 1 ] ) ;
 
 /**
-   @fn void write_lattice_fields( FILE *__restrict Ap , const struct site *__restrict A , const struct veclist *__restrict list , const int num_mom[1] )
+   @fn void write_lattice_fields( FILE *__restrict Ap , const struct site *__restrict A , const struct veclist *__restrict list , const size_t num_mom[1] )
    @brief This function writes out the full matrices.  
    
    @param Ap :: File that we output to.
@@ -112,10 +112,10 @@ void
 write_lattice_fields( FILE *__restrict Ap , 
 		      const struct site *__restrict A , 
 		      const struct veclist *__restrict list , 
-		      int num_mom[1] ) ;
+		      size_t num_mom[1] ) ;
 
 /**
-   @fn void write_mom_veclist( FILE *__restrict Ap , int *__restrict num_mom , const struct veclist *__restrict list , const int DIR )
+   @fn void write_mom_veclist( FILE *__restrict Ap , size_t *__restrict num_mom , const struct veclist *__restrict list , const size_t DIR )
    @brief This writes the momentum list. DIR is the number of momenta to
    write usually ND or ND-1.
    @param Ap :: File that we output to.
@@ -125,25 +125,24 @@ write_lattice_fields( FILE *__restrict Ap ,
  **/
 void
 write_mom_veclist( FILE *__restrict Ap , 
-		   int *__restrict num_mom , 
+		   size_t *__restrict num_mom , 
 		   const struct veclist *__restrict list ,
-		   const int DIR ) ;
+		   const size_t DIR ) ;
 
 /**
-   @fn void write_triplet_mom_list( FILE *__restrict Ap , size_t *__restrict num_mom , int *__restrict *__restrict momentum , int *__restrict *__restrict triplet , const size_t DIR )
+   @fn void write_triplet_mom_list( FILE *__restrict Ap , size_t *__restrict num_mom , int *__restrict *__restrict momentum , int *__restrict *__restrict triplet )
    @brief write out the momentum list for the triplets
 
    @warning I only write out one of the three momenta because after projection the vertex is of p^2  
  **/
 void
 write_triplet_mom_list( FILE *__restrict Ap , 
-			int *__restrict num_mom , 
+			size_t *__restrict num_mom , 
 			int *__restrict *__restrict momentum ,
-			int *__restrict *__restrict triplet ,
-			const size_t DIR ) ;
+			int *__restrict *__restrict triplet ) ;
 
 /**
-   @fn void write_rr_values( FILE *__restrict Ap , int size[1] , const int *__restrict rsq , const size_t max_r2 , const size_t ARR_SIZE )
+   @fn void write_rr_values( FILE *__restrict Ap , size_t size[1] , const size_t *__restrict rsq , const size_t max_r2 , const size_t ARR_SIZE )
    @brief writer for the topological susceptibility and static potential
    @param Ap :: file we are writing out to
    @param size :: length of the array
@@ -153,19 +152,19 @@ write_triplet_mom_list( FILE *__restrict Ap ,
  */
 void
 write_rr_values( FILE *__restrict Ap ,
-		 int size[1] ,
-		 const int *__restrict rsq ,
+		 size_t size[1] ,
+		 const size_t *__restrict rsq ,
 		 const size_t max_r2 ,
 		 const size_t ARR_SIZE ) ;
 
 /**
-   @fn void write_tslice_list( FILE *__restrict Ap , int *__restrict LT )
+   @fn void write_tslice_list( FILE *__restrict Ap , size_t *__restrict LT )
    @brief write out the timeslice index for the configuration space gluon correlator measurement
    @param Ap :: the file we are writing out to
    @param LT :: the length of the time direction (1 element array)
  **/
 void
 write_tslice_list( FILE *__restrict Ap , 
-		   int *__restrict LT ) ;
+		   size_t *__restrict LT ) ;
 
 #endif

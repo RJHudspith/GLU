@@ -21,7 +21,6 @@
    @brief computation of the non-exceptional three point function and 
    the gluon propagator
  */
-
 #include "Mainfile.h"
 
 #include "cut_output.h"  // output file formatting
@@ -51,8 +50,8 @@ int
 write_nonexceptional_g2g3( FILE *__restrict Ap , 
 			   const struct site *__restrict A , 
 			   const struct veclist *__restrict list , 
-			   int num_mom[ 1 ] , 
-			   const int nnmax )
+			   size_t num_mom[ 1 ] , 
+			   const size_t nnmax )
 {
 #ifdef LIE_PROJECTION
   init_generators() ;
@@ -84,22 +83,34 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
   // set up the number of triplets ... 
   int *trip = malloc( nnmax/2 * sizeof( int ) ) ;
 
+  // allocate both the triplet and the projector
+  int **triplet = NULL ;
+  double **proj = NULL ;
+
+  // malloc these as they are pretty big ...
+  double *g2 = NULL , *g3 = NULL ;
+
+  int flag = GLU_SUCCESS ;
+  size_t checker = 0 ;
+
   // look for a file or just calculate it the dumb way
   read_trip( trip , nnmax ) ;
 
   size_t nn ;
-  int counter[ 1 ] ;
-  counter[ 0 ] = 1 ; 
+  size_t counter[ 1 ] = { 1 } ;
   for( nn = 0 ; nn < nnmax/2 ; nn++ ) {
     counter[ 0 ] += trip[ nn ] ;
   }
   
   // set this up so that it will never be altered, important.
   const size_t count = counter[ 0 ]  ;
- 
-  // allocate both the triplet and the projector
-  int **triplet = malloc( count * sizeof( int* ) ) ;
-  double **proj = malloc( count * sizeof( double* ) ) ;
+  if( count == 0 ) { 
+    flag = GLU_FAILURE ;
+    goto memfree ;
+  }
+
+  triplet = malloc( count * sizeof( int* ) ) ;
+  proj = malloc( count * sizeof( double* ) ) ;
 
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < count ; i++ ) {
@@ -107,12 +118,10 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
     triplet[i] = ( int* )malloc( 3 *  sizeof( int ) ) ;
   }
 
-  // malloc these as they are pretty big ...
-  double *g2 = ( double* )malloc( count * sizeof( double ) ) ;
-  double *g3 = ( double* )malloc( count * sizeof( double ) ) ;
+  g2 = malloc( count * sizeof( double ) ) ;
+  g3 = malloc( count * sizeof( double ) ) ;
 
   // read in the triplet and the projector 
-  int flag = GLU_SUCCESS ;
   flag = read_triplet_and_proj( triplet , // reads in the trips
 				proj ,  // computes the projector
 				(const int**)momentum , // momlist
@@ -120,13 +129,11 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
 				count , //size of the trip array
 				num_mom[ 0 ] ) ; // size mom list
   
-  size_t checker = 0 ;
-
   if( flag == GLU_FAILURE ) {
     goto memfree ;
   }
   
-  write_triplet_mom_list( Ap , counter , momentum , triplet , ND ) ;
+  write_triplet_mom_list( Ap , counter , momentum , triplet ) ;
 
   for( nn = 0 ; nn < nnmax/2 ; nn ++ ) {
 
@@ -156,7 +163,7 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
     }
 
     // count through the available triplets .. should be able to parallelize
-    for( i = 0 ; i < trip[ nn ] ; i++ ) { 	  
+    for( i = 0 ; i < (size_t)trip[ nn ] ; i++ ) { 	  
       const size_t place = checker + i ;
 	  
       // initialise the threepoint
@@ -245,8 +252,12 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
 
 #pragma omp parallel for private(i)
   for( i = 0 ; i < count ; i++ ) {
-    free( triplet[ i ] ) ;
-    free( proj[i] ) ;
+    if( triplet != NULL ) {
+      free( triplet[ i ] ) ;
+    }
+    if( proj != NULL ) {
+      free( proj[i] ) ;
+    }
   }
   free( triplet ) ;
   free( proj ) ;

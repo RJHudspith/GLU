@@ -110,7 +110,7 @@ read_file( struct head_data *HEAD_DATA ,
   fprintf( stdout , "[PREC] Single-precision storage for the gauge fields\n" ) ;
 #endif
 
-  const uint32_t check = get_config_SUNC( infile , lat , tmp ) ;
+  const int check = get_config_SUNC( infile , lat , tmp ) ;
   // read in the configuration ...  
   if( check == GLU_FAILURE ) {
     fprintf( stderr , "[IO] File read error ... Leaving \n" ) ;

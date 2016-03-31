@@ -24,7 +24,7 @@
 #define GLU_PSPACE_LANDAU_H
 
 /**
-   @fn void correct_pspace_landau( struct site *__restrict A , const struct veclist *__restrict list , const int *__restrict in , const int DIMS )
+   @fn void correct_pspace_landau( struct site *__restrict A , const struct veclist *__restrict list , const size_t *__restrict in , const size_t DIMS )
    @brief performs the momentum space correction on our fields
    @param A :: Hermitian gauge fields in momentum space
    @param list :: the momentum lsit after the cutting procedure
@@ -41,7 +41,7 @@
 void
 correct_pspace_landau( struct site *__restrict A ,
 		       const struct veclist *__restrict list ,
-		       const int *__restrict in ,
-		       const int DIMS ) ;
+		       const size_t *__restrict in ,
+		       const size_t DIMS ) ;
 
 #endif
