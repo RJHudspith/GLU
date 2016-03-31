@@ -46,24 +46,23 @@ inline_gtransform_local( const GLU_complex *__restrict a ,
   register __m128d c4 = *C ; C++ ; 
   register __m128d c5 = *C ; // falls out of cache here!!
 
-  const register __m128d bp0 , bp1 , bp2 , bp3 , bp4 , bp5 ;
-  bp0 = _mm_add_pd( SSE2_MUL_CONJ( c0 , *B ) ,
+  const register __m128d bp0 = _mm_add_pd( SSE2_MUL_CONJ( c0 , *B ) ,
 		    _mm_add_pd( SSE2_MUL_CONJ( c1 , *( B + 1 ) ) ,
 				SSE2_MUL_CONJ( c2 , *( B + 2 ) ) ) ) ;
-  bp1 = _mm_add_pd( SSE2_MUL_CONJ( c0 , *( B + 3 ) ) ,
+  const register __m128d bp1 = _mm_add_pd( SSE2_MUL_CONJ( c0 , *( B + 3 ) ) ,
 		    _mm_add_pd( SSE2_MUL_CONJ( c1 , *( B + 4 ) ) ,
 				SSE2_MUL_CONJ( c2 , *( B + 5 ) ) ) ) ;
-  bp2 = _mm_add_pd( SSE2_MUL_CONJ( c0 , *( B + 6 ) ) ,
+  const register __m128d bp2 = _mm_add_pd( SSE2_MUL_CONJ( c0 , *( B + 6 ) ) ,
 		    _mm_add_pd( SSE2_MUL_CONJ( c1 , *( B + 7 ) ) ,
 				SSE2_MUL_CONJ( c2 , *( B + 8 ) ) ) ) ;
   // compute the second row
-  bp3 = _mm_add_pd( SSE2_MUL_CONJ( c3 , *B ) ,
+  const register __m128d bp3 = _mm_add_pd( SSE2_MUL_CONJ( c3 , *B ) ,
 		    _mm_add_pd( SSE2_MUL_CONJ( c4 , *( B + 1 ) ) ,
 				SSE2_MUL_CONJ( c5 , *( B + 2 ) ) ) ) ;
-  bp4 = _mm_add_pd( SSE2_MUL_CONJ( c3 , *( B + 3 ) ) ,
+  const register __m128d bp4 = _mm_add_pd( SSE2_MUL_CONJ( c3 , *( B + 3 ) ) ,
 		    _mm_add_pd( SSE2_MUL_CONJ( c4 , *( B + 4 ) ) ,
 				SSE2_MUL_CONJ( c5 , *( B + 5 ) ) ) ) ;
-  bp5 = _mm_add_pd( SSE2_MUL_CONJ( c3 , *( B + 6 ) ) ,
+  const register __m128d bp5 = _mm_add_pd( SSE2_MUL_CONJ( c3 , *( B + 6 ) ) ,
 		    _mm_add_pd( SSE2_MUL_CONJ( c4 , *( B + 7 ) ) ,
 				SSE2_MUL_CONJ( c5 , *( B + 8 ) ) ) ) ;
   // set the first two columns of B
@@ -97,10 +96,9 @@ inline_gtransform_local( const GLU_complex *__restrict a ,
   const __m128d *A = (const __m128d*)a ;
   const __m128d *C = (const __m128d*)c ;
   // similar to above
-  const register __m128d bp0 , bp1 ;
-  bp0 = _mm_add_pd( SSE2_MUL_CONJ( *(C+0) , *(B+0) ) ,
+  const register __m128d bp0 = _mm_add_pd( SSE2_MUL_CONJ( *(C+0) , *(B+0) ) ,
 		    SSE2_MUL_CONJ( *(C+1) , *(B+1) ) ) ;
-  bp1 = _mm_add_pd( SSE2_MUL_CONJ( *(C+0) , *(B+2) ) ,
+  const register __m128d bp1 = _mm_add_pd( SSE2_MUL_CONJ( *(C+0) , *(B+2) ) ,
 		    SSE2_MUL_CONJ( *(C+1) , *(B+3) ) ) ;
   *(B+0) = _mm_add_pd( SSE2_MULCONJ( bp0 , *(A+0) ) ,
 		       SSE2_MULCONJ( bp1 , *(A+1) ) ) ; 
