@@ -39,13 +39,21 @@ MATRIXOPSFILES=./Matrix_Ops/effs.c ./Matrix_Ops/evalues.c \
 	./Matrix_Ops/gramschmidt.c ./Matrix_Ops/gramschmidt_SSE.c \
 	./Matrix_Ops/invert.c ./Matrix_Ops/lie_mats.c \
 	./Matrix_Ops/LU.c ./Matrix_Ops/LU_SSE.c \
-	./Matrix_Ops/MMUL.c ./Matrix_Ops/MMUL_SSE.c \
-	./Matrix_Ops/MMUL_dag.c ./Matrix_Ops/MMUL_dag_SSE.c \
-	./Matrix_Ops/MMULdag.c ./Matrix_Ops/MMULdag_SSE.c \
-	./Matrix_Ops/MMULdagdag.c ./Matrix_Ops/MMULdagdag_SSE.c \
 	./Matrix_Ops/taylor_logs.c \
 	./Matrix_Ops/trace_abc.c ./Matrix_Ops/trace_abc_SSE.c \
-	./Matrix_Ops/U_Nops.c ./Matrix_Ops/vandermonde.c 
+	./Matrix_Ops/U_Nops.c ./Matrix_Ops/vandermonde.c
+
+## matrix multiply routines
+MMULFILES=./Matrix_Ops/MMUL/MMUL.c ./Matrix_Ops/MMUL/MMUL_SSE.c \
+	./Matrix_Ops/MMUL/MMUL_SUNC.c ./Matrix_Ops/MMUL/MMUL_SUNC_SSE.c \
+	./Matrix_Ops/MMUL/MMUL_dag.c ./Matrix_Ops/MMUL/MMUL_dag_SSE.c \
+	./Matrix_Ops/MMUL/MMUL_dag_SUNC.c \
+	./Matrix_Ops/MMUL/MMUL_dag_SUNC_SSE.c \
+	./Matrix_Ops/MMUL/MMULdag.c ./Matrix_Ops/MMUL/MMULdag_SSE.c \
+	./Matrix_Ops/MMUL/MMULdag_SUNC.c ./Matrix_Ops/MMUL/MMULdag_SUNC_SSE.c \
+	./Matrix_Ops/MMUL/MMULdagdag.c ./Matrix_Ops/MMUL/MMULdagdag_SSE.c \
+	./Matrix_Ops/MMUL/MMULdagdag_SUNC.c \
+	./Matrix_Ops/MMUL/MMULdagdag_SUNC_SSE.c
 
 ## smearing codes, generic and targeted blockings, flows etc
 SMEARFILES=./Smear/4D_fast.c ./Smear/adaptive_flow.c ./Smear/HYP.c \
@@ -74,6 +82,7 @@ libGLU_a_SOURCES = \
 	${IOFILES} \
 	${LANDAUFILES} \
 	${MATRIXOPSFILES} \
+	${MMULFILES} \
 	${SMEARFILES} \
 	${U1FILES} \
 	${UTILSFILES} \
@@ -82,14 +91,15 @@ libGLU_a_SOURCES = \
 ## and their respective headers
 include_HEADERS = 
 	$(CUTSFILES:./Cuts/%.c=./Headers/%.h) \
-	$(FIELDFILES:./Cuts/%.c=./Headers/%.h) \
-	$(GEOMETRYFILES:./Cuts/%.c=./Headers/%.h) \
-	$(IOFILES:./Cuts/%.c=./Headers/%.h) \
-	$(LANDAUFILES:./Cuts/%.c=./Headers/%.h) \
-	$(MATRIXOPSFILES:./Cuts/%.c=./Headers/%.h) \
-	$(U1FILES:./Cuts/%.c=./Headers/%.h) \
-	$(UTILSFILES:./Cuts/%.c=./Headers/%.h) \
-	$(WRAPPERSFILES:./Cuts/%.c=./Headers/%.h) \
+	$(FIELDFILES:./Fild/%.c=./Headers/%.h) \
+	$(GEOMETRYFILES:./Geometry/%.c=./Headers/%.h) \
+	$(IOFILES:./IO/%.c=./Headers/%.h) \
+	$(LANDAUFILES:./Landau/%.c=./Headers/%.h) \
+	$(MATRIXOPSFILES:./Matrix_Ops/%.c=./Headers/%.h) \
+	$(MMULFILES:./Matrix_Ops/MMUL/%.c=./Headers/%.h) \
+	$(U1FILES:./U1/%.c=./Headers/%.h) \
+	$(UTILSFILES:./Utils/%.c=./Headers/%.h) \
+	$(WRAPPERSFILES:./Wrappers/%.c=./Headers/%.h) \
 	./Headers/Mainfile.h \
 	../config.h
 

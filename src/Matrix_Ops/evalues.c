@@ -1,5 +1,5 @@
 /*
-    Copyright 2013 Renwick James Hudspith
+    Copyright 2013-2016 Renwick James Hudspith
 
     This file (solver.c) is part of GLU.
 
@@ -36,7 +36,7 @@
 // I * sqrt(3)
 #define rr3 (I * 1.7320508075688772)
 
-#if NC > 2
+#if NC==3
 // CALCULATES (one of) THE CUBE ROOT(s) //
 static inline void 
 cubert( double complex *__restrict res ,
@@ -131,7 +131,7 @@ rayliegh_quotient( GLU_complex v[ NC ] ,
 }
 #endif
 
-#if NC > 2
+#if NC==3
 // one that returns the root
 static inline double complex 
 squarert( const double complex z ,

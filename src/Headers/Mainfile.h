@@ -1,5 +1,5 @@
 /*
-    Copyright 2013 Renwick James Hudspith
+    Copyright 2013-2016 Renwick James Hudspith
 
     This file (Mainfile.h) is part of GLU.
 
@@ -89,10 +89,14 @@ extern struct latt_info Latt ;
 #include "U_Nops.h"                // many matrix operations
 #include "trace_abc.h"             // trace of the product of 3 matrices
 // matrix multiplication
-#include "MMUL.h"                  // a = b x c :: b,c in SU(NC) 
+#include "MMUL.h"                  // a = b x c :: b,c
+#include "MMUL_SUNC.h"             // a = b x c :: b,c in SU(NC)
 #include "MMUL_dag.h"              // a = b x c^{\dagger}
+#include "MMUL_dag_SUNC.h"         // a = b x c^{\dagger} SU(NC) variant
 #include "MMULdag.h"               // a = b^{\dagger} x c 
+#include "MMULdag_SUNC.h"          // a = b^{\dagger} x c SU(NC) variant
 #include "MMULdagdag.h"            // a = b^{\dagger} x c^{\dagger}
+#include "MMULdagdag_SUNC.h"       // a = b^{\dagger} x c^{\dagger}
 // logs and hermitian projections
 #include "exactQ.h"                // Q = log( U ) (approximations+exact)
 #include "expMat.h"                // U = exp( Q ) (exact)

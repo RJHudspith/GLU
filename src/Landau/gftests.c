@@ -1,5 +1,5 @@
 /*
-v    Copyright 2013 Renwick James Hudspith
+v    Copyright 2013-2016 Renwick James Hudspith
 
     This file (gftests.c) is part of GLU.
 

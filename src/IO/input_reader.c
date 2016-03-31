@@ -1,5 +1,5 @@
 /*
-    Copyright 2013 Renwick James Hudspith
+    Copyright 2013-2016 Renwick James Hudspith
 
     This file (input_reader.c) is part of GLU.
 

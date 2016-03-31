@@ -1,5 +1,5 @@
 /*
-    Copyright 2013 Renwick James Hudspith
+    Copyright 2013-2016 Renwick James Hudspith
 
     This file (CFACG.c) is part of GLU.
 
@@ -36,19 +36,13 @@
 #define LINE_NSTEPS 3
 
 #ifdef HAVE_FFTW3_H
-static const double alcg[LINE_NSTEPS] = { 0.0 , 0.15 , 0.3 } ;
+static const double alcg[LINE_NSTEPS] = { 0.0 , 0.17 , 0.34 } ;
 #else
 static const double alcg[LINE_NSTEPS] = { 0.0 , 0.2 , 0.4 } ;
 #endif
 
-#ifdef GLU_FR_CG
-// spline min value
-static const double spmin = 0.05 ; 
-#endif
-
 // computed in-step when the derivative is taken
 static double zero_alpha = 1.0 ;
-
 // start with driving the SD and build up from there ...
 static void
 exponentiate_gauge_CG( GLU_complex *__restrict *__restrict gauge , 
@@ -123,7 +117,10 @@ line_search_Coulomb( GLU_complex *__restrict *__restrict gtransformed ,
     val[counter] = evaluate_alpha( (const GLU_complex**)gtransformed , 
 				   lat , ND-1 , LCU , t ) ;
   }
-
+#ifdef verbose
+  printf( "[SPLINE] MIN :: %f \n" , 
+	  approx_minimum( LINE_NSTEPS , alcg , val ) ) ;
+#endif
   // defined in CG.c
   return approx_minimum( LINE_NSTEPS , alcg , val ) ;
 }
@@ -383,32 +380,15 @@ steep_fix_FACG( const struct site *__restrict lat ,
 		const size_t max_iter )
 {
   double tr = 1.0 ;
-  size_t iters = 0 , temp_iters = 0 , control = 0 , consecutive_zeros = 0 ;
+  size_t iters = 0 , temp_iters = 0 , control = 0 ;
   GLU_bool switched = GLU_FALSE , continuation = GLU_FALSE ;
   while ( ( tr > accuracy ) && ( iters < max_iter ) ) {
 
     // perform a Fourier accelerated step, this is where the CG can go ...
-    size_t loc_iters = 1 ;
-
-    // if we have hit more than 10 unacceptable steps in a row
-    if( consecutive_zeros > 10 ) goto restart ;
-
-    #ifdef GLU_FR_CG
-    loc_iters = steep_step_FACG_FR( lat , slice_gauge , out , in , in_old , sn , 
-				    rotato , gtransformed , forward , backward , 
-				    psq , t , &tr , accuracy ) ;
-    #else
-    loc_iters = steep_step_FACG( lat , slice_gauge , out , in , in_old , sn , 
-				 rotato , gtransformed , forward , backward , 
-				 psq , t , &tr , accuracy , max_iter ) ;
-    #endif
-
-    // if we keep hitting zeros I eventually switch to the SD
-    if( loc_iters == 1 ) {
-      consecutive_zeros ++ ;
-    } else {
-      consecutive_zeros = 0 ;
-    }
+    size_t loc_iters = 
+      steep_step_FACG( lat , slice_gauge , out , in , in_old , sn , 
+		       rotato , gtransformed , forward , backward , 
+		       psq , t , &tr , accuracy , max_iter ) ;
 
     // if we have gone over the max number of iters allowed
     // we randomly transform
@@ -421,12 +401,10 @@ steep_fix_FACG( const struct site *__restrict lat ,
 	continuation = GLU_TRUE ;
 	// otherwise we randomly restart
       } else if( control < GF_GLU_FAILURES && tr > accuracy ) {
-      restart :
 	fprintf( stdout , "[GF] Random transform \n" ) ;
 	random_gtrans_slice( slice_gauge ) ;
 	temp_iters += ( iters + loc_iters ) ;
 	loc_iters = iters = 0 ;
-	consecutive_zeros = 0 ;
 	control++ ;
 	tr = 1.0 ;
 	// otherwise we have to leave

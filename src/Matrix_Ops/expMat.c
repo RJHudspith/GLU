@@ -1,5 +1,5 @@
 /*
-    Copyright 2013 Renwick James Hudspith
+    Copyright 2013-2016 Renwick James Hudspith
 
     This file (expMat.c) is part of GLU.
 
@@ -301,8 +301,8 @@ exponentiate( GLU_complex U[ NCNC ] ,
   // exponentiate routine from stephan durr's paper
   // Performs the nesting
   // U = ( exp{ A / DIV^n ) ) ^ ( DIV * n )
-  GLU_complex EOLD[ NCNC ] GLU_align , SN[ NCNC ] GLU_align ;
-  GLU_complex RN_MIN[ NCNC ] GLU_align , RN[ NCNC ] GLU_align ;
+  GLU_complex EOLD[ NCNC ] GLUalign , SN[ NCNC ] GLUalign ;
+  GLU_complex RN_MIN[ NCNC ] GLUalign , RN[ NCNC ] GLUalign ;
 
   // set to zero
   zero_mat( EOLD ) ;
@@ -359,7 +359,7 @@ exponentiate( GLU_complex U[ NCNC ] ,
   }
   // gramschmidt orthogonalisation just to make sure
   // has been seen to help preserve gauge invariance of log smearing
-  reunit2( U ) ;
+  gram_reunit( U ) ;
   #endif
 #endif
   return ;
@@ -504,7 +504,7 @@ exponentiate_short( GLU_complex U[ NCNC ] ,
   *( U + 3 ) = (GLU_complex)( f0 - f1Q0 ) ; 
 #else
   // hmmm could be a toughy, wrap to exponentiate
-  GLU_complex temp[ NCNC ] GLU_align ;
+  GLU_complex temp[ NCNC ] GLUalign ;
   rebuild_hermitian( temp , Q ) ;
   exponentiate( U , temp ) ;
 #endif

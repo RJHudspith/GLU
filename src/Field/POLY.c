@@ -1,5 +1,5 @@
 /*
-    Copyright 2013 Renwick James Hudspith
+    Copyright 2013-2016 Renwick James Hudspith
 
     This file (POLY.c) is part of GLU.
 
@@ -61,9 +61,12 @@ poly( const struct site *__restrict lat ,
   // default the direction to ND
   if( dir > ND ) { dir = ND ; }
   double complex sum = 0 ;
-  size_t i ; 
+  size_t i , subvolume = 1 ;
+  for( i = 0 ; i < ND ; i++ ) {
+    subvolume *= (i!=dir)? Latt.dims[i] : 1 ;
+  }
 #pragma omp parallel for private(i) reduction(+:sum)
-  for( i = 0 ; i < LCU ; i++ ) {
+  for( i = 0 ; i < subvolume ; i++ ) {
     GLU_complex poly[ NCNC ] ;
     // use the correct site for one of the hypercubes ...
     int x[ ND ] ;

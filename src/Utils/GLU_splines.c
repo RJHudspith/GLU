@@ -1,5 +1,5 @@
 /*
-    Copyright 2013 Renwick James Hudspith
+    Copyright 2013-2016 Renwick James Hudspith
 
     This file (GLU_splines.c) is part of GLU.
 
@@ -73,7 +73,7 @@ static void
 h3_derivative( double *__restrict der ,
 	       const double *__restrict x ,
 	       const double *__restrict y ,
-	       const int N )
+	       const size_t N )
 {
   {
     // expansion of f(x+a) + f(x+b) + f(x+c)
@@ -84,7 +84,7 @@ h3_derivative( double *__restrict der ,
     register double ac = a*c ;
     register double bc = b*c ;
     const double num = bc*bc*(c-b)*y[1] - ac*ac*(-a+c)*y[2] + ab*ab*(-a+b)*y[3] ;
-    der[0] = num / ( -ab*(-ac+bc)*(b-c)*(-a+c) ) + (-1./a - 1./b - 1./c ) * y[0] ;
+    der[0] = num / ( -ab*(-ac+bc)*(b-c)*(-a+c) ) + (-1./a - 1./b - 1./c ) * y[0] ; 
   }
   // expansion of f(x-a) + f(x+b) + f(x+c)
   size_t i ;
@@ -96,7 +96,7 @@ h3_derivative( double *__restrict der ,
     register double ac = a*c ;
     register double bc = b*c ;
     const double num = bc*bc*(c-b)*y[i-1] - ac*ac*(a+c)*y[i+1] + ab*ab*(a+b)*y[i+2] ;
-    der[i] = num / ( ab*(ac+bc)*(b-c)*(a+c) ) + (1./a - 1./b - 1./c ) * y[i] ;
+    der[i] = num / ( a*b*c*(a+b)*(b-c)*(a+c) ) + (1./a - 1./b - 1./c ) * y[i] ;
   }
   // expansion of f(x-a) + f(x-b) + f(x+c)
   {
@@ -132,8 +132,13 @@ spline_derivative( double *__restrict der ,
 {
   // for these derivative functions to work, need at least 5 points
   if( N < 5 ) { 
-    if( N == 3 ) h2_derivative( der , x , y , N ) ; return ;
-    if( N == 4 ) h3_derivative( der , x , y , N ) ; return ;
+    if( N == 3 ) { 
+      h2_derivative( der , x , y , N ) ; 
+      return ;
+    } else if( N == 4 ) { 
+      h3_derivative( der , x , y , N ) ; 
+      return ;
+    }
     printf( "[SPLINE] Too few points to compute a good cubic spline \n" ) ;
     printf( "[SPLINE] Not doing anything \n" ) ;
     return ;

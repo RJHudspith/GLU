@@ -228,7 +228,7 @@ static char *LU_det_test( ) {
   GLU_complex d[ NCNC ] ;
   identity( d ) ;
   mu_assert("[GLUnit] error : LU_det broken", 
-	    cabs( LU_det( NC , d ) - 1.0 ) > PREC_TOL ? GLU_FALSE : GLU_TRUE  );
+	    cabs( det( d ) - 1.0 ) > PREC_TOL ? GLU_FALSE : GLU_TRUE  );
   return 0;
 }
 #endif
@@ -463,12 +463,16 @@ static char *trace_abc_dag_test(  ) {
   multab( e , a , d ) ;
   trace_abc_dag( &tr , a , b , c ) ;
 
-  if( cabs( trace( e ) - tr ) > PREC_TOL ) is_ok = GLU_FALSE ;
-  mu_assert("[GLUnit] error : trace_abc_dag is broken", is_ok ) ;
+  if( cabs( trace( e ) - tr ) > PREC_TOL ) { 
+    is_ok = GLU_FALSE ;
+  }
 
   GLU_real rtr ;
   trace_abc_dag_Re( &rtr , a , b , c ) ;
-  if( fabs( rtr - creal( tr ) ) > PREC_TOL ) is_ok = GLU_FALSE ;
+
+  if( fabs( rtr - creal( tr ) ) > PREC_TOL ) { 
+    is_ok = GLU_FALSE ;
+  }
   mu_assert("[GLUnit] error : trace_abc_dag_Re is broken", is_ok ) ;
 
   return 0 ;
@@ -664,12 +668,12 @@ UNOPS_test( void )
 
   // if we fail we complain
   if( tests_fail == 0 ) {
-    printf( "[UNOPS UNIT] all %d tests passed\n\n" ,
+    fprintf( stdout , "[UNOPS UNIT] all %d tests passed\n\n" ,
 	    tests_run ) ;
     return GLU_SUCCESS ;
   } else {
-    printf( "%s \n" , unops_res ) ;
-    printf( "[UNOPS UNIT] %d out of %d tests failed\n\n" , 
+    fprintf( stderr , "%s \n" , unops_res ) ;
+    fprintf( stderr , "[UNOPS UNIT] %d out of %d tests failed\n\n" , 
 	    tests_fail , tests_run ) ;
     return GLU_FAILURE ;
   }

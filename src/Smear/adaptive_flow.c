@@ -138,7 +138,7 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   print_GG_info( SM_TYPE , RK4_ADAPTIVE ) ;
 
   // the error between the two plaquettes
-  const double ADAPTIVE_EPS = 1E-5 ;
+  const double ADAPTIVE_EPS = 1E-7 ;
   // Standard shrink and factor from NRC RK4
   const double ADAPTIVE_SHRINK = -0.32 ; // 0.33?
   // Standard growth and factor from NRC RK4

@@ -1,5 +1,5 @@
 /*
-    Copyright 2013 Renwick James Hudspith
+    Copyright 2013-2016 Renwick James Hudspith
 
     This file (random_config.c) is part of GLU.
 
@@ -64,15 +64,17 @@ random_gtrans( struct site *__restrict lat )
 
   GLU_complex **gauge = NULL ;
   
-  GLU_malloc( (void**)&gauge , ALIGNMENT , LVOLUME * sizeof( GLU_complex* ) ) ;
+  if( GLU_malloc( (void**)&gauge , ALIGNMENT , LVOLUME * sizeof( GLU_complex* ) ) != 0 ) {
+    fprintf( stdout , "[RANDOM] Allocation failed \n" ) ;
+  }
 
   size_t i ; 
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    GLU_malloc( (void**)&gauge[i] , ALIGNMENT , LVOLUME * sizeof( GLU_complex ) ) ;
+    GLU_malloc( (void**)&gauge[i] , ALIGNMENT , NCNC * sizeof( GLU_complex ) ) ;
     // openmp does not play nice with static arrays in the WELL and MWC_1038
     generate_NCxNC( gauge[i] ) ;
     #if NC > 5 && ( ( defined HAVE_GSL ) || ( defined HAVE_LAPACKE_H ) )
-    GLU_complex A[ NCNC ] ;
+    GLU_complex A[ NCNC ] GLUalign ;
     Hermitian_proj( A , gauge[i] ) ;
     exponentiate( gauge[i] , A ) ;
     #else

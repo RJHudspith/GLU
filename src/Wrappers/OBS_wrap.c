@@ -1,5 +1,5 @@
 /*
-    Copyright 2013 Renwick James Hudspith
+    Copyright 2013-2016 Renwick James Hudspith
 
     This file (OBS_wrap.c) is part of GLU.
 
@@ -209,11 +209,17 @@ gauge( const struct site *__restrict lat )
   fprintf( stdout , "\n") ;
 
   // gauge invariance checks and what have you
-  int mu ;
-  const double DENOM = 1.0 / ( ( double )NC * LCU ) ;
+  size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
+    // compute correct denominator
+    size_t denom = 1 , nu ;
+    for( nu = 0 ; nu < ND ; nu++ ) {
+      denom *= ( nu != mu ) ? Latt.dims[nu] : 1 ;
+    }
+    // average
+    const double DENOM = 1.0 / ( ( double )NC * denom ) ;
     double complex R = poly( lat , mu ) ;
-    fprintf( stdout , "[POLY SU(%d) DIR_%d] ( %e , %e ) , MODULUS :: %e \n" ,
+    fprintf( stdout , "[POLY SU(%d) DIR_%zu] ( %e , %e ) , MODULUS :: %e \n" ,
 	    NC , mu , creal( R ) * DENOM , cimag( R ) * DENOM , 
 	    cabs( R ) * DENOM ) ;
   }

@@ -71,7 +71,7 @@ Re_trace_abc_dag_suNC( const GLU_complex a[ NCNC ] ,
   // multiply sum by 2
   _mm_store_pd( (void*)&csum , _mm_add_pd( sum , sum ) ) ; 
 #else
-  register __m128d sum = _mm_setzero_pd( ) ;
+  register __m128d sum = _mm_setzero_pd( ) , insum ;
   size_t i , j , k ;
   for( i = 0 ; i < NC ; i++ ) {
     A = (const __m128d*)a ;
@@ -82,13 +82,16 @@ Re_trace_abc_dag_suNC( const GLU_complex a[ NCNC ] ,
 	insum = _mm_add_pd( insum , SSE2_MUL( A[k] , B[i] ) ) ;
 	B += NC ;
       }
-      sum = _mm_add_pd( sum , _mm_mul_pd( insum , *C ) ) ;
+      sum = _mm_add_pd( sum , _mm_mul_pd( insum , C[i+j*NC] ) ) ;
       // increment our pointers
-      A += NC , C++ ;
+      A += NC ;
     }
   }
+  // multiply by 2
   _mm_store_pd( (void*)&csum , sum ) ;
 #endif
+  //printf( "%1.15f\n" , creal( csum ) + cimag( csum ) ) ;
+  //exit(1) ;
   return creal( csum ) + cimag( csum ) ;  
 }
 
@@ -171,12 +174,12 @@ trace_abc( GLU_complex *__restrict tr ,
       B = (const __m128d*)b ;
       register __m128d insum = _mm_setzero_pd( ) ;
       for( k = 0 ; k < NC ; k++ ) {
-	insum = _mm_add_pd( insum , SSE2_MUL( pA[k] , B[i] ) ) ;
+	insum = _mm_add_pd( insum , SSE2_MUL( A[k] , B[i] ) ) ;
 	B += NC ;
       }
-      sum = _mm_add_pd( sum , SSE2_MUL( insum , C[ i + j*NC ] ) ) ;
+      sum = _mm_add_pd( sum , SSE2_MUL( insum , *C ) ) ;
       // increment our pointers
-      pA += NC ;
+      A += NC , C++ ;
     }
   }
 #endif
@@ -256,21 +259,22 @@ trace_abc_dag( GLU_complex *__restrict tr ,
   sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a2 , *( C + 2 ) ) ) ;
   sum = _mm_add_pd( sum , SSE2_MUL_CONJ( a3 , *( C + 3 ) ) ) ;
 #else
-  const __m128d *pA , *pB , *pC = (const __m128d*)c ;
   register __m128d sum = _mm_setzero_pd( ) ;
   size_t i , j , k ;
   for( i = 0 ; i < NC ; i++ ) {
-    pA = (const __m128d*)a ;
+    A = (const __m128d*)a ;
     for( j = 0 ; j < NC ; j++ ) {
-      pB = (const __m128d*)b ;
+      B = (const __m128d*)b ;
       register __m128d insum = _mm_setzero_pd( ) ;
       for( k = 0 ; k < NC ; k++ ) {
-	insum = _mm_add_pd( insum , SSE2_MUL( pA[k] , pB[i] ) ) ;
-	pB += NC ;
+	insum = _mm_add_pd( insum , SSE2_MUL( A[k] , B[i] ) ) ;
+	//insum = _mm_add_pd( insum , SSE2_MUL( A[k] , B[j] ) ) ;
+	B += NC ;
       }
-      sum = _mm_add_pd( sum , SSE2_MUL_CONJ( insum , *pC ) ) ;
+      //sum = _mm_add_pd( sum , SSE2_MUL_CONJ( insum , *C ) ) ;
+      sum = _mm_add_pd( sum , SSE2_MUL_CONJ( insum , C[i+j*NC] ) ) ;
       // increment our pointers
-      pA += NC , pC++ ;
+      A += NC ; //, C++ ;
     }
   }
 #endif

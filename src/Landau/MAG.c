@@ -1,5 +1,5 @@
 /*
-    Copyright 2013 Renwick James Hudspith
+    Copyright 2013-2016 Renwick James Hudspith
 
     This file (MAG.c) is part of GLU.
 
@@ -86,9 +86,12 @@ axial_gauge( struct site *__restrict lat ,
 	     GLU_complex *__restrict *__restrict gauge , 
 	     const size_t DIR )
 {
-  size_t i ;
+  size_t i , subvolume = 1 ;
+  for( i =  0 ; i < ND ; i++ ) {
+    subvolume *= (i!=DIR) ? Latt.dims[i] : 1 ;
+  }
 #pragma omp parallel for private(i)
-  PFOR( i =  0 ; i < LCU ; i++ ) {// loop the ND - 1, subvolume
+  PFOR( i =  0 ; i < subvolume ; i++ ) {// loop the ND-1, subvolume
     // x is the ND dimensional vector describing the position
     int x[ ND ] ;
     get_mom_2piBZ( x , i , DIR ) ;
