@@ -362,6 +362,29 @@ steep_step_FACG( const struct site *__restrict lat ,
   return iters ;
 }
 
+// test the gauge transformation solution
+static GLU_bool
+adequate_solution( GLU_complex *__restrict *__restrict slice_gauge , 
+		   const size_t iters ) 
+{
+  GLU_bool failure = GLU_TRUE ;
+  size_t i ;
+#pragma omp parallel for private(i)
+  for( i = 0 ; i < LCU ; i++ ) {
+    const double *p = (const double*)slice_gauge[i] ;
+    register double sum = 0.0 ;
+    size_t j ;
+    for( j = 0 ; j < NCNC ; j++ ) {
+      sum += *p * ( *p ) ; p++ ; // re^2
+      sum += *p * ( *p ) ; p++ ; // im^2
+    }
+    if( fabs( sum - NC ) > iters*PREC_TOL ) {
+      failure = GLU_FALSE ;
+    }
+  }
+  return failure ;
+}
+
 // coulomb gauge fix on slice t
 static size_t
 steep_fix_FACG( const struct site *__restrict lat , 
@@ -390,6 +413,15 @@ steep_fix_FACG( const struct site *__restrict lat ,
 		       rotato , gtransformed , forward , backward , 
 		       psq , t , &tr , accuracy , max_iter ) ;
 
+    // quick test for unitarity of our gauge transformation matrices
+    if( tr < accuracy ) {
+      if( adequate_solution( slice_gauge , 
+			     loc_iters > 0 ? loc_iters : 1 ) 
+	  == GLU_FALSE ) {
+	goto randomtrans ;
+      }
+    }
+
     // if we have gone over the max number of iters allowed
     // we randomly transform
     if( ( iters + loc_iters ) >= ( max_iter - 1 ) ) {
@@ -401,6 +433,7 @@ steep_fix_FACG( const struct site *__restrict lat ,
 	continuation = GLU_TRUE ;
 	// otherwise we randomly restart
       } else if( control < GF_GLU_FAILURES && tr > accuracy ) {
+      randomtrans :
 	fprintf( stdout , "[GF] Random transform \n" ) ;
 	random_gtrans_slice( slice_gauge ) ;
 	temp_iters += ( iters + loc_iters ) ;
@@ -603,9 +636,23 @@ steep_fix_FA( const struct site *__restrict lat ,
   double tr = 1.0 ;
   size_t iters = 0 , temp_iters = 0 , control = 0 ;
   while ( ( tr > accuracy ) && ( iters < max_iter ) ) {
+
+    // perform a Fourier accelerated step
+    steep_step_SD( lat , slice_gauge , out , in , rotato , NULL ,
+		   forward , backward , psq , t , &tr ) ;
+
+    // quick test for unitarity of our gauge transformation matrices
+    if( tr < accuracy ) {
+      if( adequate_solution( slice_gauge , iters > 0 ? iters : 1 ) 
+	  == GLU_FALSE ) {
+	goto randomtrans ;
+      }
+    }
+
     //criteria:: We only randomly transform six times before complaining
     if( iters == ( max_iter - 1 ) ) {
       if( control < GF_GLU_FAILURES )  {
+      randomtrans :
 	random_gtrans_slice( slice_gauge ) ;
 	iters = 0 ; 
 	control++ ; 
@@ -618,9 +665,6 @@ steep_fix_FA( const struct site *__restrict lat ,
 	break ;
       }
     }
-    // perform a Fourier accelerated step
-    steep_step_SD( lat , slice_gauge , out , in , rotato , NULL ,
-		   forward , backward , psq , t , &tr ) ;
 
     // the log needs some help to stay on track
     #if ( defined deriv_full ) || ( defined deriv_fulln )
