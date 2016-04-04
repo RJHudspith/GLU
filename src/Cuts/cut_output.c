@@ -20,7 +20,6 @@
    @file cut_output.c
    @brief output functions for the cutting procedures
  */
-
 #include "Mainfile.h"
 
 #include "geometry.h"  // geometry for computing momenta

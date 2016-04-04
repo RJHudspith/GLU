@@ -21,7 +21,6 @@
    @brief computation of the topological susceptibility correlator
    @warning calls the smearing wrapper, which overwrites the links
  */
-
 #include "Mainfile.h"
 
 #include "clover.h"       // computation of the topological charge
@@ -31,6 +30,56 @@
 #include "GLU_bswap.h"    // byte swapping
 #include "plan_ffts.h"    // config space correlator is convolution
 #include "SM_wrap.h"      // in case we wish to do smearing
+
+// compute the correlator using the convolved topological 
+// charge correlator
+static int
+temporal_correlator( const GLU_complex *qtop ,
+		     const struct cut_info CUTINFO )
+{
+  // set up the outputs
+  const char *str = output_str_struct( CUTINFO ) ;  
+  
+  // append .tcorr onto the output
+  char cstr[ 256 ] ;
+  sprintf( cstr , "%s.tcorr" , str ) ; 
+  FILE *Ap = fopen( cstr , "wb" ) ; 
+
+  // timeslice length
+  size_t lt[ 1 ] = { Latt.dims[ND-1] } ;
+
+  double *ct = malloc( Latt.dims[ ND-1 ] * sizeof( double ) ) ;
+
+  // write out the timeslice list ...
+  write_tslice_list( Ap , lt ) ;
+
+  // compute ct
+  size_t t ;
+#pragma omp parallel for private(t)
+  for( t = 0 ; t < Latt.dims[ ND-1 ] ; t++ ) {
+    const GLU_complex *p = qtop + LCU * t ;
+    register double sum = 0.0 ;
+    size_t i ;
+    for( i = 0 ; i < LCU ; i++ ) {
+      sum = creal( *p ) , p++ ;
+    }
+    ct[ t ] = sum ;
+  }
+
+  for( t = 0 ; t < Latt.dims[ ND-1 ] ; t++ ) {
+    printf( "%zu %e \n" , t , ct[t] ) ;
+  }
+
+  // and write the props ....
+  write_g2_to_list( Ap , ct , lt ) ;
+
+  // memory frees
+  fclose( Ap ) ;
+  free( (void*)str ) ;
+  free( ct ) ;
+
+  return GLU_SUCCESS ;
+}
 
 // computation of the correlator
 // C(r) = < q( x ) q( y ) >  -> r = ( x - y ), r^2 < CUTINFO.max_mom
@@ -43,6 +92,7 @@ compute_Qsusc( struct site *__restrict lat ,
   // normalisations
   const double NORM = -0.001583143494411527678811 ; // 1.0/(64*Pi*Pi)
   const double NORMSQ = NORM * NORM ;
+  const double mulfac = NORMSQ / (double)LVOLUME ;
 
   // do some smearing ...
   SM_wrap_struct( lat , SMINFO ) ;
@@ -114,13 +164,14 @@ compute_Qsusc( struct site *__restrict lat ,
   out = fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
 
   small_create_plans_DFT( &forward , &backward , qtop , out , ND ) ;
-  fftw_execute( forward ) ;
-  
+
   // computes the full correlator in p-space and FFTs back
+  fftw_execute( forward ) ;
+
   // is a convolution, Volume norm is for the FFT
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-    out[ i ] *= conj( out[ i ] ) / (double)LVOLUME ;
+    out[ i ] *= conj( out[ i ] ) * mulfac ;
   }
 
   fftw_execute( backward ) ;
@@ -136,13 +187,13 @@ compute_Qsusc( struct site *__restrict lat ,
 
   #ifdef verbose
   fprintf( stdout , "\n[QSUSC] Check sumsq :: %f \n" , 
-	   creal( qtop[0] ) * NORMSQ ) ;
+	   creal( qtop[0] ) ) ;
   #endif
 
   // loop the possible rsqs
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < size[0] ; i++ ) {
-    qcorr[i] = (double)creal( qtop[ list[i].idx ] ) * NORMSQ ;
+    qcorr[i] = (double)creal( qtop[ list[i].idx ] ) ;
   }
 
   // warning, this code is super slow compared to the FFT convolution one
@@ -168,8 +219,10 @@ compute_Qsusc( struct site *__restrict lat ,
     }
     qcorr[i] = sumqq * NORMSQ ;
   }
-
 #endif
+
+  // look at the correlator of this thing too
+  temporal_correlator( qtop , CUTINFO ) ;
 
   // tell us where to go
   fprintf( stdout , "[CUTS] Outputting to %s \n" , str ) ;

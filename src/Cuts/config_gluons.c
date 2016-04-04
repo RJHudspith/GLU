@@ -152,15 +152,19 @@ spatial_correlator( struct site *__restrict A ,
 #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     GLU_complex tr , sum = 0.0 ;
+    #ifdef CUT_FORWARD
     out[i] = 0 ;
+    #else
+    in[i] = 0 ;
+    #endif
     for( mu = 0 ; mu < ND ; mu++ ) {
       trace_ab_dag( &tr , A[i].O[mu] , A[i].O[mu] ) ;
       sum += tr ; 
     }
     #ifdef CUT_FORWARD
-    out[i] = out[i] + sum ;
+    out[i] = sum ;
     #else
-    in[i] = in[i] + sum ;
+    in[i] = sum ;
     #endif
   }
 
