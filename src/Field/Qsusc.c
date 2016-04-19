@@ -35,13 +35,10 @@
 // charge correlator
 static int
 temporal_correlator( const GLU_complex *qtop ,
-		     const struct cut_info CUTINFO )
+		     const char *str )
 {
-  // set up the outputs
-  const char *str = output_str_struct( CUTINFO ) ;  
-  
   // append .tcorr onto the output
-  char cstr[ 256 ] ;
+  char cstr[ 1024 ] ;
   sprintf( cstr , "%s.tcorr" , str ) ; 
   FILE *Ap = fopen( cstr , "wb" ) ; 
 
@@ -67,15 +64,17 @@ temporal_correlator( const GLU_complex *qtop ,
   }
 
   for( t = 0 ; t < Latt.dims[ ND-1 ] ; t++ ) {
-    printf( "%zu %e \n" , t , ct[t] ) ;
+    printf( "[QSUSC] CORR %zu %e \n" , t , ct[t] ) ;
   }
+
+  // tell us where to go
+  fprintf( stdout , "[CUTS] Outputting correlator to %s \n" , cstr ) ;
 
   // and write the props ....
   write_g2_to_list( Ap , ct , lt ) ;
 
   // memory frees
   fclose( Ap ) ;
-  free( (void*)str ) ;
   free( ct ) ;
 
   return GLU_SUCCESS ;
@@ -84,18 +83,15 @@ temporal_correlator( const GLU_complex *qtop ,
 // computation of the correlator
 // C(r) = < q( x ) q( y ) >  -> r = ( x - y ), r^2 < CUTINFO.max_mom
 // over all indices, q(x) is the topological charge at site x
-int
+static int
 compute_Qsusc( struct site *__restrict lat ,
 	       const struct cut_info CUTINFO ,
-	       const struct sm_info SMINFO )
+	       const size_t measurement )
 {
   // normalisations
   const double NORM = -0.001583143494411527678811 ; // 1.0/(64*Pi*Pi)
   const double NORMSQ = NORM * NORM ;
   const double mulfac = NORMSQ / (double)LVOLUME ;
-
-  // do some smearing ...
-  SM_wrap_struct( lat , SMINFO ) ;
 
   // info
   check_psq( CUTINFO ) ;
@@ -108,7 +104,8 @@ compute_Qsusc( struct site *__restrict lat ,
   struct veclist *list = compute_veclist( size , CUTINFO , ND , GLU_TRUE ) ;
 
   // set up the outputs
-  const char *str = output_str_struct( CUTINFO ) ;  
+  char *str = output_str_struct( CUTINFO ) ;
+  sprintf( str , "%s.m%zu" , str , measurement ) ;
   FILE *Ap = fopen( str , "wb" ) ; 
 
   // flag for success or failure
@@ -118,7 +115,11 @@ compute_Qsusc( struct site *__restrict lat ,
   write_mom_veclist( Ap , size , list , ND ) ;
 
   // set up the matrix-valued array of the topological charge
+#ifdef HAVE_FFTW3_H
+  GLU_complex *qtop = fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
+#else
   GLU_complex *qtop = malloc( LVOLUME * sizeof( GLU_complex ) ) ;
+#endif
   size_t i ;
 
   // allocate the results
@@ -142,13 +143,14 @@ compute_Qsusc( struct site *__restrict lat ,
   // precompute all of charge densities q(x)
   compute_Gmunu_array( qtop , lat ) ;
 
-#ifdef verbose
+  #ifdef verbose
+  register double sum = 0.0 , sumsq = 0.0 ;
   for( i = 0 ; i < LVOLUME ; i++ ) {
     sum += creal( qtop[i] ) ;
     sumsq += creal( qtop[i] * qtop[i] ) ;
   }
   fprintf( stdout , "\nQTOP %f %f \n" , sum * NORM , sumsq * NORMSQ ) ;
-#endif
+  #endif
   
   // if we have fftw, use it for the contractions
 #ifdef HAVE_FFTW3_H
@@ -222,7 +224,7 @@ compute_Qsusc( struct site *__restrict lat ,
 #endif
 
   // look at the correlator of this thing too
-  temporal_correlator( qtop , CUTINFO ) ;
+  temporal_correlator( qtop , str ) ;
 
   // tell us where to go
   fprintf( stdout , "[CUTS] Outputting to %s \n" , str ) ;
@@ -237,7 +239,7 @@ compute_Qsusc( struct site *__restrict lat ,
 
   // close the file and its name
   fclose( Ap ) ;
-  free( (void*)str ) ;
+  free( str ) ;
 
   // free up all of the allocations
   free( qcorr ) ;  
@@ -247,4 +249,31 @@ compute_Qsusc( struct site *__restrict lat ,
   free( list ) ;
 
   return FLAG ;
+}
+
+// step through smears
+int
+compute_Qsusc_step( struct site *__restrict lat ,
+		    const struct cut_info CUTINFO ,
+		    const struct sm_info SMINFO )
+{
+  // measurement counter
+  size_t measurement ;
+  
+  fprintf( stdout , "[QSUSC] performing %zu measurements at %zu" 
+	   " smearing steps\n" , CUTINFO.max_t , SMINFO.smiters ) ;
+
+  // perform 10 measurements each stepping smiters ahead
+  for( measurement = 0 ; measurement < CUTINFO.max_t ; measurement++ ) {
+
+    // do some smearing ...
+    SM_wrap_struct( lat , SMINFO ) ;
+    
+    // compute the topological correlator in r and the temporal correlator
+    if( compute_Qsusc( lat , CUTINFO , measurement ) == GLU_FAILURE ) {
+      return GLU_FAILURE ;
+    }
+  }
+
+  return GLU_SUCCESS ;
 }

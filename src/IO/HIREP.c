@@ -72,15 +72,15 @@ read_gauge_field( struct site *__restrict lat ,
 #if NC==2
     size_t mu , a = 0 ;
     // t-direction is first
-    lat[idx].O[ND-1][0] = (GLU_real)uind[a]   + I * (GLU_real)uind[a+1] ;
-    lat[idx].O[ND-1][1] = (GLU_real)uind[a+2] + I * (GLU_real)uind[a+3] ;
+    lat[idx].O[ND-1][0] =  (GLU_real)uind[a+0] + I * (GLU_real)uind[a+3] ;
+    lat[idx].O[ND-1][1] = -(GLU_real)uind[a+2] + I * (GLU_real)uind[a+1] ;
     lat[idx].O[ND-1][2] = -conj( lat[idx].O[ND-1][1] ) ;
     lat[idx].O[ND-1][3] =  conj( lat[idx].O[ND-1][0] ) ;
     a += 2*NC ;
     // then the others
     for( mu = 0 ;  mu < ND - 1 ; mu++ ) {
-      lat[idx].O[mu][0] = (GLU_real)uind[a] + I * (GLU_real)uind[a+1] ;
-      lat[idx].O[mu][1] = (GLU_real)uind[a+2] + I * (GLU_real)uind[a+3] ;
+      lat[idx].O[mu][0] =  (GLU_real)uind[a+0] + I * (GLU_real)uind[a+3] ;
+      lat[idx].O[mu][1] = -(GLU_real)uind[a+2] + I * (GLU_real)uind[a+1] ;
       lat[idx].O[mu][2] = -conj( lat[idx].O[mu][1] ) ;
       lat[idx].O[mu][3] =  conj( lat[idx].O[mu][0] ) ;
       a += 2*NC ;

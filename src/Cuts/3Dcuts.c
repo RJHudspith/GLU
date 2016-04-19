@@ -71,7 +71,7 @@ mom_gauge_spatial( struct site *__restrict A ,
 
   // FFTW routines
   GLU_complex *out = fftw_malloc( LCU * sizeof( GLU_complex ) ) ; 
-  GLU_complex *in = fftw_malloc( LCU * sizeof( GLU_complex ) ) ; 
+  GLU_complex *in  = fftw_malloc( LCU * sizeof( GLU_complex ) ) ; 
 
   fftw_plan forward , backward ;
   small_create_plans_DFT( &forward , &backward , in , out , ND - 1 ) ;

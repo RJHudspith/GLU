@@ -21,7 +21,6 @@
    @brief Function defs for the various output types used
    @ingroup Cuts
  */
-
 #ifndef GLU_CUT_OUTPUT_H
 #define GLU_CUT_OUTPUT_H
 
@@ -36,7 +35,7 @@ int
 check_psq( const struct cut_info CUTINFO ) ;
 
 /**
-   @fn char* output_str_struct( const struct cut_info CUTINFO )
+   @fn char* output_str_struct( const struct cut_info CUTINFO , const size_t measurement )
    @brief From the cutting information, creates the output string necessary
    @param CUTINFO :: general cutting information.
  **/

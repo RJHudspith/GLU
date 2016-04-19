@@ -20,7 +20,6 @@
    @file CUT_wrap.c
    @brief this wraps the momentum cutting routines and what have you.
  */
-
 #include "Mainfile.h"
 #include "3Dcuts.h" // instantaneous spatial and temporal props
 #include "config_gluons.h" // configuration space gluon propagators
@@ -53,7 +52,7 @@ cuts_wrap_struct( struct site *__restrict lat ,
     Coul_staticpot( lat , CUTINFO , SMINFO ) ;
     break ;
   case TOPOLOGICAL_SUSCEPTIBILITY :
-    compute_Qsusc( lat , CUTINFO , SMINFO ) ;
+    compute_Qsusc_step( lat , CUTINFO , SMINFO ) ;
     break ;
   case GLUON_PROPS :
   case EXCEPTIONAL :

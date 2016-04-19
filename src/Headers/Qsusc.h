@@ -24,7 +24,7 @@
 #define GLU_QSUSC_H
 
 /**
-   @fn int compute_Qsusc( struct site *__restrict lat , const struct cut_info CUTINFO , const struct sm_info SMINFO )
+   @fn int compute_Qsusc_step( struct site *__restrict lat , const struct cut_info CUTINFO , const struct sm_info SMINFO )
    @brief computes the topological chare correlation function
    @param lat :: lattice gauge fields
    @param CUTINFO :: uses the max_mom value for the maximum r^2 used
@@ -32,8 +32,8 @@
    @return #GLU_SUCCESS or #GLU_FAILURE
  */
 int
-compute_Qsusc( struct site *__restrict lat ,
-	       const struct cut_info CUTINFO , 
-	       const struct sm_info SMINFO ) ;
+compute_Qsusc_step( struct site *__restrict lat ,
+		    const struct cut_info CUTINFO , 
+		    const struct sm_info SMINFO ) ;
 
 #endif

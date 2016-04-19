@@ -193,7 +193,7 @@ static_quark_correlator( double complex *__restrict result ,
   }
 
   // FFTW routines
-  GLU_complex *in = fftw_malloc( LCU * sizeof( GLU_complex ) ) ;
+  GLU_complex *in  = fftw_malloc( LCU * sizeof( GLU_complex ) ) ;
   GLU_complex *out = fftw_malloc( LCU * sizeof( GLU_complex ) ) ;
 
   // create some plans
