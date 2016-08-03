@@ -154,7 +154,7 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   fprintf( stdout , "[WFLOW] Growth factor :: %g \n" , ADAPTIVE_GROWTH ) ;
   fprintf( stdout , "[WFLOW] Shrink factor :: %g \n\n" , ADAPTIVE_SHRINK ) ; 
   fprintf( stdout , "[WFLOW] Fine measurement %% :: %g \n" , FINETWIDDLE ) ;
-  fprintf( stdout ,  "[WFLOW] Fine step :: %g \n\n" , FINESTEP ) ;
+  fprintf( stdout , "[WFLOW] Fine step :: %g \n\n" , FINESTEP ) ;
 
   //////////////////////////////////////////
   struct spt_site_herm *Z = NULL ;
@@ -305,11 +305,6 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
     PFOR( i = 0 ; i < LVOLUME ; i++ ) {
       memcpy( &lat[i] , &lat_two[i] , sizeof( struct site ) ) ; 
     }
-    /*
-    struct site *ptr = lat ;
-    lat = lat_two ;
-    lat_two = ptr ;
-    */
     t += delta_t ; // add one time step to the overall time 
 
     curr -> time = t ;

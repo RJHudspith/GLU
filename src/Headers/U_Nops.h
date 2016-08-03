@@ -422,7 +422,7 @@ trace_abc_dag_Re( GLU_real *__restrict tr ,
 void
 trace_ab_dag( GLU_complex *__restrict tr , 
 	      const GLU_complex a[ NCNC ] , 
-	      const GLU_complex b[ NCNC] ) ;
+	      const GLU_complex b[ NCNC ] ) ;
 
 /**
    @fn void trace_ab_dag_Re( GLU_complex *__restrict tr , const GLU_complex a[ NCNC ] , const GLU_complex b[ NCNC] )
@@ -438,7 +438,7 @@ trace_ab_dag( GLU_complex *__restrict tr ,
 void
 trace_ab_dag_Re( GLU_real *__restrict tr , 
 		 const GLU_complex a[ NCNC ] , 
-		 const GLU_complex b[ NCNC] ) ;
+		 const GLU_complex b[ NCNC ] ) ;
 
 /**
    @fn void trace_ab_herm( GLU_real *__restrict tr , const GLU_complex a[ NCNC ] , const GLU_complex b[ NCNC] )

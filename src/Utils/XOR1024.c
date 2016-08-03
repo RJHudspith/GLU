@@ -22,6 +22,9 @@
 
 static uint64_t *table ;
 
+// table index
+static int p ;
+
 // hmmmm, 64-bit generator seeded with 32-bit?
 void
 GLU_set_XOR1024_table( const uint32_t seed )
@@ -42,7 +45,6 @@ GLU_free_XOR1024_table( void )
   free( table ) ;
 }
 
-int p;
 static uint64_t next( void ) 
 {
   uint64_t s0 = table[ p ];
