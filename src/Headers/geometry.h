@@ -54,14 +54,15 @@ get_site_pipiBZ( int x[ ND ] ,
 		 const size_t DIMS ) ;
 
 /**
-   @fn void get_mom_2piBZ( int x[ ND ] , const size_t i , const size_t DIMS )
+   @fn int get_mom_2piBZ( int x[ ND ] , const size_t i , const size_t DIMS )
    @brief Gives the ND-momentum "x" in the \f$ 0 \rightarrow L_\mu \f$ BZ definition when given a lattice index. 
    @param x :: Momenta
    @param i :: Lattice index
    @param DIMS :: Maximum number of directions of momenta
    Useful for translating FFTW's results.
+   @return the sum of the modes for the parity measurement
  **/
-void 
+int 
 get_mom_2piBZ( int x[ ND ] , 
 	       const size_t i , 
 	       const size_t DIMS ) ;
@@ -215,26 +216,5 @@ void
 TwoPI_mpipi_momconv( int MOM[ ND ] , 
 		     const size_t i , 
 		     const size_t DIR ) ;
-
-/**
-   @fn void init_navig( struct site *__restrict lat )
-   @brief Function for generically initialising the lattice navigation
-   
-   @param lat :: Gauge field
-
-   packs the struct lat's "neighbor" and
-   "back" members which will be used for numerical
-   derivatives and alike.
- **/
-void 
-init_navig( struct site *__restrict lat ) ;
-
-/**
-   @fn static void init_geom( void )
-   @brief initialise vital constants
-   Inits the constants #LSQ, #LCU and #LVOLUME
- */
-void
-init_geom( void ) ;
 
 #endif

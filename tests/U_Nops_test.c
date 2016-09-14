@@ -5,7 +5,7 @@
 #include "Mainfile.h"
 
 #include "minunit.h"
-#include "GLU_rng.h"
+#include "par_rng.h"
 #include "gramschmidt.h"
 #include "invert.h"
 
@@ -71,7 +71,7 @@ static char *a_plus_Sxb_test( void ) {
 static char *a_plus_Sxbminc_short_test( void ) {
   GLU_complex hHa[ HERMSIZE ] , Ua[ NCNC ] GLUalign ;
 
-  generate_NCxNC( Ua ) ;
+  par_generate_NCxNC( Ua , 0 ) ;
   gram_reunit( Ua ) ;
 
   Hermitian_proj_short( hHa , Ua ) ;
@@ -110,8 +110,7 @@ static char *cofactor_transpose_test( void ) {
   GLU_complex Ua[ NCNC ] GLUalign ;
 
   // create random SU(N) matrix
-  generate_NCxNC( Ua ) ;
-  gram_reunit( Ua ) ;
+  Sunitary_gen( Ua , 0 ) ;
 
   GLU_complex ctUa[ NCNC ] GLUalign ;
   GLU_complex dt = cofactor_transpose( ctUa , Ua ) ;
@@ -273,8 +272,7 @@ static char *matrix_power_test( void ) {
   GLU_complex Ua[ NCNC ] GLUalign , Ub[ NCNC ] GLUalign ;
 
   // generate a random matrix
-  generate_NCxNC( Ua ) ;
-  gram_reunit( Ua ) ;
+  Sunitary_gen( Ua , 0 ) ;
 
   matrix_power( Ub , Ua , 11 ) ;
 
@@ -365,7 +363,7 @@ static char *rebuild_hermitian_test( void ) {
 static char *Re_trace_abc_dag_test( void ) {
   GLU_complex A[ NCNC ] GLUalign , B[ NCNC ] GLUalign ,
     C[ NCNC ] GLUalign ;
-  Sunitary_gen( A ) ; Sunitary_gen( B ) ; Sunitary_gen( C ) ;
+  Sunitary_gen( A , 0 ) ; Sunitary_gen( B , 0 ) ; Sunitary_gen( C , 0 ) ;
   GLU_real tr ;
   trace_abc_dag_Re( &tr , A , B , C ) ;
   mu_assert("[GLUnit] error : Re_trace_abc_dag is broken", 
@@ -382,8 +380,7 @@ static char *shorten_test( void ) {
   GLU_complex Ua[ NCNC ] GLUalign , rUa[ NCNC ] GLUalign ;
 
   // random SU(N) matrix
-  generate_NCxNC( Ua ) ;
-  gram_reunit( Ua ) ;
+  Sunitary_gen( Ua , 0 ) ;
   
   // test if shorten -> rebuild gives same answer
   shorten( sA , Ua ) ;
@@ -486,12 +483,8 @@ static char *trace_ab_herm_test( void ) {
   GLU_bool is_ok = GLU_TRUE ;
 
   // random gaussians have had RNG checked
-  generate_NCxNC( Ua ) ;
-  generate_NCxNC( Ub ) ;
-
-  // reunitarise
-  gram_reunit( Ua ) ;
-  gram_reunit( Ub ) ;
+  Sunitary_gen( Ua , 0 ) ;
+  Sunitary_gen( Ub , 0 ) ;
 
   // projections have been checked already
   Hermitian_proj( Ha , Ua ) ;
@@ -513,13 +506,10 @@ static char *trace_ab_herm_test( void ) {
 static char *trace_ab_dag_test( void ) {
   GLU_complex Ua[ NCNC ] GLUalign , Ub[ NCNC ] GLUalign , 
     Uab[ NCNC ] GLUalign ;
-  // random gaussians have had RNG checked
-  generate_NCxNC( Ua ) ;
-  generate_NCxNC( Ub ) ;
 
-  // reunitarise
-  gram_reunit( Ua ) ;
-  gram_reunit( Ub ) ;
+  // random gaussians have had RNG checked
+  Sunitary_gen( Ua , 0 ) ;
+  Sunitary_gen( Ub , 0 ) ;
 
   multab_dag( Uab , Ua , Ub ) ;
 
@@ -549,12 +539,8 @@ static char *trace_ab_herm_short_test( void ) {
   GLU_bool is_ok = GLU_TRUE ;
 
   // random gaussians have had RNG checked
-  generate_NCxNC( Ua ) ;
-  generate_NCxNC( Ub ) ;
-
-  // reunitarise
-  gram_reunit( Ua ) ;
-  gram_reunit( Ub ) ;
+  Sunitary_gen( Ua , 0 ) ;
+  Sunitary_gen( Ub , 0 ) ;
 
   // projections have been checked already
   Hermitian_proj( Ha , Ua ) ;

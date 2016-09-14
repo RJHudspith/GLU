@@ -23,7 +23,7 @@
 
 #include "Mainfile.h"
 
-#include "GLU_rng.h"  // generate_NCxNC() is called
+#include "par_rng.h"  // par_generate_NCxNC( ) is called
 
 #if !( defined HAVE_IMMINTRIN_H ) || ( defined SINGLE_PREC )
 
@@ -226,15 +226,11 @@ gram_reunit( GLU_complex *__restrict U )
 
 // generate a random SU(N) matrix
 void 
-Sunitary_gen( GLU_complex Z[ NCNC ] )
+Sunitary_gen( GLU_complex Z[ NCNC ] ,
+	      const uint32_t thread )
 {
-  generate_NCxNC( Z ) ; // generate gaussian distributed elements of matrix
+  par_generate_NCxNC( Z , thread ) ; // random elements of a matrix
   gram_reunit( Z ) ;
-  while( !is_unitary( Z ) ) {
-    fprintf( stderr , "[GRAM] not unitary! Redoing " ) ;
-    generate_NCxNC( Z ) ; 
-    gram_reunit( Z ) ;
-  }
   return ;
 }
 

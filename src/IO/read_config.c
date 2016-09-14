@@ -69,7 +69,7 @@ check_sums( const double plaq ,
     }
   } else if( Latt.head == HIREP_HEADER ) {
     // only check available is the plaquette
-    if( fabs( plaq - HEAD_DATA.plaquette ) > PREC_TOL ) {
+    if( fabs( plaq - HEAD_DATA.plaquette ) > 10*PREC_TOL ) {
       fprintf( stderr , "[IO] HIREP header Plaquette Mismatch %e vs %e "
 	       " < diff > %e ... Leaving \n" , plaq , HEAD_DATA.plaquette , 
 	       fabs( plaq - HEAD_DATA.plaquette ) ) ;

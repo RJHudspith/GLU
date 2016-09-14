@@ -20,7 +20,6 @@
    @file MMUL.c
    @brief matrix-matrix multiply
  */
-
 #include "Mainfile.h"
 
 #if !( defined HAVE_IMMINTRIN_H ) || ( defined SINGLE_PREC )

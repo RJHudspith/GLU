@@ -344,7 +344,7 @@ write_lat( struct site *__restrict lat ,
 		    lat , LOOP_VAR , checktype ) ;
 
   // and begin writing the headers
-  switch( type ) {
+  switch( checktype ) {
   case OUTPUT_HIREP : return GLU_FAILURE ;
   case OUTPUT_SMALL : 
   case OUTPUT_GAUGE :
@@ -366,17 +366,17 @@ write_lat( struct site *__restrict lat ,
   }
 
   // binary output is all the same for these types ...
-  const int SAFETY = have_memory_readers_writers( type ) ;
+  const int SAFETY = have_memory_readers_writers( checktype ) ;
   if( SAFETY != FAST ) {
     fprintf( stdout , "[IO] Using the slower/memory cheaper code \n" ) ;
-    write_binary_data_cheap( lat , out , type , LOOP_VAR ) ;
+    write_binary_data_cheap( lat , out , checktype , LOOP_VAR ) ;
   } else {
     fprintf( stdout , "[IO] Using the faster/memory expensive code \n" ) ;
-    write_binary_data( lat , out , type , LATT_LOOP , LOOP_VAR ) ;
+    write_binary_data( lat , out , checktype , LATT_LOOP , LOOP_VAR ) ;
   }
 
   // need to write out the scidac checksums here
-  switch( type ) {
+  switch( checktype ) {
   case OUTPUT_SCIDAC :
   case OUTPUT_ILDG :
     write_trailing_header_SCIDAC( out , scidac_cksum29 , scidac_cksum31 ) ;

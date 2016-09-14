@@ -27,11 +27,6 @@
 #include "projectors.h"
 #include "staples.h"
 
-// If we are using the dangerous smearing routines ...
-#if ( defined FAST_SMEAR ) || NC > 6
-  #include "random_config.h"
-#endif
-
 // if we have the symanzik one loop we must include a symanzik tadpole
 #ifdef SYMANZIK_ONE_LOOP
   // tadpole improvement only used in symanzik one loop

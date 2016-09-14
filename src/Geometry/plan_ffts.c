@@ -31,12 +31,6 @@
 // FFTW_PATIENT OVERWRITES the data in the arrray given, be warned!
 #define GLU_PLAN FFTW_PATIENT
 
-// if we have these 
-#if ( defined OMP_FFTW ) && ( defined HAVE_OMP_H )
- #include <omp.h>
- static int nthreads = 1 ;
-#endif
-
 // for ease of reading
 enum{ NOPLAN = 0 } ;
 
@@ -51,10 +45,8 @@ parallel_ffts( void )
   } else {
     // in here I set the number of fftw threads to be the same
     // as the usual number of parallel threads ..
-    #pragma omp parallel
-    { nthreads = omp_get_num_threads( ) ; } // set nthreads
-    fftw_plan_with_nthreads( nthreads ) ;
-    fprintf( stdout , "[PAR] FFTW using %d thread(s) \n" , nthreads ) ;
+    fftw_plan_with_nthreads( Latt.Nthreads ) ;
+    fprintf( stdout , "[PAR] FFTW using %d thread(s) \n" , Latt.Nthreads ) ;
   }
 #endif
   return GLU_SUCCESS ;

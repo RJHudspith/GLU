@@ -61,6 +61,24 @@ write_configuration( struct site *lat ,
 		     const char *output_details ) ;
 
 /**
+   @fn int heatbath( const char *infile , const struct hb_info HBINFO , constheader_type head , const char *outfile , const GLU_output storage , const char *output_details )
+   @brief read and check unitarity and gauge invariant quantities
+   @param infile :: input configuration name
+   @param head :: header type (whether we read a config or start afresh)
+   @param outfile :: output file configuration
+   @param storage :: storage type (NO_STORAGE means we don't write it out)
+   @param output_details :: often a header has a string describing it, this is that
+   @return #GLU_SUCCESS or #GLU_FAILURE
+ */
+int
+heatbath( const char *infile ,
+	  const struct hb_info HBINFO ,
+	  const header_mode head ,
+	  const char *outfile , 
+	  const GLU_output storage , 
+	  const char *output_details ) ;
+
+/**
    @fn int read_and_check( const char *infile , const GLU_bool rtrans , const char *outfile , const GLU_output storage , const char *output_details )
    @brief read and check unitarity and gauge invariant quantities
    @param infile :: input configuration name

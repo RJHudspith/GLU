@@ -31,6 +31,9 @@
 #include "GLU_bswap.h"   // byte swapping arrays
 #include "plaqs_links.h" // compute the plaquette
 
+#include "random_config.h" 
+#include "gramschmidt.h"
+
 // takes a HiRep index "i" and converts to the Nersc or my index
 static size_t
 translate_to_GLU_geom( const size_t i )
@@ -56,7 +59,7 @@ read_gauge_field( struct site *__restrict lat ,
 
   uint32_t k = 0 ;
   size_t i ;
-  for( i = 0 ; i < Latt.Volume ; i++ ) {
+  for( i = 0 ; i < LVOLUME ; i++ ) {
     const size_t idx = translate_to_GLU_geom( i ) ;
 
     if( fread( uind , sizeof( double ) , stride , in ) != stride ) {
@@ -99,8 +102,10 @@ read_gauge_field( struct site *__restrict lat ,
 	a += 2 ;
       }
     }
+
 #endif
   }
+  latt_reunitU( lat ) ;
   
   *chksum = k ;
   free( uind ) ;

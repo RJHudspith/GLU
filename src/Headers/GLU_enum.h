@@ -20,9 +20,18 @@
    @file GLU_enum.h
    @brief I have decided as well to include all of the enumerated types here as well
  **/
-
 #ifndef GLU_ENUM_H
 #define GLU_ENUM_H
+
+/**
+   @enum cline_arg
+   @brief command line argument lookup
+ */
+typedef enum{ 
+  HELP = 1 , 
+  INPUT_FILE = 2 , 
+  READ = 4 , 
+  WRITE = 6 } cline_arg ;
 
 /**
    @enum file_prec
@@ -120,7 +129,8 @@ typedef enum
     MODE_GF ,
     MODE_CUTS ,
     MODE_SMEARING ,
-    MODE_CROSS_U1 } GLU_mode ;
+    MODE_CROSS_U1 ,
+    MODE_HEATBATH } GLU_mode ;
 
 /**
    @enum smearing_types
@@ -178,8 +188,7 @@ typedef enum
    @brief enumerate the output types
  */
 typedef enum
-  { 
-    NO_OUTPUT ,
+  { NO_OUTPUT ,
     OUTPUT_SMALL ,  // logically the fewest number of params saved 
     OUTPUT_GAUGE ,  // NERSC's gauge , the top NC-1 rows and then complete
     OUTPUT_NCxNC ,  // the whole matrix, wasteful

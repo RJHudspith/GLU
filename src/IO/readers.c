@@ -53,8 +53,8 @@ complete_top( GLU_complex *__restrict O ,
   O[7] = conj( O[2] * O[3] - O[0] * O[5] ) ;
   O[8] = conj( O[0] * O[4] - O[1] * O[3] ) ;
 #elif NC == 2
-  O[2] = -conj( O[1] ) ;  
-  O[3] =  conj( O[0] ) ; 
+  O[2] = -conj( O[1] ) ;
+  O[3] =  conj( O[0] ) ;
 #else
   // and complete, taken from the gramschmidt code, should consider a minors function ?
   size_t i ;
@@ -84,7 +84,7 @@ complete_top( GLU_complex *__restrict O ,
 static int
 construct_loop_variables( size_t *LATT_LOOP , 
 			  size_t *LOOP_VAR ,
-			  const int type )
+			  const GLU_output type )
 {
   // dump it all in memory...
   switch( type ) {

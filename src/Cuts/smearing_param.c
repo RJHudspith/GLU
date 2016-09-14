@@ -29,6 +29,7 @@
 #include "cut_routines.h"  // momentum cuts
 #include "cut_output.h"    // output file
 #include "geometry.h"      // general geometry for the p-calcs
+#include "init.h"          // init_navig()
 #include "plan_ffts.h"     // FFTW plan wrappers
 #include "plaqs_links.h"   // plaquettes and links calculations
 #include "pspace_landau.h" // momentum space Landau correction

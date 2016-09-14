@@ -50,7 +50,7 @@ AC_PROG_CC
 AM_PROG_CC_C_O
 AC_LANG([C]) 
 AC_PROG_RANLIB ## include a check for libtool if not use ranlib?
-##AM_PROG_AR
+AM_PROG_AR
 AC_C_BIGENDIAN 
 
 ## SET up the m4
@@ -527,7 +527,8 @@ AC_ARG_WITH([RNG],
 	    case ${with_RNG} in
 	    KISS_RNG) AC_DEFINE([KISS_RNG],[],[Keep It Simple Stupid RNG (JKISS32)]) ;;
 	    MWC_1038_RNG) AC_DEFINE([MWC_1038_RNG],[],[Multiply With Carry (1038) selection]) ;;
-	    MWC_4096_RNG) AC_DEFINE([MWC_1038_RNG],[],[Multiply With Carry (4096) selection]) ;;
+	    MWC_4096_RNG) AC_DEFINE([MWC_4096_RNG],[],[Multiply With Carry (4096) selection]) ;;
+	    XOR_1024_RNG) AC_DEFINE([XOR_1024_RNG],[],[XOR (1024) selection]) ;;
 	    GSL) AC_DEFINE([GSL_RNG],[],[GSL default (Mersenne Twister) selection]) ;;
 	    *) AC_MSG_NOTICE([Defaulting to the Well19937a RNG]) ;;
 	    esac

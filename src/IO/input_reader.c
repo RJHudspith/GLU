@@ -32,7 +32,7 @@
 #define GLU_STR_LENGTH 64
 
 // maximum number of tokens
-#define INPUTS_LENGTH 36
+#define INPUTS_LENGTH 64
 
 // tokenize the input file
 struct inputs {
@@ -162,9 +162,11 @@ static int
 config_information( char *details )
 {
   const int details_idx = tag_search( "CONFIG_INFO" ) ;
+  /*
   if( are_equal( INPUT[details_idx].VALUE , "YES" ) ) { 
     return tag_failure( "CONFIG_INFO" ) ; 
   }
+  */
   sprintf( details , "%s" , INPUT[details_idx].VALUE ) ;
   return GLU_SUCCESS ;
 }
@@ -186,6 +188,8 @@ get_mode( GLU_mode *mode )
       *mode = MODE_SMEARING ;
     } else if( are_equal( INPUT[mode_idx].VALUE , "SUNCxU1" ) ) {
       *mode = MODE_CROSS_U1 ;
+    } else if( are_equal( INPUT[mode_idx].VALUE , "HEATBATH" ) ) {
+      *mode = MODE_HEATBATH ;
     } else {
       *mode = MODE_REWRITE ;
     }
@@ -195,23 +199,6 @@ get_mode( GLU_mode *mode )
     const int seed_idx = tag_search( "SEED" ) ;
     if( seed_idx == GLU_FAILURE ) { return tag_failure( "SEED" ) ; }
     sscanf( INPUT[seed_idx].VALUE , "%u" , &Latt.Seed[0] ) ;
-    if( Latt.Seed[0] == 0 ) {
-      fprintf( stdout , "\n[RNG] Generating RNG seed from urandom \n" ) ; 
-      if( initialise_seed( ) == GLU_FAILURE ) return GLU_FAILURE ;
-    }
-    #ifdef KISS_RNG
-    fprintf( stdout , "[RNG] KISS Seed %u \n\n" , Latt.Seed[0] ) ;
-    #elif defined MWC_1038_RNG
-    fprintf( stdout , "[RNG] MWC_1038 Seed %u \n\n" , Latt.Seed[0] ) ;
-    #elif defined MWC_4096_RNG
-    fprintf( stdout , "[RNG] MWC_4096 Seed %u \n\n" , Latt.Seed[0] ) ;
-    #elif defined GSL_RNG
-    fprintf( stdout , "[RNG] GSL (MT) Seed %u \n\n" , Latt.Seed[0] ) ;
-    #elif defined XOR1024_RNG
-    fprintf( stdout , "[RNG] XOR1024 Seed %u \n\n" , Latt.Seed[0] ) ;
-    #else
-    fprintf( stdout , "[RNG] well_19937a Seed %u \n\n" , Latt.Seed[0] ) ;
-    #endif
   }
   return GLU_SUCCESS ;
 }
@@ -327,6 +314,37 @@ header_type( header_mode *HEADINFO )
 	       INPUT[header_idx].VALUE ) ;
       return GLU_FAILURE ;
     }
+  }
+  return GLU_SUCCESS ;
+}
+
+// get the header type
+static int
+read_hb_struct( struct hb_info *HBINFO )
+{
+  // get the value of beta
+  if( setdbl( &( HBINFO -> beta ) , "BETA" ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
+  // # of thermalisations
+  if( setint( &( HBINFO -> therm ) , "THERM" ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
+  // # of iterations
+  if( setint( &( HBINFO -> iterations ) , "ITERS" ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
+  // # of overrelaxations
+  if( setint( &( HBINFO -> Nor ) , "OVER_ITERS" ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
+  // file to save
+  if( setint( &( HBINFO -> Nsave ) , "SAVE" ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
+  // file to save
+  if( setint( &( HBINFO -> Nmeasure ) , "MEASURE" ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
   }
   return GLU_SUCCESS ;
 }
@@ -478,6 +496,7 @@ read_suNC_x_U1( struct u1_info *U1INFO )
   {
     const int U1_meas_idx = tag_search( "U1_MEAS" ) ;
     if( U1_meas_idx == GLU_FAILURE ) { return tag_failure( "U1_MEAS" ) ; }
+    //
     U1INFO -> meas = U1_PLAQUETTE ;
     if( are_equal( INPUT[ U1_meas_idx ].VALUE , "U1_RECTANGLE" ) ) {
       U1INFO -> meas = U1_RECTANGLE ;
@@ -581,13 +600,15 @@ get_input_data( struct infile_data *INFILE ,
   // fill in the input data into a struct
   if( get_mode( &( INFILE -> mode ) ) == GLU_FAILURE ) INPUT_FAILS++ ;
 
-  if( read_gf_struct ( &( INFILE -> GFINFO ) ) == GLU_FAILURE ) INPUT_FAILS++ ;
-
   if( read_cuts_struct( &( INFILE -> CUTINFO ) ) == GLU_FAILURE ) INPUT_FAILS++ ;
 
-  if( read_suNC_x_U1( &( INFILE -> U1INFO ) ) == GLU_FAILURE ) INPUT_FAILS++ ;
+  if( read_gf_struct ( &( INFILE -> GFINFO ) ) == GLU_FAILURE ) INPUT_FAILS++ ;
+
+  if( read_hb_struct( &( INFILE -> HBINFO ) ) == GLU_FAILURE ) INPUT_FAILS++ ;
 
   if( smearing_info( &( INFILE -> SMINFO ) ) == GLU_FAILURE ) INPUT_FAILS++ ;
+
+  if( read_suNC_x_U1( &( INFILE -> U1INFO ) ) == GLU_FAILURE ) INPUT_FAILS++ ;
  
   // are we performing a random transform
   INFILE -> rtrans = rtrans( ) ;

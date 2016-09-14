@@ -80,11 +80,12 @@ write_header_NERSC( FILE *__restrict out ,
 		    const double plaq ,
 		    const uint32_t chksum ,
 		    const char *details ,
-		    const int type )
+		    const GLU_output type )
 {
  // fill in the normal header crap //
  fprintf( out , "BEGIN_HEADER\n" ) ; 
- fprintf( out , "HDR_VERSION = 1.0\n" ) ; 
+ fprintf( out , "HDR_VERSION = 1.0\n" ) ;
+
  switch( type ) {
  case OUTPUT_SMALL : 
    fprintf( out , "DATATYPE = %dD_SU%d_GAUGE_SMALL\n" , 
@@ -133,5 +134,6 @@ write_header_NERSC( FILE *__restrict out ,
    #endif
 #endif
  fprintf( out , "END_HEADER\n" ) ; 
+
  return ;
 }

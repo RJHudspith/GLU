@@ -78,7 +78,6 @@ all_staples( GLU_complex stap[ NCNC ] ,
       multab_suNC( b , a , lat[ b2 ].O[nu] ) ; 
       a_plus_b( stap , b ) ; 
     } break ;
-    break ;
   }
   return ;
 }

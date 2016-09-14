@@ -102,21 +102,22 @@ get_mom_pipi( int x[ ND ] ,
 }
 
 // given a lexicographical site, returns the ND-coordinates
-void 
+int
 get_mom_2piBZ( int x[ ND ] , 
-	       const size_t i , 
+	       const size_t i ,
 	       const size_t DIMS )
 {
-  int mu , subvol = 1 ;
+  int mu , subvol = 1 , sum = 0 ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     if( mu != (int)DIMS ) {
       x[ mu ] = ( ( i - i % subvol ) / subvol ) % Latt.dims[ mu ] ;
       subvol *= Latt.dims[ mu ] ;
+      sum += x[mu] ;
     } else {// set it to 0?
       x[ mu ] = 0 ;
     }
   }
-  return ;
+  return sum ;
 }
 
 // inline for the conversion between 2pi and -pi,pi BZ's
@@ -329,47 +330,3 @@ gen_shift( const size_t i ,
   return gen_site( x ) ; 
 }
 
-// initialises the navigation for our lattice fields
-void 
-init_navig( struct site *__restrict lat )
-{
-  size_t i ; 
-#pragma omp parallel for private(i)
-  for(  i = 0 ; i < LVOLUME ; i++ ) {
-    size_t mu ;
-    for(  mu = 0 ; mu < ND ; mu++ ) {
-      lat[i].neighbor[mu] = gen_shift( i , mu ) ; 
-      lat[i].back[mu] = gen_shift( i , -mu - 1 ) ;  
-    }
-  }
-  return ;
-}
-
-// initialise the lattice information stored in Latt
-void
-init_geom( void )
-{
-  // these are neccessary for geometry and stuff ::  x,y,z,t geometry
-  fprintf( stdout , "\n[DIMENSIONS] ( %zu x" , Latt.dims[0] ) ;
-#if ND == 2
-  Latt.Lcu = Latt.dims[0] ;
-  Latt.Volume = Latt.Lcu * Latt.dims[1] ;
-  fprintf( stdout , " %zu )\n\n" , Latt.dims[1] ) ; 
-  return ;
-#else
-  size_t mu ;
-  Latt.Lsq = Latt.dims[0] ; // defined :: LSQ
-  for( mu = 1 ; mu < ND-2 ; mu++ ) {
-    fprintf( stdout , " %zu x" , Latt.dims[ mu ] ) ;
-    Latt.Lsq *= Latt.dims[mu] ;
-  } 
-  Latt.Lcu = Latt.Lsq * Latt.dims[ ND - 2 ] ;     // defined :: LCU
-  Latt.Volume = Latt.Lcu * Latt.dims[ ND - 1 ] ;  // defined :: LVOLUME
-  fprintf( stdout , " %zu x %zu )\n\n" , Latt.dims[mu] , Latt.dims[ mu+1 ] ) ; 
-#endif
-  // precompute the twiddle factors
-  for( mu = 0 ; mu < ND ; mu++ ) {
-    Latt.twiddles[ mu ] = TWOPI / (double)Latt.dims[ mu ] ;
-  }
-  return ;
-}

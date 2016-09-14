@@ -49,11 +49,12 @@ void
 unitary_gen( GLU_complex Z[ NCNC ] ) ;
 
 /**
-   @fn void Sunitary_gen( GLU_complex Z[ NCNC ] )
+   @fn void Sunitary_gen( GLU_complex Z[ NCNC ] , const uint32_t thread )
    @brief generate a random special-unitary matrix "Z"
    @param Z :: (pseudo) random special-unitary matrix Z
  */
 void 
-Sunitary_gen( GLU_complex Z[ NCNC ] ) ;
+Sunitary_gen( GLU_complex Z[ NCNC ] , 
+	      const uint32_t thread ) ;
 
 #endif

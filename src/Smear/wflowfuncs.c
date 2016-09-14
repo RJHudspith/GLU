@@ -330,7 +330,7 @@ evaluate_scale( double *der ,
     }
   }
   // evaluate at "scale" error flag is -1
-  return solve_spline( x , meas , der , scale , change_up+1 ) ;
+  return solve_spline( x , meas , der , scale , change_up ) ;
 }
 
 // print out the general beginning information
@@ -364,8 +364,8 @@ scaleset( struct wfmeas *curr ,
   size_t i ;
   // traverse back down the linked list
   for( i = 0 ; i < ( count + 1 ) ; i++ ) {
-    time[ ( count + 1 ) - i - 1 ] = curr -> time ;
-    GT[ ( count + 1 ) - i - 1 ] = curr -> Gt ;
+    time[ count - i ] = curr -> time ;
+    GT[ count - i ] = curr -> Gt ;
     curr = curr -> next ;
   }
   if( count > 0 ) {
@@ -385,7 +385,7 @@ scaleset( struct wfmeas *curr ,
       GT[ i ] = time[ i ] * der[ i ] ;
     }
   }
-  w0 = evaluate_scale( der , time , GT , ( count ) , W_0 , "WT" ) ;
+  w0 = evaluate_scale( der , time , GT , count , W_0 , "WT" ) ;
   if( w0 == -1 ) {
     fprintf( stderr , "[WFLOW] cubic solve failure (wt) \n" ) ;
     fprintf( stderr , "[WFLOW] solve needs to bound the value you "

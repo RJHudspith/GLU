@@ -24,10 +24,12 @@
 #include "Mainfile.h"
 
 #include "CUT_wrap.h"       // wrap the cutting operations
-#include "geometry.h"       // general lattice geometry functions
 #include "GLU_memcheck.h"   // basic memory checking
 #include "GF_wrap.h"        // wrap the gauge fixing
-#include "GLU_rng.h"        // call for rng_free()
+#include "givens.h"         // allocating the su2 submatrices
+#include "par_rng.h"        // initialise_par_rng()
+#include "init.h"           // init_latt()
+#include "KPHB.h"           // pseudo-heatbath updates
 #include "OBS_wrap.h"       // standard observable calculations (default)
 #include "random_config.h"  // random transform
 #include "read_headers.h"   // read the header data
@@ -37,20 +39,16 @@
 #include "SUNCxU1_config.h" // compute SU(NC)xU(1) link matrices
 #include "taylor_logs.h"    // Taylor series brute force logarithm
 #include "writers.h"        // write out a configuration
-#include "givens.h"         // allocating the su2 submatrices
 
 // allow for some very necessary precomputations ...
 #if NC > 3 
-  #include "givens.h"       // precomputes all the SU(2) indices  
   #include "taylor_logs.h"  // precomputes Taylor series coefficients
 #endif
 
 // initialisations
 void
 attach_GLU( void )
-{  
-  // create an array of the su2 subgroups
-  compute_pertinent_indices( ) ;
+{
   // NC-generic precomputations
 #if NC > 3
   // factorial computation for the exponentiation routines
@@ -77,10 +75,12 @@ read_file( struct head_data *HEAD_DATA ,
   /// here we include the usual stuff look at header for global stuff
   // open our configuration
   FILE *infile = fopen( config_in , "r" ) ;
-  if ( infile == NULL ) {
+  /*
+  if( infile == NULL ) {
     fprintf( stderr , "[IO] error opening file :: %s\n" , config_in ) ;
     return NULL ;
   }
+  */
  
   // initialise the configuration number to zero
   struct head_data tmp ;
@@ -91,7 +91,7 @@ read_file( struct head_data *HEAD_DATA ,
   } 
 
   // initialise geometry so that we can use LVOLUME and stuff
-  init_geom( ) ;
+  init_latt( ) ;
 
   // check for having enough memory for the gauge field
   if( have_memory_gauge( ) == GLU_FAILURE ) {
@@ -136,7 +136,10 @@ read_file( struct head_data *HEAD_DATA ,
   // set the header info
   *HEAD_DATA = tmp ;
 
-  fclose( infile ) ;
+  // free it if it was opened
+  if( infile != NULL ) {
+    fclose( infile ) ;
+  }
 
   // and finally set the header data into a constant struct
   return lat ;
@@ -155,6 +158,31 @@ write_configuration( struct site *lat ,
   fprintf( stdout , "[IO] Configuration written to %s \n", outfile ) ; 
   fclose( out_config ) ;
   return ;
+}
+
+// performs heat-bath updates
+int
+heatbath( const char *infile ,
+	  const struct hb_info HBINFO ,
+	  const header_mode head , 
+	  const char *outfile , 
+	  const GLU_output storage , 
+	  const char *output_details )
+{
+  struct head_data HEAD_DATA ;
+  struct site *lat = read_file( &HEAD_DATA , infile ) ;
+
+  // should print out a warning
+  if( lat == NULL ) return GLU_FAILURE ;
+
+  // heatbath updates
+  hb_update( lat , HBINFO , infile , storage , 
+	     output_details , (head == UNIT_GAUGE || head == RANDOM_CONFIG) ) ;
+  
+  // free the gauge fields
+  free( lat ) ;
+
+  return GLU_SUCCESS ;
 }
 
 // checks unitarity and can write out a configuration
@@ -176,7 +204,7 @@ read_and_check( const char *infile ,
 
   gauge( lat ) ;
 
-  if( storage != NO_OUTPUT ) {
+  if( Latt.argc == WRITE ) {
     write_configuration( lat , outfile , storage , output_details ) ;
   }
 
@@ -223,7 +251,7 @@ read_and_fix( const char *infile ,
 
   GF_wrap( infile , lat , GFINFO , SMINFO , HEAD_DATA ) ;
 
-  if( storage != NO_OUTPUT ) {
+  if( Latt.argc == WRITE ) {
     write_configuration( lat , outfile , storage , output_details ) ;
   }
 
@@ -250,7 +278,7 @@ read_and_smear( const char *infile ,
 
   SM_wrap_struct( lat , SMINFO ) ;
 
-  if( storage != NO_OUTPUT ) {
+  if( Latt.argc == WRITE ) {
     write_configuration( lat , outfile , storage , output_details ) ;
   }
 
@@ -277,7 +305,7 @@ read_and_U1( const char *infile ,
 
   suNC_cross_u1( lat , U1INFO ) ;
 
-  if( storage != NO_OUTPUT ) {
+  if( Latt.argc == WRITE ) {
     write_configuration( lat , outfile , storage , output_details ) ;
   }
 
@@ -290,8 +318,8 @@ void
 unstick_GLU( void )
 {
   // free the rng if it has been set
-  rng_free( ) ; 
-  free_su2_data( ) ; // frees the information about SU(2) subgroups
+  free_par_rng( ) ; 
+  free_latt( ) ;
 // if we have to precompute the factorial we free the memory here
 #if ( NC > 3 )
   #if !( defined HAVE_LAPACKE_H || defined HAVE_GSL )

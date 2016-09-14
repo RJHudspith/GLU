@@ -26,8 +26,8 @@
 
 #include "Mainfile.h"
 
-#include "geometry.h"     // init_navig is called for the temporary
 #include "GLU_splines.h"  // cubic_eval and derivative calculation
+#include "init.h"         // init_navig is called for the temporary
 #include "plaqs_links.h"  // clover and plaquette measurements
 #include "projectors.h"   // smearing projections
 #include "wflowfuncs.h"   // wilson flow general routines
@@ -266,7 +266,10 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
       // compute the error I will use the average plaquette ...
       new_plaq = (double)av_plaquette( lat_two ) ;
 
-      errmax = fabsl( ( new_plaq - old_plaq ) / ( yscal ) ) ;
+      // so the problem is that at large t the plaquettes become very close so the 
+      // step gets pretty wild. My way of compensating this is just to multiply by t^2
+      // this is in some sense tuning the stepsize for the quantity t^2 E^2
+      errmax = fabsl( (t+delta_t)*(t+delta_t) * ( new_plaq - old_plaq ) / ( yscal ) ) ;
       errmax /= ADAPTIVE_EPS ;
 
       // Break the while loop if conditions are satisfied

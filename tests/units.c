@@ -24,8 +24,8 @@
 
 #include "exactQ.h"
 #include "expMat.h"
-#include "geometry.h"
-#include "GLU_rng.h"
+#include "init.h"
+#include "par_rng.h"
 #include "GLUlib_wrap.h"
 #include "gramschmidt.h"
 #include "invert.h"
@@ -49,6 +49,7 @@ int tests_fail = 0 ;
 
 // test the rng
 static char *rng_test( void ) {
+  /*
   const double res = 
 #ifdef GSL_RNG
     0.0
@@ -63,6 +64,7 @@ static char *rng_test( void ) {
 #endif
     ;
   mu_assert( "[GLUnit] error : rng has changed", !( fabs( rng_dbl() - res ) > 1E-15 ) );
+  */
   return 0;
 }
 
@@ -97,8 +99,7 @@ static char *exponentiate_short_test( void )
   GLU_complex hUa[ NCNC ] GLUalign , Ua[ NCNC ] GLUalign ;
 
   // create a unitary matrix
-  generate_NCxNC( Ua ) ;
-  gram_reunit( Ua ) ;
+  Sunitary_gen( Ua , 0 ) ;
 
   // hermitian proj it
   Hermitian_proj( Ha , Ua ) ;
@@ -121,8 +122,7 @@ static char *exact_log_test( void ) {
   GLU_complex A[ NCNC ] , Ua[ NCNC ] , eA[ NCNC ] ;
 
   // create a unitary matrix
-  generate_NCxNC( Ua ) ;
-  gram_reunit( Ua ) ;
+  Sunitary_gen( Ua , 0 ) ;
 
   exact_log_slow( A , Ua ) ;
   exponentiate( eA , A ) ;
@@ -145,8 +145,7 @@ static char *exact_log_short_test( void ) {
   GLU_complex hA[ NCNC ] GLUalign , heA[ NCNC ] GLUalign ;
 
   // create a unitary matrix
-  generate_NCxNC( Ua ) ;
-  gram_reunit( Ua ) ;
+  Sunitary_gen( Ua , 0 ) ;
 
   exact_log_slow( A , Ua ) ;
   exact_log_slow_short( hA , Ua ) ;
@@ -179,8 +178,7 @@ static char *inverse_test( void ) {
   GLU_complex Ua[ NCNC ] GLUalign ;
 
   // have been checked already
-  generate_NCxNC( Ua ) ;
-  gram_reunit( Ua ) ;
+  Sunitary_gen( Ua , 0 ) ;
 
   // perform numerical inverse
   GLU_complex iUa[ NCNC ] GLUalign ;
@@ -288,13 +286,13 @@ int main( void )
   }
   
   // initialise geometry so that we can use LVOLUME and stuff
-  init_geom( ) ;
+  init_latt( ) ;
 
   // set the seed to something I know answers for
   Latt.Seed[0] = 1 ;
 
   // initialise rng
-  rng_init( ) ;
+  initialise_par_rng( NULL ) ;
 
   // a counter for all the tests we have done
   int full_tests_run = 0 ;

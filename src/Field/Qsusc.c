@@ -89,7 +89,7 @@ compute_Qsusc( struct site *__restrict lat ,
 	       const size_t measurement )
 {
   // normalisations
-  const double NORM = -0.001583143494411527678811 ; // 1.0/(64*Pi*Pi)
+  const double NORM = -0.001583143494411527678811 ; // -1.0/(64*Pi*Pi)
   const double NORMSQ = NORM * NORM ;
   const double mulfac = NORMSQ / (double)LVOLUME ;
 
@@ -149,7 +149,7 @@ compute_Qsusc( struct site *__restrict lat ,
     sum += creal( qtop[i] ) ;
     sumsq += creal( qtop[i] * qtop[i] ) ;
   }
-  fprintf( stdout , "\nQTOP %f %f \n" , sum * NORM , sumsq * NORMSQ ) ;
+  fprintf( stdout , "\n[QTOP] %f %f \n" , sum * NORM , sumsq * NORMSQ ) ;
   #endif
   
   // if we have fftw, use it for the contractions
@@ -263,8 +263,13 @@ compute_Qsusc_step( struct site *__restrict lat ,
   fprintf( stdout , "[QSUSC] performing %zu measurements at %zu" 
 	   " smearing steps\n" , CUTINFO.max_t , SMINFO.smiters ) ;
 
+  // compute the topological correlator in r and the temporal correlator
+  if( compute_Qsusc( lat , CUTINFO , 0 ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
+
   // perform 10 measurements each stepping smiters ahead
-  for( measurement = 0 ; measurement < CUTINFO.max_t ; measurement++ ) {
+  for( measurement = 1 ; measurement < CUTINFO.max_t ; measurement++ ) {
 
     // do some smearing ...
     SM_wrap_struct( lat , SMINFO ) ;

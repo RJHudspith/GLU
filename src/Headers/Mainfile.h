@@ -38,6 +38,14 @@
   #undef HAVE_CILK_H
 #endif
 
+// wrap these openmp functions
+#if (defined _OPENMP ) && (defined HAVE_OMP_H )
+  #include <omp.h>
+  #define get_GLU_thread() omp_get_thread_num()
+#else
+  #define get_GLU_thread() (0)
+#endif
+
 // generic includes ...
 #include <stdio.h>
 #include <math.h>

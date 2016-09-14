@@ -760,14 +760,20 @@ Defines for the gauge fixing routines ( Landau/{}.c )
   #include <gsl/gsl_rng.h>
   #define RNG_TABLE 1
 #elif defined KISS_RNG
-  #define RNG_TABLE 4
+  #define RNG_TABLE 5
 #elif defined MWC_1038_RNG
   #define RNG_TABLE 1038
 #elif defined MWC_4096_RNG
   #define RNG_TABLE 4096
+#elif defined XOR_1024_RNG
+  #define RNG_TABLE 16
 #else
+/*
   #define WELL_RNG
   #define RNG_TABLE 624
+*/
+  #define WELL_RNG
+  #define RNG_TABLE 16
 #endif
 
 /////

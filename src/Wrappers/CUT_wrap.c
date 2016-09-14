@@ -28,8 +28,9 @@
 #include "POLY.h" // for the static potential
 #include "Qsusc.h" // for the topological susceptibility correlator
 #include "smearing_param.h" // smeared gluon propagator
+#include "balls.h" // GLU balls
 
-// wrapper for the various momentum-cutting and other measurement options
+// wrapper for the variousfa momentum-cutting and other measurement options
 void
 cuts_wrap_struct( struct site *__restrict lat , 
 		  const struct cut_info CUTINFO ,
@@ -55,6 +56,8 @@ cuts_wrap_struct( struct site *__restrict lat ,
     compute_Qsusc_step( lat , CUTINFO , SMINFO ) ;
     break ;
   case GLUON_PROPS :
+    GLU_balls( lat , SMINFO ) ;
+    break ;
   case EXCEPTIONAL :
   case NONEXCEPTIONAL :
   case FIELDS :

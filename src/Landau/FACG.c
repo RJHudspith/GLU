@@ -41,6 +41,7 @@
   #define LINE_NSTEPS 3
 #endif
 
+// if we are using the FACG the line search usually suggests a smaller set of probes
 #ifdef HAVE_FFTW3_H
   #if (NC > 3) && (defined deriv_full)
   static const double al[LINE_NSTEPS] = { 0.0 , 0.1 , 0.2 , 0.3 } ;
@@ -196,6 +197,33 @@ exponentiate_gauge( GLU_complex *__restrict *__restrict gauge ,
   return ;
 }
 
+static double
+lsearch( GLU_complex *__restrict *__restrict gauge , 
+	 const struct site *__restrict lat ,
+	 const GLU_complex *__restrict *__restrict in ,
+	 const double *alphas ,
+	 const size_t Nalphas )
+{
+  double val[ Nalphas ] ;
+  size_t counter = 0 ;
+  val[0] = zero_alpha ; // 0 is a freebie
+#ifdef verbose
+  fprintf( stdout , "[GF] Landau CG probe :: %f %1.15f \n" , alphas[0] , val[0] ) ;
+#endif
+  for( counter = 1 ; counter < Nalphas ; counter++ ) {
+    exponentiate_gauge( gauge , (const GLU_complex**)in , alphas[counter] ) ;
+    val[counter] = evaluate_alpha( (const GLU_complex**) gauge , 
+				   lat , ND , LVOLUME , 0 ) ;
+    // the last argument of this has to be 0 !!! 
+#ifdef verbose
+    fprintf( stdout ,  "[GF] Landau CG probe :: %f %1.15f \n" , 
+	     alphas[counter] , val[counter] ) ;
+#endif
+  }
+  // defined in CG.c
+  return approx_minimum( Nalphas , alphas , val ) ;
+}
+
 /**
    @fn static double line_search( GLU_complex *__restrict *__restrict gauge , const struct site *__restrict lat , const GLU_complex *__restrict *__restrict in )
    @brief line search for the minimum of the gauge functional
@@ -205,25 +233,18 @@ line_search( GLU_complex *__restrict *__restrict gauge ,
 	     const struct site *__restrict lat ,
 	     const GLU_complex *__restrict *__restrict in )
 {
-  size_t counter = 0 ;
-  double val[LINE_NSTEPS] ;
-  val[0] = zero_alpha ; // 0 is a freebie
-#ifdef verbose
-  fprintf( stdout , "[GF] Landau CG probe :: %f %1.15f \n" , al[0] , val[0] ) ;
-#endif
-  for( counter = 1 ; counter < LINE_NSTEPS ; counter++ ) {
-    exponentiate_gauge( gauge , (const GLU_complex**)in , al[counter] ) ;
-    val[counter] = evaluate_alpha( (const GLU_complex**) gauge , 
-				   lat , ND , LVOLUME , 0 ) ;
-    // the last argument of this has to be 0 !!! 
-#ifdef verbose
-    fprintf( stdout ,  "[GF] Landau CG probe :: %f %1.15f \n" , 
-	     al[counter] , val[counter] ) ;
-#endif
+  // for the early ones we have a bigger possible step to push us
+  // deep down the initial gradient
+  /*
+  if( early_count < 3 ) {
+    double al_early[ 5 ] = { 0.0 , 0.2 , 0.4 , 0.6 , 0.8 } ;
+    early_count++ ;
+    return lsearch( gauge , lat , in , al_early , 5 ) ;
+  } else {
+    return lsearch( gauge , lat , in , al , LINE_NSTEPS ) ;
   }
-
-  // defined in CG.c
-  return approx_minimum( LINE_NSTEPS , al , val ) ;
+  */
+  return lsearch( gauge , lat , in , al , LINE_NSTEPS ) ;
 }
 
 /**

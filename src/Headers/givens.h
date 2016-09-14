@@ -26,23 +26,6 @@
 #define GLU_GIVENS_H
 
 /**
-   @fn void compute_pertinent_indices( void )
-   @brief computes the various su2 subgoup indices of our NCxNC matrix
-   @warning allocates memory
-
-   I would like to thank Chroma, and in particular Edwards for this code.
- */
-void
-compute_pertinent_indices( void ) ;
-
-/**
-   @fn void free_su2_data( void )
-   @brief frees the su2 subgroup struct allocated in givens.c
- */
-void
-free_su2_data( void ) ;
-
-/**
    @fn void givens_reunit( double complex U[ NCNC ] ) ;
    @brief reunitarises a matrix with trace maximisation
    @param U :: matrix being reunitarised
@@ -66,42 +49,6 @@ OrRotation( GLU_complex *s0 ,
 	    GLU_complex *s1 ,
 	    const GLU_complex U[ NCNC ] , 
 	    const double OrParam ,
-	    const int su2_index ) ;
-
-/**
-   @fn void shortened_su2_multiply( GLU_complex *w , const GLU_complex a , const GLU_complex b , const GLU_complex c , const GLU_complex d , const int su2_index )
-   @brief su(2) multiply w = su2[ su2_index ] * w
-   @param w :: matrix being hit on the left
-   @param a :: top left su(2) element
-   @param b :: top right su(2) element
-   @param c :: bottom left su(2) element
-   @param d :: bottom right su(2) element
-   @param su2_index :: index describing which subgroup we are using
- */
-void
-shortened_su2_multiply( GLU_complex *w , 
-			const GLU_complex a , 
-			const GLU_complex b , 
-			const GLU_complex c , 
-			const GLU_complex d , 
-			const int su2_index ) ;
-
-/**
-   @fn void shortened_su2_multiply_dag( GLU_complex *U , const GLU_complex a , const GLU_complex b , const GLU_complex c , const GLU_complex d , const int su2_index )
-   @brief su(2) multiply U = U * su2[ su2_index ] ^{dagger}
-   @param w :: matrix being hit on the right by a daggered SU(2)
-   @param a :: top left su(2) element
-   @param b :: top right su(2) element
-   @param c :: bottom left su(2) element
-   @param d :: bottom right su(2) element
-   @param su2_index :: index describing which subgroup we are using
- */
-void
-shortened_su2_multiply_dag( GLU_complex *U , 
-			    const GLU_complex a , 
-			    const GLU_complex b , 
-			    const GLU_complex c , 
-			    const GLU_complex d , 
-			    const int su2_index ) ;
+	    const size_t su2_index ) ;
 
 #endif

@@ -51,6 +51,9 @@ struct latt_info {
   header_mode head ;// Which header type are we using
   uint32_t Seed[ 1 ] ; // rng seed, inbuilt KISS uses four of these
   double twiddles[ ND ] ; // fourier transform twiddles
+  uint32_t Nthreads ; // number of threads
+  struct su2_subgroups *su2_data ; // su2 subgroups
+  cline_arg argc ; // command line arguments
 } ;
 
 /**
@@ -210,6 +213,20 @@ struct cut_info {
 } ;
 
 /**
+   @struct draughtboard
+   @param red :: even sites
+   @param black :: odd sites
+   @param Nred :: number of even sites
+   @param Nblack :: number of odd sites
+ */
+struct draughtboard {
+  size_t *red ;
+  size_t *black ;
+  size_t Nred ;
+  size_t Nblack ;
+} ;
+
+/**
    @struct sm_info
    @brief smearing information storage
    @param dir :: spatial or temporal smearing is allowed
@@ -220,6 +237,19 @@ struct sm_info {
   GLU_smeardir dir ; // direction ND or ND - 1
   size_t smiters ; // number of smearing iterations
   smearing_types type ; // type of smearing
+} ;
+
+/**
+   @struct hb_info
+   @brief heatbath information storage
+ */
+struct hb_info {
+  double beta ;
+  size_t iterations ;
+  size_t Nmeasure ;
+  size_t Nor ;
+  size_t Nsave ;
+  size_t therm ;
 } ;
 
 /**
@@ -261,8 +291,9 @@ struct u1_info {
    @brief one struct to rule them all 
  */
 struct infile_data {
-  struct gf_info GFINFO ;
   struct cut_info CUTINFO ;
+  struct gf_info GFINFO ;
+  struct hb_info HBINFO ;
   struct sm_info SMINFO ;
   struct u1_info U1INFO ;
   header_mode head ;

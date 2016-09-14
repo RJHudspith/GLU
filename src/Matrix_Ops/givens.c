@@ -31,7 +31,8 @@
 
 #include "Mainfile.h"
 
-#include "givens.h" // alphabetising
+#include "givens.h"     // alphabetising
+#include "SU2_rotate.h" // su2 subgroup rotations
 
 /**
    @param GIVE_PRECOND
@@ -43,27 +44,6 @@
 #ifdef GIVE_PRECOND
   #include "gramschmidt.h" 
 #endif
-
-// allocate the struct somewhere
-static struct su2_subgroups *su2_data = NULL ;
-
-// overrelaxation
-static void
-overrelax( GLU_complex *s0 , 
-	   GLU_complex *s1 , 
-	   const double OrParam )
-{
-  // I use the MILC OR step here
-  register const GLU_real asq = cimag(*s0)*cimag(*s0) 
-    + creal(*s1)*creal(*s1) + cimag(*s1)*cimag(*s1) ;
-  register const GLU_real a0sq = creal(*s0)*creal(*s0) ;
-  register const GLU_real x = ( OrParam * a0sq + asq ) / ( a0sq + asq ) ;
-  register const GLU_real r = sqrt( a0sq + x*x*asq ) ;
-  register const GLU_real xdr = x/r ;
-  *s0 = creal( *s0 ) / r + I * cimag( *s0 ) * xdr ;
-  *s1 *= xdr ;
-  return ;
-}
 
 #if NC == 3
 
@@ -220,10 +200,10 @@ rotation( GLU_complex U[ NCNC ] ,
 	  GLU_complex w[ NCNC ] ,
 	  const size_t su2_index )
 {
-  const size_t a = su2_data[ su2_index ].idx_a ;
-  const size_t b = su2_data[ su2_index ].idx_b ;
-  const size_t c = su2_data[ su2_index ].idx_c ;
-  const size_t d = su2_data[ su2_index ].idx_d ;
+  const size_t a = Latt.su2_data[ su2_index ].idx_a ;
+  const size_t b = Latt.su2_data[ su2_index ].idx_b ;
+  const size_t c = Latt.su2_data[ su2_index ].idx_c ;
+  const size_t d = Latt.su2_data[ su2_index ].idx_d ;
 
   register GLU_complex s0 = U[a] + conj( U[d] ) ;
   register GLU_complex s1 = U[b] - conj( U[c] ) ;
@@ -235,7 +215,7 @@ rotation( GLU_complex U[ NCNC ] ,
   s1 *= scale ;
 
   // these overwrite w and U, utilising the fact that most 
-  // of the rotation matrixis filled with zeros, ONLY does 
+  // of the rotation matrix is filled with zeros, ONLY does 
   // the necessary operations.
   // Factor of 10x for SU(8) for doing this, old code is back 
   // in the SVN for checking
@@ -245,43 +225,6 @@ rotation( GLU_complex U[ NCNC ] ,
   return ;
 }
 #endif
-
-// compute the relevant su2 indices IIRC shamelessly stolen from chroma
-void
-compute_pertinent_indices( void )
-{
-  su2_data = (struct su2_subgroups*)malloc( NSU2SUBGROUPS * sizeof( struct su2_subgroups ) ) ;
-  size_t su2_index ;
-  for( su2_index = 0 ; su2_index < NSU2SUBGROUPS ; su2_index ++ ) {
-    size_t i1, i2 ;
-    size_t found = 0 ;
-    size_t del_i = 0 ;
-    size_t index = 0 ;
-    while ( del_i < (NC-1) && found == 0 ) {
-      del_i++;
-      for ( i1 = 0; i1 < (NC-del_i); i1++ ) {
-	if ( index == su2_index ) {
-	  found = 1;
-	  break;
-	}
-	index++;
-      }
-    }
-    i2 = i1 + del_i ;
-    su2_data[ su2_index ].idx_a = i1 + NC * i1 ;
-    su2_data[ su2_index ].idx_b = i2 + NC * i1 ;
-    su2_data[ su2_index ].idx_c = i1 + NC * i2 ;
-    su2_data[ su2_index ].idx_d = i2 + NC * i2 ;
-  }
-  return ;
-}
-
-// free the struct
-void
-free_su2_data()
-{
-  free( su2_data ) ;
-}
 
 // Cabibbo-Marinari projections for trace maximisation
 void
@@ -361,77 +304,6 @@ givens_reunit( GLU_complex U[ NCNC ] )
   }
   // set U == to the maximal trace-inducing rotation
   equiv( U , w ) ;
-  return ;
-}
-
-// NC generic givens rotations
-void
-OrRotation( GLU_complex *s0 , 
-	    GLU_complex *s1 ,
-	    const GLU_complex U[ NCNC ] , 
-	    const double OrParam ,
-	    const int su2_index )
-{
-  *s0 = U[su2_data[ su2_index ].idx_a] 
-    + conj( U[su2_data[ su2_index ].idx_d] ) ;
-  *s1 = U[su2_data[ su2_index ].idx_b] 
-    - conj( U[su2_data[ su2_index ].idx_c] ) ;
-
-  // overrelax
-  overrelax( s0 , s1 , OrParam ) ;
-  return ;
-}
-
-// compactified (sparse matrix rep) su(2) multiply of,
-//
-//     | a b || M[row(a)] M[row(a)++] .... |   
-//     | c d || M[row(c)] M[row(c)++] .... |
-//
-void
-shortened_su2_multiply( GLU_complex *w , 
-			const GLU_complex a , 
-			const GLU_complex b , 
-			const GLU_complex c , 
-			const GLU_complex d , 
-			const int su2_index )
-{
-  GLU_complex W1 , W2 ; // temporaries
-  const size_t row_a = NC * (int)( su2_data[ su2_index ].idx_a / NC ) ;
-  const size_t row_c = NC * (int)( su2_data[ su2_index ].idx_c / NC ) ;
-  size_t i ;
-  for( i = 0 ; i < NC ; i++ ) {
-    W1 = w[ row_a + i ] ;
-    W2 = w[ row_c + i ] ;
-    w[ row_a + i ] = a * W1 + b * W2 ;
-    w[ row_c + i ] = c * W1 + d * W2 ;
-  }
-  return ;
-}
-
-//  compactified M.su(2)^{\dagger} multiply of,
-//
-//   | M[col(a)]    M[col(b)]    | | a b |^{\dagger}
-//   | M[col(a)+NC] M[col(b)+NC] | | c d |
-//   | .....        .......      |
-//
-void
-shortened_su2_multiply_dag( GLU_complex *U , 
-			    const GLU_complex a , 
-			    const GLU_complex b , 
-			    const GLU_complex c , 
-			    const GLU_complex d , 
-			    const int su2_index )
-{
-  GLU_complex U1 , U2 ; // temporaries for caching
-  const size_t col_a = (int)( su2_data[ su2_index ].idx_a % NC ) ;
-  const size_t col_b = (int)( su2_data[ su2_index ].idx_b % NC ) ;
-  size_t i ;
-  for( i = 0 ; i < NC ; i++ ) {
-    U1 = U[ col_a + i*NC ] ;
-    U2 = U[ col_b + i*NC ] ;
-    U[ col_a + i*NC ] = U1 * conj(a) + U2 * conj(b) ;
-    U[ col_b + i*NC ] = U1 * conj(c) + U2 * conj(d) ;
-  }
   return ;
 }
 

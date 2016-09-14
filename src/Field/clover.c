@@ -1060,7 +1060,7 @@ compute_Gmunu_array( GLU_complex *__restrict qtop , // an LVOLUME array for the 
     compute_q( Qmat , lat , i , 3 , 1 , 2 , 0  ) ;
     qtop[i] += trace( Qmat ) ;
     //
-    compute_q( Qmat, lat , i , 3 , 2 , 0 , 1  ) ;
+    compute_q( Qmat , lat , i , 3 , 2 , 0 , 1  ) ;
     qtop[i] += trace( Qmat ) ;
   }
   return ;

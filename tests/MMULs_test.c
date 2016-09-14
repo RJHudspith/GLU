@@ -4,7 +4,7 @@
  */
 #include "Mainfile.h"
 
-#include "GLU_rng.h"
+#include "par_rng.h"
 #include "gramschmidt.h"
 #include "minunit.h"
 
@@ -30,12 +30,8 @@ are_equal( GLU_complex a[ NCNC ] ,
 static char *reunit_test( void )
 {
   // random gaussians have had RNG checked
-  generate_NCxNC( Ua ) ;
-  generate_NCxNC( Ub ) ;
-
-  // reunitarise
-  gram_reunit( Ua ) ;
-  gram_reunit( Ub ) ;
+  Sunitary_gen( Ua , 0 ) ;
+  Sunitary_gen( Ub , 0 ) ;
 
   mu_assert( "[GLUnit] error : reunit2 is broken" , is_unitary( Ua ) ) ;
   mu_assert( "[GLUnit] error : reunit2 is broken" , is_unitary( Ub ) ) ;
