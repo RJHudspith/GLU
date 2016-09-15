@@ -28,7 +28,6 @@
 #include "POLY.h" // for the static potential
 #include "Qsusc.h" // for the topological susceptibility correlator
 #include "smearing_param.h" // smeared gluon propagator
-#include "balls.h" // GLU balls
 
 // wrapper for the variousfa momentum-cutting and other measurement options
 void
