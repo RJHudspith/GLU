@@ -25,8 +25,6 @@ update_lattice( struct site *lat ,
 		const struct draughtboard db ,
 		const size_t Nor )
 {
-  start_timer() ;
-
   // do a heat bath
   hb_lattice( lat , staple , inverse_beta , db ) ;
 
@@ -39,7 +37,6 @@ update_lattice( struct site *lat ,
   // reunitarise the gauge field? If NC gets large this can be a problem
   latt_reunitU( lat ) ;
 
-  print_time() ;
   return ;
 }
 

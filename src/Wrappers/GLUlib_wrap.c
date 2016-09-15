@@ -177,7 +177,7 @@ heatbath( const char *infile ,
 
   // heatbath updates
   hb_update( lat , HBINFO , infile , storage , 
-	     output_details , (head == UNIT_GAUGE || head == RANDOM_CONFIG) ) ;
+	     output_details , !(head == UNIT_GAUGE || head == RANDOM_CONFIG) ) ;
   
   // free the gauge fields
   free( lat ) ;

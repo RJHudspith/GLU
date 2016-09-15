@@ -119,6 +119,7 @@ free_par_rng( void )
 #else
     free_par_WELL_512( ) ;
 #endif
+    RNG_inited = GLU_FALSE ;
   }
   return ;
 }
