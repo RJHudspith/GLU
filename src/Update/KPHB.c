@@ -20,23 +20,23 @@
 
 static void
 update_lattice( struct site *lat ,
-		struct site *staple ,
 		const double inverse_beta ,
 		const struct draughtboard db ,
 		const size_t Nor )
 {
+  start_timer() ;
   // do a heat bath
-  hb_lattice( lat , staple , inverse_beta , db ) ;
+  hb_lattice( lat , inverse_beta , db ) ;
 
   // and some number of over-relaxations
   size_t or ;
   for( or = 0 ; or < Nor ; or++ ) {
-    OR_lattice( lat , staple , db ) ;
+    OR_lattice( lat , db ) ;
   }
 
   // reunitarise the gauge field? If NC gets large this can be a problem
   latt_reunitU( lat ) ;
-
+  print_time() ;
   return ;
 }
 
@@ -75,11 +75,6 @@ hb_update( struct site *lat ,
   struct draughtboard db ;
   init_cb( &db , LVOLUME , ND ) ;
 
-  // temporary space for staples
-  struct site *staple = NULL ; 
-  GLU_malloc( (void**)&staple , ALIGNMENT , 
-	      (db.Nred>db.Nblack?db.Nred:db.Nblack)*sizeof( struct site ) ) ;
-
   // this guy appears throughout the HB algorithm
   const double inverse_beta = NC/(HBINFO.beta) ;
 
@@ -96,7 +91,7 @@ hb_update( struct site *lat ,
   // thermalise
   start_timer( ) ;
   for( i = 0 ; i < HBINFO.therm ; i++ ) {
-    update_lattice( lat , staple , inverse_beta , db , HBINFO.Nor ) ;
+    update_lattice( lat , inverse_beta , db , HBINFO.Nor ) ;
     if( !(i&15) ) {
       fprintf( stdout , "\n[UPDATE] config %zu done \n" , i ) ;
       print_time() ;
@@ -107,7 +102,7 @@ hb_update( struct site *lat ,
   // iterate the number of runs
   const size_t start = Latt.flow ;
   for( i = Latt.flow ; i < HBINFO.iterations ; i++ ) {
-    update_lattice( lat , staple , inverse_beta , db , HBINFO.Nor ) ;
+    update_lattice( lat , inverse_beta , db , HBINFO.Nor ) ;
     // set the lattice flow
     // if we are saving the data print out the plaquette and write a file
     if( i%HBINFO.Nmeasure == 0 ) {
@@ -128,9 +123,6 @@ hb_update( struct site *lat ,
 
   // free the draughtboard
   free_cb( &db ) ;
-
-  // free the staples
-  free( staple ) ;
 
   // free the rng
   free_par_rng( ) ;

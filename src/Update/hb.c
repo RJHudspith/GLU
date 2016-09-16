@@ -19,7 +19,7 @@
 #define NHBMAX (25)
 
 // Creutz heatbath algorithm
-static inline GLU_bool
+static int
 Creutz( double *__restrict d ,
 	const double xl ,
 	const double NORM ,
@@ -33,7 +33,7 @@ Creutz( double *__restrict d ,
 }
 
 // Kennedy-Pendleton heatbath algorithm
-static inline GLU_bool
+static int
 KP( double *__restrict d ,
     const double xl ,
     const double NORM ,
@@ -56,10 +56,10 @@ generate_SU2( GLU_complex *s0 ,
   size_t iters = 1 ;
 
   // function pointer for the algorithm we want
-  GLU_bool (*K)( double *__restrict d ,
-		 const double xl ,
-		 const double NORM ,
-		 const uint32_t thread ) ;
+  static int (*K)( double *__restrict d ,
+		   const double xl ,
+		   const double NORM ,
+		   const uint32_t thread ) ;
 
   // for small beta the Creutz algorithm is preferred
   switch( NORM > 0.5 ) {
@@ -141,33 +141,26 @@ hb( GLU_complex U[ NCNC ] ,
 // perform a heat-bath over the whole lattice
 int
 hb_lattice( struct site *lat ,
-	    struct site *staple ,
 	    const double invbeta ,
 	    const struct draughtboard db )
 {
   size_t i , mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     // compute staples surrounding red links
-#pragma omp parallel for private(i)
+    #pragma omp parallel for private(i)
     for( i = 0 ; i < db.Nred ; i++ ) {
-      zero_mat( staple[i].O[mu] ) ;
-      all_staples( staple[i].O[mu] , lat , db.red[i] , mu , ND , SM_APE ) ;
-    }
-    // heat bath all the red links
-#pragma omp parallel for private(i)
-    for( i = 0 ; i < db.Nred ; i++ ) {   
-      hb( lat[ db.red[i] ].O[mu] , staple[i].O[mu] , invbeta , get_GLU_thread() ) ;
+      GLU_complex stap[ NCNC ] GLUalign ;
+      zero_mat( stap ) ;
+      all_staples( stap , lat , db.red[i] , mu , ND , SM_APE ) ;
+      hb( lat[ db.red[i] ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
     }
     // compute the staples surrounding the black links
-#pragma omp parallel for private(i)
+    #pragma omp parallel for private(i)
     for( i = 0 ; i < db.Nblack ; i++ ) {
-      zero_mat( staple[i].O[mu] ) ;
-      all_staples( staple[i].O[mu] , lat , db.black[i] , mu , ND , SM_APE ) ;
-    }
-    // heat bath all black links
-#pragma omp parallel for private(i)
-    for( i = 0 ; i < db.Nblack ; i++ ) {
-      hb( lat[ db.black[i] ].O[mu] , staple[i].O[mu] , invbeta , get_GLU_thread() ) ;
+      GLU_complex stap[ NCNC ] GLUalign ;
+      zero_mat( stap ) ;
+      all_staples( stap , lat , db.black[i] , mu , ND , SM_APE ) ;
+      hb( lat[ db.black[i] ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
     }
   }
   return GLU_SUCCESS ;

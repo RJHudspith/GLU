@@ -55,8 +55,6 @@ cuts_wrap_struct( struct site *__restrict lat ,
     compute_Qsusc_step( lat , CUTINFO , SMINFO ) ;
     break ;
   case GLUON_PROPS :
-    GLU_balls( lat , SMINFO ) ;
-    break ;
   case EXCEPTIONAL :
   case NONEXCEPTIONAL :
   case FIELDS :

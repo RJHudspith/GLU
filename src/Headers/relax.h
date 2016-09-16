@@ -16,12 +16,11 @@ microcanonical( GLU_complex *s0 ,
 		GLU_complex *s1 ) ;
 
 /**
-   @fn int OR_lattice( struct site *lat , struct site *staple , const struct draughtboard db )
+   @fn int OR_lattice( struct site *lat , const struct draughtboard db )
    @brief overrelax our links
  */
 int
 OR_lattice( struct site *lat ,
-	    struct site *staple ,
 	    const struct draughtboard db ) ;
 
 #endif

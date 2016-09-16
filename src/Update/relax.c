@@ -54,32 +54,25 @@ overrelax( GLU_complex U[ NCNC ] ,
 // perform a heat-bath over the whole lattice
 int
 OR_lattice( struct site *lat ,
-	    struct site *staple ,
 	    const struct draughtboard db )
 {
   size_t i , mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    // update staples surrounding red links
-#pragma omp parallel for private(i)
+    // update staples surrounding red links and update links
+    #pragma omp parallel for private(i)
     for( i = 0 ; i < db.Nred ; i++ ) {
-      zero_mat( staple[i].O[mu] ) ;
-      all_staples( staple[i].O[mu] , lat , db.red[i]  , mu , ND , SM_APE ) ;
-    }
-    // overrelax the red links
-#pragma omp parallel for private(i)
-    for( i = 0 ; i < db.Nred ; i++ ) {   
-      overrelax( lat[ db.red[i] ].O[mu] , staple[i].O[mu] ) ;
+      GLU_complex stap[ NCNC ] GLUalign ;
+      zero_mat( stap ) ;
+      all_staples( stap , lat , db.red[i]  , mu , ND , SM_APE ) ;
+      overrelax( lat[ db.red[i] ].O[mu] , stap ) ;
     }
     // update staples surrounding black links
-#pragma omp parallel for private(i)
+    #pragma omp parallel for private(i)
     for( i = 0 ; i < db.Nblack ; i++ ) {
-      zero_mat( staple[i].O[mu] ) ;
-      all_staples( staple[i].O[mu] , lat , db.black[i] , mu , ND , SM_APE ) ;
-    }
-    // overrelax the black links
-#pragma omp parallel for private(i)
-    for( i = 0 ; i < db.Nblack ; i++ ) {
-      overrelax( lat[ db.black[i] ].O[mu] , staple[i].O[mu] ) ;
+      GLU_complex stap[ NCNC ] GLUalign ;
+      zero_mat( stap ) ;
+      all_staples( stap , lat , db.black[i] , mu , ND , SM_APE ) ;
+      overrelax( lat[ db.black[i] ].O[mu] , stap ) ;
     }
   }
   return GLU_SUCCESS ;
