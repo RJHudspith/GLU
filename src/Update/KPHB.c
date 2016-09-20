@@ -1,31 +1,44 @@
+/*
+    Copyright 2013-2016 Renwick James Hudspith
+
+    This file (KPHB.c) is part of GLU.
+
+    GLU is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    GLU is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with GLU.  If not, see <http://www.gnu.org/licenses/>.
+*/
 /**
    @file KPHB.c
-   @brief Kennedy-Pendleton heat bath algorithm
-
-   TODO :: test this works/ compiles OK
-           draughtboard somewhere else, Geometry? Own file?
+   @brief Heat bath over-relaxation algorithm
  */
 #include "Mainfile.h"
 
-#include <omp.h>
-
 #include "draughtboard.h"  // draughtboarding
+#include "GLUlib_wrap.h"   // write out a configuration
 #include "GLU_timer.h"     // print_time()
 #include "hb.h"            // heat-bath
-#include "par_rng.h"       // parallel KISS rng
+#include "par_rng.h"       // parallel rngs
 #include "plaqs_links.h"   // av_plaquette()
 #include "random_config.h" // reunit_latt()
 #include "relax.h"         // overrelaxation
-#include "GLUlib_wrap.h"   // write out a configuration
 
+// updates the lattice
 static void
 update_lattice( struct site *lat ,
 		const double inverse_beta ,
 		const struct draughtboard db ,
 		const size_t Nor )
 {
-  start_timer() ;
-  // do a heat bath
+  // do a Nhb heat baths
   hb_lattice( lat , inverse_beta , db ) ;
 
   // and some number of over-relaxations
@@ -36,7 +49,7 @@ update_lattice( struct site *lat ,
 
   // reunitarise the gauge field? If NC gets large this can be a problem
   latt_reunitU( lat ) ;
-  print_time() ;
+
   return ;
 }
 
@@ -102,13 +115,17 @@ hb_update( struct site *lat ,
   // iterate the number of runs
   const size_t start = Latt.flow ;
   for( i = Latt.flow ; i < HBINFO.iterations ; i++ ) {
-    update_lattice( lat , inverse_beta , db , HBINFO.Nor ) ;
+
+    // perform a hb-OR step
+    update_lattice( lat , inverse_beta , db , 0 ) ;
+
     // set the lattice flow
     // if we are saving the data print out the plaquette and write a file
     if( i%HBINFO.Nmeasure == 0 ) {
       fprintf( stdout , "[UPDATE] %zu :: {P} %1.12f \n" , 
 	       i , av_plaquette( lat ) ) ;
     }
+
     // if we hit a save point we write out the configuration
     if( i%HBINFO.Nsave == 0 && i != start ) {
       // write a configuration

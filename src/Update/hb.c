@@ -1,3 +1,21 @@
+/*
+    Copyright 2013-2016 Renwick James Hudspith
+
+    This file (hb.c) is part of GLU.
+
+    GLU is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    GLU is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with GLU.  If not, see <http://www.gnu.org/licenses/>.
+*/
 /**
    @file HB.c
    @brief heatbath code
@@ -125,18 +143,6 @@ hb( GLU_complex U[ NCNC ] ,
   }
   return ;
 }
-
-/*
-// playground for testing a macro definition
-#if (defined _FOPENMP) && (defined HAVE_OMP_H)
-#define STR(x) #x
-#define STRINGIFY(x) STR(x) 
-#define CONCATENATE(X,Y) X ( Y )
-#define GLU_parallel_for(...) _Pragma( STRINGIFY(CONCATENATE(omp parallel for,__VA_ARGS__)))
-#else
-#define GLU_parallel_for(...) // do nothing
-#endif
-*/
 
 // perform a heat-bath over the whole lattice
 int

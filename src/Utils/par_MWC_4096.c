@@ -1,3 +1,21 @@
+/*
+    Copyright 2013-2016 Renwick James Hudspith
+
+    This file (par_MWC_4096.c) is part of GLU.
+
+    GLU is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    GLU is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with GLU.  If not, see <http://www.gnu.org/licenses/>.
+*/
 /**
    @file par_MWC_4096.c
    @brief stupidly long period generator
@@ -50,7 +68,7 @@ GLU_set_par_MWC_4096_table( const uint32_t seed[ Latt.Nthreads ] )
 {
   table = malloc( RNG_TABLE * sizeof( uint32_t* ) ) ;
   mcwc_i = malloc( Latt.Nthreads * sizeof( uint32_t ) ) ;
-  carry  = malloc( Latt.Nthreads * sizeof( uint64_t ) ) ;
+  carry  = malloc( Latt.Nthreads * sizeof( uint32_t ) ) ;
   size_t i , j ;
   for( i = 0 ; i < Latt.Nthreads ; i++ ) {
     table[i] = malloc( RNG_TABLE * sizeof( uint32_t ) ) ;
@@ -94,7 +112,7 @@ read_par_MWC_4096_table( FILE *rng_file )
 {
   table  = malloc( Latt.Nthreads * sizeof( uint32_t* ) ) ;
   mcwc_i = malloc( Latt.Nthreads * sizeof( uint32_t ) ) ;
-  carry  = malloc( Latt.Nthreads * sizeof( uint64_t ) ) ;
+  carry  = malloc( Latt.Nthreads * sizeof( uint32_t ) ) ;
   size_t i ;
   for( i = 0 ; i < Latt.Nthreads ; i++ ) {
     table[i] = malloc( RNG_TABLE * sizeof( uint32_t ) ) ;
@@ -107,7 +125,7 @@ read_par_MWC_4096_table( FILE *rng_file )
     fprintf( stderr , "[PAR_RNG] file read failure\n" ) ;
     return GLU_FAILURE ;
   }
-  if( fread( carry , sizeof( uint64_t ) , Latt.Nthreads , rng_file ) != Latt.Nthreads ) {
+  if( fread( carry , sizeof( uint32_t ) , Latt.Nthreads , rng_file ) != Latt.Nthreads ) {
     fprintf( stderr , "[PAR_RNG] file read failure\n" ) ;
     return GLU_FAILURE ;
   }
@@ -117,7 +135,7 @@ read_par_MWC_4096_table( FILE *rng_file )
       bswap_32( RNG_TABLE , table[i] ) ;
     }
     bswap_32( Latt.Nthreads , mcwc_i ) ;
-    bswap_64( Latt.Nthreads , carry ) ;
+    bswap_32( Latt.Nthreads , carry ) ;
   }
   return GLU_SUCCESS ;
 }
@@ -126,9 +144,6 @@ read_par_MWC_4096_table( FILE *rng_file )
 void
 write_par_MWC_4096_table( FILE *rng_file )
 {
-  printf( "In this \n" ) ;
-  printf( "RNG_TABLE %d \n" , RNG_TABLE ) ;
-
   // write out big endian binary data
   size_t i ;
   for( i = 0 ; i < Latt.Nthreads ; i++ ) {
@@ -146,13 +161,13 @@ write_par_MWC_4096_table( FILE *rng_file )
   // write out the carries
   if( !WORDS_BIGENDIAN ) { 
     bswap_32( Latt.Nthreads , mcwc_i ) ;
-    bswap_64( Latt.Nthreads , carry ) ; 
+    bswap_32( Latt.Nthreads , carry ) ; 
   }
-  fwrite( mcwc_i , sizeof( mcwc_i[0] ) , Latt.Nthreads , rng_file ) ;
-  fwrite( carry , sizeof( carry[0] ) , Latt.Nthreads , rng_file ) ;
+  fwrite( mcwc_i , sizeof( uint32_t ) , Latt.Nthreads , rng_file ) ;
+  fwrite( carry , sizeof( uint32_t ) , Latt.Nthreads , rng_file ) ;
   if( !WORDS_BIGENDIAN ) { 
     bswap_32( Latt.Nthreads , mcwc_i ) ;
-    bswap_64( Latt.Nthreads , carry ) ; 
+    bswap_32( Latt.Nthreads , carry ) ; 
   }
 
   return ;

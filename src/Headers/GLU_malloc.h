@@ -16,6 +16,10 @@
     You should have received a copy of the GNU General Public License
     along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
+/**
+   @file GLU_malloc.h
+   @brief prototype declarations for memory allocations in GLU
+ */
 #ifndef GLU_MALLOC_H
 #define GLU_MALLOC_H
 
