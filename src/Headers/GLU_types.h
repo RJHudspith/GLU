@@ -222,8 +222,10 @@ struct cut_info {
 struct draughtboard {
   size_t *red ;
   size_t *black ;
+  size_t *blue ;
   size_t Nred ;
   size_t Nblack ;
+  size_t Nblue ;
 } ;
 
 /**

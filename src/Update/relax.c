@@ -75,6 +75,34 @@ OR_lattice( struct site *lat ,
 	    const struct draughtboard db )
 {
   size_t i , mu ;
+#ifdef IMPROVED_SMEARING
+  for( mu = 0 ; mu < ND ; mu++ ) {
+    // compute the staples surrounding the red links
+    #pragma omp parallel for private(i)
+    for( i = 0 ; i < db.Nred ; i++ ) {
+      GLU_complex stap[ NCNC ] GLUalign ;
+      zero_mat( stap ) ;
+      all_staples_improve( stap , lat , db.red[i] , mu , ND , SM_APE ) ;
+      overrelax( lat[ db.red[i] ].O[mu] , stap ) ;
+    }
+    // compute the staples surrounding the black links
+    #pragma omp parallel for private(i)
+    for( i = 0 ; i < db.Nblack ; i++ ) {
+      GLU_complex stap[ NCNC ] GLUalign ;
+      zero_mat( stap ) ;
+      all_staples_improve( stap , lat , db.black[i] , mu , ND , SM_APE ) ;
+      overrelax( lat[ db.black[i] ].O[mu] , stap ) ;
+    }
+    // compute the staples surrounding the blue links
+    #pragma omp parallel for private(i)
+    for( i = 0 ; i < db.Nblue ; i++ ) {
+      GLU_complex stap[ NCNC ] GLUalign ;
+      zero_mat( stap ) ;
+      all_staples_improve( stap , lat , db.blue[i] , mu , ND , SM_APE ) ;
+      overrelax( lat[ db.blue[i] ].O[mu] , stap ) ;
+    }
+  }
+#else
   for( mu = 0 ; mu < ND ; mu++ ) {
     // update staples surrounding red links and update links
     #pragma omp parallel for private(i)
@@ -93,6 +121,7 @@ OR_lattice( struct site *lat ,
       overrelax( lat[ db.black[i] ].O[mu] , stap ) ;
     }
   }
+#endif
   return GLU_SUCCESS ;
 }
 

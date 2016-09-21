@@ -96,7 +96,7 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
   GLU_complex c0_stap[ NCNC ] GLUalign , c1_stap[ NCNC ] GLUalign ;
   GLU_complex tempstap[ NCNC ] GLUalign ;
 
-  zero_mat( c1_stap ) ; zero_mat( c1_stap ) ;
+  zero_mat( c0_stap ) ; zero_mat( c1_stap ) ;
 
 #ifdef SYMANZIK_ONE_LOOP
   GLU_complex c2_stap[ NCNC ] ;

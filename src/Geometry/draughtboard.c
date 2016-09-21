@@ -30,6 +30,9 @@ free_cb( struct draughtboard *db )
 {
   free( db -> red ) ;
   free( db -> black ) ;
+  if( db -> blue != NULL ) {
+    free( db -> blue ) ;
+  }
 }
 
 // initialise the draughtboarding
@@ -39,23 +42,41 @@ init_cb( struct draughtboard *db ,
 	 const size_t LENGTH ,
 	 const size_t DIR ) 
 {
-  size_t i , nred = 0 , nblack = 0 ;
+  size_t i , nred = 0 , nblack = 0 , nblue = 0 ;
   int n[ ND ] ;
   for( i = 0 ; i < LENGTH ; i++ ) {
     const int mode_sum = get_mom_2piBZ( n , i , DIR ) ;
+    #ifdef IMPROVED_SMEARING
+    switch( mode_sum%3 ) {
+    case 0 : nred++ ; break ;
+    case 1 : nblack++ ; break ;
+    case 2 : nblue++ ; break ;
+    }
+    #else
     if( mode_sum&1 ) {
       nred++ ;
     } else {
       nblack++ ;
     }
+    #endif
   }
   // malloc and set
   db -> red   = malloc( nred  * sizeof( size_t ) ) ;
   db -> black = malloc( nblack * sizeof( size_t ) ) ;
-  nred = nblack = 0 ;
+#ifdef IMPROVED_SMEARING
+  db -> blue  = malloc( nblue* sizeof( size_t ) ) ;
+#endif
+  nred = nblack = nblue = 0 ;
   // set back to zero
   for( i = 0 ; i < LENGTH ; i++ ) {
     const int mode_sum = get_mom_2piBZ( n , i , DIR ) ;
+    #ifdef IMPROVED_SMEARING
+    switch( mode_sum%3 ) {
+    case 0 : db -> red[ nred ] = i ; nred++ ; break ;
+    case 1 : db -> black[ nblack ] = i ; nblack++ ; break ;
+    case 2 : db -> blue[ nblue ] = i ; nblue++ ; break ;
+    }
+    #else
     if( mode_sum&1 ) {
       db -> red[ nred ] = i ;
       nred++ ;
@@ -63,9 +84,11 @@ init_cb( struct draughtboard *db ,
       db -> black[ nblack ] = i ;
       nblack++ ;
     }
+    #endif
   }
   db -> Nred = nred ; 
   db -> Nblack = nblack ;
+  db -> Nblue = nblue ;
   printf( "\n[DRAUGHTBOARD] initialised\n\n" ) ;
 
   return ;

@@ -117,7 +117,7 @@ hb_update( struct site *lat ,
   for( i = Latt.flow ; i < HBINFO.iterations ; i++ ) {
 
     // perform a hb-OR step
-    update_lattice( lat , inverse_beta , db , 0 ) ;
+    update_lattice( lat , inverse_beta , db , HBINFO.Nor ) ;
 
     // set the lattice flow
     // if we are saving the data print out the plaquette and write a file

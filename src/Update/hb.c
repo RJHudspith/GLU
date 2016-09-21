@@ -150,6 +150,35 @@ hb_lattice( struct site *lat ,
 	    const double invbeta ,
 	    const struct draughtboard db )
 {
+#ifdef IMPROVED_SMEARING
+  size_t i , mu ;
+  for( mu = 0 ; mu < ND ; mu++ ) {
+    // compute the staples surrounding the red links
+    #pragma omp parallel for private(i)
+    for( i = 0 ; i < db.Nred ; i++ ) {
+      GLU_complex stap[ NCNC ] GLUalign ;
+      zero_mat( stap ) ;
+      all_staples_improve( stap , lat , db.red[i] , mu , ND , SM_APE ) ;
+      hb( lat[ db.red[i] ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
+    }
+    // compute the staples surrounding the black links
+    #pragma omp parallel for private(i)
+    for( i = 0 ; i < db.Nblack ; i++ ) {
+      GLU_complex stap[ NCNC ] GLUalign ;
+      zero_mat( stap ) ;
+      all_staples_improve( stap , lat , db.black[i] , mu , ND , SM_APE ) ;
+      hb( lat[ db.black[i] ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
+    }
+    // compute the staples surrounding the blue links
+    #pragma omp parallel for private(i)
+    for( i = 0 ; i < db.Nblue ; i++ ) {
+      GLU_complex stap[ NCNC ] GLUalign ;
+      zero_mat( stap ) ;
+      all_staples_improve( stap , lat , db.blue[i] , mu , ND , SM_APE ) ;
+      hb( lat[ db.blue[i] ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
+    }
+  }
+#else
   size_t i , mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     // compute staples surrounding red links
@@ -169,5 +198,6 @@ hb_lattice( struct site *lat ,
       hb( lat[ db.black[i] ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
     }
   }
+#endif
   return GLU_SUCCESS ;
 }
