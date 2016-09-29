@@ -23,8 +23,8 @@
    @warning Byte swaps assume IEEE754 floating point representation so that
    floats are 32 bit
  */
+#include "Mainfile.h"
 
-#include "GLU_types.h"
 #include <stdint.h>
 #include <strings.h>
 

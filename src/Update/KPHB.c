@@ -86,7 +86,9 @@ hb_update( struct site *lat ,
 
   // initialise the draughtboard
   struct draughtboard db ;
-  init_cb( &db , LVOLUME , ND ) ;
+  if( init_cb( &db , LVOLUME , ND ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
 
   // this guy appears throughout the HB algorithm
   const double inverse_beta = NC/(HBINFO.beta) ;
@@ -103,6 +105,7 @@ hb_update( struct site *lat ,
 
   // thermalise
   start_timer( ) ;
+
   for( i = 0 ; i < HBINFO.therm ; i++ ) {
     update_lattice( lat , inverse_beta , db , HBINFO.Nor ) ;
     if( !(i&15) ) {
@@ -140,6 +143,9 @@ hb_update( struct site *lat ,
 
   // free the draughtboard
   free_cb( &db ) ;
+
+  // tell us how long this generation took
+  print_time() ;
 
   // free the rng
   free_par_rng( ) ;

@@ -21,8 +21,8 @@
    @brief wanted to include both spatial and all dimensional smearing types and we do
    #ND- generic
  */
-
 #include "Mainfile.h"
+
 #include "plaqs_links.h"
 #include "projectors.h"
 #include "staples.h"
@@ -55,8 +55,8 @@ smear3D( struct site *__restrict lat ,
   #endif
 
   // allocate temporary lattice field
-  struct sp_site *lat2 = NULL ;
-  if( GLU_malloc( (void**)&lat2 , 16 , LCU * sizeof( struct sp_site ) ) != 0 ) {
+  struct s_site *lat2 = NULL ;
+  if( ( lat2 = allocate_s_site( LCU , (ND-1) , NCNC ) ) == NULL ) {
     fprintf( stderr , "[SMEARING] field allocation failure\n" ) ;
     return GLU_FAILURE ;
   }
@@ -95,12 +95,12 @@ smear3D( struct site *__restrict lat ,
     size_t i , t ;
     for( t = 0 ; t < Latt.dims[ ND -1 ] ; t++ ) {
       const size_t slice = LCU * t ;
-      #pragma omp parallel for private(i) SCHED
+      #pragma omp parallel for private(i)
       PFOR( i = 0 ; i < LCU ; i++ ) {
 	const size_t it = slice + i ; 
 	size_t mu ;
 	for( mu = 0 ; mu < ND - 1 ; mu++ ) {
-	  GLU_complex stap[ NCNC ] ;
+	  GLU_complex stap[ NCNC ] GLUalign ;
 	  zero_mat( stap ) ;
           #ifdef IMPROVED_SMEARING
 	  all_staples_improve( stap , lat , it , mu , ND - 1 , type ) ; 
@@ -108,14 +108,16 @@ smear3D( struct site *__restrict lat ,
 	  all_staples( stap , lat , it , mu , ND - 1 , type ) ; 
           #endif
 	  project( lat2[ i ].O[ mu ] , stap , lat[ it ].O[ mu ] , alpha1 , 
-		   one_min_a1 ) ; 
+		   one_min_a1 ) ;
 	}
       }
-	  
       #pragma omp parallel for private(i) 
       PFOR( i = 0 ; i < LCU ; i++ )  {
 	const size_t it = slice + i ;
-	memcpy( &lat[ it ] , &lat2[ i ] , sizeof( struct sp_site ) ) ;
+	size_t mu ;
+	for( mu = 0 ; mu < (ND-1) ; mu++ ) {
+	  equiv( lat[it].O[mu] , lat2[i].O[mu] ) ;
+	}
       }
     }
 
@@ -137,7 +139,8 @@ smear3D( struct site *__restrict lat ,
 #endif
 
   // free our temporary lattice
-  free( lat2 ) ;
+  free_s_site( lat2 , LCU , (ND-1) , NCNC ) ;
+
   return GLU_SUCCESS ;
 #endif
 }
@@ -183,21 +186,24 @@ smear4D( struct site *__restrict lat ,
     return GLU_FAILURE ;
   }
 
-  struct spt_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
-  if( GLU_malloc( (void**)&lat2 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ) {
-    printf( "[SMEARING] field allocation failure\n" ) ;
+  struct s_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
+  if( ( lat2 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ) {
+    fprintf( stderr , "[SMEARING] field allocation failure\n" ) ;
+    return GLU_FAILURE ;
   }
-  #ifdef IMPROVED_SMEARING
-  if( GLU_malloc( (void**)&lat3 , 16 , 2 * LCU * sizeof( struct spt_site ) ) != 0 ||
-      GLU_malloc( (void**)&lat4 , 16 , 2 * LCU * sizeof( struct spt_site ) ) != 0) {
-    printf( "[SMEARING] field allocation failure\n" ) ;
+#ifdef IMPROVED_SMEARING
+  if( ( lat3 = allocate_s_site( 2*LCU , ND , NCNC ) ) == NULL || 
+      ( lat4 = allocate_s_site( 2*LCU , ND , NCNC ) ) == NULL ) {
+    fprintf( stderr , "[SMEARING] field allocation failure\n" ) ;
+    return GLU_FAILURE ;
   }
-  #else
-  if( GLU_malloc( (void**)&lat3 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ||
-      GLU_malloc( (void**)&lat4 , 16 , LCU * sizeof( struct spt_site ) ) != 0) {
-    printf( "[SMEARING] field allocation failure\n" ) ;
+#else
+  if( ( lat3 = allocate_s_site( LCU , ND , NCNC ) ) == NULL || 
+      ( lat4 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ) {
+    fprintf( stderr , "[SMEARING] field allocation failure\n" ) ;
+    return GLU_FAILURE ;
   }
-  #endif
+#endif
   
   size_t count = 0 ;
   for( count = 1 ; count <= smiters ; count++ ) {
@@ -221,9 +227,9 @@ smear4D( struct site *__restrict lat ,
     PFOR( i = 0 ; i < LCU ; i++ ) {
     #endif
       const size_t bck = back + i ;
-      size_t mu ;
+      register size_t mu ;
       for( mu = 0 ; mu < ND ; mu++ ) { 
-	GLU_complex stap[ NCNC ] ;
+	GLU_complex stap[ NCNC ] GLUalign ;
 	zero_mat( stap ) ;
         #ifdef IMPROVED_SMEARING
 	all_staples_improve( stap , lat , bck , mu , ND , type ) ;
@@ -265,27 +271,23 @@ smear4D( struct site *__restrict lat ,
 
       #pragma omp parallel for private(i)
       PFOR( i = 0 ; i < LCU ; i++ ) {
-        #ifdef IMPROVED_SMEARING
-	if( likely( t > 1 ) ) { 
-	  register const size_t back = bck + i ;
-	  memcpy( &lat[back] , &lat3[i] , sizeof( struct spt_site ) ) ;
+	register size_t mu ;
+	for( mu = 0 ; mu < ND ; mu++ ) {
+	  #ifdef IMPROVED_SMEARING
+	  if( t > 1 ) {
+	    register const size_t back = bck + i ;
+	    equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
+	  }
+	  equiv( lat3[i].O[mu]     , lat3[i+LCU].O[mu] ) ;
+	  equiv( lat3[i+LCU].O[mu] , lat2[i].O[mu] ) ;
+	  #else
+	  if( t != 0 ) {
+	    register const size_t back = bck + i ;
+	    equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
+	  }
+	  equiv( lat3[i].O[mu] , lat2[i].O[mu] ) ;
+          #endif
 	}
-	#else
-	if( likely( t != 0 ) ) { 
-	  register const size_t back = bck + i ;
-	  memcpy( &lat[back] , &lat3[i] , sizeof( struct spt_site ) ) ;
-	}
-	#endif
-
-        #ifdef IMPROVED_SMEARING
-	// put the evaluation two time slices before into the front half of lat3
-	// and the evaluation one time slice before into the lower half
-	memcpy( &lat3[i] , &lat3[i+LCU] , sizeof( struct spt_site ) ) ;
-	memcpy( &lat3[i+LCU] , &lat2[i] , sizeof( struct spt_site ) ) ;
-        #else
-	//make temporary lat3 lat2 again and repeat
-	memcpy( &lat3[i] , &lat2[i] , sizeof( struct spt_site ) ) ;
-        #endif
       }
     }
  
@@ -299,16 +301,19 @@ smear4D( struct site *__restrict lat ,
     #pragma omp parallel for private(i)
     PFOR( i = 0 ; i < LCU ; i++ ) {
       register const size_t back = behind + i ;
-      register const size_t it = slice + i ; 
-      #ifdef IMPROVED_SMEARING
-      memcpy( &lat[behind2+i] , &lat3[i] , sizeof( struct spt_site ) ) ; 
-      memcpy( &lat[back] , &lat3[i+LCU] , sizeof( struct spt_site ) ) ; 
-      memcpy( &lat[it] , &lat4[i] , sizeof( struct spt_site ) ) ; 
-      memcpy( &lat[it+LCU] , &lat4[i+LCU] , sizeof( struct spt_site ) ) ; 
-      #else
-      memcpy( &lat[back] , &lat3[i] , sizeof( struct spt_site ) ) ; 
-      memcpy( &lat[it] , &lat4[i] , sizeof( struct spt_site ) ) ; 
-      #endif
+      register const size_t it = slice + i ;
+      size_t mu ;
+      for( mu = 0 ; mu < ND ; mu++ ) {
+        #ifdef IMPROVED_SMEARING
+	equiv( lat[behind2+i].O[mu] , lat3[i].O[mu] ) ;
+	equiv( lat[back].O[mu]      , lat3[i].O[mu] ) ;
+	equiv( lat[it].O[mu]        , lat4[i].O[mu] ) ;
+	equiv( lat[it+LCU].O[mu]    , lat4[i+LCU].O[mu] ) ;
+        #else
+	equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
+	equiv( lat[it].O[mu]   , lat4[i].O[mu] ) ;
+        #endif
+      }
     }
 
     #ifdef TOP_VALUE
@@ -329,9 +334,14 @@ smear4D( struct site *__restrict lat ,
 #endif
 
   // free stuff !
-  free( lat2 ) ; 
-  free( lat3 ) ; 
-  free( lat4 ) ;
+ free_s_site( lat2 , LCU , ND , NCNC ) ;
+#ifdef IMPROVED_SMEARING
+ free_s_site( lat3 , 2*LCU , ND , NCNC ) ;
+ free_s_site( lat4 , 2*LCU , ND , NCNC ) ;
+#else
+ free_s_site( lat3 , LCU , ND , NCNC ) ;
+ free_s_site( lat4 , LCU , ND , NCNC ) ;
+#endif
 
   return GLU_SUCCESS ;
 }

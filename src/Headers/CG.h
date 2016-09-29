@@ -54,7 +54,7 @@ approx_minimum( const size_t nmeas ,
    @param acc :: gauge fixing accuracy
  */
 double
-coul_gtrans_fields( struct sp_site_herm *__restrict rotato ,
+coul_gtrans_fields( struct s_site *__restrict rotato ,
 		    const struct site *__restrict lat ,
 		    const GLU_complex *__restrict *__restrict slice_gauge ,
 		    const size_t t ) ;

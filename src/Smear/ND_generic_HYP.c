@@ -227,10 +227,10 @@ HYsmearND( struct site *__restrict lat ,
   init_smearing_alphas( directions ) ;
 
   // allocate temporaries
-  struct spt_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
-  if( GLU_malloc( (void**)lat2 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ||
-      GLU_malloc( (void**)lat3 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ||
-      GLU_malloc( (void**)lat4 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ) {
+  struct s_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
+  if( ( lat2 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ||
+      ( lat3 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ||
+      ( lat4 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ) {
     fprintf( stderr , "[SMEARING] field allocation failure\n" ) ;
     return GLU_FAILURE ;
   }
@@ -289,7 +289,7 @@ HYsmearND( struct site *__restrict lat ,
     const size_t behind = lat[ slice ].back[ ND - 1 ] ;
     #pragma omp parallel for private(i) 
     PFOR( i = 0 ; i < LCU ; i++ ) {
-      size_t mu ;
+      register size_t mu ;
       register const size_t back = behind + i ; 
       register const size_t it = slice + i ; 
       for( mu = 0 ; mu < directions ; mu++ ) {
@@ -316,9 +316,9 @@ HYsmearND( struct site *__restrict lat ,
   #endif 
 
   // FREE STUFF !! //
-  free( lat2 ) ; 
-  free( lat3 ) ; 
-  free( lat4 ) ; 
+  free_s_site( lat2 , LCU , ND , NCNC ) ;
+  free_s_site( lat3 , LCU , ND , NCNC ) ;
+  free_s_site( lat4 , LCU , ND , NCNC ) ;
 
   return GLU_SUCCESS ;
 }

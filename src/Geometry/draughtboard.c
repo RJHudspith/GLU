@@ -28,68 +28,95 @@
 void
 free_cb( struct draughtboard *db )
 {
-  free( db -> red ) ;
-  free( db -> black ) ;
-  if( db -> blue != NULL ) {
-    free( db -> blue ) ;
+  size_t i ;
+  for( i = 0 ; i < db -> Ncolors ; i++ ) {
+    free( db -> square[i] ) ;
   }
+  free( db -> Nsquare ) ;
+  free( db -> square ) ;
+  return ;
 }
 
 // initialise the draughtboarding
 // warning :: red and black are allocated in here!
-void
+// idea :: checkerboard the even sites and update the odd
+int
 init_cb( struct draughtboard *db ,
 	 const size_t LENGTH ,
 	 const size_t DIR ) 
 {
-  size_t i , nred = 0 , nblack = 0 , nblue = 0 ;
+  // counters and such
+  size_t i ;
   int n[ ND ] ;
-  for( i = 0 ; i < LENGTH ; i++ ) {
-    const int mode_sum = get_mom_2piBZ( n , i , DIR ) ;
-    #ifdef IMPROVED_SMEARING
-    switch( mode_sum%3 ) {
-    case 0 : nred++ ; break ;
-    case 1 : nblack++ ; break ;
-    case 2 : nblue++ ; break ;
+  size_t sum = 0 ;
+  for( i = 0 ; i < ND ; i++ ) {
+    if( ( Latt.dims[i]&1 ) == 1 ) {
+      sum++ ;
     }
-    #else
-    if( mode_sum&1 ) {
-      nred++ ;
-    } else {
-      nblack++ ;
-    }
-    #endif
   }
-  // malloc and set
-  db -> red   = malloc( nred  * sizeof( size_t ) ) ;
-  db -> black = malloc( nblack * sizeof( size_t ) ) ;
+  // complain
+  if( sum != 0 && sum != ND ) {
+    fprintf( stderr , "[DRAUGHTBOARD] can only generate all odd or all even\n" ) ;
+    return GLU_FAILURE ;
+  }
+
 #ifdef IMPROVED_SMEARING
-  db -> blue  = malloc( nblue* sizeof( size_t ) ) ;
+  db -> Ncolors = 32 ;
+#else
+  db -> Ncolors = ( sum == ND ) ? 3 : 2 ;
 #endif
-  nred = nblack = nblue = 0 ;
-  // set back to zero
-  for( i = 0 ; i < LENGTH ; i++ ) {
-    const int mode_sum = get_mom_2piBZ( n , i , DIR ) ;
-    #ifdef IMPROVED_SMEARING
-    switch( mode_sum%3 ) {
-    case 0 : db -> red[ nred ] = i ; nred++ ; break ;
-    case 1 : db -> black[ nblack ] = i ; nblack++ ; break ;
-    case 2 : db -> blue[ nblue ] = i ; nblue++ ; break ;
-    }
-    #else
-    if( mode_sum&1 ) {
-      db -> red[ nred ] = i ;
-      nred++ ;
-    } else {
-      db -> black[ nblack ] = i ;
-      nblack++ ;
-    }
-    #endif
+  db -> square = malloc( db -> Ncolors * sizeof( size_t* ) ) ;
+  db -> Nsquare = malloc( db -> Ncolors * sizeof( size_t ) ) ;
+
+  // set the draughtboard numbers to zero
+  for( i = 0 ; i < db -> Ncolors ; i++ ) {
+    db -> Nsquare[i] = 0 ;
   }
-  db -> Nred = nred ; 
-  db -> Nblack = nblack ;
-  db -> Nblue = nblue ;
+
+  // compute how many sites for each color, I understand they will be 
+  // LVOLUME/db->Ncolors but we need to be careful about the exact numbers for
+  // each bin when doing IMPROVED_SMEARING
+  for( i = 0 ; i < LENGTH ; i++ ) {
+    const size_t midx = ((size_t)get_mom_2piBZ( n , i , DIR ))%(db -> Ncolors) ;
+    db -> Nsquare[ midx ]++ ;
+  }
+
+  // allocate the coloring and set the Nsquares to zero
+  for( i = 0 ; i < db -> Ncolors ; i++ ) {
+    //#ifdef verbose
+    printf( "[DRAUGHTBOARD] COLOR_%zu :: %zu \n" , i , db -> Nsquare[i] ) ;
+    //#endif
+    db -> square[i] = malloc( db -> Nsquare[i] * sizeof( size_t ) ) ;
+    db -> Nsquare[i] = 0 ;
+  }
+
+  // set back to zero and redo recording the index of each
+  for( i = 0 ; i < LENGTH ; i++ ) {
+    const size_t midx = ((size_t)get_mom_2piBZ( n , i , DIR ))%(db -> Ncolors) ;
+    db -> square[ midx ][ db -> Nsquare[ midx ] ] = i ;
+    db -> Nsquare[ midx ]++ ;
+  }
+
   printf( "\n[DRAUGHTBOARD] initialised\n\n" ) ;
 
-  return ;
+  return GLU_SUCCESS ;
+}
+
+int
+test_db( struct site *lat ,
+	 const struct draughtboard db )
+{
+  // test that each point on the db has a neighbour
+  size_t i , j , c , mu ;
+  for( i = 0 ; i < db.Nsquare[0] ; i++ ) {
+    for( c = 1 ; c < db.Ncolors ; c++ ) {
+      for( j = 0 ; j < db.Nsquare[c] ; j++ ) {
+	if( db.square[0][i] == db.square[c][j] ) {
+	  printf( "Fucked \n" ) ;
+	  return GLU_FAILURE ;
+	}
+      }
+    }
+  }
+  return GLU_SUCCESS ;
 }

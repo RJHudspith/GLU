@@ -54,7 +54,7 @@ overrelax( GLU_complex U[ NCNC ] ,
 	   const GLU_complex staple[ NCNC ] )
 {
   GLU_complex s0 GLUalign , s1 GLUalign ;
-  double scale ;
+  double scale GLUalign ;
   size_t i ;
   for( i = 0 ; i < NSU2SUBGROUPS ; i++ ) {
     only_subgroup( &s0 , &s1 , &scale , U , staple , i ) ;
@@ -74,54 +74,40 @@ int
 OR_lattice( struct site *lat ,
 	    const struct draughtboard db )
 {
-  size_t i , mu ;
+  size_t mu , i ;
+  for( mu = 0 ; mu < ND ; mu++ ) {
+    // single node until I get the coloring correct
 #ifdef IMPROVED_SMEARING
-  for( mu = 0 ; mu < ND ; mu++ ) {
-    // compute the staples surrounding the red links
-    #pragma omp parallel for private(i)
-    for( i = 0 ; i < db.Nred ; i++ ) {
+    for( i = 0 ; i < LVOLUME ; i++ ) {
       GLU_complex stap[ NCNC ] GLUalign ;
       zero_mat( stap ) ;
-      all_staples_improve( stap , lat , db.red[i] , mu , ND , SM_APE ) ;
-      overrelax( lat[ db.red[i] ].O[mu] , stap ) ;
+      #ifdef IMPROVED_SMEARING
+      all_staples_improve( stap , lat , i , mu , ND , SM_APE ) ;
+      #else
+      all_staples( stap , lat , i , mu , ND , SM_APE ) ;
+      #endif
+      overrelax( lat[ i ].O[mu] , stap ) ;
     }
-    // compute the staples surrounding the black links
-    #pragma omp parallel for private(i)
-    for( i = 0 ; i < db.Nblack ; i++ ) {
-      GLU_complex stap[ NCNC ] GLUalign ;
-      zero_mat( stap ) ;
-      all_staples_improve( stap , lat , db.black[i] , mu , ND , SM_APE ) ;
-      overrelax( lat[ db.black[i] ].O[mu] , stap ) ;
-    }
-    // compute the staples surrounding the blue links
-    #pragma omp parallel for private(i)
-    for( i = 0 ; i < db.Nblue ; i++ ) {
-      GLU_complex stap[ NCNC ] GLUalign ;
-      zero_mat( stap ) ;
-      all_staples_improve( stap , lat , db.blue[i] , mu , ND , SM_APE ) ;
-      overrelax( lat[ db.blue[i] ].O[mu] , stap ) ;
-    }
-  }
 #else
-  for( mu = 0 ; mu < ND ; mu++ ) {
-    // update staples surrounding red links and update links
-    #pragma omp parallel for private(i)
-    for( i = 0 ; i < db.Nred ; i++ ) {
-      GLU_complex stap[ NCNC ] GLUalign ;
-      zero_mat( stap ) ;
-      all_staples( stap , lat , db.red[i]  , mu , ND , SM_APE ) ;
-      overrelax( lat[ db.red[i] ].O[mu] , stap ) ;
+    // loop draughtboard coloring
+    size_t c ;
+    for( c = 0 ; c < db.Ncolors ; c++ ) {
+      #pragma omp parallel for private(i)
+      for( i = 0 ; i < db.Nsquare[c] ; i++ ) {
+	const size_t it = db.square[c][i] ;
+	GLU_complex stap[ NCNC ] GLUalign ;
+	zero_mat( stap ) ;
+	#ifdef IMPROVED_SMEARING
+	all_staples_improve( stap , lat , it , mu , ND , SM_APE ) ;
+	#else
+	all_staples( stap , lat , it , mu , ND , SM_APE ) ;
+	#endif
+	overrelax( lat[ it ].O[mu] , stap ) ;
+      }
+      // and that is it
     }
-    // update staples surrounding black links
-    #pragma omp parallel for private(i)
-    for( i = 0 ; i < db.Nblack ; i++ ) {
-      GLU_complex stap[ NCNC ] GLUalign ;
-      zero_mat( stap ) ;
-      all_staples( stap , lat , db.black[i] , mu , ND , SM_APE ) ;
-      overrelax( lat[ db.black[i] ].O[mu] , stap ) ;
-    }
-  }
 #endif
+  }
   return GLU_SUCCESS ;
 }
 

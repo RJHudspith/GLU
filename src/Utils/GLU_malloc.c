@@ -20,7 +20,13 @@
    @file corr_malloc.c
    @brief memory allocation wrapper
  */
-#include <stdlib.h>
+#include "Mainfile.h"
+
+#if (defined HAVE_IMMINTRIN_H)
+#include <immintrin.h>
+#endif
+
+#include "geometry.h" // inite_navig()
 
 // memalign wrapper
 int 
@@ -34,4 +40,98 @@ GLU_malloc( void **memptr ,
   *memptr = malloc( size ) ;
   return ( *memptr == NULL ) ? 1 : 0 ;
 #endif
+}
+
+// allocate the gauge fields
+struct site *
+allocate_lat( void )
+{
+  struct site *lat = NULL ;
+  size_t i , mu ;
+  if( GLU_malloc( (void**)&lat , ALIGNMENT , LVOLUME * sizeof( struct site ) ) != 0 ) {
+    return NULL ;
+  }
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    if( GLU_malloc( (void**)&lat[i].O , ALIGNMENT , ND * sizeof( GLU_complex* ) ) != 0 ) {
+    return NULL ;
+    }
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      if( GLU_malloc( (void**)&lat[i].O[mu] , ALIGNMENT , NCNC * sizeof( GLU_complex ) ) != 0 ) {
+      return NULL ;
+      }
+    }
+  }
+  init_navig( lat ) ;
+  return lat ;
+}
+
+// free the lattice gauge field
+void
+free_lat( struct site *lat )
+{
+  size_t i , mu ;
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      if( lat[i].O[mu] != NULL ) {
+	free( lat[i].O[mu] ) ;
+      }
+    }
+    if( lat[i].O != NULL ) {
+      free( lat[i].O ) ;
+    }
+  }
+  if( lat != NULL ) {
+    free( lat ) ;
+  }
+  return ;
+}
+
+// allocate an spt_size
+struct s_site *
+allocate_s_site( const size_t LENGTH1 ,
+		 const size_t LENGTH2 ,
+		 const size_t LENGTH3 )
+{
+  size_t i , mu ;
+  struct s_site *lat = NULL ;
+  if( GLU_malloc( (void**)&lat , ALIGNMENT , LENGTH1 * sizeof( struct s_site ) ) != 0 ) {
+    return NULL ;
+  }
+  for( i = 0 ; i < LENGTH1 ; i++ ) {
+    if( GLU_malloc( (void**)&lat[i].O , ALIGNMENT , LENGTH2 * sizeof( GLU_complex* ) ) != 0 ) {
+      return NULL ;
+    }
+    // 
+    for( mu = 0 ; mu < LENGTH2 ; mu++ ) {
+      if( GLU_malloc( (void**)&lat[i].O[mu] , ALIGNMENT , LENGTH3 * sizeof( GLU_complex ) ) != 0 ) {
+	return NULL ;
+      }
+    }
+  }
+  return lat ;
+}
+
+// free 
+void
+free_s_site( struct s_site *lat ,
+	     const size_t LENGTH1 ,
+	     const size_t LENGTH2 ,
+	     const size_t LENGTH3 )
+{
+
+  size_t i , mu ;
+  for( i = 0 ; i < LENGTH1 ; i++ ) {
+    for( mu = 0 ; mu < LENGTH2 ; mu++ ) {
+      if( lat[i].O[mu] != NULL ) {
+	free( lat[i].O[mu] ) ;
+      }
+    }
+    if( lat[i].O != NULL ) {
+      free( lat[i].O ) ;
+    }
+  }
+  if( lat != NULL ) {
+    free( lat ) ;
+  }
+  return ;
 }

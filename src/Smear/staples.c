@@ -131,7 +131,7 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
 	exact_log_slow( b , a ) ; 
       }
       a_plus_b( c0_stap , b ) ;
-
+ 
       // IMPROVEMENT factors
       // this is the ( nu , nu , mu , -nu , -nu )
       //
@@ -219,7 +219,7 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
 	multab_dag( b , tempstap , lat[ tf3 ].O[mu] ) ;
       }
       a_plus_b( c1_stap , b ) ;
-
+      
       //// The horizontal, backwards contribution
       //
       // x-->--x-->--x       x--<--x==<==x

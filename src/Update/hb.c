@@ -34,7 +34,7 @@
 #include "SU2_rotate.h" // rotation
 
 // maximum number of heatbath updates
-#define NHBMAX (25)
+#define NHBMAX (42)
 
 // Creutz heatbath algorithm
 static int
@@ -64,7 +64,7 @@ KP( double *__restrict d ,
 }
 
 // generate SU(2) matrix proportional to boltzmann weight
-static void
+static int
 generate_SU2( GLU_complex *s0 ,
 	      GLU_complex *s1 ,
 	      const double NORM ,
@@ -80,9 +80,11 @@ generate_SU2( GLU_complex *s0 ,
 		   const uint32_t thread ) ;
 
   // for small beta the Creutz algorithm is preferred
-  switch( NORM > 0.5 ) {
-  case 0 : K = KP ; break ;
-  case 1 : K = Creutz ; xl = exp( -2./NORM ) ; break ;
+  char msg[8] ;
+  switch( NORM > 2.0 ) {
+  case 0 : K = KP ; sprintf( msg , "KenPen" ) ; break ;
+  case 1 : K = Creutz ; xl = exp( -2./NORM ) ; 
+    sprintf( msg , "Creutz" ) ; break ;
   }
 
   // compute d which is (1-a0) = the leftmost su2 matrix element
@@ -93,14 +95,8 @@ generate_SU2( GLU_complex *s0 ,
     }
     // complain if we do too many hits?
     if( iters == NHBMAX ) {
-      switch( NORM > 0.5 ) {
-      case 0 :
-	fprintf( stderr , "[KPHB] %d iterations of KPHB to no avail \n" , NHBMAX ) ;
-	break ;
-      case 1 :
-	fprintf( stderr , "[KPHB] %d iterations of Creutz to no avail \n" , NHBMAX ) ;
-	break ;
-      }
+      fprintf( stderr , "[HB] %d iterations of %s to no avail \n" ,
+	       NHBMAX , msg ) ;
     }
   }
 
@@ -122,7 +118,7 @@ generate_SU2( GLU_complex *s0 ,
   *s1 = -a0 * rS1 + a3 * iS1 + a2 * rS0 - a1 * iS0 +
     I * ( -a0 * iS1 - a3 * rS1 + a2 * iS0 + a1 * rS0 ) ;
 
-  return ;
+  return GLU_SUCCESS ;
 }
 
 // update matrices compute SU(2) subgroup of the staple
@@ -131,14 +127,16 @@ static void
 hb( GLU_complex U[ NCNC ] , 
     const GLU_complex staple[ NCNC ] ,
     const double invbeta ,
-    const int thread )
+    const uint32_t thread )
 {
-  GLU_complex s0 , s1 ;
-  double scale ;
+  GLU_complex s0 GLUalign , s1 GLUalign ;
+  double scale GLUalign ;
   size_t i ;
   for( i = 0 ; i < NSU2SUBGROUPS ; i++ ) {
     only_subgroup( &s0 , &s1 , &scale , U , staple , i ) ;
-    generate_SU2( &s0 , &s1 , invbeta*scale , thread ) ;
+    if( generate_SU2( &s0 , &s1 , invbeta*scale , thread ) == GLU_FAILURE ) {
+      continue ;
+    }
     su2_rotate( U , s0 , s1 , i ) ;
   }
   return ;
@@ -150,54 +148,32 @@ hb_lattice( struct site *lat ,
 	    const double invbeta ,
 	    const struct draughtboard db )
 {
+  size_t mu , i ;
+  for( mu = 0 ; mu < ND ; mu++ ) {
+    // single node until I figure out the coloring
 #ifdef IMPROVED_SMEARING
-  size_t i , mu ;
-  for( mu = 0 ; mu < ND ; mu++ ) {
-    // compute the staples surrounding the red links
-    #pragma omp parallel for private(i)
-    for( i = 0 ; i < db.Nred ; i++ ) {
+    for( i = 0 ; i < LVOLUME ; i++ ) {
       GLU_complex stap[ NCNC ] GLUalign ;
       zero_mat( stap ) ;
-      all_staples_improve( stap , lat , db.red[i] , mu , ND , SM_APE ) ;
-      hb( lat[ db.red[i] ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
+      all_staples_improve( stap , lat , i , mu , ND , SM_APE ) ;
+      hb( lat[ i ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
     }
-    // compute the staples surrounding the black links
-    #pragma omp parallel for private(i)
-    for( i = 0 ; i < db.Nblack ; i++ ) {
-      GLU_complex stap[ NCNC ] GLUalign ;
-      zero_mat( stap ) ;
-      all_staples_improve( stap , lat , db.black[i] , mu , ND , SM_APE ) ;
-      hb( lat[ db.black[i] ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
-    }
-    // compute the staples surrounding the blue links
-    #pragma omp parallel for private(i)
-    for( i = 0 ; i < db.Nblue ; i++ ) {
-      GLU_complex stap[ NCNC ] GLUalign ;
-      zero_mat( stap ) ;
-      all_staples_improve( stap , lat , db.blue[i] , mu , ND , SM_APE ) ;
-      hb( lat[ db.blue[i] ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
-    }
-  }
 #else
-  size_t i , mu ;
-  for( mu = 0 ; mu < ND ; mu++ ) {
-    // compute staples surrounding red links
-    #pragma omp parallel for private(i)
-    for( i = 0 ; i < db.Nred ; i++ ) {
-      GLU_complex stap[ NCNC ] GLUalign ;
-      zero_mat( stap ) ;
-      all_staples( stap , lat , db.red[i] , mu , ND , SM_APE ) ;
-      hb( lat[ db.red[i] ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
+    size_t c ;
+    // loop draughtboard coloring
+    for( c = 0 ; c < db.Ncolors ; c++ ) {
+      // parallel loop over all sites with this coloring
+      #pragma omp parallel for private(i)
+      for( i = 0 ; i < db.Nsquare[c] ; i++ ) {
+	const size_t it = db.square[c][i] ;
+	GLU_complex stap[ NCNC ] GLUalign ;
+	zero_mat( stap ) ;
+	all_staples( stap , lat , it , mu , ND , SM_APE ) ;
+	hb( lat[ it ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
+      }
+      // and that is it
     }
-    // compute the staples surrounding the black links
-    #pragma omp parallel for private(i)
-    for( i = 0 ; i < db.Nblack ; i++ ) {
-      GLU_complex stap[ NCNC ] GLUalign ;
-      zero_mat( stap ) ;
-      all_staples( stap , lat , db.black[i] , mu , ND , SM_APE ) ;
-      hb( lat[ db.black[i] ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
-    }
-  }
 #endif
+  }
   return GLU_SUCCESS ;
 }

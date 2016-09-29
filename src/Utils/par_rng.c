@@ -94,6 +94,8 @@ initialise_par_rng( const char *rng_file )
       }
       fprintf( stdout , "[PAR_RNG] warmed up\n" ) ;
 
+      // free the seeds
+      free( Seeds ) ;
     } else {
       return read_par_rng_state( rng_file ) ;
     }

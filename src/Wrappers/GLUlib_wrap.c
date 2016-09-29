@@ -101,10 +101,10 @@ read_file( struct head_data *HEAD_DATA ,
 
   // malloc our gauge field and initialise our lattice geometry
   struct site *lat = NULL ;
-  if( GLU_malloc( (void**)&lat , 16 , LVOLUME * sizeof( struct site ) ) != 0 ) {
+  if( ( lat = allocate_lat( ) ) == NULL ) {
+    fprintf( stderr , "[IO] Gauge field allocation failure\n" ) ;
     return NULL ;
   }
-  init_navig( lat ) ;
 
 #ifdef SINGLE_PREC
   fprintf( stdout , "[PREC] Single-precision storage for the gauge fields\n" ) ;
@@ -180,7 +180,7 @@ heatbath( const char *infile ,
 	     output_details , !(head == UNIT_GAUGE || head == RANDOM_CONFIG) ) ;
   
   // free the gauge fields
-  free( lat ) ;
+  free_lat( lat ) ;
 
   return GLU_SUCCESS ;
 }
@@ -208,7 +208,7 @@ read_and_check( const char *infile ,
     write_configuration( lat , outfile , storage , output_details ) ;
   }
 
-  free( lat ) ;
+  free_lat( lat ) ;
 
   return GLU_SUCCESS ;
 }
@@ -227,7 +227,8 @@ read_and_cut( const char *infile ,
 
   cuts_wrap_struct( lat , CUTINFO , SMINFO ) ;
 
-  free( lat ) ;
+  free_lat( lat ) ;
+
   return GLU_SUCCESS ;
 }
 
@@ -255,7 +256,8 @@ read_and_fix( const char *infile ,
     write_configuration( lat , outfile , storage , output_details ) ;
   }
 
-  free( lat ) ;
+  free_lat( lat ) ;
+
   return GLU_SUCCESS ;
 }
 
@@ -282,7 +284,8 @@ read_and_smear( const char *infile ,
     write_configuration( lat , outfile , storage , output_details ) ;
   }
 
-  free( lat ) ;
+  free_lat( lat ) ;
+
   return GLU_SUCCESS ;
 }
 
@@ -309,7 +312,8 @@ read_and_U1( const char *infile ,
     write_configuration( lat , outfile , storage , output_details ) ;
   }
 
-  free( lat ) ;
+  free_lat( lat ) ;
+
   return GLU_SUCCESS ;
 }
 

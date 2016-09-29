@@ -32,6 +32,7 @@
 #include "random_config.h"  // latt reunitisation
 #include "SU2_rotate.h"     // su(2) rotations
 
+#if 0
 // NC generic givens rotations
 static void
 OrRotation( GLU_complex *__restrict s0 , 
@@ -274,3 +275,5 @@ OrCoulomb( struct site *__restrict lat ,
 
   return iters ;
 }
+
+#endif

@@ -34,7 +34,7 @@
 // precompute the level 1 dressed links ....
 
 static void 
-get_lv1( struct lv1 *__restrict lev1 ,
+get_lv1( struct s_site *__restrict lev1 ,
 	 const struct site *__restrict lat ,
 	 const int type ,
 	 void (*project) ( GLU_complex smeared_link[ NCNC ] , 
@@ -85,8 +85,8 @@ get_lv1( struct lv1 *__restrict lev1 ,
 
 //calculate the 4D level2 staples 
 static void 
-get_lv2( struct lv1 *__restrict lev2 ,
-	 const struct lv1 *__restrict lev1 ,
+get_lv2( struct s_site *__restrict lev2 ,
+	 const struct s_site *__restrict lev1 ,
 	 const struct site *__restrict lat ,
 	 const int type ,
 	 void (*project) ( GLU_complex smeared_link[ NCNC ] , 
@@ -164,7 +164,7 @@ get_lv2( struct lv1 *__restrict lev2 ,
 // complete the staples ....
 static void 
 gen_staples_4D( GLU_complex *__restrict stap , 
-		const struct lv1 *__restrict lev2 ,
+		const struct s_site *__restrict lev2 ,
 		const struct site *__restrict lat ,
 		const size_t i , 
 		const size_t mu , 
@@ -257,19 +257,19 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
   }
 
   // allocate temporary lattices ...
-  struct spt_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
-  if( GLU_malloc( (void**)&lat2 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ||
-      GLU_malloc( (void**)&lat3 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ||
-      GLU_malloc( (void**)&lat4 , 16 , LCU * sizeof( struct spt_site ) ) != 0 ) {
-    fprintf( stderr , "[SMEARING] field allocation failure \n" ) ;
+  struct s_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
+  if( ( lat2 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ||
+      ( lat3 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ||
+      ( lat4 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ) {
+    fprintf( stderr , "[SMEARING] field allocation failure\n" ) ;
     return GLU_FAILURE ;
   }
 
   // allocate levels
-  struct lv1 *lev1 = NULL , *lev2 = NULL ;
-  if( GLU_malloc( (void**)&lev1 , 16 , LVOLUME * sizeof( struct lv1 ) ) != 0 ||
-      GLU_malloc( (void**)&lev2 , 16 , LVOLUME * sizeof( struct lv1 ) ) != 0 ) {
-    fprintf( stderr , "[SMEARING] field allocation failure \n" ) ;
+  struct s_site *lev1 = NULL , *lev2 = NULL ;
+  if( ( lev1 = allocate_s_site( LVOLUME , ND*(ND-1) , NCNC ) ) == NULL ||
+      ( lev2 = allocate_s_site( LVOLUME , ND*(ND-1) , NCNC ) ) == NULL ) {
+    fprintf( stderr , "[SMEARING] field allocation failure\n" ) ;
     return GLU_FAILURE ;
   }
 
@@ -311,12 +311,14 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
 	}
 	// this is only a legal maneuver for this method
 	//put temp into the previous time-slice
-	if( likely( t != 0 ) ) { 
-	  register const size_t back = bck + i ;
-	  memcpy( &lat[back] , &lat3[i] , sizeof( struct spt_site ) ) ;
+	register const size_t back = bck + i ;
+	for( mu = 0 ; mu < ND ; mu++ ) {
+	  if( likely( t != 0 ) ) { 
+	    equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
+	  }
+	  equiv( lat3[i].O[mu] , lat2[i].O[mu] ) ;
 	}
-	//make temporary lat3 lat2 again and repeat
-	memcpy( &lat3[i] , &lat2[i] , sizeof( struct spt_site ) ) ;
+	//
       }
     }
     //put last and last but one time slice in
@@ -325,10 +327,12 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
     const size_t behind = lat[ slice ].back[ ND - 1 ] ;
     #pragma omp parallel for private(i) 
     PFOR( i = 0 ; i < LCU ; i++ ) {
-      register const size_t back = behind + i ; 
-      memcpy( &lat[back] , &lat3[i] , sizeof( struct spt_site ) ) ; 
-      register const size_t it = slice + i ; 
-      memcpy( &lat[it] , &lat4[i] , sizeof( struct spt_site ) ) ; 
+      register const size_t back = behind + i , it = slice + i ; 
+      register size_t mu ;
+      for( mu = 0 ; mu < ND ; mu++ ) {
+	equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
+	equiv( lat[it].O[mu]   , lat4[i].O[mu] ) ;
+      }
     }
 
     // Are we looking for the topological charge? this is the routine for you
@@ -351,11 +355,11 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
   #endif
   
   // free that memory //
-  free( lev1 ) ; 
-  free( lev2 ) ; 
-  free( lat2 ) ; 
-  free( lat3 ) ; 
-  free( lat4 ) ; 
+  free_s_site( lat2 , LCU , ND , NCNC ) ;
+  free_s_site( lat3 , LCU , ND , NCNC ) ;
+  free_s_site( lat4 , LCU , ND , NCNC ) ;
+  free_s_site( lev1 , LVOLUME , ND*(ND-1) , NCNC ) ;
+  free_s_site( lev2 , LVOLUME , ND*(ND-1) , NCNC ) ;
 
   return GLU_SUCCESS ;
 #endif

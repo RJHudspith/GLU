@@ -37,10 +37,15 @@ free_cb( struct draughtboard *db ) ;
    @param db :: draughtboard structure
    @param LENGTH :: total length of the thing we are draughtboarding
    @param DIR :: number of directions in the geometry we are using
+   @return #GLU_SUCCESS or #GLU_FAILURE
  */
-void
+int
 init_cb( struct draughtboard *db ,
 	 const size_t LENGTH ,
 	 const size_t DIR ) ;
+
+int
+test_db( struct site *lat ,
+	 const struct draughtboard db ) ;
 
 #endif

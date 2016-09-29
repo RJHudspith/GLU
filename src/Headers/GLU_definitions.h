@@ -20,7 +20,6 @@
    @file GLU_definitions.h 
    @brief I needed somewhere to store all of the definitions I was using
  **/
-
 #ifndef GLU_DEFINITIONS_H
 #define GLU_DEFINITIONS_H
 

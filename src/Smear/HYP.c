@@ -35,7 +35,7 @@
 #if ND == 4
 // 3D level-1 staples for timeslice t
 static void 
-get_spatial_lv1( struct spatial_lv1 *__restrict lev1 ,
+get_spatial_lv1( struct s_site *__restrict lev1 ,
 		 const struct site *__restrict lat ,
 		 const size_t t ,
 		 const int type ,
@@ -90,7 +90,7 @@ get_spatial_lv1( struct spatial_lv1 *__restrict lev1 ,
 
 static void 
 staples3D( GLU_complex stap[ NCNC ] ,
-	   const struct spatial_lv1 *__restrict lev1 ,
+	   const struct s_site *__restrict lev1 ,
 	   const struct site *__restrict lat , 
 	   const size_t i , 
 	   const size_t mu , 
@@ -180,10 +180,10 @@ HYPSLsmear3D( struct site *__restrict lat ,
     return GLU_FAILURE ;
   }
 
-  struct spatial_lv1 *lev1 = NULL ;
-  struct sp_site *lat2 = NULL ;
-  if( GLU_malloc( (void**)&lev1 , 16 , LCU * sizeof( struct spatial_lv1 ) ) != 0 || 
-      GLU_malloc( (void**)&lat2 , 16 , LCU * sizeof( struct sp_site ) ) != 0 ) {
+  // allocate temporary space
+  struct s_site *lev1 = NULL , *lat2 = NULL ;
+  if( ( lev1 = allocate_s_site( LCU , ND*(ND-1)*(ND-2) , NCNC ) ) == NULL ||
+      ( lat2 = allocate_s_site( LCU , (ND-1) , NCNC ) ) == NULL ) {
     fprintf( stderr , "[SMEARING] field allocation failure\n" ) ;
     return GLU_FAILURE ;
   }
@@ -210,8 +210,11 @@ HYPSLsmear3D( struct site *__restrict lat ,
 	  project( lat2[ i ].O[ mu ] , stap , lat[ it ].O[ mu ] , 
 		   alpha1 , one_min_a1 ) ; 
 	}
-	// swap these round using memcpy
-	memcpy( &lat[it] , &lat2[i] , sizeof( struct sp_site ) ) ;
+	// swap these round
+	for( mu = 0 ; mu < ND-1 ; mu++ ) {
+	  equiv( lat[it].O[mu] , lat2[i].O[mu] ) ;
+	}
+	//
       }
     }
 
@@ -225,8 +228,8 @@ HYPSLsmear3D( struct site *__restrict lat ,
   print_smearing_obs( lat , count ) ;
 #endif
 
-  free( lat2 ) ; 
-  free( lev1 ) ; 
+  free_s_site( lat2 , LCU , ND-1 , NCNC ) ;
+  free_s_site( lev1 , LCU , ND*(ND-1) , NCNC ) ;
 
   return GLU_SUCCESS ;
 #endif

@@ -51,10 +51,9 @@ flow4d_RK_fast( struct site *__restrict lat ,
   //////////////////////////////////////
 
   // Set up the temporary fields ...
-  struct spt_site_herm *Z = NULL ;
-  struct spt_site *lat2 = NULL ;
-  if( GLU_malloc( (void**)&Z , ALIGNMENT , LVOLUME * sizeof( struct spt_site_herm ) ) != 0 ||
-      GLU_malloc( (void**)&lat2 , ALIGNMENT , LVOLUME * sizeof( struct spt_site ) ) != 0 ) {
+  struct s_site *Z = NULL , *lat2 = NULL ;
+  if( ( lat2 = allocate_s_site( LVOLUME , ND , NCNC ) ) == NULL ||
+      ( Z    = allocate_s_site( LVOLUME , ND , TRUE_HERM ) ) == NULL ) {
     fprintf( stderr , "[WFLOW] temporary field allocation failure\n" ) ;
     return GLU_FAILURE ;
   }
@@ -166,8 +165,8 @@ flow4d_RK_fast( struct site *__restrict lat ,
   }
 
   // free our fields
-  free( Z ) ;
-  free( lat2 ) ;
+  free_s_site( lat2 , LVOLUME , ND , NCNC ) ;
+  free_s_site( Z , LVOLUME , ND , TRUE_HERM ) ;
    
   return GLU_SUCCESS ;
 }
@@ -182,27 +181,19 @@ flow4d_RK_slow( struct site *__restrict lat ,
   ///// USUAL STARTUP INFORMATION //////
   print_GG_info( ) ;
   //////////////////////////////////////
-
-  struct spt_site_herm *Z = NULL ;
-  struct spt_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
-  if( GLU_malloc( (void**)&Z , ALIGNMENT , LVOLUME * sizeof( struct spt_site_herm ) ) != 0 ||
-      GLU_malloc( (void**)&lat2 , ALIGNMENT , LVOLUME * sizeof( struct spt_site ) ) != 0 ) {
+  struct s_site *Z = NULL , *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
+  if( ( lat2 = allocate_s_site( LVOLUME , ND , NCNC ) ) == NULL || 
+      #ifdef IMPROVED_SMEARING
+      ( lat3 = allocate_s_site( 2*LCU , ND , NCNC ) ) == NULL || 
+      ( lat4 = allocate_s_site( 2*LCU , ND , NCNC ) ) == NULL || 
+      #else
+      ( lat3 = allocate_s_site( LCU , ND , NCNC ) ) == NULL || 
+      ( lat4 = allocate_s_site( LCU , ND , NCNC ) ) == NULL || 
+      #endif
+      ( Z = allocate_s_site( LVOLUME , ND , TRUE_HERM ) ) == NULL ) {
     fprintf( stderr , "[WFLOW] temporary field allocation failure\n" ) ;
     return GLU_FAILURE ;
   }
-#ifdef IMPROVED_SMEARING
-  if( GLU_malloc( (void**)&lat3 , ALIGNMENT , 2 * LCU * sizeof( struct spt_site ) ) != 0 ||
-      GLU_malloc( (void**)&lat4 , ALIGNMENT , 2 * LCU * sizeof( struct spt_site ) ) != 0 ) {
-    fprintf( stderr , "[WFLOW] temporary field allocation failure\n" ) ;
-    return GLU_FAILURE ;
-  }
-#else
-  if( GLU_malloc( (void**)&lat3 , ALIGNMENT , LCU * sizeof( struct spt_site ) ) != 0 ||
-      GLU_malloc( (void**)&lat4 ,  ALIGNMENT, LCU * sizeof( struct spt_site ) ) != 0 ) {
-    fprintf( stderr , "[WFLOW] temporary field allocation failure\n" ) ;
-    return GLU_FAILURE ;
-  }
-#endif
 
   const double delta_t = SIGN * Latt.sm_alpha[0] ;
 
@@ -314,10 +305,15 @@ flow4d_RK_slow( struct site *__restrict lat ,
   }
 
   // free our fields
-  free( Z ) ;
-  free( lat2 ) ;
-  free( lat3 ) ;
-  free( lat4 ) ;
+  free_s_site( lat2 , LVOLUME , ND , NCNC ) ;
+  free_s_site( Z , LVOLUME , ND , TRUE_HERM ) ;
+#ifdef IMPROVED_SMEARING
+  free_s_site( lat3 , 2*LCU , ND , NCNC ) ;
+  free_s_site( lat4 , 2*LCU , ND , NCNC ) ;
+#else
+  free_s_site( lat3 , LCU , ND , NCNC ) ;
+  free_s_site( lat4 , LCU , ND , NCNC ) ;
+#endif
    
   return GLU_SUCCESS ;
 }

@@ -30,12 +30,12 @@ void
 init_navig( struct site *__restrict lat )
 {
   size_t i ; 
-#pragma omp parallel for private(i)
+  #pragma omp parallel for private(i)
   for(  i = 0 ; i < LVOLUME ; i++ ) {
     size_t mu ;
     for(  mu = 0 ; mu < ND ; mu++ ) {
       lat[i].neighbor[mu] = gen_shift( i , mu ) ; 
-      lat[i].back[mu] = gen_shift( i , -mu - 1 ) ;  
+      lat[i].back[mu] = gen_shift( i , -mu - 1 ) ;
     }
   }
   return ;
@@ -46,14 +46,13 @@ void
 init_latt( void )
 {
   // these are neccessary for geometry and stuff ::  x,y,z,t geometry
+  size_t mu ;
   fprintf( stdout , "\n[DIMENSIONS] ( %zu x" , Latt.dims[0] ) ;
 #if ND == 2
   Latt.Lcu = Latt.dims[0] ;
   Latt.Volume = Latt.Lcu * Latt.dims[1] ;
   fprintf( stdout , " %zu )\n\n" , Latt.dims[1] ) ; 
-  return ;
 #else
-  size_t mu ;
   Latt.Lsq = Latt.dims[0] ; // defined :: LSQ
   for( mu = 1 ; mu < ND-2 ; mu++ ) {
     fprintf( stdout , " %zu x" , Latt.dims[ mu ] ) ;

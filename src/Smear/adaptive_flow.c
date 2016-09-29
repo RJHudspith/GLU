@@ -87,10 +87,10 @@ enum adaptive_control{ ADAPTIVE_BIG_NUMBER = 20 } ;
  */
 static struct wfmeas *
 fine_measurement( struct site *lat , 
-		  struct spt_site *lat2 , 
-		  struct spt_site *lat3 , 
-		  struct spt_site *lat4 , 
-		  struct spt_site_herm *Z , 
+		  struct s_site *lat2 , 
+		  struct s_site *lat3 , 
+		  struct s_site *lat4 , 
+		  struct s_site *Z , 
 		  double *flow_next , 
 		  double *t , 
 		  const double delta_t ,
@@ -157,10 +157,6 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   fprintf( stdout , "[WFLOW] Fine step :: %g \n\n" , FINESTEP ) ;
 
   //////////////////////////////////////////
-  struct spt_site_herm *Z = NULL ;
-  struct spt_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
-  struct site *lat_two = NULL ;
-
   void (*project) ( GLU_complex log[ NCNC ] , 
 		    GLU_complex *__restrict staple , 
 		    const GLU_complex link[ NCNC ] , 
@@ -178,25 +174,22 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
     return GLU_FAILURE ;
   }
 
-  if( GLU_malloc( (void**)&Z , ALIGNMENT , LVOLUME * sizeof( struct spt_site_herm ) ) != 0 ||
-      GLU_malloc( (void**)&lat2 , ALIGNMENT , LCU * sizeof( struct spt_site ) )       != 0 ||
-      GLU_malloc( (void**)&lat_two , ALIGNMENT , LVOLUME * sizeof( struct site ) )    != 0 ) {
+  // allocate these
+  struct s_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL , *Z = NULL ;
+  struct site *lat_two = NULL ;
+  if( ( lat_two = allocate_lat( ) ) == NULL ||
+      ( Z    = allocate_s_site( LVOLUME , ND , TRUE_HERM ) ) == NULL ||
+      #ifdef IMPROVED_SMEARING
+      ( lat3 = allocate_s_site( 2*LCU , ND , NCNC ) ) == NULL ||
+      ( lat4 = allocate_s_site( 2*LCU , ND , NCNC ) ) == NULL ||
+      #else
+      ( lat3 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ||
+      ( lat4 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ||
+      #endif
+      ( lat2 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ) {
     fprintf( stderr , "[SMEARING] allocation failure \n" ) ;
     return GLU_FAILURE ;
   }
-#ifdef IMPROVED_SMEARING
-  if( GLU_malloc( (void**)&lat3 , ALIGNMENT , 2 * LCU * sizeof( struct spt_site ) )   != 0 ||
-      GLU_malloc( (void**)&lat4 , ALIGNMENT , 2 * LCU * sizeof( struct spt_site ) )   != 0 ) {
-    fprintf( stderr , "[SMEARING] allocation failure \n" ) ;
-    return GLU_FAILURE ;
-  }
-#else
-  if( GLU_malloc( (void**)&lat3 , ALIGNMENT , LCU * sizeof( struct spt_site ) )   != 0 ||
-      GLU_malloc( (void**)&lat4 , ALIGNMENT , LCU * sizeof( struct spt_site ) )   != 0 ) {
-    fprintf( stderr , "[SMEARING] allocation failure \n" ) ;
-    return GLU_FAILURE ;
-  }
-#endif
   init_navig( lat_two ) ;
 
   // set up the step sizes ...
@@ -411,11 +404,17 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   }
   
   // free our fields
-  free( Z ) ;
-  free( lat2 ) ;
-  free( lat3 ) ;
-  free( lat4 ) ;
-  free( lat_two ) ;
+  free_s_site( Z , LVOLUME , ND , TRUE_HERM ) ;
+#if IMPROVED_SMEARING
+  free_s_site( lat2 , 2*LCU , ND , NCNC ) ;
+  free_s_site( lat3 , 2*LCU , ND , NCNC ) ;
+  free_s_site( lat4 , 2*LCU , ND , NCNC ) ;
+#else
+  free_s_site( lat2 , LCU , ND , NCNC ) ;
+  free_s_site( lat3 , LCU , ND , NCNC ) ;
+  free_s_site( lat4 , LCU , ND , NCNC ) ;
+#endif
+  free_lat( lat_two ) ;
 
   return FLAG ;
 }

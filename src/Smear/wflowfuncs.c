@@ -72,7 +72,7 @@ make_short_log( GLU_complex short_staple[ HERMSIZE ] ,
 
 // accumulate the Z-matrix 
 static inline void
-set_zmatrix( struct spt_site_herm *__restrict Z ,
+set_zmatrix( struct s_site *__restrict Z ,
 	     const GLU_complex short_staple[ HERMSIZE ] ,
 	     const double multiplier ,
 	     const size_t i ,
@@ -89,7 +89,7 @@ set_zmatrix( struct spt_site_herm *__restrict Z ,
   Z[i].O[mu][1] += multiplier * short_staple[1] ;
 #else
   size_t elements ;
-  for( elements = 0 ; elements < HERMSIZE ; elements++ ) {
+  for( elements = 0 ; elements < TRUE_HERM ; elements++ ) {
     Z[i].O[mu][ elements ] += multiplier * short_staple[elements] ;
   }
 #endif
@@ -97,8 +97,8 @@ set_zmatrix( struct spt_site_herm *__restrict Z ,
 
 // wilson flow in all ND directions ...
 static void
-flow_directions( struct spt_site *__restrict lat2 ,
-		 struct spt_site_herm *__restrict Z ,
+flow_directions( struct s_site *__restrict lat2 ,
+		 struct s_site *__restrict Z ,
 		 const struct site *__restrict lat ,
 		 const double multiplier ,
 		 const double delta_t ,
@@ -139,8 +139,8 @@ flow_directions( struct spt_site *__restrict lat2 ,
 
 // memory-expensive runge-kutta step
 static void
-RK3step( struct spt_site_herm *__restrict Z ,
-	 struct spt_site *__restrict lat2 ,
+RK3step( struct s_site *__restrict Z ,
+	 struct s_site *__restrict lat2 ,
 	 struct site *__restrict lat ,
 	 const double multiplier , 
 	 const double delta_t ,
@@ -192,17 +192,21 @@ RK3step( struct spt_site_herm *__restrict Z ,
   // copy into lat
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-    memcpy( &lat[i] , &lat2[i] , sizeof( struct spt_site ) ) ; 
+    size_t mu ;
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      equiv( lat[i].O[mu] , lat2[i].O[mu] ) ;
+    }
+    //memcpy( &lat[i] , &lat2[i] , sizeof( struct spt_site ) ) ; 
   }
   return ;
 }
 
 // computes one of the RK steps, doesn't matter which one
 static void
-RK3step_memcheap( struct spt_site_herm *__restrict Z ,
-		  struct spt_site *__restrict lat2 ,
-		  struct spt_site *__restrict lat3 ,
-		  struct spt_site *__restrict lat4 ,  
+RK3step_memcheap( struct s_site *__restrict Z ,
+		  struct s_site *__restrict lat2 ,
+		  struct s_site *__restrict lat3 ,
+		  struct s_site *__restrict lat4 ,  
 		  struct site *__restrict lat ,
 		  const double multiplier ,
 		  const double step ,
@@ -258,6 +262,7 @@ RK3step_memcheap( struct spt_site_herm *__restrict Z ,
 #pragma omp parallel for private(i)
     PFOR( i = 0 ; i < LCU ; i++ ) {
       //put temp into the previous time-slice
+      /*
       #ifdef IMPROVED_SMEARING
       if( likely( t > 1 ) ) { 
 	register const size_t back = bck + i ;
@@ -275,6 +280,28 @@ RK3step_memcheap( struct spt_site_herm *__restrict Z ,
       //make temporary lat3 lat2 again and repeat
       memcpy( &lat3[i] , &lat2[i] , sizeof( struct spt_site ) ) ;
       #endif
+      */
+      register size_t mu ;
+      for( mu = 0 ; mu < ND ; mu++ ) {
+        #ifdef IMPROVED_SMEARING
+	if( likely( t > 1 ) ) { 
+	  register const size_t back = bck + i ;
+	  equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
+	}
+	// put the evaluation two time slices before into the front half of lat3
+	// and the evaluation one time slice before into the lower half
+	equiv( lat3[i].O[mu] , lat3[i+LCU].O[mu] ) ;
+	equiv( lat3[i+LCU].O[mu] , lat2[i].O[mu] ) ;
+        #else
+	if( likely( t != 0 ) ) { 
+	  register const size_t back = bck + i ;
+	  equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
+	}
+	//make temporary lat3 lat2 again and repeat
+	equiv( lat3[i].O[mu] , lat2[i].O[mu] ) ;
+        #endif
+      }
+      //
     }
   }
   // put the last couple back in ....
@@ -287,6 +314,19 @@ RK3step_memcheap( struct spt_site_herm *__restrict Z ,
   PFOR( i = 0 ; i < LCU ; i++ ) {
     register const size_t back = behind + i ;
     register const size_t it = slice + i ; 
+    register size_t mu ;
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      #ifdef IMPROVED_SMEARING
+      equiv( lat[behind2+i].O[mu] , lat3[i].O[mu] ) ; 
+      equiv( lat[back].O[mu]      , lat3[i+LCU].O[mu] ) ; 
+      equiv( lat[it].O[mu]        , lat4[i].O[mu] ) ; 
+      equiv( lat[it+LCU].O[mu]    , lat4[i+LCU].O[mu] ) ; 
+      #else
+      equiv( lat[back].O[mu] , lat3[i].O[mu] ) ; 
+      equiv( lat[it].O[mu]   , lat4[i].O[mu] ) ; 
+      #endif
+    }
+    /*
     #ifdef IMPROVED_SMEARING
     memcpy( &lat[behind2+i] , &lat3[i] , sizeof( struct spt_site ) ) ; 
     memcpy( &lat[back] , &lat3[i+LCU] , sizeof( struct spt_site ) ) ; 
@@ -296,6 +336,7 @@ RK3step_memcheap( struct spt_site_herm *__restrict Z ,
     memcpy( &lat[back] , &lat3[i] , sizeof( struct spt_site ) ) ; 
     memcpy( &lat[it] , &lat4[i] , sizeof( struct spt_site ) ) ; 
     #endif
+    */
   }
   return ;
 }
@@ -406,8 +447,8 @@ scaleset( struct wfmeas *curr ,
 // driver function for the more memory expensive smearing
 void
 step_distance( struct site *__restrict lat ,
-	       struct spt_site *__restrict lat2 ,
-	       struct spt_site_herm *__restrict Z ,
+	       struct s_site *__restrict lat2 ,
+	       struct s_site*__restrict Z ,
 	       const double rk1 ,
 	       const double rk2 , 
 	       const double rk3 , 
@@ -425,7 +466,10 @@ step_distance( struct site *__restrict lat ,
   size_t i ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-    memset( &Z[i] , 0.0 , sizeof( struct spt_site_herm ) ) ;
+    register size_t mu ;
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      memset( Z[i].O[mu] , 0.0 , TRUE_HERM*sizeof( GLU_complex ) ) ;
+    }
   }
   // flow forwards one fictitious timestep
   RK3step( Z , lat2 , lat , mseventeenOthsix , rk1 , SM_TYPE , project ) ;
@@ -437,10 +481,10 @@ step_distance( struct site *__restrict lat ,
 // perform a usual step
 void
 step_distance_memcheap( struct site *__restrict lat ,
-			struct spt_site *__restrict lat2 ,
-			struct spt_site *__restrict lat3 ,
-			struct spt_site *__restrict lat4 ,
-			struct spt_site_herm *__restrict Z ,
+			struct s_site *__restrict lat2 ,
+			struct s_site *__restrict lat3 ,
+			struct s_site *__restrict lat4 ,
+			struct s_site *__restrict Z ,
 			const double rk1 ,
 			const double rk2 , 
 			const double rk3 , 
@@ -458,7 +502,10 @@ step_distance_memcheap( struct site *__restrict lat ,
   size_t i ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-    memset( &Z[i] , 0.0 , sizeof( struct spt_site_herm ) ) ;
+    register size_t mu ;
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      memset( Z[i].O[mu] , 0.0 , TRUE_HERM*sizeof( GLU_complex ) ) ;
+    }
   }
   // flow forwards one timestep
   RK3step_memcheap( Z , lat2 , lat3 , lat4 , 

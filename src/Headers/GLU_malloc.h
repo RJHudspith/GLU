@@ -35,4 +35,44 @@ GLU_malloc( void **memptr ,
 	    const size_t alignment , 
 	    const size_t size ) ;
 
+/**
+   @fn struct site * allocate_lat( void )
+   @brief allocate the lattice gauge fields
+   @return the lattice gauge fields
+ */
+struct site *
+allocate_lat( void ) ;
+
+/**
+   @fn struct s_site * allocate_spt_site( const size_t LENGTH1 , const size_t LENGTH2 , const size_t LENGTH3 )
+   @brief allocate an spt_site struct lat[LENGTH1].O[LENGTH2][LENGTH3]
+   @param lat :: the lattice structure
+   @param LENGTH1 :: the first length
+   @param LENGTH2 :: the second
+   @param LENGTH3 :: the third
+   @return #GLU_SUCCESS or #GLU_FAILURE
+ */
+struct s_site *
+allocate_s_site( const size_t LENGTH1 ,
+		 const size_t LENGTH2 ,
+		 const size_t LENGTH3 ) ;
+
+/**
+   @fn void free_spt_site( struct s_site *lat , const size_t LENGTH1 , const size_t LENGTH2 , const size_t LENGTH3 )
+   @brief free the spt_size
+*/
+void
+free_s_site( struct s_site *lat ,
+	     const size_t LENGTH1 ,
+	     const size_t LENGTH2 ,
+	     const size_t LENGTH3 ) ;
+
+/**
+   @fn void free_lat( struct site *lat )
+   @brief free the lattice gauge fields
+   @param lat :: the lattice gauge fields
+ */
+void
+free_lat( struct site *lat ) ;
+
 #endif

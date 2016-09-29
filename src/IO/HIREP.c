@@ -95,7 +95,7 @@ read_gauge_field( struct site *__restrict lat ,
       lat[idx].O[ND-1][j] = (GLU_real)uind[a] + I * (GLU_real)uind[a + 1] ;
       a += 2 ;
     }
-    // then the others
+    // then the others (xyz)?
     for( mu = 0 ;  mu < ND - 1 ; mu++ ) {
       for( j = 0 ; j < NCNC ; j++ ) {
 	lat[idx].O[mu][j] = (GLU_real)uind[a] + I * (GLU_real)uind[a + 1] ;
