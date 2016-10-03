@@ -26,7 +26,7 @@
 #include <immintrin.h>
 #endif
 
-#include "geometry.h" // inite_navig()
+#include "init.h" // init_navig()
 
 // memalign wrapper
 int 

@@ -196,7 +196,6 @@ RK3step( struct s_site *__restrict Z ,
     for( mu = 0 ; mu < ND ; mu++ ) {
       equiv( lat[i].O[mu] , lat2[i].O[mu] ) ;
     }
-    //memcpy( &lat[i] , &lat2[i] , sizeof( struct spt_site ) ) ; 
   }
   return ;
 }
@@ -262,25 +261,6 @@ RK3step_memcheap( struct s_site *__restrict Z ,
 #pragma omp parallel for private(i)
     PFOR( i = 0 ; i < LCU ; i++ ) {
       //put temp into the previous time-slice
-      /*
-      #ifdef IMPROVED_SMEARING
-      if( likely( t > 1 ) ) { 
-	register const size_t back = bck + i ;
-	memcpy( &lat[back] , &lat3[i] , sizeof( struct spt_site ) ) ;
-      }
-      // put the evaluation two time slices before into the front half of lat3
-      // and the evaluation one time slice before into the lower half
-      memcpy( &lat3[i] , &lat3[i+LCU] , sizeof( struct spt_site ) ) ;
-      memcpy( &lat3[i+LCU] , &lat2[i] , sizeof( struct spt_site ) ) ;
-      #else
-      if( likely( t != 0 ) ) { 
-	register const size_t back = bck + i ;
-	memcpy( &lat[back] , &lat3[i] , sizeof( struct spt_site ) ) ;
-      }
-      //make temporary lat3 lat2 again and repeat
-      memcpy( &lat3[i] , &lat2[i] , sizeof( struct spt_site ) ) ;
-      #endif
-      */
       register size_t mu ;
       for( mu = 0 ; mu < ND ; mu++ ) {
         #ifdef IMPROVED_SMEARING
@@ -326,17 +306,6 @@ RK3step_memcheap( struct s_site *__restrict Z ,
       equiv( lat[it].O[mu]   , lat4[i].O[mu] ) ; 
       #endif
     }
-    /*
-    #ifdef IMPROVED_SMEARING
-    memcpy( &lat[behind2+i] , &lat3[i] , sizeof( struct spt_site ) ) ; 
-    memcpy( &lat[back] , &lat3[i+LCU] , sizeof( struct spt_site ) ) ; 
-    memcpy( &lat[it] , &lat4[i] , sizeof( struct spt_site ) ) ; 
-    memcpy( &lat[it+LCU] , &lat4[i+LCU] , sizeof( struct spt_site ) ) ; 
-    #else
-    memcpy( &lat[back] , &lat3[i] , sizeof( struct spt_site ) ) ; 
-    memcpy( &lat[it] , &lat4[i] , sizeof( struct spt_site ) ) ; 
-    #endif
-    */
   }
   return ;
 }
@@ -362,6 +331,7 @@ evaluate_scale( double *der ,
     fprintf( stdout , "[%s] %g %g \n" , message , x[ i ] , meas[ i ] ) ;
     #endif
   }
+  //#ifdef verbose
   // print out the spline evaluation?
   if( Nmeas > 0 ) {
     double t = 0.0 ;
@@ -370,6 +340,7 @@ evaluate_scale( double *der ,
 	       cubic_eval( x , meas , der , t , Nmeas ) ) ;
     }
   }
+  //#endif
   // evaluate at "scale" error flag is -1
   return solve_spline( x , meas , der , scale , change_up ) ;
 }

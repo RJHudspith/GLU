@@ -33,9 +33,6 @@
 #include "projectors.h"
 #include "staples.h"
 #include "wflowfuncs.h"
-#ifdef FAST_SMEAR
-  #include "random_config.h"
-#endif
 
 //#define WFLOW_TIME_ONLY
 
@@ -118,11 +115,13 @@ flow4d_RK_fast( struct site *__restrict lat ,
 	     curr -> time , delta_t  , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
 
     // use a poor approximation of the derivative of the flow as a guide to stop
+#ifndef WFLOW_TIME_ONLY
     if( ( ( flow_next - flow ) * curr -> time / delta_t ) > ( W0_STOP * 1.25 ) ) {
       curr -> next = head ;
       head = curr ;
       break ;
     }
+#endif
     flow = flow_next ;
 
     curr -> next = head ;

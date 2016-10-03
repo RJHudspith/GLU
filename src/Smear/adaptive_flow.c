@@ -190,7 +190,6 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
     fprintf( stderr , "[SMEARING] allocation failure \n" ) ;
     return GLU_FAILURE ;
   }
-  init_navig( lat_two ) ;
 
   // set up the step sizes ...
   double delta_t = SIGN * Latt.sm_alpha[0] ;
@@ -223,7 +222,10 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
     while( ( errmax > 1.0 ) && ( counter < ADAPTIVE_BIG_NUMBER ) ) {
       #pragma omp parallel for private(i)
       PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-	memcpy( &lat_two[i] , &lat[i] , sizeof( struct site ) ) ; 
+	register size_t mu ;
+	for( mu = 0 ; mu < ND ; mu++ ) {
+	  equiv( lat_two[i].O[mu] , lat[i].O[mu] ) ;
+	}
       }
 
       // Step forward in two halves ...
@@ -240,7 +242,10 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
 
       #pragma omp parallel for private(i)
       PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-	memcpy( &lat_two[i] , &lat[i] , sizeof( struct site ) ) ; 
+	register size_t mu ;
+	for( mu = 0 ; mu < ND ; mu++ ) {
+	  equiv( lat_two[i].O[mu] , lat[i].O[mu] ) ;
+	}
       } 
 
       // and step forward twice and write into lat_two
@@ -299,7 +304,10 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
     // overwrite lat .. 
 #pragma omp parallel for private(i)
     PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-      memcpy( &lat[i] , &lat_two[i] , sizeof( struct site ) ) ; 
+      size_t mu ;
+      for( mu = 0 ; mu < ND ; mu++ ) {
+	equiv( lat[i].O[mu] , lat_two[i].O[mu] ) ;
+      }
     }
     t += delta_t ; // add one time step to the overall time 
 
