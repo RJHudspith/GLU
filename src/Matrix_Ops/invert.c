@@ -20,8 +20,9 @@
    @file invert.c
    @brief simple, arithmetic version of the inverse of a matrix using gauss-jordan
  */
-
 #include "Mainfile.h"
+
+#if !( defined HAVE_IMMINTRIN_H ) || ( defined SINGLE_PREC )
 
 // if we have Lapacke then we just let it do the heavy lifting
 #ifdef HAVE_LAPACKE_H
@@ -40,7 +41,7 @@ eliminate_column( double complex *__restrict a ,
 		  const size_t i , 
 		  const size_t j )
 {
-  const double complex fac1 = a[ i + j*NC ] / a[ i*(NC+1) ] ;  
+  const double complex fac1 = a[ i + j*NC ] / a[ i*(NC+1) ] ;
   double complex *pA = a + i*NC ;
   size_t k ;
   // such a pattern elimintates cancelling zeros
@@ -242,10 +243,10 @@ inverse( GLU_complex M_1[ NCNC ] ,
   #if NC == 2 
   // use the identity, should warn for singular matrices
   const double complex INV_detM = 1.0 / ( det( M ) ) ;
-  M_1[ 0 ] = M[ 3 ] * INV_detM ;
+  M_1[ 0 ] =  M[ 3 ] * INV_detM ;
   M_1[ 1 ] = -M[ 1 ] * INV_detM ;
   M_1[ 2 ] = -M[ 2 ] * INV_detM ;
-  M_1[ 3 ] = M[ 0 ] * INV_detM ;
+  M_1[ 3 ] =  M[ 0 ] * INV_detM ;
   return GLU_SUCCESS ;
   #else 
   return gauss_jordan( M_1 , M ) ;
@@ -282,4 +283,6 @@ newton_approx_inverse( GLU_complex Zinv[ NCNC ] , // is Z_{k-1}^{-1}
 // clear the full pivoting, minimal improvement in using this
 #ifdef FULL_PIVOT  
   #uncdf FULL_PIVOT
+#endif
+
 #endif

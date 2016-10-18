@@ -28,6 +28,7 @@
 #include "hb.h"            // heat-bath
 #include "par_rng.h"       // parallel rngs
 #include "plaqs_links.h"   // av_plaquette()
+#include "POLY.h"          // poly()
 #include "random_config.h" // reunit_latt()
 #include "relax.h"         // overrelaxation
 
@@ -126,8 +127,13 @@ hb_update( struct site *lat ,
     // set the lattice flow
     // if we are saving the data print out the plaquette and write a file
     if( i%HBINFO.Nmeasure == 0 ) {
+      // write out the plaquette
       fprintf( stdout , "[UPDATE] %zu :: {P} %1.12f \n" , 
 	       i , av_plaquette( lat ) ) ;
+      // write the temporal polyakov loop, (re,im) |L|
+      const double complex L = poly( lat , ND-1 ) / ( LCU * NC ) ;
+      fprintf( stdout , "[UPDATE] {L} ( %f , %f ) %f \n" ,
+	       creal( L ) , cimag( L ) , cabs( L ) ) ;
     }
 
     // if we hit a save point we write out the configuration

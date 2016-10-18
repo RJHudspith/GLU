@@ -38,8 +38,8 @@ MATRIXOPSFILES=./Matrix_Ops/effs.c ./Matrix_Ops/evalues.c \
 	./Matrix_Ops/exactQ.c ./Matrix_Ops/expMat.c \
 	./Matrix_Ops/givens.c \
 	./Matrix_Ops/gramschmidt.c ./Matrix_Ops/gramschmidt_SSE.c \
-	./Matrix_Ops/invert.c ./Matrix_Ops/lie_mats.c \
-	./Matrix_Ops/LU.c ./Matrix_Ops/LU_SSE.c \
+	./Matrix_Ops/invert.c ./Matrix_Ops/invert_SSE.c \
+	./Matrix_Ops/lie_mats.c ./Matrix_Ops/LU.c ./Matrix_Ops/LU_SSE.c \
 	./Matrix_Ops/taylor_logs.c \
 	./Matrix_Ops/trace_abc.c ./Matrix_Ops/trace_abc_SSE.c \
 	./Matrix_Ops/U_Nops.c ./Matrix_Ops/vandermonde.c

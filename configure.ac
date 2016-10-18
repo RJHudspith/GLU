@@ -50,7 +50,7 @@ AC_PROG_CC
 AM_PROG_CC_C_O
 AC_LANG([C]) 
 AC_PROG_RANLIB ## include a check for libtool if not use ranlib?
-AM_PROG_AR
+##AM_PROG_AR
 AC_C_BIGENDIAN 
 
 ## SET up the m4

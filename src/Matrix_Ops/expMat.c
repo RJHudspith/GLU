@@ -308,33 +308,33 @@ exponentiate( GLU_complex U[ NCNC ] ,
   zero_mat( EOLD ) ;
 
   // set up the divisor and the minimum 
-  double sum ;
-  const int DIV = 2 , nmin = 3 ;
+  double sum = 0.0 ;
   size_t j , n ;
+  const int nmin = 3 ;
 
   // use precomputed factorials  
   for( n = nmin ; n < 10 ; n++ ) {
 
     // compute the multiplicative factor ...
-    const GLU_real fact = 1.0 / pow( DIV , n ) ;
-    const int iter = pow( DIV , n ) ;
+    const int iter = 2 << ( n - 1 ) ;
+    const GLU_complex fact = I / (GLU_real)iter ;
 
     // and the rational approximations
 #ifdef USE_PADE
-    for( j = 0 ; j < NCNC ; j++ ) { SN[ j ] = ( I * Q[j] * fact ) ; }
+    for( j = 0 ; j < NCNC ; j++ ) { SN[ j ] = ( Q[j] * fact ) ; }
     horners_pade( RN , SN ) ;
 
     for( j = 0 ; j < NCNC ; j++ ) { SN[ j ] *= -1.0 ; }
     horners_pade( RN_MIN , SN ) ; 
 #else
-    for( j = 0 ; j < NCNC ; j++ ) { SN[ j ] = ( I * Q[j] * fact ) / 2.0 ; }
+    for( j = 0 ; j < NCNC ; j++ ) { SN[ j ] = ( Q[j] * fact ) / 2.0 ; }
     horners_exp( RN , SN , 14 ) ;
 
     for( j = 0 ; j < NCNC ; j++ ) { SN[ j ] *= -1.0 ; }
     horners_exp( RN_MIN , SN , 14 ) ; 
 #endif
 
-    inverse( SN , RN_MIN ) ; // uses our numerical inverse
+    inverse( SN , RN_MIN ) ;         // uses our numerical inverse
     multab_atomic_right( RN , SN ) ; // gets the correct rational approx
 
     // and remove the nested scalings ...

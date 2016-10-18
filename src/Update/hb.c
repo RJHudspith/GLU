@@ -107,8 +107,12 @@ generate_SU2( GLU_complex *s0 ,
   const double rho = sqrt( fabs( ar2 - a3*a3 ) ) ;
   const double xr2 = TWOPI * par_rng_dbl( thread ) ;
 
-  const double a2 = rho * sin( xr2 ) ;
-  const double a1 = rho * cos( xr2 ) ;
+  // use sincos as it is cheaper
+  double a1 , a2 ;
+  sincos( xr2 , &a2 , &a1 ) ;
+  a1 *= rho ; 
+  a2 *= rho ;
+
   const double rS0 = creal( *s0 ) , iS0 = cimag( *s0 ) ;
   const double rS1 = creal( *s1 ) , iS1 = cimag( *s1 ) ;
 

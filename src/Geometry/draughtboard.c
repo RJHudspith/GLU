@@ -107,7 +107,7 @@ test_db( struct site *lat ,
 	 const struct draughtboard db )
 {
   // test that each point on the db has a neighbour
-  size_t i , j , c , mu ;
+  size_t i , j , c ;
   for( i = 0 ; i < db.Nsquare[0] ; i++ ) {
     for( c = 1 ; c < db.Ncolors ; c++ ) {
       for( j = 0 ; j < db.Nsquare[c] ; j++ ) {
