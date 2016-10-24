@@ -162,7 +162,7 @@ compute_checksum( uint32_t *nersc_cksum ,
 		  uint32_t *milc_cksum31 , 
 		  uint32_t *scidac_cksum29 ,
 		  uint32_t *scidac_cksum31 ,
-		  const struct site *__restrict lat ,
+		  const struct site *lat ,
 		  const size_t LOOP_VAR ,
 		  const GLU_output checktype )
 {
@@ -271,7 +271,7 @@ copy_data( GLU_real *uout ,
 
 // writes the fields as binary data
 static void
-write_binary_data( const struct site *__restrict lat ,
+write_binary_data( const struct site *lat ,
 		   FILE *__restrict outfile ,
 		   const GLU_output checktype ,
 		   const size_t LATT_LOOP ,
@@ -317,7 +317,7 @@ write_binary_data_cheap( const struct site *__restrict lat ,
 
 // This is just the wrapping function for the writers
 int
-write_lat( struct site *__restrict lat , 
+write_lat( struct site *lat , 
 	   FILE *__restrict out , 
 	   const GLU_output type , 
 	   char *__restrict details )

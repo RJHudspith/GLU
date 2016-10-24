@@ -16,7 +16,6 @@
     You should have received a copy of the GNU General Public License
     along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 /**
    @file draught_board.c
    @brief draught-boarding routines
@@ -37,6 +36,28 @@ free_cb( struct draughtboard *db )
   return ;
 }
 
+// get the correct index
+static size_t
+get_midx( const size_t i ,
+	  const size_t DIR )
+{
+  int n[ ND ] ;
+  get_mom_2piBZ( n , i , DIR ) ;
+  register size_t even_sum = 0 , odd_sum = 0 , mu ;
+  for( mu = 0 ; mu < DIR ; mu++ ) {
+    if( ( Latt.dims[mu]&1 ) == 0 ) {
+      even_sum += n[mu] ;
+    } else {
+      odd_sum  += n[mu] ;
+    }
+  }
+#ifdef verbose
+  fprintf( stdout , "(%zu) even :: %zu || odd %zu -> %zu \n" , 
+	   i , even_sum , odd_sum , ( even_sum%2 + odd_sum )%3 ) ;
+#endif
+  return ( even_sum%2 + odd_sum )%3 ;
+}
+
 // initialise the draughtboarding
 // warning :: red and black are allocated in here!
 // idea :: checkerboard the even sites and update the odd
@@ -45,40 +66,21 @@ init_cb( struct draughtboard *db ,
 	 const size_t LENGTH ,
 	 const size_t DIR ) 
 {
-  // counters and such
   size_t i ;
-  int n[ ND ] ;
-  size_t sum = 0 ;
-  for( i = 0 ; i < ND ; i++ ) {
-    if( ( Latt.dims[i]&1 ) == 1 ) {
-      sum++ ;
-    }
-  }
-  // complain
-  if( sum != 0 && sum != ND ) {
-    fprintf( stderr , "[DRAUGHTBOARD] can only generate all odd or all even\n" ) ;
-    return GLU_FAILURE ;
-  }
 
-#ifdef IMPROVED_SMEARING
-  db -> Ncolors = 32 ;
-#else
-  db -> Ncolors = ( sum == ND ) ? 3 : 2 ;
-#endif
-  db -> square = malloc( db -> Ncolors * sizeof( size_t* ) ) ;
+  // initially set up the database
+  db -> Ncolors = 3 ;
+  db -> square  = malloc( db -> Ncolors * sizeof( size_t* ) ) ;
   db -> Nsquare = malloc( db -> Ncolors * sizeof( size_t ) ) ;
 
-  // set the draughtboard numbers to zero
+  // set the counters to zero
   for( i = 0 ; i < db -> Ncolors ; i++ ) {
     db -> Nsquare[i] = 0 ;
   }
 
-  // compute how many sites for each color, I understand they will be 
-  // LVOLUME/db->Ncolors but we need to be careful about the exact numbers for
-  // each bin when doing IMPROVED_SMEARING
+  // get the coloring
   for( i = 0 ; i < LENGTH ; i++ ) {
-    const size_t midx = ((size_t)get_mom_2piBZ( n , i , DIR ))%(db -> Ncolors) ;
-    db -> Nsquare[ midx ]++ ;
+    db -> Nsquare[ get_midx( i , DIR ) ]++ ;
   }
 
   // allocate the coloring and set the Nsquares to zero
@@ -92,7 +94,7 @@ init_cb( struct draughtboard *db ,
 
   // set back to zero and redo recording the index of each
   for( i = 0 ; i < LENGTH ; i++ ) {
-    const size_t midx = ((size_t)get_mom_2piBZ( n , i , DIR ))%(db -> Ncolors) ;
+    const size_t midx = get_midx( i , DIR ) ;
     db -> square[ midx ][ db -> Nsquare[ midx ] ] = i ;
     db -> Nsquare[ midx ]++ ;
   }
