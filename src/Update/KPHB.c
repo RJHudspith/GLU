@@ -104,6 +104,7 @@ hb_update( struct site *lat ,
 	   HBINFO.Nor ) ;
   fprintf( stdout , "[UPDATE] Saving every %zu iteration(s)\n" ,
 	   HBINFO.Nsave ) ;
+  fprintf( stdout , "[UPDATE] Using beta = %1.12f \n" , HBINFO.beta ) ;
 
   // thermalise
   start_timer( ) ;
