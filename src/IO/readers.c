@@ -159,7 +159,7 @@ rebuild_lat( GLU_complex *__restrict link ,
 
 //////////// MEMSPENSIVE VERSION ///////////////
 uint32_t
-lattice_reader_suNC( struct site *__restrict lat , 
+lattice_reader_suNC( struct site *lat , 
 		     FILE *__restrict in , 
 		     const struct head_data HEAD_DATA )
 {
@@ -322,7 +322,7 @@ lattice_reader_suNC( struct site *__restrict lat ,
 
 // MEMCHEAP READER
 uint32_t
-lattice_reader_suNC_cheaper( struct site *__restrict lat , 
+lattice_reader_suNC_cheaper( struct site *lat , 
 			     FILE *__restrict in , 
 			     const struct head_data HEAD_DATA )
 {

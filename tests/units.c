@@ -241,17 +241,24 @@ static char *polyakov_test( void ) {
 // configuration-dependent startup
 static char *config_tests( void ) 
 {
-
   // malloc our gauge field and initialise our lattice geometry
-  lat = malloc( LVOLUME * sizeof ( struct site ) ) ;
+  lat = NULL ; 
+  if( ( lat = allocate_lat( ) ) == NULL ) {
+    fprintf( stderr , "[CONFIG-UNIT] Gauge field allocation failure\n" ) ;
+    return NULL ;
+  }
   init_navig( lat ) ;
-
-  // allocate gauge transformed fields
-  glat = malloc( LVOLUME * sizeof ( struct site ) ) ;
-  init_navig( glat ) ;
 
   // randomly generate an SU(NC) field
   random_suNC( lat ) ;
+
+  // allocate gauge transformed fields
+  glat = NULL ; 
+  if( ( glat = allocate_lat( ) ) == NULL ) {
+    fprintf( stderr , "[CONFIG-UNIT] Gauge field 2 allocation failure\n" ) ;
+    return NULL ;
+  }
+  init_navig( glat ) ;
 
   size_t i , mu ;
   for( i = 0 ; i < LVOLUME ; i++ ) {

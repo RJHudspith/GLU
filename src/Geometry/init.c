@@ -45,6 +45,8 @@ init_navig( struct site *__restrict lat )
 void
 init_latt( void )
 {
+  // tell us our gauge group
+  fprintf( stdout , "[INIT] GLU is Compiled for SU(%d)\n" , NC ) ;
   // these are neccessary for geometry and stuff ::  x,y,z,t geometry
   size_t mu ;
   fprintf( stdout , "\n[DIMENSIONS] ( %zu x" , Latt.dims[0] ) ;
