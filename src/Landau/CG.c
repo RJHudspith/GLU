@@ -391,7 +391,7 @@ set_gauge_matrix( GLU_complex *__restrict gx ,
   gx[0] = 1.0 + I * alpha * cimag( in[0][i] ) ; 
   gx[1] = alpha * in[1][i] ;  
   gx[3] = -conj( gx[1] ) ; 
-  gx[4] = 1.0 + -I * alpha * creal( in[0][i] ) ; 
+  gx[4] = 1.0 - I * alpha * creal( in[0][i] ) ; 
   gx[6] = -alpha * conj( in[2][i] ) ;  
   gx[7] = -alpha * conj( in[3][i] ) ;
   #elif NC==2

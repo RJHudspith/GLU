@@ -83,6 +83,11 @@ init_cb( struct draughtboard *db ,
     db -> Nsquare[ get_midx( i , DIR ) ]++ ;
   }
 
+  // if we don't have an odd dim we shorten this
+  if( ( db -> Nsquare[ 2 ] ) == 0 ) {
+    db -> Ncolors = 2 ;
+  }
+
   // allocate the coloring and set the Nsquares to zero
   for( i = 0 ; i < db -> Ncolors ; i++ ) {
     //#ifdef verbose

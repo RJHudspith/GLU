@@ -217,7 +217,6 @@ struct head_data {
 /**
    @struct u1_info
    @brief information on the U1-ification of the gauge fields
-
    @param alpha :: the noncompact QED coupling strength
    @param charge :: the sign of the QED charge
    @param meas :: the U(1) measurement being made

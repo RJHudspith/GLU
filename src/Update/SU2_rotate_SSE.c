@@ -51,6 +51,14 @@ compute_pertinent_indices( void )
     Latt.su2_data[ su2_index ].idx_b = i2 + NC * i1 ;
     Latt.su2_data[ su2_index ].idx_c = i1 + NC * i2 ;
     Latt.su2_data[ su2_index ].idx_d = i2 + NC * i2 ;
+
+#ifdef verbose
+    printf( "SUBGROUP :: %zu %zu %zu %zu \n" ,
+	    Latt.su2_data[ su2_index ].idx_a ,
+	    Latt.su2_data[ su2_index ].idx_b ,
+	    Latt.su2_data[ su2_index ].idx_c ,
+	    Latt.su2_data[ su2_index ].idx_d ) ;
+#endif
   }
   return ;
 }

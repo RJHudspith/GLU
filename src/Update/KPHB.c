@@ -39,19 +39,21 @@ update_lattice( struct site *lat ,
 		const struct draughtboard db ,
 		const size_t Nor )
 {
-  //start_timer() ;
   // do a Nhb heat baths
   hb_lattice( lat , inverse_beta , db ) ;
 
   // and some number of over-relaxations
+  // this keeps the action the same while increasing tunneling into 
+  // different topological sectors
   size_t or ;
   for( or = 0 ; or < Nor ; or++ ) {
+    // perform over-relaxation 
     OR_lattice( lat , db ) ;
   }
 
   // reunitarise the gauge field? If NC gets large this can be a problem
   latt_reunitU( lat ) ;
-  //print_time() ;
+
   return ;
 }
 
@@ -133,8 +135,9 @@ hb_update( struct site *lat ,
 	       i , av_plaquette( lat ) ) ;
       // write the temporal polyakov loop, (re,im) |L|
       const double complex L = poly( lat , ND-1 ) / ( LCU * NC ) ;
-      fprintf( stdout , "[UPDATE] {L} ( %f , %f ) %f \n" ,
+      fprintf( stdout , "[UPDATE] {L} ( %1.12e , %1.12e ) %1.12e \n" ,
 	       creal( L ) , cimag( L ) , cabs( L ) ) ;
+      fflush( stdout ) ;
     }
 
     // if we hit a save point we write out the configuration

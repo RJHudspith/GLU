@@ -75,6 +75,7 @@ read_file( struct head_data *HEAD_DATA ,
   /// here we include the usual stuff look at header for global stuff
   // open our configuration
   FILE *infile = fopen( config_in , "r" ) ;
+  // TODO :: figure out how to flag this safely - J
   /*
   if( infile == NULL ) {
     fprintf( stderr , "[IO] error opening file :: %s\n" , config_in ) ;
@@ -204,7 +205,7 @@ read_and_check( const char *infile ,
 
   gauge( lat ) ;
 
-  if( Latt.argc == WRITE ) {
+  if( (Latt.argc-1) == WRITE ) {
     write_configuration( lat , outfile , storage , output_details ) ;
   }
 
@@ -252,7 +253,7 @@ read_and_fix( const char *infile ,
 
   GF_wrap( infile , lat , GFINFO , SMINFO , HEAD_DATA ) ;
 
-  if( Latt.argc == WRITE ) {
+  if( (Latt.argc-1) == WRITE ) {
     write_configuration( lat , outfile , storage , output_details ) ;
   }
 
@@ -280,7 +281,7 @@ read_and_smear( const char *infile ,
 
   SM_wrap_struct( lat , SMINFO ) ;
 
-  if( Latt.argc == WRITE ) {
+  if( (Latt.argc-1) == WRITE ) {
     write_configuration( lat , outfile , storage , output_details ) ;
   }
 
@@ -308,7 +309,7 @@ read_and_U1( const char *infile ,
 
   suNC_cross_u1( lat , U1INFO ) ;
 
-  if( Latt.argc == WRITE ) {
+  if( (Latt.argc-1) == WRITE ) {
     write_configuration( lat , outfile , storage , output_details ) ;
   }
 

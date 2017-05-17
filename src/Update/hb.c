@@ -8,7 +8,7 @@
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    GLU is distributed in the hope that it will be useful,
+a    GLU is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
@@ -32,6 +32,13 @@
 #include "par_rng.h"    // parallel rng
 #include "staples.h"    // all_staples()
 #include "SU2_rotate.h" // rotation
+#include "relax.h" // OR
+
+// just update the diagonal
+//#define DIAGONAL_UPDATE
+
+// hit the subgroups at random
+//#define STOCH (NC*3)
 
 // maximum number of heatbath updates
 #define NHBMAX (42)
@@ -136,6 +143,25 @@ hb( GLU_complex U[ NCNC ] ,
   GLU_complex s0 GLUalign , s1 GLUalign ;
   double scale GLUalign ;
   size_t i ;
+
+#ifdef DIAGONAL_UPDATE
+  for( i = 0 ; i < NC-1 ; i++ ) {
+    only_subgroup( &s0 , &s1 , &scale , U , staple , i ) ;
+    if( generate_SU2( &s0 , &s1 , invbeta*scale , thread ) == GLU_FAILURE ) {
+      continue ;
+    }
+    su2_rotate( U , s0 , s1 , i ) ;
+  }
+#elif defined STOCH
+  for( i = 0 ; i < STOCH ; i++ ) {
+    const size_t stoch = (size_t)( par_rng_dbl( thread ) * NSU2SUBGROUPS ) ;
+    only_subgroup( &s0 , &s1 , &scale , U , staple , stoch ) ;
+    if( generate_SU2( &s0 , &s1 , invbeta*scale , thread ) == GLU_FAILURE ) {
+      continue ;
+    }
+    su2_rotate( U , s0 , s1 , stoch ) ;
+  }
+#else
   for( i = 0 ; i < NSU2SUBGROUPS ; i++ ) {
     only_subgroup( &s0 , &s1 , &scale , U , staple , i ) ;
     if( generate_SU2( &s0 , &s1 , invbeta*scale , thread ) == GLU_FAILURE ) {
@@ -143,6 +169,7 @@ hb( GLU_complex U[ NCNC ] ,
     }
     su2_rotate( U , s0 , s1 , i ) ;
   }
+#endif
   return ;
 }
 

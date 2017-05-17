@@ -58,7 +58,7 @@ temporal_correlator( const GLU_complex *qtop ,
     register double sum = 0.0 ;
     size_t i ;
     for( i = 0 ; i < LCU ; i++ ) {
-      sum = creal( *p ) , p++ ;
+      sum += creal( *p ) , p++ ;
     }
     ct[ t ] = sum ;
   }
@@ -143,14 +143,13 @@ compute_Qsusc( struct site *__restrict lat ,
   // precompute all of charge densities q(x)
   compute_Gmunu_array( qtop , lat ) ;
 
-  #ifdef verbose
   register double sum = 0.0 , sumsq = 0.0 ;
   for( i = 0 ; i < LVOLUME ; i++ ) {
     sum += creal( qtop[i] ) ;
     sumsq += creal( qtop[i] * qtop[i] ) ;
   }
-  fprintf( stdout , "\n[QTOP] %f %f \n" , sum * NORM , sumsq * NORMSQ ) ;
-  #endif
+  fprintf( stdout , "\n[QTOP] Q %zu %1.12e %1.12e %1.12e \n" ,
+	   measurement , sum * NORM , sum * sum * NORMSQ , sumsq * NORMSQ ) ;
   
   // if we have fftw, use it for the contractions
 #ifdef HAVE_FFTW3_H

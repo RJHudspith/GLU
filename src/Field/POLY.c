@@ -351,9 +351,9 @@ Coul_staticpot( struct site *__restrict lat ,
   fprintf( stdout , "[STATIC-POTENTIAL] writing output file to %s \n" , str ) ;
 
   // write out the size of the timeslices we are looking at
-  size_t Tcorrs[1] = { T-1 } ;
+  uint32_t Tcorrs[1] = { T-1 } ;
   if( !WORDS_BIGENDIAN ) { bswap_32( 1 , Tcorrs ) ; }
-  fwrite( Tcorrs , sizeof(int) , 1 , Ap ) ;
+  fwrite( Tcorrs , sizeof(uint32_t) , 1 , Ap ) ;
   if( !WORDS_BIGENDIAN ) { bswap_32( 1 , Tcorrs ) ; }  
 
   // allocate the results

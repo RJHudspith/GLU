@@ -24,9 +24,16 @@
 
 #include "staples.h"    // all_staples()
 #include "SU2_rotate.h" // rotation
+#include "par_rng.h"
 
 // chroma's seems the cheapest at the moment
 #define CHROMA_RELAX
+
+// number of SOR steps
+//#define SOR
+
+// number of stochastic SU(2) updates
+//#define NSTOCH (NC*15)
 
 // microcanonical su(2) update
 void
@@ -51,12 +58,32 @@ microcanonical( GLU_complex *s0 ,
 // overrelaxation algorithm
 static void
 overrelax( GLU_complex U[ NCNC ] , 
-	   const GLU_complex staple[ NCNC ] )
+	   const GLU_complex staple[ NCNC ] ,
+	   const uint32_t thread )
 {
   GLU_complex s0 GLUalign , s1 GLUalign ;
   double scale GLUalign ;
   size_t i ;
+#ifdef NSTOCH
+  for( i = 0 ; i < NSTOCH ; i++ ) {
+    const size_t stoch = (size_t)( par_rng_dbl( thread ) * NSU2SUBGROUPS ) ;
+    only_subgroup( &s0 , &s1 , &scale , U , staple , stoch ) ;
+    microcanonical( &s0 , &s1 ) ;
+    #ifdef CHROMA_RELAX
+    su2_rotate( U , s0 , s1 , stoch ) ;
+    #else
+    su2_rotate( U , s0 , s1 , stoch ) ;  
+    su2_rotate( U , s0 , s1 , stoch ) ;
+    #endif
+  }
+#else
+  // maybe this is a good idea ...
+  size_t k ;
   for( i = 0 ; i < NSU2SUBGROUPS ; i++ ) {
+    #ifdef SOR
+    // stochastic-OR?
+    if( par_rng_dbl( thread ) < 0.5 ) continue ;
+    #endif
     only_subgroup( &s0 , &s1 , &scale , U , staple , i ) ;
     microcanonical( &s0 , &s1 ) ;
     #ifdef CHROMA_RELAX
@@ -66,6 +93,7 @@ overrelax( GLU_complex U[ NCNC ] ,
     su2_rotate( U , s0 , s1 , i ) ;
     #endif
   }
+#endif
   return ;
 }
 
@@ -86,7 +114,7 @@ OR_lattice( struct site *lat ,
       #else
       all_staples( stap , lat , i , mu , ND , SM_APE ) ;
       #endif
-      overrelax( lat[ i ].O[mu] , stap ) ;
+      overrelax( lat[ i ].O[mu] , stap , get_GLU_thread() ) ;
     }
 #else
     // loop draughtboard coloring
@@ -102,7 +130,7 @@ OR_lattice( struct site *lat ,
 	#else
 	all_staples( stap , lat , it , mu , ND , SM_APE ) ;
 	#endif
-	overrelax( lat[ it ].O[mu] , stap ) ;
+	overrelax( lat[ it ].O[mu] , stap , get_GLU_thread() ) ;
       }
       // and that is it
     }

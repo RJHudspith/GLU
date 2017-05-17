@@ -30,8 +30,8 @@
 
 // controls for the wilson flow these get externed!
 const double MEAS_START = 0.0 ; // start measuring from 1 lattice spacing flow
-const double W0_STOP    = 0.3 ; // BMW's choice for the W_0 parameter
-const double T0_STOP    = 0.3 ; // Martin's choice for the t_0 scale
+const double W0_STOP    = NC*0.1 ; // BMW's choice for the W_0 parameter
+const double T0_STOP    = NC*0.1 ; // Martin's choice for the t_0 scale
 double TMEAS_STOP = 20 ;
 
 // set tmeas using some c0 if that is your thing
