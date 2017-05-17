@@ -197,12 +197,12 @@ static char *identity_test( void ) {
   for( i = 0 ; i < NC ; i++ ) {
     for( j = 0 ; j < NC ; j++ ) {
       if( i != j ) {
-	if( fabs( d[j+i*NC] ) > PREC_TOL ) {
+	if( cabs( d[j+i*NC] ) > PREC_TOL ) {
 	  is_ok = GLU_FALSE ;
 	  break ;
 	} 
       } else {
-	if( fabs( d[j+i*NC] - 1.0 ) > PREC_TOL ) {
+	if( cabs( d[j+i*NC] - 1.0 ) > PREC_TOL ) {
 	  is_ok = GLU_FALSE ;
 	  break ;
 	} 

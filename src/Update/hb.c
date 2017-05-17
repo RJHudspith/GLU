@@ -27,6 +27,8 @@ a    GLU is distributed in the hope that it will be useful,
    Credit :: Lots of credit to T deGrand whose code (in MILC) I used as the basis 
              for this work and whose code I tested this against.
  */
+#define _GNU_SOURCE // sincos
+
 #include "Mainfile.h"
 
 #include "par_rng.h"    // parallel rng
@@ -86,12 +88,14 @@ generate_SU2( GLU_complex *s0 ,
 		   const double NORM ,
 		   const uint32_t thread ) ;
 
-  // for small beta the Creutz algorithm is preferred
+  // for small beta (large NORM) the Creutz algorithm is preferred
   char msg[8] ;
-  switch( NORM > 2.0 ) {
-  case 0 : K = KP ; sprintf( msg , "KenPen" ) ; break ;
-  case 1 : K = Creutz ; xl = exp( -2./NORM ) ; 
-    sprintf( msg , "Creutz" ) ; break ;
+  if( NORM < 2.0 ) {
+    K = KP ; sprintf( msg , "KenPen" ) ;
+  } else {
+    K = Creutz ;
+    xl = exp( -2./NORM ) ; 
+    sprintf( msg , "Creutz" ) ;
   }
 
   // compute d which is (1-a0) = the leftmost su2 matrix element
