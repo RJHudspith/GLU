@@ -331,8 +331,8 @@ write_lat( struct site *lat ,
 
   // loop variables
   size_t LOOP_VAR , LATT_LOOP ;
-  const GLU_output checktype = construct_loop_variables( 
-            &LATT_LOOP , &LOOP_VAR , type ) ;
+  const GLU_output checktype = \
+    construct_loop_variables( &LATT_LOOP , &LOOP_VAR , type ) ;
 
   // compute the checksums ...
   uint32_t nersc_cksum , milc_cksum29 , milc_cksum31 ;
@@ -344,7 +344,7 @@ write_lat( struct site *lat ,
 		    lat , LOOP_VAR , checktype ) ;
 
   // and begin writing the headers
-  switch( checktype ) {
+  switch( type ) {
   case OUTPUT_HIREP : return GLU_FAILURE ;
   case OUTPUT_SMALL : 
   case OUTPUT_GAUGE :
@@ -376,7 +376,7 @@ write_lat( struct site *lat ,
   }
 
   // need to write out the scidac checksums here
-  switch( checktype ) {
+  switch( type ) {
   case OUTPUT_SCIDAC :
   case OUTPUT_ILDG :
     write_trailing_header_SCIDAC( out , scidac_cksum29 , scidac_cksum31 ) ;

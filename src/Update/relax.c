@@ -77,8 +77,6 @@ overrelax( GLU_complex U[ NCNC ] ,
     #endif
   }
 #else
-  // maybe this is a good idea ...
-  size_t k ;
   for( i = 0 ; i < NSU2SUBGROUPS ; i++ ) {
     #ifdef SOR
     // stochastic-OR?

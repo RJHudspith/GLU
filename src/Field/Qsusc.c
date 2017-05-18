@@ -125,10 +125,6 @@ compute_Qsusc( struct site *__restrict lat ,
   // allocate the results
   double *qcorr = malloc( size[0] * sizeof( double ) ) ; 
 
-#ifdef verbose
-  register double sum = 0.0 , sumsq = 0.0 ;
-#endif
-
   // fft'd list and plans
 #ifdef HAVE_FFTW3_H
   GLU_complex *out = NULL ;

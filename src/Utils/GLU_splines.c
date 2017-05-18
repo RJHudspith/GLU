@@ -284,7 +284,7 @@ cubic_min( const double *__restrict x ,
   //Look at what we are solving ....
   fprintf( stdout , "[SPLINE] %f %f \n" , yp , yp_p ) ;
   fprintf( stdout , "[SPLINE] abc %e %e %e \n" , a , b , c ) ;
-  fprintf( stdout , "[SPLINE] change up %d \n" , change_up ) ;
+  fprintf( stdout , "[SPLINE] change up %zu \n" , change_up ) ;
   fprintf( stdout , "[SPLINE] root %e \n" , ans ) ;
 #endif
 
