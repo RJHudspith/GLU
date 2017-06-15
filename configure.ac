@@ -571,6 +571,16 @@ AC_ARG_ENABLE([OVERRELAXED_GF],
 	esac
 	],[])
 
+## Use SLAB method
+AC_ARG_ENABLE([SLAB_METHOD],
+	[ --enable-SLAB_METHOD slab method of measuring topological susceptibility],
+	[case "${enableval}" in
+	yes) AC_MSG_NOTICE([SLAB method of QSUSC computation])
+       	     AC_DEFINE([SLAB_METHOD],,[Slab method for QSUSC])   
+	     ;;
+	*) AC_MSG_ERROR([bad value ${enableval} for --enable-SLAB_METHOD]) ;;
+	esac],[])
+
 ## Some compiler checks
 ## My code is littered with consts
 AC_C_CONST([])
