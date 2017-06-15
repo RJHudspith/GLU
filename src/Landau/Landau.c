@@ -311,7 +311,7 @@ Landau( struct site *__restrict lat ,
 
   /////////////// Look for Wisdom //////////////
 
-  create_plans_DFT( forward , backward , in , out , TRUE_HERM , ND ) ;
+  create_plans_DFT( forward , backward , in , out , Latt.dims , TRUE_HERM , ND ) ;
 
   ///////// End of the search for Wisdom //////
 #else 

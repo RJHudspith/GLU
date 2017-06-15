@@ -220,7 +220,7 @@ create_u1( GLU_real *__restrict *__restrict U ,
   }
 
   fftw_plan plan[ ND ] ;
-  create_plans_DHT( plan , in , out , ND , ND ) ;
+  create_plans_DHT( plan , in , out , Latt.dims , ND , ND ) ;
 
   periodic_dht( in ) ;
 
@@ -236,7 +236,7 @@ create_u1( GLU_real *__restrict *__restrict U ,
   }
   
   fftw_plan plan[ ND ] , backward[ ND ] ;
-  create_plans_DFT( plan , backward , in , out , ND , ND ) ;
+  create_plans_DFT( plan , backward , in , out , Latt.dims , ND , ND ) ;
 
   periodic_dft( in ) ;
 

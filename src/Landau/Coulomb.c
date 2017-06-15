@@ -94,7 +94,7 @@ Coulomb( struct site *__restrict lat ,
   }
 
   // create the fftw plans, or read them if they are stored
-  create_plans_DFT( forward , backward , in , out , TRUE_HERM , ND - 1 ) ;
+  create_plans_DFT( forward , backward , in , out , Latt.dims , TRUE_HERM , ND - 1 ) ;
 
   /////  End of the search for Wisdom  ////
 #else

@@ -70,7 +70,7 @@ mom_gauge( struct site *__restrict A ,
   GLU_complex *in = fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
 
   fftw_plan forward , backward ;
-  small_create_plans_DFT( &forward , &backward , in , out , ND ) ;
+  small_create_plans_DFT( &forward , &backward , in , out , Latt.dims , ND ) ;
 
   // End of the search for Wisdom 
 

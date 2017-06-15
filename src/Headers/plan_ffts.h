@@ -20,7 +20,6 @@
    @file plan_ffts.h
    @brief prototype function wrappers for the ffts used 
  */
-
 #ifndef GLU_PLAN_FFTS_H
 #define GLU_PLAN_FFTS_H
 
@@ -43,6 +42,7 @@ parallel_ffts( void ) ;
    @param backward :: backward FFT
    @param in :: temporary field going in
    @param out :: temporary field out
+   @param dims :: dimensions of the transform in our lexicographical ordering
    @param ARR_SIZE :: out and in array sizes
    @param DIR :: number of dimensions of the transform
    This function creates an array of plans that fourier
@@ -57,7 +57,8 @@ void
 create_plans_DFT( fftw_plan *__restrict forward , 
 		  fftw_plan *__restrict backward ,
 		  GLU_complex *__restrict *__restrict in , 
-		  GLU_complex *__restrict *__restrict out , 
+		  GLU_complex *__restrict *__restrict out ,
+		  const size_t dims[ ND ] ,
 		  const int ARR_SIZE ,
 		  const int DIR ) ;
 
@@ -68,6 +69,7 @@ create_plans_DFT( fftw_plan *__restrict forward ,
    @param in :: temporary field going in
    @param out :: temporary field out
    @param out :: temporary field out   
+   @param dims :: dimensions of the transform
    @param ARR_SIZE :: the size of the array being FFT'd
    @param DIR :: number of dimensions of the transform
    There is no backward plan as it is its own inverse.
@@ -79,7 +81,8 @@ create_plans_DFT( fftw_plan *__restrict forward ,
 void
 create_plans_DHT( fftw_plan *__restrict plan , 
 		  GLU_real *__restrict *__restrict in , 
-		  GLU_real *__restrict *__restrict out , 
+		  GLU_real *__restrict *__restrict out ,
+		  const size_t dims[ ND ] ,
 		  const int ARR_SIZE ,
 		  const int DIR ) ;
 
@@ -90,6 +93,7 @@ create_plans_DHT( fftw_plan *__restrict plan ,
    @param backward :: backward FFT
    @param in :: temporary field going in
    @param out :: temporary field out
+   @param dims :: dimensions of the transform
    @param DIR :: number of dimensions of the transform
    Same thing as void create_plans_DFT() but in and out are just flat arrays this is called primarily by the cutting routines and by the slow landau code in Landau.c <br>
    The forward transform is in -> out <br>
@@ -105,6 +109,7 @@ small_create_plans_DFT( fftw_plan *__restrict forward ,
 			fftw_plan *__restrict backward ,
 			GLU_complex *__restrict in , 
 			GLU_complex *__restrict out ,
+			const size_t dims[ ND ] ,
 			const int DIR ) ;
 
 #endif // HAVE_FFTW_H

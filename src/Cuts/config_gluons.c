@@ -116,7 +116,7 @@ spatial_correlator( struct site *__restrict A ,
 
   // create some plans
   fftw_plan forward , backward ;
-  small_create_plans_DFT( &forward , &backward , in , out , ND ) ;
+  small_create_plans_DFT( &forward , &backward , in , out , Latt.dims , ND ) ;
 
   //forward transform
   size_t mu , i , j ;

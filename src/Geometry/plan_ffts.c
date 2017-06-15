@@ -55,6 +55,7 @@ parallel_ffts( void )
 // see if we have wisdom already
 static char *
 obtain_wisdom( int *planflag ,
+	       const size_t dims[ ND ] ,
 	       const int DIR , 
 	       const char *type )
 {
@@ -81,13 +82,15 @@ obtain_wisdom( int *planflag ,
 	   HAVE_PREFIX , prec_str , type , NC ) ;
   #endif
   for( mu = 0 ; mu < DIR - 1 ; mu++ ) {
-    sprintf( str , "%s%zux" , str , Latt.dims[ mu ] ) ;
+    sprintf( str , "%s%zux" , str , dims[ mu ] ) ;
   }
-  sprintf( str , "%s%zu.wisdom" , str , Latt.dims[ DIR - 1 ] ) ;
+  sprintf( str , "%s%zu.wisdom" , str , dims[ DIR - 1 ] ) ;
   if( ( wizzard = fopen( str , "r" ) ) == NULL ) {
     fprintf( stdout , "\n[FFTW] No wisdom to be obtained here ... planning" ) ; 
   } else {
-    fprintf( stdout , "\n[FFTW] Successful wisdom attained" ) ; 
+    #ifdef verbose
+    fprintf( stdout , "\n[FFTW] Successful wisdom attained" ) ;
+    #endif
     *planflag = fftw_import_wisdom_from_file( wizzard ) ; 
     fclose( wizzard ) ; 
   }
@@ -103,20 +106,24 @@ void
 create_plans_DFT( fftw_plan *__restrict forward , 
 		  fftw_plan *__restrict backward ,
 		  GLU_complex *__restrict *__restrict in , 
-		  GLU_complex *__restrict *__restrict out , 
+		  GLU_complex *__restrict *__restrict out ,
+		  const size_t dims[ ND ] ,
 		  const int ARR_SIZE ,
 		  const int DIR )
 {
   // set up our fft
   int dimes[ DIR ] , mu , planflag ;
-  // swap these defs around
+  
+  // swap these defs around as FFTW and I disagree on orderings
   for( mu = 0 ; mu < DIR ; mu++ ) {
-    dimes[ mu ] = Latt.dims[ DIR - 1 - mu ] ;
+    dimes[ mu ] = dims[ DIR - 1 - mu ] ;
   }
 
+  #ifdef verbose
   start_timer( ) ;
-
-  char *str = obtain_wisdom( &planflag , DIR , "" ) ;
+  #endif
+  
+  char *str = obtain_wisdom( &planflag , dims , DIR , "" ) ;
 
   for( mu = 0 ; mu < ARR_SIZE ; mu++ ) {
     forward[mu] = fftw_plan_dft( DIR , dimes , in[mu] , out[mu] , 
@@ -126,8 +133,10 @@ create_plans_DFT( fftw_plan *__restrict forward ,
   }
 
   // I want to know how long FFTW is taking to plan its FFTs
+  #ifdef verbose
   print_time( ) ;
   fprintf( stdout , "[FFTW] plans finished\n\n" ) ;
+  #endif
 
 #ifndef CONDOR_MODE
   if( planflag == NOPLAN )  {
@@ -145,7 +154,8 @@ create_plans_DFT( fftw_plan *__restrict forward ,
 void
 create_plans_DHT( fftw_plan *__restrict plan , 
 		  GLU_real *__restrict *__restrict in , 
-		  GLU_real *__restrict *__restrict out , 
+		  GLU_real *__restrict *__restrict out ,
+		  const size_t dims[ ND ] ,
 		  const int ARR_SIZE ,
 		  const int DIR )
 {
@@ -154,7 +164,7 @@ create_plans_DHT( fftw_plan *__restrict plan ,
 
   // swap these defs around 
   for( mu = 0 ; mu < DIR ; mu++ ) {
-    dimes[ mu ] = Latt.dims[ DIR - 1 - mu ] ;
+    dimes[ mu ] = dims[ DIR - 1 - mu ] ;
   }
 
   fftw_r2r_kind l[ND] ; 
@@ -165,9 +175,11 @@ create_plans_DHT( fftw_plan *__restrict plan ,
   }
 
   // initialise the timer
+  #ifdef verbose
   start_timer( ) ;
-
-  char *str = obtain_wisdom( &planflag , DIR , "DHT_" ) ;
+  #endif
+  
+  char *str = obtain_wisdom( &planflag , dims , DIR , "DHT_" ) ;
 
   // and organise the plans
   for( mu = 0 ; mu < ARR_SIZE ; mu++ ) {
@@ -176,9 +188,11 @@ create_plans_DHT( fftw_plan *__restrict plan ,
   }
 
   // I want to know how long FFTW is taking to plan its FFTs
+  #ifdef verbose
   print_time( ) ;
   fprintf( stdout , "[FFTW] plans finished\n\n" ) ;
-
+  #endif
+  
 #ifndef CONDOR_MODE
   if( planflag == NOPLAN ) {
     FILE *wizzard = fopen( str , "w" ) ; 
@@ -197,19 +211,22 @@ small_create_plans_DFT( fftw_plan *__restrict forward ,
 			fftw_plan *__restrict backward ,
 			GLU_complex *__restrict in , 
 			GLU_complex *__restrict out ,
+			const size_t dims[ ND ] ,
 			const int DIR )
 {
   // set up our fft
   int dimes[ DIR ] , mu , planflag ;
   // swap these defs around
   for( mu = 0 ; mu < DIR ; mu++ ) {
-    dimes[ mu ] = Latt.dims[ DIR - 1 - mu ] ;
+    dimes[ mu ] = dims[ DIR - 1 - mu ] ;
   }
 
   // initialise the clock
-  start_timer( ) ; 
+  #ifdef verbose
+  start_timer( ) ;
+  #endif
 
-  char *str = obtain_wisdom( &planflag , DIR , "single_" ) ;
+  char *str = obtain_wisdom( &planflag , dims , DIR , "single_" ) ;
 
   *forward = fftw_plan_dft( DIR , dimes , in , out , 
 			    FFTW_FORWARD , GLU_PLAN ) ; 
@@ -217,8 +234,10 @@ small_create_plans_DFT( fftw_plan *__restrict forward ,
 			     FFTW_BACKWARD , GLU_PLAN ) ; 
 
   // I want to know how long FFTW is taking to plan its FFTs
+  #ifdef verbose
   print_time( ) ;
   fprintf( stdout , "[FFTW] plans finished\n\n" ) ;
+  #endif
 
 #ifndef CONDOR_MODE
   if( planflag == NOPLAN ) {

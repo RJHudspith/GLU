@@ -198,7 +198,7 @@ static_quark_correlator( double complex *__restrict result ,
 
   // create some plans
   fftw_plan forward , backward ;
-  small_create_plans_DFT( &forward , &backward , in , out , ND-1 ) ;
+  small_create_plans_DFT( &forward , &backward , in , out , Latt.dims , ND-1 ) ;
 
   size_t t ;
   for( t = 0 ; t < Latt.dims[ ND - 1 ] ; t++ ) {

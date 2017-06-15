@@ -77,7 +77,7 @@ complete_plaquette( const GLU_complex *__restrict a ,
 
   return tra + trb ;
 #else
-  GLU_complex GLUalign temp1[NCNC] , GLUalign temp2[NCNC] ; 
+  GLU_complex temp1[NCNC] GLUalign , temp2[NCNC] GLUalign ; 
   multab( temp1 , a , b ) ; 
   multab_dag( temp2 , temp1 , c ) ; 
   multab_dag( temp1 , temp2 , d ) ; 

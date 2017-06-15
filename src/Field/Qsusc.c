@@ -31,6 +31,153 @@
 #include "plan_ffts.h"    // config space correlator is convolution
 #include "SM_wrap.h"      // in case we wish to do smearing
 
+#define SLAB_METHOD
+
+#ifdef SLAB_METHOD
+
+// compute the topological susceptibility on a "slab"
+static int
+compute_Qsusc_slab( struct site *__restrict lat ,
+		    const struct cut_info CUTINFO ,
+		    const size_t measurement )
+{
+  // normalisations
+  const double NORM = -0.001583143494411527678811 ; // -1.0/(64*Pi*Pi)
+  const double NORMSQ = NORM * NORM ;
+  
+  register double sum = 0.0 ;
+  size_t T0 , T1 , i ;
+
+  // set up the outputs
+  char *str = output_str_struct( CUTINFO ) ;
+  sprintf( str , "%s.m%zu.tcorr" , str , measurement ) ;
+  FILE *Ap = fopen( str , "wb" ) ;
+
+  // timeslice length
+  size_t lt[ 1 ] = { Latt.dims[ND-1] } ;
+
+  double *ct = malloc( Latt.dims[ ND-1 ] * sizeof( double ) ) ;
+
+  // write out the timeslice list ...
+  write_tslice_list( Ap , lt ) ;
+  
+  // set up the matrix-valued array of the topological charge
+  GLU_complex *qtop = malloc( LVOLUME * sizeof( GLU_complex ) ) ;
+
+  // precompute all of charge densities q(x) over whole lattice
+  compute_Gmunu_array( qtop , lat ) ;
+
+  // compute the normal topological susceptibility
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    sum += creal( qtop[i] ) ;
+  }
+  fprintf( stdout , "\n[QTOP] Q %zu %1.12e %1.12e \n" ,
+	   measurement , sum * NORM , sum * sum * NORMSQ ) ;
+
+  // compute the slab definition
+  for( T1 = 1 ; T1 <= Latt.dims[ ND-1 ] ; T1++ ) {
+
+#ifdef HAVE_FFTW3_H
+
+    // set up the dimensions of the FFTs
+    size_t dims[ ND ] , mu ;
+    for( mu = 1 ; mu < ND ; mu++ ) {
+      dims[ mu ] = Latt.dims[ ND - 1 - mu ] ;
+    }
+    dims[ 0 ] = T1 ;
+
+    // init parallel threads, maybe
+    if( parallel_ffts( ) == GLU_FAILURE ) {
+      fprintf( stderr , "[PAR] Problem with initialising the OpenMP "
+	       "FFTW routines \n" ) ;
+      break ;
+    }
+
+    GLU_complex *in = fftw_malloc( T1*LCU * sizeof( GLU_complex ) ) ;
+    GLU_complex *out = fftw_malloc( T1*LCU * sizeof( GLU_complex ) ) ;
+
+    // create some small plans
+    fftw_plan forward , backward ;
+    small_create_plans_DFT( &forward , &backward , in , out , dims , ND ) ;
+    
+#endif
+
+    double tsum = 0.0 ;
+    // sum over all possible time cuts
+    for( T0 = 0 ; T0 < Latt.dims[ ND-1 ] ; T0++ ) {
+
+      register double sum_slab = 0.0 ;
+      // perform convolution using FFTW
+      #ifdef HAVE_FFTW3_H
+      #pragma omp parallel for private(i)
+      for( i = 0 ; i < T1*LCU ; i++ ) {
+	const size_t src = (i + T0*LCU)%LVOLUME ;
+	in[ i ] = qtop[ src ] ; 
+      }
+      fftw_execute( forward) ;
+      #pragma omp parallel for private(i)
+      for( i = 0 ; i < T1*LCU ; i++ ) {
+	out[ i ] *= conj( out[i] ) ;
+      }
+      fftw_execute( backward) ;
+
+      for( i = 0 ; i < T1*LCU ; i++ ) {
+	sum_slab += creal( in[ i ] ) ;
+      }
+      // perform convolution the dumb way
+      #else
+      for( i = 0 ; i < T1*LCU ; i++ ) {
+	const size_t src = (i + T0*LCU)%LVOLUME ;
+	const double qsrc = qtop[ src ] ;
+	size_t j ;
+	for( j = 0 ; j < T1*LCU ; j++ ) {
+	  const size_t snk = (j + T0*LCU)%LVOLUME ;
+	  sum_slab += creal ( qsrc * qtop[ snk ] ) ;
+	}
+      }
+      #endif
+      tsum += sum_slab ;
+    }
+
+#ifdef HAVE_FFTW3_H
+    
+    // do the usual convolution norm
+    tsum /= (T1*LCU ) ;
+
+    // cleanup and memory deallocate
+    fftw_destroy_plan( backward ) ;
+    fftw_destroy_plan( forward ) ;
+    fftw_cleanup( ) ;
+    #ifdef OMP_FFTW
+    fftw_cleanup_threads( ) ;
+    #endif
+    fftw_free( in ) ;
+    fftw_free( out ) ;
+#endif
+
+    ct[ T1-1 ] = tsum * NORMSQ / Latt.dims[ ND-1 ] ;
+  }
+
+  // write out the list
+  for( T1 = 0 ; T1 < Latt.dims[ ND-1 ] ; T1++ ) {
+    printf( "[QSUSC] SLAB %zu %1.12e \n" , T1+1 , ct[T1] ) ;
+  }
+
+  // tell us where to go
+  fprintf( stdout , "[CUTS] Outputting correlator to %s \n" , str ) ;
+
+  // and write the props ....
+  write_g2_to_list( Ap , ct , lt ) ;
+
+  // free allocated memory
+  free( str ) ;
+  fclose( Ap ) ;
+  free( qtop ) ;
+  
+  return GLU_SUCCESS ;
+}
+
+#else
 // compute the correlator using the convolved topological 
 // charge correlator
 static int
@@ -160,7 +307,7 @@ compute_Qsusc( struct site *__restrict lat ,
   // FFT Gmunu
   out = fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
 
-  small_create_plans_DFT( &forward , &backward , qtop , out , ND ) ;
+  small_create_plans_DFT( &forward , &backward , qtop , out , Latt.dims , ND ) ;
 
   // computes the full correlator in p-space and FFTs back
   fftw_execute( forward ) ;
@@ -245,6 +392,7 @@ compute_Qsusc( struct site *__restrict lat ,
 
   return FLAG ;
 }
+#endif
 
 // step through smears
 int
@@ -259,9 +407,11 @@ compute_Qsusc_step( struct site *__restrict lat ,
 	   " smearing steps\n" , CUTINFO.max_t , SMINFO.smiters ) ;
 
   // compute the topological correlator in r and the temporal correlator
+  #ifndef SLAB_METHOD
   if( compute_Qsusc( lat , CUTINFO , 0 ) == GLU_FAILURE ) {
     return GLU_FAILURE ;
   }
+  #endif
 
   // perform 10 measurements each stepping smiters ahead
   for( measurement = 1 ; measurement < CUTINFO.max_t ; measurement++ ) {
@@ -270,9 +420,15 @@ compute_Qsusc_step( struct site *__restrict lat ,
     SM_wrap_struct( lat , SMINFO ) ;
     
     // compute the topological correlator in r and the temporal correlator
+    #ifdef SLAB_METHOD
+    if( compute_Qsusc_slab( lat , CUTINFO , measurement ) == GLU_FAILURE ) {
+      return GLU_FAILURE ;
+    }
+    #else
     if( compute_Qsusc( lat , CUTINFO , measurement ) == GLU_FAILURE ) {
       return GLU_FAILURE ;
     }
+    #endif
   }
 
   return GLU_SUCCESS ;
