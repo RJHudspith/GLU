@@ -19,10 +19,7 @@
 /**
    @file OrLandau.c
    @brief Over relaxed Landau and Coulomb gauge fixing codes
-
-   TODO :: is this correct? Need to think - J
  */
-
 #include "Mainfile.h"       // general includes
 
 #include "draughtboard.h"   // draughtboarding
@@ -32,20 +29,12 @@
 #include "random_config.h"  // latt reunitisation
 #include "SU2_rotate.h"     // su(2) rotations
 
-#if 0
 // NC generic givens rotations
 static void
 OrRotation( GLU_complex *__restrict s0 , 
 	    GLU_complex *__restrict s1 ,
-	    const GLU_complex U[ NCNC ] , 
-	    const double OrParam ,
-	    const size_t su2_index )
-{
-  *s0 = U[ Latt.su2_data[ su2_index ].idx_a ] 
-    + conj( U[ Latt.su2_data[ su2_index ].idx_d ] ) ;
-  *s1 = U[ Latt.su2_data[ su2_index ].idx_b ] 
-    - conj( U[ Latt.su2_data[ su2_index ].idx_c ] ) ;
-
+	    const double OrParam )
+{ 
   // I use the MILC OR step here
   register const GLU_real asq = cimag(*s0)*cimag(*s0) 
     + creal(*s1)*creal(*s1) + cimag(*s1)*cimag(*s1) ;
@@ -53,6 +42,7 @@ OrRotation( GLU_complex *__restrict s0 ,
   register const GLU_real x = ( OrParam * a0sq + asq ) / ( a0sq + asq ) ;
   register const GLU_real r = sqrt( a0sq + x*x*asq ) ;
   register const GLU_real xdr = x/r ;
+  
   *s0 = creal( *s0 ) / r + I * cimag( *s0 ) * xdr ;
   *s1 *= xdr ;
 
@@ -67,34 +57,59 @@ OR_single( struct site *__restrict lat ,
 	   const size_t i ,
 	   const size_t DIMS )
 {
-  GLU_complex L[ NCNC ] GLUalign ;
-  zero_mat( L ) ;
-  size_t mu , j , k ;
+  // su2 subgroup indices
+  const size_t a1 = Latt.su2_data[ su2_index ].idx_a / NC ;
+  const size_t a2 = Latt.su2_data[ su2_index ].idx_a % NC ;
+
+  const size_t b1 = Latt.su2_data[ su2_index ].idx_b / NC ;
+  const size_t b2 = Latt.su2_data[ su2_index ].idx_b % NC ;
+
+  const size_t c1 = Latt.su2_data[ su2_index ].idx_c / NC ;
+  const size_t c2 = Latt.su2_data[ su2_index ].idx_c % NC ;
+
+  const size_t d1 = Latt.su2_data[ su2_index ].idx_d / NC ;
+  const size_t d2 = Latt.su2_data[ su2_index ].idx_d % NC ;
+
+  const size_t aidx1 = a1 + a2*NC , aidx2 = a2 + a1*NC ;
+  const size_t bidx1 = b1 + b2*NC , bidx2 = b2 + b1*NC ;
+  const size_t cidx1 = c1 + c2*NC , cidx2 = c2 + c1*NC ;
+  const size_t didx1 = d1 + d2*NC , didx2 = d2 + d1*NC ;
+
+  // usual counters, s0 and s1 are the elements of su2
+  GLU_complex s0 , s1 ;
+  size_t mu , back;
+
   // loop directions summing into L
   for( mu = 0 ; mu < DIMS ; mu++ ) {
+    
     // compute U(x+\mu/2) + U^{dagger}(x-\mu/2)
-    const size_t back = lat[i].back[mu] ;
-    for( j = 0 ; j < NC ; j++ ) {
-      for( k = 0 ; k < NC ; k++ ) {
-	L[ k + j * NC ] += conj( lat[i].O[mu][j+k*NC] ) +
-	  lat[back].O[mu][k+j*NC] ;
-      }
-    }
+    back = lat[i].back[mu] ;
+    
+    // can speed this up as we only care about s0 and s1 which only need
+    // idx_a,b,c,d
+    s0 +=
+      conj( lat[i].O[mu][aidx1] ) + lat[i].O[mu][didx1] +
+      lat[back].O[mu][aidx2] + conj( lat[back].O[mu][didx2] ) ;
+
+    // s1
+    s1 +=
+      conj( lat[i].O[mu][bidx1] ) - lat[i].O[mu][cidx1]
+      + lat[back].O[mu][bidx2] - conj( lat[back].O[mu][cidx2] ) ;
   }
+  
   // hits the link to the left and the one to the right with
   // gauge transformation matrices
-  GLU_complex s0 , s1 ;
-  OrRotation( &s0 , &s1 , L , OrParam , su2_index ) ;
-
-  // gauge rotate
+  OrRotation( &s0 , &s1 , OrParam ) ;
+  
+  // gauge rotate all the links that touch this gauge transformation
   for( mu = 0 ; mu < ND ; mu++ ) {
-    const size_t back = lat[i].back[mu] ;
+    back = lat[i].back[mu] ;
     shortened_su2_multiply( lat[i].O[mu] , s0 , s1 , 
 			    -conj(s1) , conj(s0) , su2_index ) ;
     shortened_su2_multiply_dag( lat[back].O[mu] , s0 , s1 , 
 				-conj(s1) , conj(s0) , su2_index ) ;
   }
-
+  
   return ;
 }
 
@@ -108,16 +123,13 @@ OR_iteration( struct site *__restrict lat ,
 	      const size_t DIMS )
 {
   // perform an overrelaxation step
-  size_t i ;
-#pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < db.Nred ; i++ ) {  
-    OR_single( lat , su2_index  , OrParam , 
-	       db.red[i] + LCU * t , DIMS ) ;
-  }
-#pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < db.Nblack ; i++ ) {    
-    OR_single( lat , su2_index , OrParam , 
-	       db.black[i] + LCU * t , DIMS ) ;
+  size_t i , c ;
+  for( c = 0 ; c < db.Ncolors ; c++ ) {
+    #pragma omp parallel for private(i)
+    for( i = 0 ; i < db.Nsquare[c] ; i++ ) {
+      OR_single( lat , su2_index  , OrParam , 
+		 db.square[c][i] + LCU * t , DIMS ) ;
+    }
   }
   return ;
 }
@@ -172,7 +184,7 @@ OrLandau( struct site *__restrict lat ,
     oldlink = newlink ;
 
     // loop su2 indices
-    size_t su2_index ;
+    size_t su2_index = 0 ;
     for( su2_index = 0 ; su2_index < NSU2SUBGROUPS ; su2_index++ ) {
       OR_iteration( lat , db , su2_index , OrParam , 0 , ND ) ;
     }
@@ -183,9 +195,9 @@ OrLandau( struct site *__restrict lat ,
     fprintf( stdout , "%1.12f \n" , newlink ) ;
     #endif
 
-    // chroma condition is pretty shitty
+    // chroma stopping condition is pretty crap
     *theta = ( newlink - oldlink ) / newlink ;
-
+    
     iters++ ;
   }
 
@@ -217,7 +229,7 @@ slice_spatial_links( const struct site *__restrict lat ,
   return sum / ( LCU * (ND-1) * NC ) ;
 }
 
-// Coulomb gauge fix -> need to think about restarting this
+// Coulomb gauge fix
 size_t
 OrCoulomb( struct site *__restrict lat ,
 	   double *theta ,
@@ -257,9 +269,15 @@ OrCoulomb( struct site *__restrict lat ,
       loc_iters++ ;
     }
 
-    fprintf( stdout , "[GF] Slice :: %zu {Stopped by convergence} \n"
-	     "[GF] Accuracy :: %1.5e || Iterations :: %zu\n"
-	     "[GF] Failures :: %d\n\n" , t , *theta , loc_iters , 0 ) ; 
+    if( loc_iters == MAX_ITERS ) {
+      fprintf( stdout , "[GF] Slice :: %zu {Stopped by MAX_ITERS} \n"
+	       "[GF] Accuracy :: %1.5e || Iterations :: %zu\n"
+	       "[GF] Failures :: %d\n\n" , t , *theta , loc_iters , 0 ) ;
+    } else {
+      fprintf( stdout , "[GF] Slice :: %zu {Stopped by convergence} \n"
+	       "[GF] Accuracy :: %1.5e || Iterations :: %zu\n"
+	       "[GF] Failures :: %d\n\n" , t , *theta , loc_iters , 0 ) ;
+    }
     iters += loc_iters ;
   }
 
@@ -276,4 +294,3 @@ OrCoulomb( struct site *__restrict lat ,
   return iters ;
 }
 
-#endif

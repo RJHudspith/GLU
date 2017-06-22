@@ -211,17 +211,17 @@ print_fixing_info( const struct gf_info GFINFO )
   default : break ;// should never get here
   }
   fprintf( stdout , "[GF] Tuning parameter alpha :: %f \n" , Latt.gf_alpha ) ;
-  fprintf( stdout , "[GF] Performing AT MOST %zu iterations"
+  fprintf( stdout , "[GF] Performing AT MOST %zu iterations "
 	   "before randomly restarting ... \n" , GFINFO.max_iters ) ;
   fprintf( stdout , "[GF] Allowing for %d restarts before complaint ... \n" , 
 	   GF_GLU_FAILURES ) ; 
   // derivative routines available
   fprintf( stdout , "[GF] " ) ;
   #ifdef deriv_lin
-  fprintf( stdout , "Using the Hermitian projection definition"
+  fprintf( stdout , "Using the Hermitian projection definition "
 	   "of the gluon fields.\n" ) ; 
   #elif defined deriv_linn
-  fprintf( stdout , "Using the Hermitian projection definition"
+  fprintf( stdout , "Using the Hermitian projection definition "
 	   "of the gluon fields,\n"
 	   "and the next nearest neighbor derivative.\n" ) ; 
   fprintf( stdout , "[GF] Nearest neighbour terms nn1 :: %f nn2 :: %f \n" , 
@@ -240,10 +240,10 @@ print_fixing_info( const struct gf_info GFINFO )
   // exponentiation approximation routines
   fprintf( stdout , "[GF] " ) ;
   #if defined exp_approx
-  fprintf( stdout , "Approximate O(a) exponential expansion,"
+  fprintf( stdout , "Approximate O(a) exponential expansion, "
 	   "and reunitarisation in Gauge Fixing.\n" ) ; 
   #elif defined exp_a2_approx
-  fprintf( stdout , "Approximate O(a^2) exponential expansion,"
+  fprintf( stdout , "Approximate O(a^2) exponential expansion, "
 	   "and reunitarisation in Gauge Fixing.\n" ) ; 
   #elif defined exp_exact
   fprintf( stdout , "Exact exponentiation in the Gauge Fixing being used.\n" ) ;

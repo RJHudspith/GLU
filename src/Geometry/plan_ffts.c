@@ -86,17 +86,17 @@ obtain_wisdom( int *planflag ,
   }
   sprintf( str , "%s%zu.wisdom" , str , dims[ DIR - 1 ] ) ;
   if( ( wizzard = fopen( str , "r" ) ) == NULL ) {
-    fprintf( stdout , "\n[FFTW] No wisdom to be obtained here ... planning" ) ; 
+    fprintf( stdout , "\n[FFTW] No wisdom to be obtained here ... planning\n" ) ; 
   } else {
     #ifdef verbose
-    fprintf( stdout , "\n[FFTW] Successful wisdom attained" ) ;
+    fprintf( stdout , "\n[FFTW] Successful wisdom attained\n" ) ;
     #endif
     *planflag = fftw_import_wisdom_from_file( wizzard ) ; 
     fclose( wizzard ) ; 
   }
   // condor mode ifdef
 #else
-  fprintf( stdout , "[FFTW] Creating plan on CONDOR host" ) ; 
+  fprintf( stdout , "[FFTW] Creating plan on CONDOR host\n" ) ; 
 #endif
   return str ;
 }

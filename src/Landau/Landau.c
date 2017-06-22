@@ -36,8 +36,7 @@
 #include "plaqs_links.h"   // average plaquette and link trace
 #include "read_headers.h"  // understands header formats
 #include "read_config.h"   // configuration reader
-#include "random_config.h" // random config and lattice reunit 
-
+#include "random_config.h" // random config and lattice reunit
 
 // output the data, pass lat for the plaquette
 static void
