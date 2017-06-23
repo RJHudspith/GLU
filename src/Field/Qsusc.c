@@ -31,8 +31,6 @@
 #include "plan_ffts.h"    // config space correlator is convolution
 #include "SM_wrap.h"      // in case we wish to do smearing
 
-#define SLAB_METHOD
-
 #ifdef SLAB_METHOD
 
 // compute the topological susceptibility on a "slab"
