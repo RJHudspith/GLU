@@ -14,7 +14,7 @@ CUTSFILES=./Cuts/3Dcuts.c ./Cuts/config_gluons.c ./Cuts/cut_output.c \
 
 ## plaquettes, traces, field strength tensor
 FIELDFILES=./Field/clover.c ./Field/plaqs_links.c ./Field/POLY.c \
-	./Field/Qsusc.c
+	./Field/Qcorr.c ./Field/Qslab.c ./Field/Qsusc.c 
 
 ## geometry, fft planning
 GEOMETRYFILES=./Geometry/BPST_config.c ./Geometry/geometry.c \

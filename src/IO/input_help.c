@@ -136,7 +136,7 @@ cuttype_types( void )
 	   "                                       the computation of the "
 	   "polyakov loops, specified by the smearing options in the "
 	   "input file\n" ) ;
-  fprintf( stdout , "CUTTYPE = TOPOLOGICAL_SUSCEPTIBILITY - Computes the "
+  fprintf( stdout , "CUTTYPE = TOPOLOGICAL_CORRELATOR     - Computes the "
 	   "configuration space correlator of topological charges C(r) "
 	   " = < q(0) q(r) > \n" 
 	   "                                       storage is similar to "
@@ -147,6 +147,11 @@ cuttype_types( void )
 	   " specified by\n"
 	   "                                       the smearing options in "
 	   "the input file\n" ) ;
+  fprintf( stdout , "CUTTYPE = TOPOLOGICAL_SUSCEPTIBILITY - Computes the "
+	   "topological susceptibility using the slab method with slabs\n"
+	   "in multiple directions.\n"
+	   "                                       Also performs smearing "
+	   "specified by the smearing options in the input file\n" ) ;
   fprintf( stdout , "CUTTYPE = {ALL ELSE} - Do Nothing \n" ) ;
   fprintf( stdout , "\nCONFIGSPACE_GLUE, EXCEPTIONAL, GLUON_PROPS and "
 	   "NON_EXCEPTIONAL require the gauge field to be fixed to "
@@ -296,9 +301,9 @@ smeartype_types( void )
 	   "uses the exact log definition of gauge fields\n" ) ;
   fprintf( stdout , "          = STOUT            - STOUT link smearing uses "
 	   "the Hermitian projection definition of gauge fields\n" ) ;
-  fprintf( stdout , "          = WFLOW_LOG        - RK4 integration of the "
+  fprintf( stdout , "          = WFLOW_LOG        - RK3 integration of the "
 	   "flow equation using LOG links\n" ) ;
-  fprintf( stdout , "          = WFLOW_STOUT      - RK4 integration of the "
+  fprintf( stdout , "          = WFLOW_STOUT      - RK3 integration of the "
 	   "flow equation using STOUT links\n" ) ;
   fprintf( stdout , "          = {ALL ELSE}       - Do nothing\n" ) ;
   fprintf( stdout , "\n*caution* Hypercubically blocked variants for ND > 4 "

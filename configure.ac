@@ -43,7 +43,6 @@
 ##                         initial transformations, default is 20
 ## --enable-GLU_GFIX_SD :: turn on the steepest descent codes (default is the CG)
 ## --enable-OVERRELAXED_GF :: switch to the overrelaxed codes for gauge fixing
-## --enable-SLAB_METHOD :: enable the slab method computation of QSUSC
 
 AC_INIT([GLU], [1.1], [renwick.james.hudspith@gmail.com])
 AM_INIT_AUTOMAKE([-Wall subdir-objects])
@@ -570,16 +569,6 @@ AC_ARG_ENABLE([OVERRELAXED_GF],
 	*) AC_MSG_ERROR([bad value ${enableval} for --enable-OVERRELAXED_GF]) ;;
 	esac
 	],[])
-
-## Use SLAB method
-AC_ARG_ENABLE([SLAB_METHOD],
-	[ --enable-SLAB_METHOD slab method of measuring topological susceptibility],
-	[case "${enableval}" in
-	yes) AC_MSG_NOTICE([SLAB method of QSUSC computation])
-       	     AC_DEFINE([SLAB_METHOD],,[Slab method for QSUSC])   
-	     ;;
-	*) AC_MSG_ERROR([bad value ${enableval} for --enable-SLAB_METHOD]) ;;
-	esac],[])
 
 ## Some compiler checks
 ## My code is littered with consts
