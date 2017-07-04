@@ -30,6 +30,13 @@
   #include <omp.h>
 #endif
 
+#if (defined HAVE_IMMINTRIN_H) && !(defined SINGLE_PREC)
+
+#include <immintrin.h>
+#include "SSE2_OPS.h"
+
+#endif
+
 //// My plaquette code, uses expressions for the trace of four matrices 
 static double
 complete_plaquette( const GLU_complex *__restrict a ,
@@ -38,6 +45,88 @@ complete_plaquette( const GLU_complex *__restrict a ,
 		    const GLU_complex *__restrict d )
 {
 #if NC == 3
+  #if (defined HAVE_IMMINTRIN_H) && !(defined SINGLE_PREC)  
+  
+  const __m128d *A = ( __m128d* )a , *B = ( __m128d* )b ,
+    *C = ( __m128d* )c , *D = ( __m128d* )d ;
+  register __m128d tra1 , tra2 , tra3 , tr ;
+  
+  tra1 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 0 ) ) ,
+		     _mm_add_pd( SSE2_MUL( *( A + 1 ) , *( B + 3 ) ) ,
+				 SSE2_MUL( *( A + 2 ) , *( B + 6 ) ) ) ) ;
+  tra2 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 1 ) ) ,
+		     _mm_add_pd( SSE2_MUL( *( A + 1 ) , *( B + 4 ) ) ,
+				 SSE2_MUL( *( A + 2 ) , *( B + 7 ) ) ) ) ;
+  tra3 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 2 ) ) ,
+		     _mm_add_pd( SSE2_MUL( *( A + 1 ) , *( B + 5 ) ) ,
+				 SSE2_MUL( *( A + 2 ) , *( B + 8 ) ) ) ) ;
+
+  tr = SSE2_MULCONJ( _mm_add_pd( SSE2_MUL_CONJ( tra1 , *( C + 0 ) ) ,
+				 _mm_add_pd( SSE2_MUL_CONJ( tra2 , *( C + 1 ) ) ,
+					     SSE2_MUL_CONJ( tra3 , *( C + 2 ) ) ) ) ,
+		     *D ) ;
+  tr = _mm_add_pd( tr , SSE2_MULCONJ( _mm_add_pd( SSE2_MUL_CONJ( tra1 , *( C + 3 ) ) ,
+						  _mm_add_pd( SSE2_MUL_CONJ( tra2 , *( C + 4 ) ) ,
+							      SSE2_MUL_CONJ( tra3 , *( C + 5 ) ) ) ) ,
+				      *( D + 1 ) ) ) ;
+  tr = _mm_add_pd( tr , SSE2_MULCONJ( _mm_add_pd( SSE2_MUL_CONJ( tra1 , *( C + 6 ) ) ,
+						  _mm_add_pd( SSE2_MUL_CONJ( tra2 , *( C + 7 ) ) ,
+							      SSE2_MUL_CONJ( tra3 , *( C + 8 ) ) ) ) ,
+				      *( D + 2 ) ) ) ;
+
+  // middle bit
+  tra1 = _mm_add_pd( SSE2_MUL( *( A + 3 ) , *B ) ,
+		     _mm_add_pd( SSE2_MUL( *( A + 4 ) , *( B + 3 ) ) ,
+				 SSE2_MUL( *( A + 5 ) , *( B + 6 ) ) ) ) ;
+  tra2 = _mm_add_pd( SSE2_MUL( *( A + 3 ) , *( B + 1 ) ) ,
+		     _mm_add_pd( SSE2_MUL( *( A + 4 ) , *( B + 4 ) ) ,
+				 SSE2_MUL( *( A + 5 ) , *( B + 7 ) ) ) ) ;
+  tra3 = _mm_add_pd( SSE2_MUL( *( A + 3 ) , *( B + 2 ) ) ,
+		     _mm_add_pd( SSE2_MUL( *( A + 4 ) , *( B + 5 ) ) ,
+				 SSE2_MUL( *( A + 5 ) , *( B + 8 ) ) ) ) ;
+
+  tr = _mm_add_pd( tr , SSE2_MULCONJ( _mm_add_pd( SSE2_MUL_CONJ( tra1 , *C ) ,
+						  _mm_add_pd( SSE2_MUL_CONJ( tra2 , *( C + 1 ) ) ,
+							      SSE2_MUL_CONJ( tra3 , *( C + 2 ) ) ) ) ,
+				      *( D + 3 ) ) ) ;
+  tr = _mm_add_pd( tr , SSE2_MULCONJ( _mm_add_pd( SSE2_MUL_CONJ( tra1 , *( C + 3 ) ) ,
+						  _mm_add_pd( SSE2_MUL_CONJ( tra2 , *( C + 4 ) ) ,
+							      SSE2_MUL_CONJ( tra3 , *( C + 5 ) ) ) ) ,
+				      *( D + 4 ) ) ) ;
+  tr = _mm_add_pd( tr , SSE2_MULCONJ( _mm_add_pd( SSE2_MUL_CONJ( tra1 , *( C + 6 ) ) ,
+						  _mm_add_pd( SSE2_MUL_CONJ( tra2 , *( C + 7 ) ) ,
+							      SSE2_MUL_CONJ( tra3 , *( C + 8 ) ) ) ) ,
+				      *( D + 5 ) ) ) ;
+  
+  // end bit
+  tra1 = _mm_add_pd( SSE2_MUL( *( A + 6 ) , *B ) ,
+		     _mm_add_pd( SSE2_MUL( *( A + 7 ) , *( B + 3 ) ) ,
+				 SSE2_MUL( *( A + 8 ) , *( B + 6 ) ) ) ) ;
+  tra2 = _mm_add_pd( SSE2_MUL( *( A + 6 ) , *( B + 1 ) ) ,
+		     _mm_add_pd( SSE2_MUL( *( A + 7 ) , *( B + 4 ) ) ,
+				 SSE2_MUL( *( A + 8 ) , *( B + 7 ) ) ) ) ;
+  tra3 = _mm_add_pd( SSE2_MUL( *( A + 6 ) , *( B + 2 ) ) ,
+		     _mm_add_pd( SSE2_MUL( *( A + 7 ) , *( B + 5 ) ) ,
+				 SSE2_MUL( *( A + 8 ) , *( B + 8 ) ) ) ) ;
+
+  tr = _mm_add_pd( tr , SSE2_MULCONJ( _mm_add_pd( SSE2_MUL_CONJ( tra1 , *C ) ,
+						  _mm_add_pd( SSE2_MUL_CONJ( tra2 , *( C + 1 ) ) ,
+							      SSE2_MUL_CONJ( tra3 , *( C + 2 ) ) ) ) ,
+				      *( D + 6 ) ) ) ;
+  tr = _mm_add_pd( tr , SSE2_MULCONJ( _mm_add_pd( SSE2_MUL_CONJ( tra1 , *( C + 3 ) ) ,
+						  _mm_add_pd( SSE2_MUL_CONJ( tra2 , *( C + 4 ) ) ,
+							      SSE2_MUL_CONJ( tra3 , *( C + 5 ) ) ) ) ,
+				      *( D + 7 ) ) ) ;
+  tr = _mm_add_pd( tr , SSE2_MULCONJ( _mm_add_pd( SSE2_MUL_CONJ( tra1 , *( C + 6 ) ) ,
+						  _mm_add_pd( SSE2_MUL_CONJ( tra2 , *( C + 7 ) ) ,
+							      SSE2_MUL_CONJ( tra3 , *( C + 8 ) ) ) ) ,
+				      *( D + 8 ) ) ) ;
+  double complex csum ;
+  _mm_store_pd( (void*)&csum , tr ) ;
+  return creal( csum ) ;
+  
+  #else
+  
   register double complex tra1 = (a[0]*b[0]+a[1]*b[3]+a[2]*b[6]) ;
   register double complex tra2 = (a[0]*b[1]+a[1]*b[4]+a[2]*b[7]) ;
   register double complex tra3 = (a[0]*b[2]+a[1]*b[5]+a[2]*b[8]) ;
@@ -63,19 +152,55 @@ complete_plaquette( const GLU_complex *__restrict a ,
   trc += creal( ( tra1 * conj(c[6]) + tra2 * conj( c[7] ) + tra3 * conj( c[8] ) ) * conj( d[8] ) ) ;
 
   return tra + trb + trc ;
-
+  #endif
+  
 #elif NC == 2
+
+  #if (defined HAVE_IMMINTRIN_H) && !( defined SINGLE_PREC )
+
+  const __m128d *A = ( __m128d* )a , *B = ( __m128d* )b ,
+    *C = ( __m128d* )c , *D = ( __m128d* )d ;
+  
+  register const __m128d tra1 = _mm_add_pd( SSE2_MUL( a[0] , b[0] ) ,
+					    SSE2_MUL( a[1] , b[2] ) ) ;
+  register const __m128d tra2 = _mm_add_pd( SSE2_MUL( a[0] , b[1] ) ,
+					    SSE2_MUL( a[1] , b[3] ) ) ;
+  register const __m128d tra3 = _mm_add_pd( SSE2_MUL( a[2] , b[0] ) ,
+					    SSE2_MUL( a[3] , b[2] ) ) ;
+  register const __m128d tra4 = _mm_add_pd( SSE2_MUL( a[2] , b[1] ) ,
+					    SSE2_MUL( a[3] , b[3] ) ) ;
+					    
+  register __m128d tr = SSE2_MULCONJ( _mm_add_pd( SSE2_MULCONJ( tra1 , C[0] ) ,
+				 SSE2_MULCONJ( tra2 , C[1] ) ) , D[0] ) ;
+  
+  tr = _mm_add_pd( tr , SSE2_MULCONJ( _mm_add_pd( SSE2_MULCONJ( tra1 , C[2] ) ,
+						  SSE2_MULCONJ( tra2 , C[3] ) ) , D[1] ) ) ;
+  
+  tr = _mm_add_pd( tr , SSE2_MULCONJ( _mm_add_pd( SSE2_MULCONJ( tra3 , C[0] ) ,
+						  SSE2_MULCONJ( tra4 , C[1] ) ) , D[2] ) ) ;
+  
+  tr = _mm_add_pd( tr , SSE2_MULCONJ( _mm_add_pd( SSE2_MULCONJ( tra3 , C[2] ) ,
+						  SSE2_MULCONJ( tra4 , C[3] ) ) , D[3] ) ) ;
+
+  double complex csum ;
+  _mm_store_pd( (void*)&csum , tr ) ;
+  return creal( csum ) ;
+    
+  #else
   
   register const double complex tra1 = (a[0]*b[0]+a[1]*b[2]) ;
   register const double complex tra2 = (a[0]*b[1]+a[1]*b[3]) ;
-  double tra = (double)creal( ( tra1 * conj(c[0]) + tra2 * conj(c[1]) ) *conj(d[0]) ) ;
-  tra += (double)creal( ( tra1 * conj(c[2]) + tra2 * conj(c[3]) )*conj(d[1]) ) ;
   register const double complex tra3 = (a[2]*b[0]+a[3]*b[2]) ;
   register const double complex tra4 = (a[2]*b[1]+a[3]*b[3]) ;
-  double trb = (double)creal( ( tra3 * conj(c[0]) + tra4 * conj(c[1]))*conj(d[2]) ) ;
-  trb += (double)creal( ( tra3 * conj(c[2]) + tra4 * conj(c[3]))*conj(d[3]) ) ;
+  
+  register double tr = (double)creal( ( tra1 * conj(c[0]) + tra2 * conj(c[1]) ) *conj(d[0]) ) ;
+  tr += (double)creal( ( tra1 * conj(c[2]) + tra2 * conj(c[3]) )*conj(d[1]) ) ;
+  tr += (double)creal( ( tra3 * conj(c[0]) + tra4 * conj(c[1]))*conj(d[2]) ) ;
+  tr += (double)creal( ( tra3 * conj(c[2]) + tra4 * conj(c[3]))*conj(d[3]) ) ;
 
   return tra + trb ;
+  
+  #endif
 #else
   GLU_complex temp1[NCNC] GLUalign , temp2[NCNC] GLUalign ; 
   multab( temp1 , a , b ) ; 

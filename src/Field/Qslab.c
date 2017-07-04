@@ -108,7 +108,7 @@ compute_slabs( const GLU_complex *qtop ,
       if( mu == SLAB_DIR ) {
 	dims[ mu ] = T1 ;
       } else {
-	dims[ mu ] = Latt.dims[ ND - 1 - mu ] ;
+	dims[ mu ] = Latt.dims[ mu ] ;
       }
       subvol *= dims[ mu ] ;
     }
@@ -134,10 +134,11 @@ compute_slabs( const GLU_complex *qtop ,
     
 #endif
 
-    double tsum = 0.0 , sum_slab = 0.0 ;
+    double tsum = 0.0 ;
     // sum over all possible time cuts
     for( T0 = 0 ; T0 < Latt.dims[ SLAB_DIR ] ; T0++ ) {
-      
+
+      double sum_slab = 0.0 ;
       // perform convolution using FFTW
       #ifdef HAVE_FFTW3_H
       #pragma omp parallel for private(i)
@@ -157,6 +158,7 @@ compute_slabs( const GLU_complex *qtop ,
       }
       // perform convolution the dumb way
       #else
+      #pragma omp parallel for private(i)
       for( i = 0 ; i < subvol ; i++ ) {
 	const size_t src = slab_idx( i , dims , SLAB_DIR , T0 ) ;
 	const double qsrc = qtop[ src ] ;

@@ -274,15 +274,14 @@ create_u1( GLU_real *__restrict *__restrict U ,
   }
 
   // fft the fields allow for the parallel omp-ified fftws
+  size_t mu ;
 #ifdef OMP_FFTW
-  static size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     PSPAWN fftw_execute( plan[ mu ] ) ;
   }
   PSYNC ;
 #else
-  static size_t mu ;
-#pragma omp parallel for private(mu) 
+  #pragma omp parallel for private(mu) 
   for( mu = 0 ; mu < ND ; mu++ ) {
     PSPAWN fftw_execute( plan[ mu ] ) ;
   }
