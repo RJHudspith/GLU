@@ -229,7 +229,7 @@ multab( GLU_complex a[ NCNC ] ,
   *( A + 3 ) = _mm_add_pd( SSE2_MUL( *( B + 2 ) , *( C + 1 ) ) ,
 			   SSE2_MUL( *( B + 3 ) , *( C + 3 ) ) ) ;
 #else
-  // slow and stupid version
+  // standard 3 loop version
   size_t i , j , m ;
   // init the result matrix "a" to zero
   for( i = 0 ; i < NCNC ; i++ ) {
@@ -241,10 +241,20 @@ multab( GLU_complex a[ NCNC ] ,
     for( m = 0 ; m < NC ; m++  ) {
       A = (__m128d*)( a + i*NC ) ;
       const __m128d mul = *B ; B++ ;
-      for( j = 0 ; j < NC ; j++ ) {
-	*A = _mm_add_pd( *A , SSE2_MUL( mul , *C ) ) ;
-	A++ , C++ ;
+      #if (NC%2==1)
+      *A = _mm_add_pd( *A , SSE2_MUL( mul , *C ) ) ; A++ ; C++ ;
+      for( j = 0 ; j < (NC-1)/NBLOCK ; j++ ) {
+	M_REPEAT(NBLOCK,
+		 *A = _mm_add_pd( *A , SSE2_MUL( mul , *C ) ) ;\
+		 A++ ; C++ ;)
       }
+      #else
+      for( j = 0 ; j < NC/NBLOCK ; j++ ) {
+	M_REPEAT(NBLOCK,
+		 *A = _mm_add_pd( *A , SSE2_MUL( mul , *C ) ) ;\
+		 A++ ; C++ ;)
+      }
+      #endif
     }
   }
 #endif

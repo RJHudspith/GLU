@@ -92,19 +92,40 @@ multab_dagdag( GLU_complex a[ NCNC ] ,
 			   SSE2_MUL_CONJCONJ( *( B + 3 ) , *( C + 3 ) ) ) ;
 #else
   size_t i , j , m ;
-  register __m128d sum ;
-  const __m128d *pC , *pB ;
-  for( i = 0 ; i < NC ; i++ ) {
-    pC = C ;
-    for( j = 0 ; j < NC ; j++ ) {
-      pB = B ;
-      sum = _mm_setzero_pd( ) ;
-      for( m = 0 ; m < NC ; m++ ) {
-	sum = _mm_add_pd( sum , SSE2_MUL_CONJCONJ( pB[i] , pC[m] ) ) ;
-	pB += NC ;
+
+  for( j = 0 ; j < NCNC ; j++ ) {
+    *A = _mm_setzero_pd() ; A++ ;
+  }
+
+  for( j = 0 ; j < NC ; j++ ) {
+    B = (const __m128d*)b ;
+    for( m = 0 ; m < NC ; m++ ) {
+      A = (__m128d*)(a+j*NC) ;
+      const __m128d mul = *C ; C++ ;
+      #if (NC%2==1)
+      *A = _mm_add_pd( *A , SSE2_MUL_CONJCONJ( *B , mul ) ) ; A++ ; B++ ;
+      for( i = 0 ; i < (NC-1)/NBLOCK ; i++ ) {
+	M_REPEAT(NBLOCK,
+		 *A = _mm_add_pd( *A , SSE2_MUL_CONJCONJ( *B , mul ) ) ;\
+		 A++ ; B++ ;) ;
       }
-      *A++ = sum ;
-      pC += NC ;
+      #else
+      for( i = 0 ; i < NC/NBLOCK ; i++ ) {
+	M_REPEAT(NBLOCK,
+		 *A = _mm_add_pd( *A , SSE2_MUL_CONJCONJ( *B , mul ) ) ;\
+		 A++ ; B++ ;) ;
+      }
+      #endif
+    }
+  }
+
+  // result of A is transposed
+  A = (__m128d*)a ;
+  for( j = 0 ; j < NC ; j++ ) {
+    for( i = j+1 ; i<NC ; i++ ) {
+      const __m128d temp = A[j+i*NC] ;
+      A[j+i*NC] = A[i+j*NC] ;
+      A[i+j*NC] = temp ;
     }
   }
 #endif

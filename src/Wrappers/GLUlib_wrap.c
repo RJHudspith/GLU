@@ -75,13 +75,17 @@ read_file( struct head_data *HEAD_DATA ,
   /// here we include the usual stuff look at header for global stuff
   // open our configuration
   FILE *infile = fopen( config_in , "r" ) ;
-  // TODO :: figure out how to flag this safely - J
-  /*
   if( infile == NULL ) {
-    fprintf( stderr , "[IO] error opening file :: %s\n" , config_in ) ;
-    return NULL ;
+    // need to check what we are doing
+    if( Latt.head == UNIT_GAUGE ||
+	Latt.head == RANDOM_CONFIG ||
+	Latt.head == INSTANTON ) {
+      fprintf( stdout , "[IO] %s is empty \n" , config_in ) ;
+    } else {
+      fprintf( stderr , "[IO] error opening file :: %s\n" , config_in ) ;
+      return NULL ;
+    }
   }
-  */
  
   // initialise the configuration number to zero
   struct head_data tmp ;

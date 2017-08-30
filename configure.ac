@@ -530,9 +530,10 @@ AC_ARG_WITH([RNG],
 	    MWC_4096_RNG) AC_DEFINE([MWC_4096_RNG],[],[Multiply With Carry (4096) selection]) ;;
 	    XOR_1024_RNG) AC_DEFINE([XOR_1024_RNG],[],[XOR (1024) selection]) ;;
 	    GSL) AC_DEFINE([GSL_RNG],[],[GSL default (Mersenne Twister) selection]) ;;
-	    *) AC_MSG_NOTICE([Defaulting to the Well19937a RNG]) ;;
+	    WELL_512_RNG) AC_DEFINE([WELL_512_RNG],[],[Well (512) rng selection]) ;;
+	    *) AC_MSG_NOTICE([Defaulting to the MWC_4096_RNG]) ;;
 	    esac
-	    ],[ AC_MSG_NOTICE([Defaulting to the Well19937a RNG]) ])
+	    ],[ AC_MSG_NOTICE([Defaulting to the MWC_4096_RNG]) ])
 
 ## enable the searching for the best gribov copies
 AC_ARG_WITH([LUXURY_GAUGE],
@@ -546,6 +547,40 @@ AC_ARG_WITH([LUXURY_GAUGE],
 	    else ## default to 20
 	    AC_DEFINE([LUXURY_GAUGE],[20],[Generated Gribov copies.]) 
 	    fi
+	    ],[])
+
+## enable the searching for the best gribov copies
+AC_ARG_WITH([NBLOCK],
+	AC_HELP_STRING([--with-NBLOCK=],
+		       [Innermost loop unrolling factor for matrix multiplies.]),
+            [
+	    ## if the user has left blank we give it a default value of 1
+	    if test "$with_NC" -gt 3 ; then
+	       if test "x$with_NBLOCK" != "xyes" ; then
+	       	  if test $with_NBLOCK -gt $with_NC ; then
+		     AC_MSG_ERROR([NBLOCK of ${with_NBLOCK} cannot be greater than SU($with_NC).])
+		  else
+		     let 'check_odd=with_NC%2'
+	       	     if test $check_odd = 1 ; then
+	                let 'check=(with_NC-1)%with_NBLOCK'
+	       	     else
+		        let 'check=with_NC%with_NBLOCK'
+	       	     fi  
+	       	     if test $check != 0 ; then
+	                AC_MSG_ERROR([NBLOCK of ${with_NBLOCK} not a factor of SU($with_NC).])
+	       	     else
+		        AC_MSG_NOTICE([Performing ${with_NBLOCK} inner loop unrolling.])
+		        AC_DEFINE_UNQUOTED([NBLOCK],[$with_NBLOCK],[Loop unrolling factor.])	
+	       	    fi
+		 fi
+	       else ## default to 1 which is no loop unrolling
+	       	  AC_DEFINE([NBLOCK],[1],[No loop unrolling.]) 
+	       fi
+	    else
+		if test "x$with_NBLOCK" != "xyes" ; then
+	       	   AC_MSG_NOTICE([Using default inline matrix routines. Ignoring blocking factor.])
+		fi
+	    fi	    
 	    ],[])
 
 ## steepest descents routines

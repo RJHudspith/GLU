@@ -34,8 +34,10 @@ initialise_par_rng( const char *rng_file )
     fprintf( stdout , "[PAR_RNG] MWC_1038\n" ) ;
 #elif (defined XOR_1024_RNG)
     fprintf( stdout , "[PAR_RNG] XOR_1024\n" ) ;
-#else
+#elif (defined WELL_512_RNG)
     fprintf( stdout , "[PAR_RNG] WELL_512\n" ) ;
+#else
+    fprintf( stdout , "[PAR_RNG] MWC_4096\n" ) ;
 #endif
 
     if( rng_file == NULL ) {
@@ -79,8 +81,10 @@ initialise_par_rng( const char *rng_file )
       GLU_set_par_MWC_1038_table( Seeds ) ;
       #elif (defined XOR_1024_RNG)
       GLU_set_par_XOR_1024_table( Seeds ) ;
-      #else
+      #elif (defined WELL_512_RNG)
       GLU_set_par_WELL_512_table( Seeds ) ;
+      #else
+      GLU_set_par_MWC_4096_table( Seeds ) ;
       #endif
 
       // warm up the rng
@@ -118,8 +122,10 @@ free_par_rng( void )
     free_par_XOR_1024( ) ;
 #elif (defined MWC_1038_RNG)
     free_par_MWC_1038( ) ;
-#else
+#elif (defined WELL_512_RNG)
     free_par_WELL_512( ) ;
+#else
+    free_par_MWC_4096( ) ;
 #endif
     RNG_inited = GLU_FALSE ;
   }
@@ -248,12 +254,20 @@ read_par_rng_state( const char *infile )
   if( read_par_MWC_1038_table( in ) == GLU_FAILURE ) {
     return GLU_FAILURE ;
   }
-#else
+#elif (defined WELL_512_RNG)
   if( strcmp(  " PAR_WELL_512" , str ) ) {
     fprintf( stderr , "[PAR_RNG] state RNG differs from compiled (WELL_512) RNG\n" ) ;
     return GLU_FAILURE ;
   }
   if( read_par_WELL_512_table( in ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
+#else
+  if( strcmp(  " PAR_MWC_4096" , str ) ) {
+    fprintf( stderr , "[PAR_RNG] state RNG differs from compiled (MWC_4096) RNG\n" ) ;
+    return GLU_FAILURE ;
+  }
+  if( read_par_MWC_4096_table( in ) == GLU_FAILURE ) {
     return GLU_FAILURE ;
   }
 #endif

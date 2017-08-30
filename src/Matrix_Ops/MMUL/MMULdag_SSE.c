@@ -92,14 +92,29 @@ multabdag( GLU_complex a[ NCNC ] ,
 			   SSE2_MULCONJ( *( B + 3 ) , *( C + 3 ) ) ) ;
 #else
   size_t i , j , m ;
-  register __m128d sum ;
-  for( i = 0 ; i < NC ; i++ ) {
-    for( j = 0 ; j < NC ; j++ ) {
-      sum = _mm_setzero_pd( ) ;
-      for( m = 0 ; m < NC ; m++ ) {
-	sum = _mm_add_pd( sum , SSE2_MULCONJ( *( B + i + NC*m ) , *( C + j + NC*m ) ) ) ;
+  for( i = 0 ; i < NCNC ; i++ ) {
+    *A = _mm_setzero_pd() ; A++ ;
+  }
+  // loop designed for good cache througput
+  for( m = 0 ; m < NC ; m++ ) {
+    A = (__m128d*)a ;
+    for( i = 0 ; i < NC ; i++ ) {
+      C = (const __m128d*)( c + NC*m ) ;
+      register const __m128d mul = *B ; B++ ;
+      #if (NC%2==1)
+      *A = _mm_add_pd( *A , SSE2_MULCONJ( mul , *C ) ; A++ ; C++ ;
+      for( j = 0 ; j < (NC-1)/NBLOCK ; j++ ) {
+	M_REPEAT(NBLOCK,
+		 *A = _mm_add_pd( *A , SSE2_MULCONJ( mul , *C ) ) ;	\
+		 A++ ; C++ ;)
       }
-      *( A + j + NC*i ) = sum ;
+      #else
+      for( j = 0 ; j < NC/NBLOCK ; j++ ) {
+	M_REPEAT(NBLOCK,
+		 *A = _mm_add_pd( *A , SSE2_MULCONJ( mul , *C ) ) ;	\
+		 A++ ; C++ ;)
+	  }
+      #endif
     }
   }
 #endif

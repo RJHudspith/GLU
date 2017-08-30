@@ -75,7 +75,7 @@ poly( const struct site *__restrict lat ,
     small_poly( poly , lat , k , dir , Latt.dims[dir] ) ;
     sum = sum + (double complex)trace( poly ) ;
   }
-  return sum ;
+  return sum / subvolume ;
 }
 
 // If we have FFTW we use it for the convolutions instead of our slow

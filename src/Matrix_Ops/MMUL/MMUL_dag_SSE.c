@@ -1,7 +1,7 @@
 /*
     Copyright 2013-2016 Renwick James Hudspith
 
-    This file (MMUL_dag.c) is part of GLU.
+    This file (MMUL_dag_SSE.c) is part of GLU.
 
     GLU is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -91,16 +91,41 @@ multab_dag( GLU_complex a[ NCNC ] ,
 			   SSE2_MUL_CONJ( *( B + 3 ) , *( C + 3 ) ) ) ;
 #else // instead of inlining we have a function call
   size_t i , j , m ;
+
+  // transpose C
+  __m128d CT[ NCNC ] ; 
   for( i = 0 ; i < NC ; i++ ) {
-    C = (const __m128d*)c ;
+    CT[ i*(NC+1) ] = C[ i*(NC+1)  ] ;
+    for( j = i+1 ; j < NC ; j++ ) {
+      CT[ j + i*NC ] = C[ i + j*NC ] ;
+      CT[ i + j*NC ] = C[ j + i*NC ] ;
+    }
     for( j = 0 ; j < NC ; j++ ) {
-      B = (const __m128d*)( b + i*NC ) ;
-      *A = _mm_setzero_pd( ) ;
-      for( m = 0 ; m < NC ; m++ ) {
-	*A = _mm_add_pd( *A , SSE2_MUL_CONJ( *B , *C ) ) ;
-	B++ , C++ ;
+      *A = _mm_setzero_pd() ; A++ ;
+    }
+  }
+
+  // loop in a weird order to help the cache
+  // this is basically the MMUL_SSE routine 
+  for( i = 0 ; i < NC ; i++ ) {
+    C = (const __m128d*)CT ;
+    for( m = 0 ; m < NC ; m++  ) {
+      A = (__m128d*)( a + i*NC ) ;
+      const __m128d mul = *B ; B++ ;
+      #if (NC%2==1)
+      *A = _mm_add_pd( *A , SSE2_MUL_CONJ( mul , *C ) ) ; A++ ; C++ ;
+      for( j = 0 ; j < (NC-1)/NBLOCK ; j++ ) {
+	M_REPEAT(NBLOCK,
+		 *A = _mm_add_pd( *A , SSE2_MUL_CONJ( mul , *C ) ) ;\
+		 A++ ; C++ ;)
       }
-      A++ ;
+      #else
+      for( j = 0 ; j < NC/NBLOCK ; j++ ) {
+	M_REPEAT(NBLOCK,
+		 *A = _mm_add_pd( *A , SSE2_MUL_CONJ( mul , *C ) ) ;\
+		 A++ ; C++ ;)
+      }
+      #endif
     }
   }
 #endif

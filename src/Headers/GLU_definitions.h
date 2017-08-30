@@ -26,6 +26,42 @@
 #include "Mainfile.h"
 
 /**
+   @param NBLOCK
+   @brief loop unrolling factor for generic matrix multiplies
+ */
+#ifndef NBLOCK
+  #define NBLOCK (1)
+#endif
+
+/**
+   @param M_REPEAT
+   @brief macro-defined loop unrolling for the generic matrix 
+   multiplies
+ */
+#define M_REPEAT_1(X) X
+#define M_REPEAT_2(X) X X
+#define M_REPEAT_3(X) X X X
+#define M_REPEAT_4(X) M_REPEAT_2(X) M_REPEAT_2(X)
+#define M_REPEAT_5(X) X M_REPEAT_4(X)
+#define M_REPEAT_6(X) M_REPEAT_3(X) M_REPEAT_3(X)
+#define M_REPEAT_7(X) M_REPEAT_3(X) M_REPEAT_4(X)
+#define M_REPEAT_8(X) M_REPEAT_4(X) M_REPEAT_4(X)
+#define M_REPEAT_9(X) M_REPEAT_4(X) M_REPEAT_5(X)
+#define M_REPEAT_10(X) M_REPEAT_5(X) M_REPEAT_5(X)
+#define M_REPEAT_11(X) M_REPEAT_5(X) M_REPEAT_6(X)
+#define M_REPEAT_12(X) M_REPEAT_6(X) M_REPEAT_6(X)
+#define M_REPEAT_13(X) M_REPEAT_6(X) M_REPEAT_7(X)
+#define M_REPEAT_14(X) M_REPEAT_7(X) M_REPEAT_7(X)
+#define M_REPEAT_15(X) M_REPEAT_7(X) M_REPEAT_8(X)
+#define M_REPEAT_16(X) M_REPEAT_8(X) M_REPEAT_8(X)
+#define M_REPEAT_32(X) M_REPEAT_16(X) M_REPEAT_16(X)
+#define M_REPEAT_64(X) M_REPEAT_32(X) M_REPEAT_32(X)
+#define M_EXPAND(...) __VA_ARGS__
+#define M_REPEAT__(N, X) M_EXPAND(M_REPEAT_ ## N)(X)
+#define M_REPEAT_(N, X) M_REPEAT__(N, X)
+#define M_REPEAT(N, X) M_REPEAT_(M_EXPAND(N), X)
+
+/**
    @param OMP_FFTW
    @brief uses the openmp'd FFT routines
    Instead of performing the element by element naive parallelism that
@@ -766,13 +802,11 @@ Defines for the gauge fixing routines ( Landau/{}.c )
   #define RNG_TABLE 4096
 #elif defined XOR_1024_RNG
   #define RNG_TABLE 16
-#else
-/*
-  #define WELL_RNG
-  #define RNG_TABLE 624
-*/
-  #define WELL_RNG
+#elif defined WELL_512_RNG
   #define RNG_TABLE 16
+#else
+  #define MWC_4096_RNG
+  #define RNG_TABLE 4096
 #endif
 
 /////
