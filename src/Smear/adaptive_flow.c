@@ -32,11 +32,6 @@
 #include "projectors.h"   // smearing projections
 #include "wflowfuncs.h"   // wilson flow general routines
 
-// enable this if we are doing a straight shot for a specific time
-// to avoid measuring the topological charge and clover and all that,
-// be careful when T > 10, will need to increase ADAPTIVE_EPS
-//#define TIME_ONLY
-
 /**
    @fn static inline double adaptfmax( const double a , const double b )
    @brief the maximum of two numbers
@@ -58,22 +53,6 @@ static inline double
 adaptfmin( const double a , const double b )
 {
   return ( a < b ? a : b ) ;
-}
-
-/**
-   @brief print the flow progress
- */
-static void
-print_flow( const struct wfmeas *curr ,
-	    const double err ,
-	    const double delta_t)
-{
-  if( delta_t < 0 ) {
-    printf( "[WFLOW-TSTOP] {err} %1.3e {t} %f {dt} %g " , err , curr -> time , delta_t ) ;
-  } else {
-    printf( "[WFLOW] {err} %1.3e {t} %f {dt} %g " , err , curr -> time , delta_t ) ;
-  }
-  printf( "{p} %g {q} %g {Gt} %g \n" , curr -> avplaq , curr -> qtop , curr -> Gt ) ;
 }
 
 /**
@@ -126,14 +105,11 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
 		    const int SIGN ,
 		    const smearing_types SM_TYPE )
 {  
-  // set this for the coupling measurement
-  //set_TMEAS_STOP( 0.4 ) ;
-
   ////// USUAL STARTUP INFORMATION /////////
   print_GG_info( ) ;
 
   // the error between the two plaquettes
-  const double ADAPTIVE_EPS = 1E-7 ;
+  const double ADAPTIVE_EPS = 1E-6 ;
   // Standard shrink and factor from NRC RK4
   const double ADAPTIVE_SHRINK = -0.32 ; // 0.33?
   // Standard growth and factor from NRC RK4
@@ -206,14 +182,14 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   // counters for the derivative ...
   double yscal = curr -> avplaq , t = 0.0 ;
   double flow = 0. , flow_next = 0. ;
-  size_t count = 0 , OK_STEPS = 0 , NOTOK_STEPS = 0 ; 
+  size_t count = 0 , OK_STEPS = 0 , NOTOK_STEPS = 0 , meas_count = 0 ; 
 
   // have a flag for whether we mess up
   int FLAG = GLU_FAILURE ;
 
   // loop up to smiters
   for( count = 1 ; count <= smiters ; count++ ) { 
-    curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
+
     size_t counter = 0 ;
     double errmax = 10. ;
     double new_plaq = 0. ;
@@ -309,25 +285,39 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
 	equiv( lat[i].O[mu] , lat_two[i].O[mu] ) ;
       }
     }
-    t += delta_t ; // add one time step to the overall time 
+    t += delta_t ; // add one time step to the overall time
 
-    curr -> time = t ;
-    // update the linked list
-    curr -> Gt = curr -> time * curr -> time * 
-      lattice_gmunu( lat , &(curr -> qtop) , &( curr->avplaq ) ) ;
+#ifndef WFLOW_TIME_ONLY
+    double wapprox = 0.0 ;
+#endif
+    if( t > WFLOW_MEAS_START ) {
 
-    // set the flow
-    flow_next = curr -> Gt ;
+      curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
 
-    print_flow( curr , errmax * ADAPTIVE_EPS , delta_t ) ;
+      curr -> time = t ;
+      
+      // update the linked list
+      curr -> Gt = curr -> time * curr -> time * 
+	lattice_gmunu( lat , &(curr -> qtop) , &( curr->avplaq ) ) ;
 
-    // update the linked list
-    curr -> next = head ;
-    head = curr ;
+      // set the flow
+      flow_next = curr -> Gt ;
 
-    // approximate the derivative
-    double wapprox = ( flow_next - flow ) * curr -> time / delta_t ;
-    flow = flow_next ;
+      print_flow( curr , errmax * ADAPTIVE_EPS , delta_t ) ;
+
+      // update the linked list
+      curr -> next = head ;
+      head = curr ;
+
+      // approximate the derivative
+      #ifndef WFLOW_TIME_ONLY
+      wapprox = flow != 0.0 ? ( flow_next - flow ) * curr -> time / delta_t : 0.0 ;
+      #endif
+      
+      flow = flow_next ;
+
+      meas_count++ ;
+    }
 
     // If we get stuck in a rut of updating by zero we leave
     if( fabs( delta_t ) < DBL_MIN ) {
@@ -336,6 +326,7 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
       goto memfree ;
     }
 
+#ifndef WFLOW_TIME_ONLY
     // perform fine measurements around T0_STOP for t_0
     if( fabs( T0_STOP - flow ) <= ( T0_STOP * FINETWIDDLE ) ) {
       while( fabs( T0_STOP - flow ) <= ( T0_STOP * FINETWIDDLE ) ) {
@@ -347,6 +338,7 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
 	curr -> next = head ;
 	head = curr ;
 	count++ ;
+	meas_count++ ;
       }
     }
 
@@ -361,6 +353,7 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
 	curr -> next = head ;
 	head = curr ;
 	count++ ;
+	meas_count++ ;
       }
     }
 
@@ -368,14 +361,16 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
     if( wapprox > ( W0_STOP * 1.5 ) ) {
       break ;
     }
+#endif
 
     // stop if we are above the max time
-    if( ( curr -> time ) > TMEAS_STOP ) {
-      delta_t = TMEAS_STOP - t ;
+    if( t > WFLOW_TIME_STOP ) {
+      delta_t = WFLOW_TIME_STOP - t ;
       curr = fine_measurement( lat , lat2 , lat3 , lat4 , Z , 
 			       &flow_next , &t , delta_t , 
 			       errmax * ADAPTIVE_EPS , SM_TYPE , project ) ;
       count++ ;
+      meas_count++ ;
       curr -> next = head ;
       head = curr ;
       break ;
@@ -394,12 +389,18 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
   fprintf( stdout , "\n[WFLOW] Inadequate steps :: %zu \n" , NOTOK_STEPS ) ;
   fprintf( stdout , "[WFLOW] Adequate steps :: %zu \n" , OK_STEPS ) ;
 
-  // compute the t_0 and w_0 scales from the measurement
-  if( ( fabs( curr -> time - TMEAS_STOP ) > PREC_TOL ) && 
-      count <= smiters ) {
-    scaleset( curr , T0_STOP , W0_STOP , count ) ;
-  }
+  fprintf( stdout , "[WFLOW] Iterations :: %zu || Measurements :: %zu\n" ,
+	   count , meas_count ) ;
 
+  // compute the t_0 and w_0 scales from the measurement
+#ifndef WFLOW_TIME_ONLY
+  if( ( fabs( curr -> time - WFLOW_TIME_STOP ) > PREC_TOL ) && 
+      count <= smiters &&
+      meas_count > 0 ) {
+    scaleset( curr , T0_STOP , W0_STOP , meas_count ) ;
+  }
+#endif
+  
   // we are successful
   FLAG = GLU_SUCCESS ;
 
@@ -426,8 +427,3 @@ flow4d_adaptive_RK( struct site *__restrict lat ,
 
   return FLAG ;
 }
-
-// if we have set the code in "TIME_ONLY" mode we make sure we clean it up
-#ifdef TIME_ONLY
-  #undef TIME_ONLY
-#endif

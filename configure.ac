@@ -583,6 +583,44 @@ AC_ARG_WITH([NBLOCK],
 	    fi	    
 	    ],[])
 
+## only timing the gradient flow
+AC_ARG_ENABLE([WFLOW_TIME_ONLY],
+	[ --enable-WFLOW_TIME_ONLY ],
+	[case "${enableval}" in
+	yes) AC_MSG_NOTICE([Only timing the gradient flow])	
+	     AC_DEFINE([WFLOW_TIME_ONLY],[],[Only timing the gradient flow])
+	     ;;
+	*) AC_MSG_ERROR([bad value ${enableval} for --enable-WFLOW_TIME_ONLY]) ;;
+	esac
+	],[])
+	
+
+## what time to stop the wflow
+AC_ARG_WITH([WFLOW_TIME_STOP],
+	AC_HELP_STRING([--with-WFLOW_TIME_STOP=],
+		       [Specify at what time you want the flow to stop]),
+            [
+	    if test "x$with_WFLOW_TIME_STOP" != "xyes" ; then
+	        AC_MSG_NOTICE([Stopping flow at t=${with_WFLOW_TIME_STOP}.])
+	        AC_DEFINE_UNQUOTED([WFLOW_TIME_STOP],[$with_WFLOW_TIME_STOP],[Wilson flow maximum time stopping condition.])
+	    else
+		AC_MSG_NOTICE([If you want to use WFLOW_TIME_STOP you should specify a stopping time.])
+	    fi
+	    ],[])
+
+## what time to stop the wflow
+AC_ARG_WITH([WFLOW_MEAS_START],
+	AC_HELP_STRING([--with-WFLOW_MEAS_START=],
+		       [Specify at what time you want to start measuring flow observables]),
+            [
+	    if test "x$with_WFLOW_MEAS_START" != "xyes" ; then
+	        AC_MSG_NOTICE([Measuring from t=${with_WFLOW_MEAS_START}.])
+	        AC_DEFINE_UNQUOTED([WFLOW_MEAS_START],[$with_WFLOW_MEAS_START],[Wflow observable measurements start from here])
+	    else
+		AC_MSG_NOTICE([If you want to use WFLOW_MEAS_START you should specify a starting time.])
+	    fi
+	    ],[])
+
 ## steepest descents routines
 AC_ARG_ENABLE([GLU_GFIX_SD],
 	[ --enable-GLU_GFIX_SD ],

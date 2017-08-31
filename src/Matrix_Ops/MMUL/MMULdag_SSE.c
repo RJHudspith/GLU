@@ -102,7 +102,7 @@ multabdag( GLU_complex a[ NCNC ] ,
       C = (const __m128d*)( c + NC*m ) ;
       register const __m128d mul = *B ; B++ ;
       #if (NC%2==1)
-      *A = _mm_add_pd( *A , SSE2_MULCONJ( mul , *C ) ; A++ ; C++ ;
+      *A = _mm_add_pd( *A , SSE2_MULCONJ( mul , *C ) ) ; A++ ; C++ ;
       for( j = 0 ; j < (NC-1)/NBLOCK ; j++ ) {
 	M_REPEAT(NBLOCK,
 		 *A = _mm_add_pd( *A , SSE2_MULCONJ( mul , *C ) ) ;	\

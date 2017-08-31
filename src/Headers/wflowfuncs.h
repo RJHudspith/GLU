@@ -25,18 +25,6 @@
 #define GLU_WFLOWFUNCS_H
 
 /**
-   @var MEAS_START
-   @brief at what point in the flow do we start measuring the topological stuff
-**/
-extern const double MEAS_START ;
-
-/**
-   @var TMEAS_STOP
-   @brief at what point in the flow do we intend to stop
-**/
-extern double TMEAS_STOP ;
-
-/**
    @var W0_STOP
    @brief what derivative value do we decide to (roughly) measure at
  */
@@ -47,14 +35,6 @@ extern const double W0_STOP ;
    @brief what flow value do we decide to (roughly) perform measurements at
  */
 extern const double T0_STOP ;
-
-/**
-   @fn void set_TMEAS_STOP( const double c0 )
-   @brief set the flow time we want to stop at
-   @param c0 :: scale setting parameter
- */
-void
-set_TMEAS_STOP( const double c0 ) ;
 
 /**
    @fn const double evaluate_scale( double *der , const double *x , const double *meas , const size_t Nmeas , const double scale ,	const char *message )
@@ -74,6 +54,15 @@ evaluate_scale( double *der ,
 		const size_t Nmeas ,
 		const double scale ,
 		const char *message ) ;
+
+/**
+   @fn void print_flow( const struct wfmeas *curr , const double err , const double delta_t)
+   @brief prints out the flow observable information
+ */
+void
+print_flow( const struct wfmeas *curr ,
+	    const double err ,
+	    const double delta_t) ;
 
 /**
    @fn void print_GG_info( void )

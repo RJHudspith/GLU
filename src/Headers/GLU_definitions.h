@@ -30,7 +30,7 @@
    @brief loop unrolling factor for generic matrix multiplies
  */
 #ifndef NBLOCK
-  #define NBLOCK (1)
+  #define NBLOCK 1
 #endif
 
 /**
@@ -691,6 +691,22 @@ Defines for the gauge fixing routines ( Landau/{}.c )
     #define SYMONELOOP_WEIGHT2 -( 1.0 - epsilon ) * ( 1. + 0.485 * ALPHAS ) / ( 20. * sqrt( improve ) ) 
     #define SYMONELOOP_WEIGHT3 -( 1.0 - epsilon ) * 0.03325 * ALPHAS / sqrt( improve )
 #endif
+#endif
+
+/**
+   @param WFLOW_TIME_STOP
+   @brief what flow time we stop at
+ */
+#ifndef WFLOW_TIME_STOP
+   #define WFLOW_TIME_STOP (20.0)
+#endif
+
+/**
+   @param WFLOW_MEAS_START
+   @brief where we start measuring flow t^2 E(t)
+ */
+#ifndef WFLOW_MEAS_START
+   #define WFLOW_MEAS_START (0.0)
 #endif
 
 /*******************************************************

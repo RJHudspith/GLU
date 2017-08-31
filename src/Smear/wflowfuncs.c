@@ -29,19 +29,8 @@
 #include "staples.h"       // computes standard staples
 
 // controls for the wilson flow these get externed!
-const double MEAS_START = 0.0 ; // start measuring from 1 lattice spacing flow
 const double W0_STOP    = NC*0.1 ; // BMW's choice for the W_0 parameter
 const double T0_STOP    = NC*0.1 ; // Martin's choice for the t_0 scale
-double TMEAS_STOP = 20 ;
-
-// set tmeas using some c0 if that is your thing
-void 
-set_TMEAS_STOP( const double c0 ) 
-{ 
-  TMEAS_STOP = ( c0 * Latt.dims[0] ) * ( c0 * Latt.dims[0] ) / 8 ; 
-  fprintf( stdout , "[WFLOW] TMEAS_STOP changed to %f \n" , TMEAS_STOP ) ;
-  return ;
-}
 
 // shortening function needs to be out of alphabetical order because
 // it is called by flow directions
@@ -345,16 +334,36 @@ evaluate_scale( double *der ,
   return solve_spline( x , meas , der , scale , change_up ) ;
 }
 
+// print out the general flow measurements
+void
+print_flow( const struct wfmeas *curr ,
+	    const double err ,
+	    const double delta_t)
+{
+  if( delta_t < 0 ) {
+    fprintf( stdout , "[WFLOW-TSTOP] {err} %1.3e {t} %f {dt} %g " ,
+	     err , curr -> time , delta_t ) ;
+  } else {
+    fprintf( stdout , "[WFLOW] {err} %1.3e {t} %f {dt} %g " ,
+	     err , curr -> time , delta_t ) ;
+  }
+  fprintf( stdout , "{p} %g {q} %g {Gt} %g \n" ,
+	   curr -> avplaq , curr -> qtop , curr -> Gt ) ;
+  return ;
+}
+
 // print out the general beginning information
 void
 print_GG_info( void ) 
 {
   fprintf( stdout , "[WFLOW] Taking ({W},{GG} and {Qtop}) measurements"
-	   "from t >= %g \n" , MEAS_START ) ; 
+	   "from t >= %g \n" , WFLOW_MEAS_START ) ;
+#ifndef WFLOW_TIME_ONLY
   fprintf( stdout , "[WFLOW] fine measurements at t_0 >= %g \n" , T0_STOP ) ; 
-  fprintf( stdout , "[WFLOW] fine measurements at w_0 >= %g \n" , W0_STOP ) ; 
-  fprintf( stdout , "[WFLOW] OR, Stopping flow integration at t >= %g \n\n" , 
-	  TMEAS_STOP ) ; 
+  fprintf( stdout , "[WFLOW] fine measurements at w_0 >= %g \n" , W0_STOP ) ;
+#endif
+  fprintf( stdout , "[WFLOW] Stopping flow integration at t >= %g \n\n" , 
+	  WFLOW_TIME_STOP ) ; 
   return ;
 }
 
