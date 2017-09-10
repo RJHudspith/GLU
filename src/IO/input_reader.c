@@ -373,10 +373,12 @@ read_cuts_struct( struct cut_info *CUTINFO )
       CUTINFO -> dir = GLUON_PROPS ;
     } else if( are_equal( INPUT[cuttype_idx].VALUE , "STATIC_POTENTIAL" ) ) {
       CUTINFO -> dir = STATIC_POTENTIAL ;
-    } else if( are_equal( INPUT[cuttype_idx].VALUE , "TOPOLOGICAL_SUSCEPTIBILITY" ) ) {
-      CUTINFO -> dir = TOPOLOGICAL_SUSCEPTIBILITY ;
     } else if( are_equal( INPUT[cuttype_idx].VALUE , "TOPOLOGICAL_CORRELATOR" ) ) {
       CUTINFO -> dir = TOPOLOGICAL_CORRELATOR ;
+    } else if( are_equal( INPUT[cuttype_idx].VALUE , "TOPOLOGICAL_SUSCEPTIBILITY" ) ) {
+      CUTINFO -> dir = TOPOLOGICAL_SUSCEPTIBILITY ;
+    } else if( are_equal( INPUT[cuttype_idx].VALUE , "TOPOLOGICAL_MOMENTS" ) ) {
+      CUTINFO -> dir = TOPOLOGICAL_MOMENTS ;
     } else {
       fprintf( stderr , "[IO] I do not understand your CUTTYPE %s\n" , 
 	       INPUT[cuttype_idx].VALUE ) ;

@@ -52,6 +52,7 @@ cuts_wrap_struct( struct site *__restrict lat ,
     Coul_staticpot( lat , CUTINFO , SMINFO ) ;
     break ;
   case TOPOLOGICAL_CORRELATOR :
+  case TOPOLOGICAL_MOMENTS :
   case TOPOLOGICAL_SUSCEPTIBILITY :
     compute_Qsusc_step( lat , CUTINFO , SMINFO ) ;
     break ;

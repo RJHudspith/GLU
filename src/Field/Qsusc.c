@@ -23,9 +23,10 @@
  */
 #include "Mainfile.h"
 
-#include "Qslab.h"   // compute_Qsusc()
-#include "Qcorr.h"   // compute_Qcorr()
-#include "SM_wrap.h" // smearing wrapper
+#include "Qslab.h"    // compute_Qsusc()
+#include "Qcorr.h"    // compute_Qcorr()
+#include "Qmoments.h" // compute_Qmoments()
+#include "SM_wrap.h"  // smearing wrapper
 
 // step through smears
 int
@@ -60,6 +61,10 @@ compute_Qsusc_step( struct site *__restrict lat ,
       // compute the correlator
     } else if( CUTINFO.dir == TOPOLOGICAL_CORRELATOR ) {
       if( compute_Qcorr( lat , CUTINFO , measurement ) == GLU_FAILURE ) {
+	return GLU_FAILURE ;
+      }
+    } else if( CUTINFO.dir == TOPOLOGICAL_MOMENTS ) {
+      if( compute_Qmoments( lat , CUTINFO , measurement ) == GLU_FAILURE ) {
 	return GLU_FAILURE ;
       }
     }
