@@ -31,7 +31,7 @@
 #include "SM_wrap.h"      // in case we wish to do smearing
 
 // number of moments that we look at
-#define NMOMENTS ((size_t)12)
+#define NQMOMENTS ((size_t)12)
 
 // local version of the one in geometry
 static void
@@ -72,35 +72,10 @@ loc_idx( const size_t i ,
   return gen_site( x ) ;
 }
 
-// little code for outputting the moments
-static void
-output_moments( double *Moment ,
-		const size_t DIR ,
-		const size_t measurement ,
-		const char *str ,
-		const GLU_bool Re )
-{
-  // write out the data, usual stuff BE
-  char filename[ 256 ] ;
-  if( Re == GLU_TRUE ) {
-    sprintf( filename , "Qmoments_%s_Nmom%zu_d%zu_re_m%zu.%zu.bin" ,
-	     str , NMOMENTS , DIR , measurement , Latt.flow ) ;
-    fprintf( stdout , "[QMOMENTS] writing real moments to %s\n" , filename ) ;
-  } else {
-    sprintf( filename , "Qmoments_%s_Nmom%zu_d%zu_im_m%zu.%zu.bin" ,
-	     str , NMOMENTS , DIR , measurement , Latt.flow ) ;
-    fprintf( stdout , "[QMOMENTS] writing imag moments to %s\n" , filename ) ;
-  }
-  
-  FILE *Ap = fopen( filename , "wb" ) ;
-  write_moments( Ap , Moment , NMOMENTS ) ;
-  fclose( Ap ) ;
-}
-
 // computes the first 12 moments of Q in DIR-direction \sum_t (-1)^n t^{2n}/(2n!) Q(t)
 static int
-Time_Moments( const GLU_complex *qtop ,
-	      const char *str ,
+Time_Moments( double *Moment ,
+	      const GLU_complex *qtop ,
 	      const double NORM ,
 	      const size_t DIR ,
 	      const size_t measurement )
@@ -109,9 +84,9 @@ Time_Moments( const GLU_complex *qtop ,
   GLU_complex *Qt = malloc( Latt.dims[ DIR ] * sizeof( GLU_complex ) ) ;
   
   // factorials
-  const double fac[ 12 ] = { 1 , 1 , 2 , 6 , 24 , 120 , 720 ,
-			     5040 , 40320 , 362880 , 362800 ,
-			     39916800 } ;
+  const double fac[ NQMOMENTS ] = { 1 , 1 , 2 , 6 , 24 , 120 , 720 ,
+				    5040 , 40320 , 362880 , 362800 ,
+				    39916800 } ;
   const int LT = (int)Latt.dims[ DIR ] ;
   size_t dims[ ND ] ;
   int n , t , subvol = 1 ;
@@ -144,33 +119,29 @@ Time_Moments( const GLU_complex *qtop ,
   }
   
   // loop increasing powers of moments of Q
-  double *Moment_re = malloc( NMOMENTS * sizeof( double complex ) ) ;
-  double *Moment_im = malloc( NMOMENTS * sizeof( double complex ) ) ;
-  
-  for( n = 0 ; n < NMOMENTS ; n++ ) {
-    GLU_complex sum = 0.0 ;
+  for( n = 0 ; n < NQMOMENTS ; n++ ) {
+    double sum = 0.0 ;
     for( t = -LT/2 ; t < LT/2 ; t++ ) {
       const int posit = ( t + LT ) % LT ;
-      sum += tpow[ posit ] * Qt[ posit ] ;
+      sum += tpow[ posit ] * creal( Qt[ posit ] ) ;
       tpow[ posit ] *= t ;
     }
+    sum /= fac[ n ] ;
+    
     // multiply by correct i-factor, shift of Z_4
     switch( n&3 ) {
-    case 0 : sum *= +1. / fac[ n ] ; break ;
-    case 1 : sum *= +I  / fac[ n ] ; break ;
-    case 2 : sum *= -1. / fac[ n ] ; break ;
-    case 3 : sum *= -I  / fac[ n ] ; break ;
+    case 0 : Moment[ n + NQMOMENTS * DIR ] = sum  ; break ;
+    case 1 : Moment[ n + NQMOMENTS * DIR ] = sum  ; break ;
+    case 2 : Moment[ n + NQMOMENTS * DIR ] = -sum ; break ;
+    case 3 : Moment[ n + NQMOMENTS * DIR ] = -sum ; break ;
     }
-    Moment_re[ n ] = creal( sum ) ;
-    Moment_im[ n ] = cimag( sum ) ;
+    
     // divide by the factorial and sign
-    fprintf( stdout , "[QMOMENTS] %s Dir_%zu Moment_%d %1.12e %1.12e \n" ,
-	     str , DIR , n , Moment_re[ n ] , Moment_im[ n ] ) ;
+    //#ifdef verbose
+    fprintf( stdout , "[QMOMENTS] Dir_%zu Moment_%d %1.12e \n" ,
+	     DIR , n , Moment[ n + NQMOMENTS * DIR ] ) ;
+    //#endif
   }
-  
-  output_moments( Moment_re , DIR , measurement , str , GLU_TRUE ) ;
-  
-  output_moments( Moment_im , DIR , measurement , str , GLU_FALSE ) ;
   
   if( tpow != NULL ) {
     free( tpow ) ;
@@ -185,7 +156,8 @@ Time_Moments( const GLU_complex *qtop ,
 
 // compute the moments of the topological charge
 static int
-compute_Q_moments( GLU_complex *qtop ,
+compute_Q_moments( struct Qmoments *Qmom ,
+		   GLU_complex *qtop ,
 		   const size_t measurement )
 {
   // normalisations
@@ -193,7 +165,8 @@ compute_Q_moments( GLU_complex *qtop ,
 
   size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    Time_Moments( qtop , "Q" , NORM , mu , measurement ) ;
+    Time_Moments( Qmom -> Q , qtop ,
+		  NORM , mu , measurement ) ;
   }
   
   return GLU_SUCCESS ;
@@ -202,7 +175,8 @@ compute_Q_moments( GLU_complex *qtop ,
 // compute the moments of the topological charge squared
 // fftw will use qtop in here!
 static int
-compute_Q2_moments( GLU_complex *qtop ,
+compute_Q2_moments( struct Qmoments *Qmom ,
+		    GLU_complex *qtop ,
 		    const size_t measurement )
 {
   GLU_complex *out = NULL ;
@@ -246,7 +220,8 @@ compute_Q2_moments( GLU_complex *qtop ,
 
   size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    Time_Moments( qtop , "Qsq" , mulfac , mu , measurement ) ;
+    Time_Moments( Qmom -> Q2 , qtop ,
+		  mulfac , mu , measurement ) ;
   }
   
 #else
@@ -269,7 +244,8 @@ compute_Q2_moments( GLU_complex *qtop ,
 
   size_t ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    Time_Moments( out , "Qsq" , NORMSQ , mu , measurement ) ;
+    Time_Moments( Qmom -> Q2 , out ,
+		  NORMSQ , mu , measurement ) ;
   }
   
 #endif
@@ -285,6 +261,7 @@ compute_Q2_moments( GLU_complex *qtop ,
 // compute the topological moments
 int
 compute_Qmoments( struct site *__restrict lat ,
+		  struct Qmoments *Qmom ,
 		  const struct cut_info CUTINFO ,
 		  const size_t measurement )
 {
@@ -309,12 +286,12 @@ compute_Qmoments( struct site *__restrict lat ,
   }
 
   // compute moments of Q
-  if( compute_Q_moments( qtop , measurement ) == GLU_FAILURE ) {
+  if( compute_Q_moments( Qmom , qtop , measurement ) == GLU_FAILURE ) {
     goto memfree ;
   }
 
   // compute moments of Q^2
-  if( compute_Q2_moments( qtop , measurement ) == GLU_FAILURE ) {
+  if( compute_Q2_moments( Qmom , qtop , measurement ) == GLU_FAILURE ) {
     goto memfree ;
   }
 

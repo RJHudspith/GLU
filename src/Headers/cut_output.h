@@ -114,7 +114,7 @@ write_lattice_fields( FILE *__restrict Ap ,
 		      size_t num_mom[1] ) ;
 
 /**
-   @fn void write_mom_veclist( FILE *__restrict Ap , size_t *__restrict num_mom , const struct veclist *__restrict list , const size_t DIR )
+   @fn void write_mom_veclist( FILE *Ap , size_t *num_mom , const struct veclist *list , const size_t DIR )
    @brief This writes the momentum list. DIR is the number of momenta to
    write usually ND or ND-1.
    @param Ap :: File that we output to.
@@ -123,37 +123,32 @@ write_lattice_fields( FILE *__restrict Ap ,
    @param DIR :: number of directions of momenta used
  **/
 void
-write_mom_veclist( FILE *__restrict Ap , 
-		   size_t *__restrict num_mom , 
-		   const struct veclist *__restrict list ,
+write_mom_veclist( FILE *Ap , 
+		   size_t *num_mom , 
+		   const struct veclist *list ,
 		   const size_t DIR ) ;
 
 /**
-   @fn void write_moments( FILE *Ap , double *Moment , const size_t Nmoments )
-   @brief write the moments to a file
-   @param Ap :: file we write out to
-   @param Moment :: moments
-   @param Nmoments :: number of moments
+   @fn void write_moments( struct Qmoments *Qmom , const size_t Nmeasurements )
  **/
 void
-write_moments( FILE *Ap ,
-	       double *Moment ,
-	       const size_t Nmoments ) ;
+write_moments( struct Qmoments *Qmom ,
+	       const size_t Nmeasurements ) ;
 
 /**
-   @fn void write_triplet_mom_list( FILE *__restrict Ap , size_t *__restrict num_mom , int *__restrict *__restrict momentum , int *__restrict *__restrict triplet )
+   @fn void write_triplet_mom_list( FILE *Ap , size_t *num_mom , int **momentum , int **triplet )
    @brief write out the momentum list for the triplets
 
    @warning I only write out one of the three momenta because after projection the vertex is of p^2  
  **/
 void
-write_triplet_mom_list( FILE *__restrict Ap , 
-			size_t *__restrict num_mom , 
-			int *__restrict *__restrict momentum ,
-			int *__restrict *__restrict triplet ) ;
+write_triplet_mom_list( FILE *Ap , 
+			size_t *num_mom , 
+			int **momentum ,
+			int **triplet ) ;
 
 /**
-   @fn void write_rr_values( FILE *__restrict Ap , size_t size[1] , const size_t *__restrict rsq , const size_t max_r2 , const size_t ARR_SIZE )
+   @fn void write_rr_values( FILE *Ap , size_t size[1] , const size_t *rsq , const size_t max_r2 , const size_t ARR_SIZE )
    @brief writer for the topological susceptibility and static potential
    @param Ap :: file we are writing out to
    @param size :: length of the array
@@ -162,20 +157,20 @@ write_triplet_mom_list( FILE *__restrict Ap ,
    @param ARR_SIZE :: array length of rsq
  */
 void
-write_rr_values( FILE *__restrict Ap ,
+write_rr_values( FILE *Ap ,
 		 size_t size[1] ,
-		 const size_t *__restrict rsq ,
+		 const size_t *rsq ,
 		 const size_t max_r2 ,
 		 const size_t ARR_SIZE ) ;
 
 /**
-   @fn void write_tslice_list( FILE *__restrict Ap , size_t *__restrict LT )
+   @fn void write_tslice_list( FILE *Ap , size_t *LT )
    @brief write out the timeslice index for the configuration space gluon correlator measurement
    @param Ap :: the file we are writing out to
    @param LT :: the length of the time direction (1 element array)
  **/
 void
-write_tslice_list( FILE *__restrict Ap , 
-		   size_t *__restrict LT ) ;
+write_tslice_list( FILE *Ap , 
+		   size_t *LT ) ;
 
 #endif

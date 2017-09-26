@@ -384,13 +384,47 @@ write_mom_veclist( FILE *Ap ,
 
 // write out some moments, re and imaginary
 void
-write_moments( FILE *Ap ,
-	       double *Moment ,
-	       const size_t Nmoments )
+write_moments( struct Qmoments *Qmom ,
+	       const size_t Nmeasurements )
 {
-  uint32_t nmom[ 1 ] = { Nmoments } ;
-  FWRITE( nmom , sizeof( uint32_t ) , 1 , Ap ) ;
-  FWRITE( Moment , sizeof( double ) , Nmoments , Ap ) ;
+  FILE *Qm = NULL , *Q2m = NULL ;
+  double *re = malloc( NQMOMENTS * sizeof( double ) ) ;
+  uint32_t nmom[ 1 ] = { NQMOMENTS } ;
+  uint32_t Nmeas[ 1 ] = { Nmeasurements } ;
+  char filename[ 256 ] ;
+
+  printf( "IO?\n" ) ;
+  
+  size_t mu , i , j ;
+  for( mu = 0 ; mu < ND ; mu++ ) {
+
+    sprintf( filename , "Qmoment_d%zu.%zu.bin" , mu , Latt.flow ) ;
+    Qm = fopen( filename , "wb" ) ;
+    sprintf( filename , "Q2moment_d%zu.%zu.bin" , mu , Latt.flow ) ;
+    Q2m = fopen( filename , "wb" ) ;
+
+    FWRITE( Nmeas , sizeof( uint32_t ) , 1 , Qm ) ;
+    FWRITE( Nmeas , sizeof( uint32_t ) , 1 , Q2m ) ;
+    
+    for( i = 0 ; i < Nmeasurements ; i++ ) {
+      for( j = 0 ; j < NQMOMENTS ; j++ ) {
+	re[j] = Qmom[i].Q[ j+mu*NQMOMENTS ] ;
+      }
+      FWRITE( nmom , sizeof( uint32_t ) , 1 , Qm ) ;
+      FWRITE( re , sizeof( double ) , NQMOMENTS , Qm ) ;
+      
+      for( j = 0 ; j < NQMOMENTS ; j++ ) {
+	re[j] = Qmom[i].Q2[j + mu*NQMOMENTS] ;
+      }
+      FWRITE( nmom , sizeof( uint32_t ) , 1 , Q2m ) ;
+      FWRITE( re , sizeof( double ) , NQMOMENTS , Q2m ) ;
+    }
+
+    fclose( Qm ) ; fclose( Q2m ) ; 
+  }
+  
+  free( re ) ;
+  
   return ;
 }
 

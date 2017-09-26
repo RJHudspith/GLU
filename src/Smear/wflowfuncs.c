@@ -357,13 +357,15 @@ void
 print_GG_info( void ) 
 {
   fprintf( stdout , "[WFLOW] Taking ({W},{GG} and {Qtop}) measurements"
-	   "from t >= %g \n" , WFLOW_MEAS_START ) ;
+	   "from t >= %g \n" , (double)WFLOW_MEAS_START ) ;
 #ifndef WFLOW_TIME_ONLY
-  fprintf( stdout , "[WFLOW] fine measurements at t_0 >= %g \n" , T0_STOP ) ; 
-  fprintf( stdout , "[WFLOW] fine measurements at w_0 >= %g \n" , W0_STOP ) ;
+  fprintf( stdout , "[WFLOW] fine measurements at t_0 >= %g \n" ,
+	   (double)T0_STOP ) ; 
+  fprintf( stdout , "[WFLOW] fine measurements at w_0 >= %g \n" ,
+	   (double)W0_STOP ) ;
 #endif
   fprintf( stdout , "[WFLOW] Stopping flow integration at t >= %g \n\n" , 
-	  WFLOW_TIME_STOP ) ; 
+	   (double)WFLOW_TIME_STOP ) ; 
   return ;
 }
 

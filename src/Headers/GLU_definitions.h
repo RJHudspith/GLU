@@ -34,6 +34,12 @@
 #endif
 
 /**
+   @param NQMOMENTS
+   @brief number of topological moments we will compute
+ */
+#define NQMOMENTS ((size_t)12)
+
+/**
    @param M_REPEAT
    @brief macro-defined loop unrolling for the generic matrix 
    multiplies

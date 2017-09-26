@@ -244,4 +244,10 @@ struct infile_data {
   GLU_output storage ;
 } ;
 
+// topological moments calculator
+struct Qmoments {
+  double *Q ;
+  double *Q2 ;
+} ;
+
 #endif

@@ -36,14 +36,26 @@ compute_Qsusc_step( struct site *__restrict lat ,
 {
   // measurement counter
   size_t measurement ;
+  int flag = GLU_SUCCESS ;
   
   fprintf( stdout , "[QSUSC] performing %zu measurements at %zu" 
 	   " smearing steps\n" , CUTINFO.max_t , SMINFO.smiters ) ;
 
+  // allocations for the moments
+  struct Qmoments *Qmom = NULL ;
+  if( CUTINFO.dir == TOPOLOGICAL_MOMENTS ) {
+    Qmom = malloc( ( CUTINFO.max_t - 1 ) * sizeof( struct Qmoments ) ) ;
+    size_t t ;
+    for( t = 0 ; t < CUTINFO.max_t-1 ; t++ ) {
+      Qmom[t].Q  = malloc( ND * NQMOMENTS * sizeof( double ) ) ;
+      Qmom[t].Q2 = malloc( ND * NQMOMENTS * sizeof( double ) ) ;
+    }
+  }
+
   // compute the topological correlator in r and the temporal correlator
   if( CUTINFO.dir == TOPOLOGICAL_SUSCEPTIBILITY ) {
     if( compute_Qsusc( lat , CUTINFO , 0 ) == GLU_FAILURE ) {
-      return GLU_FAILURE ;
+      flag = GLU_FAILURE ; goto memfree ;
     }
   }
 
@@ -56,20 +68,35 @@ compute_Qsusc_step( struct site *__restrict lat ,
     // compute the topological correlator in r and the temporal correlator
     if( CUTINFO.dir == TOPOLOGICAL_SUSCEPTIBILITY ) {
       if( compute_Qsusc( lat , CUTINFO , measurement ) == GLU_FAILURE ) {
-	return GLU_FAILURE ;
+        flag = GLU_FAILURE ; break ;
       }
       // compute the correlator
     } else if( CUTINFO.dir == TOPOLOGICAL_CORRELATOR ) {
       if( compute_Qcorr( lat , CUTINFO , measurement ) == GLU_FAILURE ) {
-	return GLU_FAILURE ;
+	flag = GLU_FAILURE ; break ;
       }
     } else if( CUTINFO.dir == TOPOLOGICAL_MOMENTS ) {
-      if( compute_Qmoments( lat , CUTINFO , measurement ) == GLU_FAILURE ) {
-	return GLU_FAILURE ;
+      if( compute_Qmoments( lat , &Qmom[ measurement-1 ] , 
+			    CUTINFO , measurement ) == GLU_FAILURE ) {
+        flag = GLU_FAILURE ; break ;
       }
     }
     //
   }
 
-  return GLU_SUCCESS ;
+ memfree :
+  
+  if( CUTINFO.dir == TOPOLOGICAL_MOMENTS ) {
+
+    // write to a file
+    write_moments( Qmom , CUTINFO.max_t-1 ) ;
+    
+    size_t t ;
+    for( t = 0 ; t < CUTINFO.max_t-1 ; t++ ) {
+      free( Qmom[t].Q ) ; free( Qmom[t].Q2 ) ;
+    }
+    free( Qmom ) ; 
+  }
+  
+  return flag ;
 }
