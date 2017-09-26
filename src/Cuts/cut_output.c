@@ -31,7 +31,7 @@ static int
 FWRITE( void *arr ,
 	const size_t size , // MUST BE sizeof(int) or sizeof(double)
 	const size_t stride ,
-	FILE *__restrict file )
+	FILE *file )
 {
   // I enforce the re byte-swap in case we want to look at the data again
   if( size == sizeof( int ) ) {
@@ -247,9 +247,9 @@ output_str_struct( const struct cut_info CUTINFO )
 
 // Write the gluonic two and three point functions to the file Ap
 void
-write_complex_g2g3_to_list( FILE *__restrict Ap , 
-			    double complex *__restrict g2 , 
-			    double complex *__restrict g3 , 
+write_complex_g2g3_to_list( FILE *Ap , 
+			    double complex *g2 , 
+			    double complex *g3 , 
 			    size_t num_mom[ 1 ] ) 
 {
 #ifdef ASCII_CHECK
@@ -271,8 +271,8 @@ write_complex_g2g3_to_list( FILE *__restrict Ap ,
 
 // Write the gluonic two point function to the file Ap
 void
-write_g2_to_list( FILE *__restrict Ap , 
-		  double *__restrict g2 , 
+write_g2_to_list( FILE *Ap , 
+		  double *g2 , 
 		  size_t num_mom[ 1 ] ) 
 {
 #ifdef ASCII_CHECK
@@ -293,9 +293,9 @@ write_g2_to_list( FILE *__restrict Ap ,
 
 // Write the gluonic two and three point functions to the file Ap
 void
-write_g2g3_to_list( FILE *__restrict Ap , 
-		    double *__restrict g2 , 
-		    double *__restrict g3 , 
+write_g2g3_to_list( FILE *Ap , 
+		    double *g2 , 
+		    double *g3 , 
 		    size_t num_mom[ 1 ] ) 
 {
 #ifdef ASCII_CHECK
@@ -320,9 +320,9 @@ write_g2g3_to_list( FILE *__restrict Ap ,
 }
 
 void
-write_lattice_fields( FILE *__restrict Ap , 
-		      const struct site *__restrict A , 
-		      const struct veclist *__restrict list , 
+write_lattice_fields( FILE *Ap , 
+		      const struct site *A , 
+		      const struct veclist *list , 
 		      size_t num_mom[1] )
 {
   uint32_t nmom[1] = { num_mom[0] } ;
@@ -353,9 +353,9 @@ write_lattice_fields( FILE *__restrict Ap ,
 
 // Support for writing our momentum list
 void
-write_mom_veclist( FILE *__restrict Ap , 
-		   size_t *__restrict num_mom , 
-		   const struct veclist *__restrict list ,
+write_mom_veclist( FILE *Ap , 
+		   size_t *num_mom , 
+		   const struct veclist *list ,
 		   const size_t DIR )
 {
   const int stride = ( DIR + 1 ) * num_mom[ 0 ] ;
@@ -382,11 +382,23 @@ write_mom_veclist( FILE *__restrict Ap ,
   return ;
 }
 
+// write out some moments, re and imaginary
+void
+write_moments( FILE *Ap ,
+	       double *Moment ,
+	       const size_t Nmoments )
+{
+  uint32_t nmom[ 1 ] = { Nmoments } ;
+  FWRITE( nmom , sizeof( uint32_t ) , 1 , Ap ) ;
+  FWRITE( Moment , sizeof( double ) , Nmoments , Ap ) ;
+  return ;
+}
+
 // write out rsq's for the correlator
 void
-write_rr_values( FILE *__restrict Ap ,
+write_rr_values( FILE *Ap ,
 		 size_t size[1] ,
-		 const size_t *__restrict rsq ,
+		 const size_t *rsq ,
 		 const size_t max_r2 ,
 		 const size_t ARR_SIZE )
 {
@@ -416,10 +428,10 @@ write_rr_values( FILE *__restrict Ap ,
 
 // Support for writing our triplets momentum
 void
-write_triplet_mom_list( FILE *__restrict Ap , 
-			size_t *__restrict num_mom , 
-			int *__restrict *__restrict momentum ,
-			int *__restrict *__restrict triplet )
+write_triplet_mom_list( FILE *Ap , 
+			size_t *num_mom , 
+			int **momentum ,
+			int **triplet )
 {
   const size_t stride = ( ND + 1 ) * num_mom[0] ;
   int *kall = malloc( stride * sizeof( int ) ) ;
@@ -463,8 +475,8 @@ write_triplet_mom_list( FILE *__restrict Ap ,
 
 // write the timeslices, LT[0] is the size of the array
 void
-write_tslice_list( FILE *__restrict Ap , 
-		   size_t *__restrict LT )
+write_tslice_list( FILE *Ap , 
+		   size_t *LT )
 {
   size_t t ;
   uint32_t T[ LT[0] ] , lt[1] = { *LT } ;

@@ -30,42 +30,124 @@
 #include "plan_ffts.h"    // config space correlator is convolution
 #include "SM_wrap.h"      // in case we wish to do smearing
 
-// computes the first 12 moments of Q in T-direction
+// number of moments that we look at
+#define NMOMENTS ((size_t)12)
+
+// local version of the one in geometry
+static void
+get_mom_2piBZ_loc( int x[ ND ] ,
+		   const size_t Dims[ ND ] ,
+		   const size_t i ,
+		   const size_t DIMS )
+{
+  int mu , subvol = 1 , sum = 0 ;
+  for( mu = 0 ; mu < ND ; mu++ ) {
+    if( mu != (int)DIMS ) {
+      x[ mu ] = ( ( i - i % subvol ) / subvol ) % Dims[ mu ] ;
+      subvol *= Dims[ mu ] ;
+      sum += x[mu] ;
+    } else {// set it to 0?
+      x[ mu ] = 0 ;
+    }
+  }
+  return ;
+}
+
+// given a local SLAB site index return the global index taking
+// into account for the translational invariance term T0
+static size_t
+loc_idx( const size_t i ,
+	 const size_t dims[ ND ] ,
+	 const size_t DIR ,
+	 const size_t slice )
+{
+  int x[ ND ] ; 
+  get_mom_2piBZ_loc( x , dims , i , ND ) ;
+  x[ DIR ] = slice ;
+
+  #ifdef verbose
+  printf( "%d %d %d %d \n" , x[0] , x[1] , x[2] , x[3] ) ;
+  #endif
+  
+  return gen_site( x ) ;
+}
+
+// little code for outputting the moments
+static void
+output_moments( double *Moment ,
+		const size_t DIR ,
+		const size_t measurement ,
+		const char *str ,
+		const GLU_bool Re )
+{
+  // write out the data, usual stuff BE
+  char filename[ 256 ] ;
+  if( Re == GLU_TRUE ) {
+    sprintf( filename , "Qmoments_%s_Nmom%zu_d%zu_re_m%zu.%zu.bin" ,
+	     str , NMOMENTS , DIR , measurement , Latt.flow ) ;
+    fprintf( stdout , "[QMOMENTS] writing real moments to %s\n" , filename ) ;
+  } else {
+    sprintf( filename , "Qmoments_%s_Nmom%zu_d%zu_im_m%zu.%zu.bin" ,
+	     str , NMOMENTS , DIR , measurement , Latt.flow ) ;
+    fprintf( stdout , "[QMOMENTS] writing imag moments to %s\n" , filename ) ;
+  }
+  
+  FILE *Ap = fopen( filename , "wb" ) ;
+  write_moments( Ap , Moment , NMOMENTS ) ;
+  fclose( Ap ) ;
+}
+
+// computes the first 12 moments of Q in DIR-direction \sum_t (-1)^n t^{2n}/(2n!) Q(t)
 static int
 Time_Moments( const GLU_complex *qtop ,
 	      const char *str ,
-	      const double NORM )
+	      const double NORM ,
+	      const size_t DIR ,
+	      const size_t measurement )
 {
   // sum qtop into a correlator q(t)
-  GLU_complex *Qt = malloc( Latt.dims[ ND-1 ] * sizeof( GLU_complex ) ) ;
+  GLU_complex *Qt = malloc( Latt.dims[ DIR ] * sizeof( GLU_complex ) ) ;
   
-  // compute the moments \sum_t (-1)^n t^{2n}/(2n!) Q(t)
+  // factorials
   const double fac[ 12 ] = { 1 , 1 , 2 , 6 , 24 , 120 , 720 ,
 			     5040 , 40320 , 362880 , 362800 ,
 			     39916800 } ;
-  const int LT = (int)Latt.dims[ ND-1 ] ;
-  int n , t ;
+  const int LT = (int)Latt.dims[ DIR ] ;
+  size_t dims[ ND ] ;
+  int n , t , subvol = 1 ;
+
+  for( n = 0 ; n < ND ; n++ ) {
+    if( n != DIR ) {
+      dims[ n ] = Latt.dims[ n ] ;
+      subvol *= Latt.dims[ n ] ;
+    } else {
+      dims[ n ] = 1 ;
+    }
+  }
 
   // compute the temporal sums
   #pragma omp parallel for private(t)
-  for( t = 0 ; t < Latt.dims[ ND-1 ] ; t++ ) {
+  for( t = 0 ; t < Latt.dims[ DIR ] ; t++ ) {
     Qt[ t ] = 0.0 ;
     register GLU_complex sum = 0.0 ;
     size_t i ;
-    for( i = t*LCU ; i < (t+1)*LCU ; i++ ) {
-      sum += qtop[i] ;
+    for( i = 0 ; i < subvol ; i++ ) {
+      sum += qtop[ loc_idx( i , dims , DIR , t ) ] ;
     }
     Qt[t] = sum * NORM ;
   }
 
   // initialise powers of t to t^0
-  int *tpow = malloc( Latt.dims[ ND-1 ] * sizeof( int ) ) ;
+  int *tpow = malloc( Latt.dims[ DIR ] * sizeof( int ) ) ;
   for( t = 0 ; t < LT ; t++ ) {
     tpow[ t ] = 1 ;
   }
   
   // loop increasing powers of moments of Q
-  for( n = 0 ; n < 12 ; n++ ) {
+  double *Moment_re = malloc( NMOMENTS * sizeof( double complex ) ) ;
+  double *Moment_im = malloc( NMOMENTS * sizeof( double complex ) ) ;
+  
+  for( n = 0 ; n < NMOMENTS ; n++ ) {
     GLU_complex sum = 0.0 ;
     for( t = -LT/2 ; t < LT/2 ; t++ ) {
       const int posit = ( t + LT ) % LT ;
@@ -79,12 +161,17 @@ Time_Moments( const GLU_complex *qtop ,
     case 2 : sum *= -1. / fac[ n ] ; break ;
     case 3 : sum *= -I  / fac[ n ] ; break ;
     }
+    Moment_re[ n ] = creal( sum ) ;
+    Moment_im[ n ] = cimag( sum ) ;
     // divide by the factorial and sign
-    fprintf( stdout , "[QMOMENTS] %s Moment_%d %1.12e %1.12e \n" ,
-	     str , n ,
-	     creal( sum ) , cimag( sum ) ) ;
+    fprintf( stdout , "[QMOMENTS] %s Dir_%zu Moment_%d %1.12e %1.12e \n" ,
+	     str , DIR , n , Moment_re[ n ] , Moment_im[ n ] ) ;
   }
-
+  
+  output_moments( Moment_re , DIR , measurement , str , GLU_TRUE ) ;
+  
+  output_moments( Moment_im , DIR , measurement , str , GLU_FALSE ) ;
+  
   if( tpow != NULL ) {
     free( tpow ) ;
   }
@@ -98,20 +185,25 @@ Time_Moments( const GLU_complex *qtop ,
 
 // compute the moments of the topological charge
 static int
-compute_Q_moments( GLU_complex *qtop )
+compute_Q_moments( GLU_complex *qtop ,
+		   const size_t measurement )
 {
   // normalisations
   const double NORM = -0.001583143494411527678811 ; // -1.0/(64*Pi*Pi)
-  
-  Time_Moments( qtop , "Q" , NORM ) ;
 
+  size_t mu ;
+  for( mu = 0 ; mu < ND ; mu++ ) {
+    Time_Moments( qtop , "Q" , NORM , mu , measurement ) ;
+  }
+  
   return GLU_SUCCESS ;
 }
 
 // compute the moments of the topological charge squared
 // fftw will use qtop in here!
 static int
-compute_Q2_moments( GLU_complex *qtop )
+compute_Q2_moments( GLU_complex *qtop ,
+		    const size_t measurement )
 {
   GLU_complex *out = NULL ;
   const double NORM = -0.001583143494411527678811 ; // -1.0/(64*Pi*Pi)
@@ -131,7 +223,6 @@ compute_Q2_moments( GLU_complex *qtop )
   }
 
   fftw_plan forward , backward ;
-
   small_create_plans_DFT( &forward , &backward , qtop , out , Latt.dims , ND ) ;
 
   // computes the full correlator in p-space and FFTs back
@@ -153,8 +244,11 @@ compute_Q2_moments( GLU_complex *qtop )
   fftw_cleanup_threads( ) ;
   #endif
 
-  Time_Moments( qtop , "Q^2" , mulfac ) ;
-
+  size_t mu ;
+  for( mu = 0 ; mu < ND ; mu++ ) {
+    Time_Moments( qtop , "Qsq" , mulfac , mu , measurement ) ;
+  }
+  
 #else
 
   out = malloc( LVOLUME * sizeof( GLU_complex ) ) ;
@@ -173,8 +267,11 @@ compute_Q2_moments( GLU_complex *qtop )
     out[i] = sum ;
   }
 
-  Time_Moments( out , "Q^2" , NORMSQ ) ;
-
+  size_t ;
+  for( mu = 0 ; mu < ND ; mu++ ) {
+    Time_Moments( out , "Qsq" , NORMSQ , mu , measurement ) ;
+  }
+  
 #endif
 
   // free temporary "out" matrix
@@ -212,12 +309,12 @@ compute_Qmoments( struct site *__restrict lat ,
   }
 
   // compute moments of Q
-  if( compute_Q_moments( qtop ) == GLU_FAILURE ) {
+  if( compute_Q_moments( qtop , measurement ) == GLU_FAILURE ) {
     goto memfree ;
   }
 
   // compute moments of Q^2
-  if( compute_Q2_moments( qtop ) == GLU_FAILURE ) {
+  if( compute_Q2_moments( qtop , measurement ) == GLU_FAILURE ) {
     goto memfree ;
   }
 

@@ -129,6 +129,18 @@ write_mom_veclist( FILE *__restrict Ap ,
 		   const size_t DIR ) ;
 
 /**
+   @fn void write_moments( FILE *Ap , double *Moment , const size_t Nmoments )
+   @brief write the moments to a file
+   @param Ap :: file we write out to
+   @param Moment :: moments
+   @param Nmoments :: number of moments
+ **/
+void
+write_moments( FILE *Ap ,
+	       double *Moment ,
+	       const size_t Nmoments ) ;
+
+/**
    @fn void write_triplet_mom_list( FILE *__restrict Ap , size_t *__restrict num_mom , int *__restrict *__restrict momentum , int *__restrict *__restrict triplet )
    @brief write out the momentum list for the triplets
 
