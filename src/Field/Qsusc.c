@@ -23,10 +23,11 @@
  */
 #include "Mainfile.h"
 
-#include "Qslab.h"    // compute_Qsusc()
-#include "Qcorr.h"    // compute_Qcorr()
-#include "Qmoments.h" // compute_Qmoments()
-#include "SM_wrap.h"  // smearing wrapper
+#include "cut_output.h" // write_qmoments()
+#include "Qslab.h"      // compute_Qsusc()
+#include "Qcorr.h"      // compute_Qcorr()
+#include "Qmoments.h"   // compute_Qmoments()
+#include "SM_wrap.h"    // smearing wrapper
 
 // step through smears
 int

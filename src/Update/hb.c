@@ -40,7 +40,7 @@ a    GLU is distributed in the hope that it will be useful,
 //#define DIAGONAL_UPDATE
 
 // hit the subgroups at random
-//#define STOCH (NC*3)
+//#define STOCH (NC*NC/4)
 
 // maximum number of heatbath updates
 #define NHBMAX (42)

@@ -401,10 +401,10 @@ FACG( struct site *__restrict lat ,
   GLU_real max ; 
   *th = theta_test_lin( lat , &max , ND ) ; 
   size_t iters = 0 ;
-
+  
   // have the option to leave early before allocations
   if( *th < acc ) return iters ;
-
+  
   // allocate the conjugate matrices
   GLU_complex **sn     = NULL ;
   GLU_complex **in_old = NULL ;
@@ -475,10 +475,10 @@ FACG( struct site *__restrict lat ,
       // otherwise we sum up the total iters
       iters += sumiters ;
     } else {
-      iters = 0 ;
+      iters = 123456789 ;
     }
   } 
-
+  
   // free the traces array
   free_traces( ) ;
 
@@ -536,7 +536,8 @@ FASD( struct site *__restrict lat ,
       // roughly, I will allow for a deviation around 0.1*PREC_TOL per iteration
       // for the average plaquette
       if( fabs( av_plaquette( lat ) - ref_plaquette ) > (0.1 * PREC_TOL * iters) ) {
-	return GLU_FAILURE ;
+	fprintf( stderr , "[GF] severe plaquette drift found\n" ) ;
+	return 123456789 ;
       }
     }
   }
@@ -553,7 +554,7 @@ FASD( struct site *__restrict lat ,
       return iters + FASD( lat , gauge , out , in , forward , backward , 
 			   p_sq , th , acc , max_iters ) ;
     } else {
-      return 0 ;
+      return 123456789 ;
     }
   }
 

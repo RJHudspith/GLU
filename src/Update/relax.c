@@ -33,7 +33,7 @@
 //#define SOR
 
 // number of stochastic SU(2) updates
-//#define NSTOCH (NC*15)
+//#define NSTOCH (NC)
 
 // microcanonical su(2) update
 void

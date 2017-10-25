@@ -25,9 +25,13 @@
 #include "draughtboard.h"   // draughtboarding
 #include "gftests.h"        // theta test
 #include "gtrans.h"         // gauge transformations
+#include "par_rng.h"        // par_rng_dbl()
 #include "plaqs_links.h"    // plaquettes
 #include "random_config.h"  // latt reunitisation
 #include "SU2_rotate.h"     // su(2) rotations
+
+// stochastic overrelaxation
+#define SOR
 
 // NC generic givens rotations
 static void
@@ -99,7 +103,20 @@ OR_single( struct site *__restrict lat ,
   
   // hits the link to the left and the one to the right with
   // gauge transformation matrices
+#ifdef SOR
+  if( par_rng_dbl( get_GLU_thread() ) < OrParam ) {
+    OrRotation( &s0 , &s1 , 2 ) ;
+  } else {
+    const GLU_real NORM = 1.0 / sqrt( creal(s0)*creal(s0) +
+				      cimag(s0)*cimag(s0) +
+				      creal(s1)*creal(s1) +
+				      cimag(s1)*cimag(s1) ) ;
+    s0 *= NORM ;
+    s1 *= NORM ;
+  }
+#else
   OrRotation( &s0 , &s1 , OrParam ) ;
+#endif
   
   // gauge rotate all the links that touch this gauge transformation
   for( mu = 0 ; mu < ND ; mu++ ) {
@@ -177,8 +194,20 @@ OrLandau( struct site *__restrict lat ,
 
   fprintf( stdout , "[GF] Over-Relaxation parameter %f \n" , OrParam ) ;
 
+  size_t iters ;
+#ifdef SOR
+  if( initialise_par_rng( NULL ) == GLU_FAILURE ) {
+    iters = 123456789 ;
+    goto end ;
+  }
+  if( OrParam < 0.0 || OrParam >= 1.0 ) {
+    fprintf( stderr , "[OR] SOR param should be between 0 and 1, not %f \n" ,
+	     OrParam ) ;
+    goto end ;
+  }
+#endif
+
   // iterations
-  size_t iters = 0 ;
   while( iters < MAX_ITERS && fabs( *theta ) > ACC ) {
 
     oldlink = newlink ;
@@ -204,6 +233,7 @@ OrLandau( struct site *__restrict lat ,
   // and print it out
   output_fixing_info( lat , *theta , iters ) ;
 
+ end :
   free_cb( &db ) ;
 
   return iters ;
@@ -243,7 +273,15 @@ OrCoulomb( struct site *__restrict lat ,
 
   fprintf( stdout , "[GF] Over-Relaxation parameter %f \n\n" , OrParam ) ;
 
-  size_t t , iters = 0 ;
+  size_t iters ;
+#ifdef SOR
+  if( initialise_par_rng( NULL ) == GLU_FAILURE ) {
+    iters = 123456789 ;
+    goto end ;
+  }
+#endif
+
+  size_t t ;
   for( t = 0 ; t < Latt.dims[ND-1] ; t++ ) {
 
     double newlink = slice_spatial_links( lat , t ) , oldlink ;
@@ -287,7 +325,9 @@ OrCoulomb( struct site *__restrict lat ,
   fprintf( stdout , "[GF] Tuning :: %f || Iterations :: %zu ||\n"
 	   "[GF] Final Tlink :: %1.15f || Slink :: %1.15f \n"
 	   "[GF] Plaquette :: %1.15f \n" , Latt.gf_alpha , iters , 
-	   tlink , splink , av_plaquette( lat ) ) ; 
+	   tlink , splink , av_plaquette( lat ) ) ;
+
+ end :
   // memory frees
   free_cb( &db ) ;
 

@@ -20,7 +20,6 @@
    @file plaqs_links.c
    @brief has all of the plaquette based measurements including gauge field strength tensor
  */
-
 #include "Mainfile.h"
 #include "clover.h"
 
@@ -161,31 +160,31 @@ complete_plaquette( const GLU_complex *__restrict a ,
   const __m128d *A = ( __m128d* )a , *B = ( __m128d* )b ,
     *C = ( __m128d* )c , *D = ( __m128d* )d ;
   
-  register const __m128d tra1 = _mm_add_pd( SSE2_MUL( a[0] , b[0] ) ,
-					    SSE2_MUL( a[1] , b[2] ) ) ;
-  register const __m128d tra2 = _mm_add_pd( SSE2_MUL( a[0] , b[1] ) ,
-					    SSE2_MUL( a[1] , b[3] ) ) ;
-  register const __m128d tra3 = _mm_add_pd( SSE2_MUL( a[2] , b[0] ) ,
-					    SSE2_MUL( a[3] , b[2] ) ) ;
-  register const __m128d tra4 = _mm_add_pd( SSE2_MUL( a[2] , b[1] ) ,
-					    SSE2_MUL( a[3] , b[3] ) ) ;
+  register const __m128d tra1 = _mm_add_pd( SSE2_MUL( A[0] , B[0] ) ,
+					    SSE2_MUL( A[1] , B[2] ) ) ;
+  register const __m128d tra2 = _mm_add_pd( SSE2_MUL( A[0] , B[1] ) ,
+					    SSE2_MUL( A[1] , B[3] ) ) ;
+  register const __m128d tra3 = _mm_add_pd( SSE2_MUL( A[2] , B[0] ) ,
+					    SSE2_MUL( A[3] , B[2] ) ) ;
+  register const __m128d tra4 = _mm_add_pd( SSE2_MUL( A[2] , B[1] ) ,
+					    SSE2_MUL( A[3] , B[3] ) ) ;
 					    
-  register __m128d tr = SSE2_MULCONJ( _mm_add_pd( SSE2_MULCONJ( tra1 , C[0] ) ,
-				 SSE2_MULCONJ( tra2 , C[1] ) ) , D[0] ) ;
+  register __m128d tr = SSE2_MUL_CONJ( _mm_add_pd( SSE2_MUL_CONJ( tra1 , C[0] ) ,
+						   SSE2_MUL_CONJ( tra2 , C[1] ) ) , D[0] ) ;
   
-  tr = _mm_add_pd( tr , SSE2_MULCONJ( _mm_add_pd( SSE2_MULCONJ( tra1 , C[2] ) ,
-						  SSE2_MULCONJ( tra2 , C[3] ) ) , D[1] ) ) ;
+  tr = _mm_add_pd( tr , SSE2_MUL_CONJ( _mm_add_pd( SSE2_MUL_CONJ( tra1 , C[2] ) ,
+						   SSE2_MUL_CONJ( tra2 , C[3] ) ) , D[1] ) ) ;
   
-  tr = _mm_add_pd( tr , SSE2_MULCONJ( _mm_add_pd( SSE2_MULCONJ( tra3 , C[0] ) ,
-						  SSE2_MULCONJ( tra4 , C[1] ) ) , D[2] ) ) ;
+  tr = _mm_add_pd( tr , SSE2_MUL_CONJ( _mm_add_pd( SSE2_MUL_CONJ( tra3 , C[0] ) ,
+						   SSE2_MUL_CONJ( tra4 , C[1] ) ) , D[2] ) ) ;
   
-  tr = _mm_add_pd( tr , SSE2_MULCONJ( _mm_add_pd( SSE2_MULCONJ( tra3 , C[2] ) ,
-						  SSE2_MULCONJ( tra4 , C[3] ) ) , D[3] ) ) ;
+  tr = _mm_add_pd( tr , SSE2_MUL_CONJ( _mm_add_pd( SSE2_MUL_CONJ( tra3 , C[2] ) ,
+						   SSE2_MUL_CONJ( tra4 , C[3] ) ) , D[3] ) ) ;
 
   double complex csum ;
   _mm_store_pd( (void*)&csum , tr ) ;
   return creal( csum ) ;
-    
+
   #else
   
   register const double complex tra1 = (a[0]*b[0]+a[1]*b[2]) ;

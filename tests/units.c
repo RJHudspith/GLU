@@ -311,14 +311,14 @@ int main( void )
   }
   full_tests_run += tests_run ;
 
-  // first one is simple linear algebra tests
-  if( UNOPS_test() == GLU_FAILURE ) {
+  // matrix multiply tests
+  if( MMUL_test() == GLU_FAILURE ) {
     goto TEST_FAILURE ;
   }
   full_tests_run += tests_run ;
 
-  // matrix multiply tests
-  if( MMUL_test() == GLU_FAILURE ) {
+  // first one is simple linear algebra tests
+  if( UNOPS_test() == GLU_FAILURE ) {
     goto TEST_FAILURE ;
   }
   full_tests_run += tests_run ;

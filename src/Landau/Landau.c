@@ -335,9 +335,12 @@ Landau( struct site *__restrict lat ,
 			      &theta , accuracy , iter ) ;
 
   // random restart portion of the code
-  if( unlikely( iters == 0 ) && ( improvement != SMPREC_IMPROVE ) ) {
-    size_t failure = 0 ; 
-    size_t iters2 = iters ; 
+  size_t failure = 0 ; 
+  if( ( iters == 123456789 ) && ( improvement != SMPREC_IMPROVE ) ) {
+
+    print_failure_info( failure , iter ) ;
+    
+    size_t iters_loc = 0 ;
     for( failure = 1 ; failure < GF_GLU_FAILURES ; failure++ ) {
       //repeat procedure have to read in the file :( 
       if( grab_file( lat , gauge , infile ) == GLU_FAILURE ) { 
@@ -345,27 +348,25 @@ Landau( struct site *__restrict lat ,
 	goto MemFree ; 
       }
       if( improvement == MAG_IMPROVE ) { mag( lat , gauge ) ; }
-
+      
       // and the callback
-      iters = FA_callback( lat , gauge , 
-			   out , in ,
-			   forward , backward , 
-			   psq , 
-			   &theta , accuracy , iter ) ;
+      iters_loc = FA_callback( lat , gauge , 
+			       out , in ,
+			       forward , backward , 
+			       psq , 
+			       &theta , accuracy , iter ) ;
 
-      // if we hit a failure, check
-      if( iters == 0 ) {
-	iters2 += iters ; 
+      // if we succeed we break the loop
+      if( iters_loc != 123456789 ) {
+	iters += iters_loc ; 
 	break ;
       } else {// print information about the last failure
-	iters2 = failure * iter ;	
-	print_failure_info( failure , iters2 ) ;
+	iters += iter ;	
+	print_failure_info( failure , iters_loc ) ;
 	printf( "\n[GF] Failure :: %zu || Accuracy %1.4e\n" , 
 		failure , theta ) ;
       }
     }
-    // print out some information regarding the GF //
-    iters = iters2 ;
   }
   // end of random transform loop -> Usually not needed //
 
@@ -397,7 +398,7 @@ Landau( struct site *__restrict lat ,
   free( in ) ; 
 #endif
 
-  if( iters >= ( ( GF_GLU_FAILURES - 1 ) * iter ) ) {
+  if( failure == GF_GLU_FAILURES ) {
     printf( "\n[GF] Failure to converge to a sufficient solution \n" 
 	    "[GF] Please lower the GF_TUNE parameter from %g \n" , Latt.gf_alpha ) ;
     return GLU_FAILURE ;

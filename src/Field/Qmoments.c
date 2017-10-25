@@ -101,7 +101,7 @@ Time_Moments( double *Moment ,
   }
 
   // compute the temporal sums
-  #pragma omp parallel for private(t)
+#pragma omp parallel for private(t)
   for( t = 0 ; t < Latt.dims[ DIR ] ; t++ ) {
     Qt[ t ] = 0.0 ;
     register GLU_complex sum = 0.0 ;
@@ -121,7 +121,7 @@ Time_Moments( double *Moment ,
   // loop increasing powers of moments of Q
   for( n = 0 ; n < NQMOMENTS ; n++ ) {
     double sum = 0.0 ;
-    for( t = -LT/2 ; t < LT/2 ; t++ ) {
+    for( t = -LT/2+1 ; t < LT/2 ; t++ ) {
       const int posit = ( t + LT ) % LT ;
       sum += tpow[ posit ] * creal( Qt[ posit ] ) ;
       tpow[ posit ] *= t ;
@@ -163,12 +163,19 @@ compute_Q_moments( struct Qmoments *Qmom ,
   // normalisations
   const double NORM = -0.001583143494411527678811 ; // -1.0/(64*Pi*Pi)
 
+    // init parallel threads, maybe
+  if( parallel_ffts( ) == GLU_FAILURE ) {
+    fprintf( stderr , "[PAR] Problem with initialising the OpenMP "
+	              "FFTW routines \n" ) ;
+    return GLU_FAILURE ;
+  }
+
   size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     Time_Moments( Qmom -> Q , qtop ,
 		  NORM , mu , measurement ) ;
   }
-  
+
   return GLU_SUCCESS ;
 }
 

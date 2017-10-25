@@ -134,9 +134,12 @@ hb_update( struct site *lat ,
       fprintf( stdout , "[UPDATE] %zu :: {P} %1.12f \n" , 
 	       i , av_plaquette( lat ) ) ;
       // write the temporal polyakov loop, (re,im) |L|
-      const double complex L = poly( lat , ND-1 ) / ( LCU * NC ) ;
-      fprintf( stdout , "[UPDATE] {L} ( %1.12e , %1.12e ) %1.12e \n" ,
-	       creal( L ) , cimag( L ) , cabs( L ) ) ;
+      size_t mu ;
+      for( mu = 0 ; mu < ND ; mu++ ) {
+	const double complex L = poly( lat , mu ) ;
+	fprintf( stdout , "[UPDATE] {L_%zu} ( %1.12e , %1.12e ) %1.12e \n" ,
+		 mu , creal( L ) , cimag( L ) , cabs( L ) ) ;
+      }
       fflush( stdout ) ;
     }
 

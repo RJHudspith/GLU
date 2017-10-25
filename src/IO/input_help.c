@@ -30,7 +30,9 @@ are_equal( const char *str_1 , const char *str_2 ) {
 
 // function for generating example input files
 static void
-create_input_file( const char *mode_str , const char *gf_str )
+create_input_file( const char *mode_str ,
+		   const char *gf_str ,
+		   const char *cut_str )
 {
   fprintf( stdout , "MODE = %s \n" , mode_str ) ;
   fprintf( stdout , "HEADER = NERSC\n" ) ;
@@ -38,7 +40,7 @@ create_input_file( const char *mode_str , const char *gf_str )
   for( mu = 0 ; mu < ND ; mu++ ) {
     fprintf( stdout , "    DIM_%zu = 16\n" , mu ) ;
   }
-  fprintf( stdout , "CONFNO = 1\n" 
+  fprintf( stdout , "CONFNO = 0\n" 
 	   "RANDOM_TRANSFORM = NO\n" 
 	   "SEED = 0\n" ) ;
   fprintf( stdout , "GFTYPE = %s\n" , gf_str ) ;
@@ -46,26 +48,32 @@ create_input_file( const char *mode_str , const char *gf_str )
 	   "    IMPROVEMENTS = NONE\n" 
 	   "    ACCURACY = 14\n"
 	   "    MAX_ITERS = 1000\n" ) ;
-  fprintf( stdout , "CUTTYPE = STATIC_POTENTIAL\n"
+  fprintf( stdout , "CUTTYPE = %s\n"
 	   "    FIELD_DEFINITION = LINEAR\n"
-	   "    MOM_CUT = HYPERCUBIC_CUT\n" 
+	   "    MOM_CUT = SPHERICAL_CUT\n" 
 	   "    MAX_T = 7\n"
 	   "    MAXMOM = 80\n" 
 	   "    CYL_WIDTH = 2.0\n"
 	   "    ANGLE = 60\n"
-	   "    OUTPUT = ./\n" ) ;
-  fprintf( stdout , "SMEARTYPE = ADAPTWFLOW_STOUT\n" 
+	   "    OUTPUT = ./\n" , cut_str ) ;
+  fprintf( stdout , "SMEARTYPE = WFLOW_STOUT\n" 
 	   "    DIRECTION = ALL\n"
-	   "    SMITERS = 1000\n" ) ;
+	   "    SMITERS = 100\n" ) ;
   fprintf( stdout , "    ALPHA1 = 0.02\n" ) ;
   for( mu = 2 ; mu < ND ; mu++ ) {
-    fprintf( stdout , "ALPHA%zu = 0.0\n" , mu ) ;
+    fprintf( stdout , "    ALPHA%zu = 0.0\n" , mu ) ;
   }
   fprintf( stdout , "U1_MEAS = U1_RECTANGLE\n" 
 	   "    U1_ALPHA = 0.07957753876221914\n" 
 	   "    U1_CHARGE = -1.0\n" ) ;
   fprintf( stdout , "CONFIG_INFO = GLU_config\n" ) ;
   fprintf( stdout , "    STORAGE = NERSC_NCxNC\n" ) ;
+  fprintf( stdout , "BETA = 6.0\n" ) ;
+  fprintf( stdout , "    ITERS = 1500\n" ) ;
+  fprintf( stdout , "    MEASURE = 5\n" ) ;
+  fprintf( stdout , "    OVER_ITERS = 4\n" ) ;
+  fprintf( stdout , "    SAVE = 25\n" ) ;
+  fprintf( stdout , "    THERM = 150\n" ) ;
   return ;
 }
 
@@ -211,17 +219,17 @@ help_usage( void )
   fprintf( stdout , "MODE, HEADER, DIM , CONFNO, RANDOM_TRANSFORM, \n" ) ;
   fprintf( stdout , "GFTYPE, GF_TUNE, IMPROVEMENTS, ACCURACY, MAX_ITERS, \n" ) ;
   fprintf( stdout , "CUTTYPE, FIELD_DEFINITION, MOM_CUT, MAX_T, MAXMOM, "
-	   "CYL_WIDTH, ANGLE, OUTPUT,\n" ) ;
+	            "CYL_WIDTH, ANGLE, OUTPUT,\n" ) ;
   fprintf( stdout , "SMEARTYPE, DIRECTION, SMITERS, ALPHA,\n" ) ;
   fprintf( stdout , "U1_MEAS, U1_ALPHA, U1_CHARGE,\n" ) ;
   fprintf( stdout , "CONFIG_INFO, STORAGE,\n" ) ;
   fprintf( stdout , "*caution* in the {input_file} each one of these have "
 	   "to be specified\n"
-	  "          once and only once!\n" ) ;
+	  "          ONCE AND ONLY ONCE!\n" ) ;
   fprintf( stdout , "\nIf you would like an example input file, try:\n"
 	   "\n./GLU --autoin={options}\n\n"
 	   "Where options can be COULOMB, LANDAU, STATIC_POTENTIAL, "
-	   "SUNCxU1 or WFLOW\n\n" ) ;
+	   "SUNCxU1, TOPOLOGICAL_SUSCEPTIBILITY or WFLOW\n\n" ) ;
   return ;
 }
 
@@ -248,6 +256,8 @@ mode_types( void )
 	   "and momentum-space gluon correlators\n" ) ;
   fprintf( stdout , "     = GAUGE_FIXING - Landau and Coulomb gauge fixing "
 	   "mode selection\n" ) ;
+  fprintf( stdout , "     = HEATBATH     - Heatbath algorithm for config "
+	   "generation \n" ) ;
   fprintf( stdout , "     = SMEARING     - Link smearing mode, overwrites the "
 	   "lattice field with the chosen smearing\n" ) ;
   fprintf( stdout , "     = SUNCxU1      - Quenched SU(N)xU(1) configuration "
@@ -469,16 +479,42 @@ GLU_helps_those_who_help_themselves( const char *help_str )
 	     "for when we write out the configuration file\n" ) ;
   } else if( are_equal( help_str , "--help=STORAGE" ) ) {
     storage_types( ) ;
+  } else if( are_equal( help_str , "--help=BETA" ) ) {
+    fprintf( stdout , "BETA = %%f - the parameter 2N/g_0^2 with which "
+	     "we weight the ensembles in the heatbath\n" ) ;
+  } else if( are_equal( help_str , "--help=ITERS" ) ) {
+    fprintf( stdout , "ITERS = %%d - the total number of iterations after "
+	     "thermalisation that the HB-OR does\n" ) ;
+  } else if( are_equal( help_str , "--help=MEASURE" ) ) {
+    fprintf( stdout , "MEASURE = %%d - the number of combined HB-OR iters "
+	     "before a measurement of the plaquette and polyakov loops\n" ) ;
+  } else if( are_equal( help_str , "--help=OVER_ITERS" ) ) {
+    fprintf( stdout , "OVER_ITERS = %%d - the number of overrelaxation "
+	     "iterations in the combined HB-OR\n" ) ;
+  } else if( are_equal( help_str , "--help=SAVE" ) ) {
+    fprintf( stdout , "SAVE = %%d - the iteration count at which we save "
+	     "a configuration in the HB-OR\n" ) ;
+  } else if( are_equal( help_str , "--help=THERMALISATION" ) ) {
+    fprintf( stdout , "THERMALISATION = %%d - the number of HB-OR iterations "
+	     "of thermalisation before measurement and saving\n" ) ;    
   } else if( are_equal( help_str , "--autoin=LANDAU" ) ) {
-    create_input_file( "GAUGE_FIXING" , "LANDAU" ) ;
+    create_input_file( "GAUGE_FIXING" , "LANDAU" ,
+		       "TOPOLOGICAL_SUSCEPTIBILITY" ) ;
   } else if( are_equal( help_str , "--autoin=COULOMB" ) ) {
-    create_input_file( "GAUGE_FIXING" , "COULOMB" ) ;
+    create_input_file( "GAUGE_FIXING" , "COULOMB" ,
+		       "TOPOLOGICAL_SUSCEPTIBILITY" ) ;
+  } else if( are_equal( help_str , "--autoin=HEATBATH" ) ) {
+    create_input_file( "HEATBATH" , "COULOMB" ,
+		       "TOPOLOGICAL_SUSCEPTIBILITY") ;   
   } else if( are_equal( help_str , "--autoin=STATIC_POTENTIAL" ) ) {
-    create_input_file( "CUTTING" , "LANDAU" ) ;
+    create_input_file( "CUTTING" , "LANDAU" ,
+		       "STATIC_POTENTIAL" ) ;
   } else if( are_equal( help_str , "--autoin=SUNCxU1" ) ) {
-    create_input_file( "SUNCxU1" , "LANDAU" ) ;
+    create_input_file( "SUNCxU1" , "LANDAU" ,
+		       "TOPOLOGICAL_SUSCEPTIBILITY" ) ;
   } else if( are_equal( help_str , "--autoin=WFLOW" ) ) {
-    create_input_file( "SMEARING" , "LANDAU" ) ;
+    create_input_file( "SMEARING" , "LANDAU" ,
+		       "TOPOLOGICAL_SUSCEPTIBILITY" ) ;
   } else {
     fprintf( stdout , "[IO] Unrecognised {input_file} query \"%s\" for\n" , 
 	     help_str ) ;
@@ -498,8 +534,8 @@ GLUsage( void )
 	   "./GLU --help={input_file option}\n\n" ) ;
   fprintf( stdout , "To automatically generate a standard input file use:\n\n"
 	   "./GLU --autoin={options}\n"
-	   "\nWhere {options} can be COULOMB, LANDAU, STATIC_POTENTIAL, "
-	   "SUNCxU1, WFLOW\n\n" ) ;
+	   "\nWhere {options} can be COULOMB, HEATBATH , LANDAU, "
+	   "STATIC_POTENTIAL, SUNCxU1, WFLOW\n\n" ) ;
   return fprintf( stdout , "If using the CG gauge fixing, "
 		  "please cite my paper\n"
 		  "\"Fourier Accelerated Conjugate Gradient Lattice "

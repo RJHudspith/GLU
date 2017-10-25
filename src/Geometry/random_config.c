@@ -39,7 +39,7 @@ latt_reunitg( GLU_complex *__restrict *__restrict gauge )
   return ;
 }
 
-//lattice reunitarization for lattice links
+//lattice reunitarization for the links
 void 
 latt_reunitU( struct site *__restrict lat )
 {
@@ -60,7 +60,7 @@ random_gtrans( struct site *__restrict lat )
 {
   initialise_par_rng( NULL ) ; 
  
-  //fprintf( stdout , "\n[RNG] Performing a RANDOM gauge transformation \n" ) ;
+  fprintf( stdout , "\n[RNG] Performing a RANDOM gauge transformation \n" ) ;
 
   GLU_complex **gauge = NULL ;
   
@@ -75,6 +75,8 @@ random_gtrans( struct site *__restrict lat )
     Sunitary_gen( gauge[i] , get_GLU_thread( ) ) ;
   }
 
+  gtransform( lat , (const GLU_complex **)gauge ) ; 
+
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) { 
     free( gauge[i] ) ;
@@ -84,7 +86,7 @@ random_gtrans( struct site *__restrict lat )
   return ;
 }
 
-// randomly gauge transform a slice
+// randomly generate a new gauge transform slice
 void
 random_gtrans_slice( GLU_complex *__restrict *__restrict slice_gauge )
 {
@@ -94,7 +96,8 @@ random_gtrans_slice( GLU_complex *__restrict *__restrict slice_gauge )
   #pragma omp parallel for private(i)
   for( i = 0 ; i < LCU ; i ++  ) {
     Sunitary_gen( slice_gauge[i] , get_GLU_thread( ) ) ;
-  } 	      
+  }
+  
   return ;
 }
 

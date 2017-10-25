@@ -52,11 +52,14 @@ initialise_par_rng( const char *rng_file )
 	  return GLU_FAILURE ;
 	}
 	// read them from urandom
-	if( fread( Seeds , sizeof( Latt.Seed ) , 
-		   Latt.Nthreads , urandom ) != Latt.Nthreads ) { 
+	if( fread( &Seeds[0] , sizeof( uint32_t ) , 
+		   1 , urandom ) != 1 ) { 
 	  fprintf( stderr , "[RNG] Entropy pool Seed not read properly ! "
 		   "... Exiting \n" ) ; 
 	  return GLU_FAILURE ;
+	}
+	for( i = 1 ; i < Latt.Nthreads ; i++ ) {
+	  Seeds[ i ] = Seeds[0] + i ;
 	}
 	fclose( urandom ) ;
       } else {
