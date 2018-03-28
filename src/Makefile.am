@@ -10,7 +10,7 @@ AM_CFLAGS=-I${TOPDIR}/src/Headers/
 CUTSFILES=./Cuts/3Dcuts.c ./Cuts/config_gluons.c ./Cuts/cut_output.c \
 	./Cuts/cut_routines.c ./Cuts/cuts.c ./Cuts/glueprop.c \
 	./Cuts/MOMgg.c ./Cuts/MOMggg.c ./Cuts/pspace_landau.c \
-	./Cuts/smearing_param.c ./Cuts/triplet_gen.c ./Cuts/gluearb.c
+	./Cuts/smearing_param.c ./Cuts/triplet_gen.c
 
 ## plaquettes, traces, field strength tensor
 FIELDFILES=./Field/clover.c ./Field/plaqs_links.c ./Field/POLY.c \
