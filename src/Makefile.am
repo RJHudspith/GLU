@@ -10,7 +10,7 @@ AM_CFLAGS=-I${TOPDIR}/src/Headers/
 CUTSFILES=./Cuts/3Dcuts.c ./Cuts/config_gluons.c ./Cuts/cut_output.c \
 	./Cuts/cut_routines.c ./Cuts/cuts.c ./Cuts/glueprop.c \
 	./Cuts/MOMgg.c ./Cuts/MOMggg.c ./Cuts/pspace_landau.c \
-	./Cuts/smearing_param.c ./Cuts/triplet_gen.c 
+	./Cuts/smearing_param.c ./Cuts/triplet_gen.c ./Cuts/gluearb.c
 
 ## plaquettes, traces, field strength tensor
 FIELDFILES=./Field/clover.c ./Field/plaqs_links.c ./Field/POLY.c \
@@ -22,10 +22,10 @@ GEOMETRYFILES=./Geometry/BPST_config.c ./Geometry/geometry.c \
 	./Geometry/draughtboard.c
 
 ## file readers and writers
-IOFILES=./IO/chklat_stuff.c ./IO/crc.c ./IO/HIREP.c ./IO/input_help.c \
-	./IO/input_reader.c ./IO/read_config.c ./IO/readers.c \
-	./IO/read_headers.c ./IO/Scidac.c ./IO/write_headers.c \
-	./IO/writers.c ./IO/XML_info.c
+IOFILES=./IO/chklat_stuff.c ./IO/CERN.c ./IO/crc.c ./IO/HIREP.c \
+	./IO/input_help.c ./IO/input_reader.c ./IO/read_config.c \
+	./IO/readers.c 	./IO/read_headers.c ./IO/Scidac.c \
+	./IO/write_headers.c ./IO/writers.c ./IO/XML_info.c
 
 ## Gauge-fixing codes
 LANDAUFILES=./Landau/CFACG.c ./Landau/CG.c ./Landau/Coulomb.c ./Landau/FACG.c \
@@ -118,6 +118,6 @@ bin_PROGRAMS = GLU
 
 GLU_SOURCES = ./Run/Mainfile.c
 GLU_CFLAGS = ${CFLAGS} -I${TOPDIR}/src/Headers/
-GLU_LDADD = libGLU.a ${LDFLAGS}
+GLU_LDADD = libGLU.a ${LDFLAGS} -lm
 
 endif

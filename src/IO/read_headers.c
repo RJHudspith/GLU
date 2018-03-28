@@ -27,6 +27,61 @@
 #include "GLU_bswap.h"     // endian swapping
 #include "Scidac.h"        // for the Scidac and ILDG files
 
+///////////////////// CERN HEADER /////////////////////////////
+// suspiciously similar to the HIREP header. Coincidence?
+static int
+get_header_data_CERN( FILE *__restrict CONFIG ,
+		      struct head_data *__restrict HEAD_DATA ,
+		      const GLU_bool VERB )
+{
+  // sanity check
+  if( NC != 3 || ND != 4 ) {
+    fprintf( stderr , "[IO] CERN file type only supported for 4D SU(3)\n" ) ;
+    return GLU_FAILURE ;
+  }
+  HEAD_DATA -> config_type = OUTPUT_CERN ;
+
+  // CERN output is ALWAYS little_endian and double precision
+  HEAD_DATA -> precision = DOUBLE_PREC ;
+  HEAD_DATA -> endianess = L_ENDIAN ;
+
+  // read the first bit - Navigation and such
+  int NAV[ ND ] ;
+  
+  if( !fread( NAV , ( ND ) * sizeof ( int ) , 1 , CONFIG ) ) {
+    fprintf( stderr , "[IO] Cannot understand CERN navigation details"
+	     ".. Leaving \n" ) ;
+    return GLU_FAILURE ;
+  }
+  
+  if ( WORDS_BIGENDIAN ) { bswap_32( ND + 1 , NAV ) ; } 
+
+  // convert to my dimensions , they have the time dim first, I have it last
+  size_t mu ;
+  for( mu = 0 ; mu < ND - 1 ; mu++ ) {
+    Latt.dims[ mu ] = NAV[ mu + 1 ] ;
+  }
+  Latt.dims[ mu ] = NAV[0] ;
+
+  double plaq[1] ;
+  if( !fread( plaq , sizeof ( double ) , 1 , CONFIG ) ) {
+    printf( "[IO] Cannot understand plaquette details .. Leaving \n" ) ;
+    return GLU_FAILURE ;
+  }
+  
+  // we save this check to the end .. as a big finale!
+  if ( WORDS_BIGENDIAN ) {
+    bswap_64( 1 , plaq ) ;
+  } 
+
+  HEAD_DATA -> checksum = 0. ;
+  HEAD_DATA -> trace = 0. ;
+  // cern header has a factor of NC compared to ours
+  HEAD_DATA -> plaquette = plaq[0]/NC ;
+
+  return GLU_SUCCESS ;
+}
+
 ///////////////////// HIREP HEADER /////////////////////////////
 static int
 get_header_data_HIREP( FILE *__restrict CONFIG ,
@@ -328,12 +383,14 @@ read_header( FILE *__restrict infile ,
   case ILDG_SCIDAC_HEADER : // ILDG and SCIDAC are basically the same ...
   case ILDG_BQCD_HEADER : // ILDG and SCIDAC are basically the same ...
     return get_header_data_SCIDAC( infile , HEAD_DATA ) ; // in Scidac.c
+  case CERN_HEADER :
+    return get_header_data_CERN( infile , HEAD_DATA , VERB ) ;
   case RANDOM_CONFIG :
   case UNIT_GAUGE :
   case INSTANTON :
     // geometry is read in when we parse the input file now
     return GLU_SUCCESS ;
-  default :
+  case UNSUPPORTED :
     return GLU_FAILURE ;
   }
   return GLU_FAILURE ;

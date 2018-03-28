@@ -22,6 +22,7 @@
  */
 #include "Mainfile.h"
 
+#include "CERN.h"          // CERN gauge field format
 #include "crc.h"           // MILC, SCIDAC and ILDG formats use a crc
 #include "GLU_bswap.h"     // byteswapping
 #include "GLU_memcheck.h"  // can we use the faster/mem expensive code?
@@ -322,6 +323,12 @@ write_lat( struct site *lat ,
 	   const GLU_output type , 
 	   char *__restrict details )
 {
+  // CERN stuff is all handled in CERN.c
+  if( type == OUTPUT_CERN ) {
+    printf( "[IO] Writing out in CERN format\n" ) ;
+    write_CLS_field( lat , out ) ;
+    return GLU_SUCCESS ;
+  }
   // HIREP stuff is all handled in HIREP.c
   if( type == OUTPUT_HIREP ) {
     printf( "[IO] Writing out in HIREP format\n" ) ;

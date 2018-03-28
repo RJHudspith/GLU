@@ -25,6 +25,7 @@
 
 #include "Mainfile.h"
 
+#include "CERN.h"          // openQCD config reader/writer
 #include "BPST_config.h"   // generate a BPST config
 #include "GLU_memcheck.h"  // do we have enough memory for the fast reader?
 #include "HIREP.h"         // read a HIREP file
@@ -146,6 +147,9 @@ get_config_SUNC( FILE *__restrict CONFIG ,
     } break ;
   case HIREP_HEADER : // HIREP uses a weird geometry compared to everyone else
     read_gauge_field( lat , CONFIG , &chksum ) ;
+    return chksum ;
+  case CERN_HEADER :
+    read_CLS_field( lat , CONFIG , &chksum ) ;
     return chksum ;
   case RANDOM_CONFIG :
     random_suNC( lat ) ;

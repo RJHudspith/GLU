@@ -113,8 +113,7 @@ AC_ARG_WITH([ND],
 	    ])
 
 ## C standard libraries
-AC_CHECK_HEADERS([math.h],[
-LDFLAGS="$LDFLAGS -lm" ])
+AC_CHECK_HEADERS([math.h],[],AC_MSG_ERROR([We implicitly use math.h functions and cannot find it!]))
 
 ## C standard library otherwise (dodgily) do it ourself
 AC_CHECK_HEADERS([stdint.h],[])

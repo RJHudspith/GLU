@@ -231,6 +231,8 @@ out_details( GLU_output *storage ,
       *storage = OUTPUT_SCIDAC ;
     } else if( are_equal( INPUT[storage_idx].VALUE , "ILDG" ) ) {
       *storage = OUTPUT_ILDG ;
+    } else if( are_equal( INPUT[storage_idx].VALUE , "CERN" ) ) {
+      *storage = OUTPUT_CERN ;
     } else {
       fprintf( stdout , "[IO] output type %s not recognised .. leaving \n" , 
 	       INPUT[storage_idx].VALUE ) ;
@@ -258,6 +260,12 @@ header_type( header_mode *HEADINFO )
       fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       *HEADINFO = HIREP_HEADER ;
+    } else if( are_equal( INPUT[header_idx].VALUE , "CERN" ) ) {
+      if( ( Latt.flow = confno( ) ) == 0 ) return GLU_FAILURE ;
+      fprintf( stdout , "[IO] Attempting to read a CERN file \n" ) ;
+      fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
+	      Latt.flow ) ;
+      *HEADINFO = CERN_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "MILC" ) ) {
       if( ( Latt.flow = confno( ) ) == 0 ) return GLU_FAILURE ;
       fprintf( stdout , "[IO] Attempting to read a MILC file \n" ) ;

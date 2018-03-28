@@ -80,7 +80,7 @@ OR_single( struct site *__restrict lat ,
   const size_t didx1 = d1 + d2*NC , didx2 = d2 + d1*NC ;
 
   // usual counters, s0 and s1 are the elements of su2
-  GLU_complex s0 , s1 ;
+  GLU_complex s0 = 0.0 , s1 = 0.0 ;
   size_t mu , back;
 
   // loop directions summing into L
@@ -194,7 +194,7 @@ OrLandau( struct site *__restrict lat ,
 
   fprintf( stdout , "[GF] Over-Relaxation parameter %f \n" , OrParam ) ;
 
-  size_t iters ;
+  size_t iters = 0 ;
 #ifdef SOR
   if( initialise_par_rng( NULL ) == GLU_FAILURE ) {
     iters = 123456789 ;
@@ -273,7 +273,7 @@ OrCoulomb( struct site *__restrict lat ,
 
   fprintf( stdout , "[GF] Over-Relaxation parameter %f \n\n" , OrParam ) ;
 
-  size_t iters ;
+  size_t iters = 0 ;
 #ifdef SOR
   if( initialise_par_rng( NULL ) == GLU_FAILURE ) {
     iters = 123456789 ;
