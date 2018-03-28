@@ -89,7 +89,7 @@ typedef enum
    @brief enums for the available headers my code can read
  */
 typedef enum 
-  { UNSUPPORTED ,  
+  { UNSUPPORTED ,
     NERSC_HEADER ,
     HIREP_HEADER ,
     MILC_HEADER ,
@@ -97,6 +97,7 @@ typedef enum
     ILDG_SCIDAC_HEADER ,
     ILDG_BQCD_HEADER ,
     LIME_HEADER ,
+    CERN_HEADER ,
     RANDOM_CONFIG ,
     UNIT_GAUGE ,
     INSTANTON } header_mode ;
@@ -197,7 +198,9 @@ typedef enum
     OUTPUT_MILC ,   // the whole matrix, wasteful
     OUTPUT_ILDG ,   // the whole matrix, wasteful
     OUTPUT_SCIDAC , // the whole matrix, wasteful
-    OUTPUT_HIREP } GLU_output ; // the whole matrix in HIREP's order  , wasteful
+    OUTPUT_HIREP ,  // the whole matrix in an odd geometry
+    OUTPUT_CERN ,   // the whole matrix in an odd +/- geometry
+  } GLU_output ; // the whole matrix in HIREP's order  , wasteful
 
 /**
    @enum config_size
