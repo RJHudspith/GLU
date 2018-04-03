@@ -587,7 +587,7 @@ Defines for the gauge fixing routines ( Landau/{}.c )
 #ifdef SINGLE_PREC
   #define CG_TOL 1E-6
 #else
-  #define CG_TOL 5E-12
+  #define CG_TOL 5E-11
 #endif
 
 /***********************************************
