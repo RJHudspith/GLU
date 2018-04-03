@@ -28,6 +28,7 @@
  */
 #include "Mainfile.h"
 
+#include "geometry.h"    // gen_site()
 #include "GLU_bswap.h"   // byte swapping arrays
 #include "plaqs_links.h" // compute the plaquette
 

@@ -40,7 +40,7 @@ correct_pspace_landau( struct site *__restrict A ,
     const size_t list_idx = list[ i ].idx ;
 
     // this is for the p-space test
-    register double sum = 0.0 ;
+    register double complex sum = 0.0 ;
 
     // Loop over polarisations ...
     size_t mu , j ;
@@ -48,7 +48,7 @@ correct_pspace_landau( struct site *__restrict A ,
 
       const double cache = 0.5 * list[i].MOM[ mu ] * Latt.twiddles[ mu ] ;
       const double p_mu = 2.0 * sin( cache ) ;
- 
+
       #if ( defined deriv_linn ) || ( defined deriv_fulln )
       const double p_mu_nn = 2.0 * ( nn1 * sin( cache ) + nn2 *\
 				     sin( cache * 3.0 ) ) ;
@@ -70,15 +70,15 @@ correct_pspace_landau( struct site *__restrict A ,
       // write over every element of A with this extra factor
       for( j = 0 ; j < NCNC ; j++ ) {
 	A[ list_idx ].O[ mu ][ j ] *= exp_cache ;
-#if ( defined deriv_linn ) || ( defined deriv_fulln ) || ( defined deriv_fullnn )
-	sum += cabs( A[ list_idx ].O[ mu ][ j ] * p_mu_nn ) ;
-#else
-	sum += cabs( A[ list_idx ].O[ mu ][ j ] * p_mu ) ;
-#endif
+        #if ( defined deriv_linn ) || ( defined deriv_fulln ) || ( defined deriv_fullnn )
+	sum += ( A[ list_idx ].O[ mu ][ j ] * p_mu_nn ) ;
+        #else
+	sum += ( A[ list_idx ].O[ mu ][ j ] * p_mu ) ;
+        #endif
       }
     }
     // and finally do the reduction on ave_err
-    ave_err = ave_err + (double)( sum / (double)NCNC ) ;
+    ave_err = ave_err + (double)( cabs( sum ) / (double)NCNC ) ;
   }
   fprintf( stdout , "\n[CUTS] P-Space gauge fixing error :: %1.5e \n\n" , 
 	   ave_err / (double)in[0] ) ;

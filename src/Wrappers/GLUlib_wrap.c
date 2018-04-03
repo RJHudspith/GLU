@@ -80,17 +80,18 @@ read_file( struct head_data *HEAD_DATA ,
     if( Latt.head == UNIT_GAUGE ||
 	Latt.head == RANDOM_CONFIG ||
 	Latt.head == INSTANTON ) {
-      fprintf( stdout , "[IO] %s is empty \n" , config_in ) ;
+      fprintf( stdout , "[IO] %s is empty but that is ok \n" , config_in ) ;
     } else {
       fprintf( stderr , "[IO] error opening file :: %s\n" , config_in ) ;
       return NULL ;
     }
   }
+  fprintf( stdout , "[IO] reading file %s\n" , config_in ) ;
  
   // initialise the configuration number to zero
   struct head_data tmp ;
   if( read_header( infile , &tmp , GLU_TRUE ) == GLU_FAILURE ) {
-    fprintf( stderr , "[IO] Header reading failure \n" ) ;
+    fprintf( stderr , "[IO] Header reading failure\n" ) ;
     fclose( infile ) ;
     return NULL ;
   } 

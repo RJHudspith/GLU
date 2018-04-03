@@ -279,7 +279,7 @@ write_g2_to_list( FILE *Ap ,
   size_t i ;
   fprintf( stdout , "[CUTS] G2\n%d\n" , num_mom[0] ) ;
   for( i = 0 ; i < num_mom[0] ; i++ ) { 
-    fprintf( stdout "%e\n", g2[i] ) ; 
+    fprintf( stdout , "%e\n", g2[i] ) ; 
   }
   fprintf( stdout , "%d\n", num_mom[ 0 ] ) ;
 #else
