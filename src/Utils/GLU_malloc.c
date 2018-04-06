@@ -20,10 +20,13 @@
    @file corr_malloc.c
    @brief memory allocation wrapper
  */
+#define _POSIX_C_SOURCE 200809L
+
 #include "Mainfile.h"
 
 #if (defined HAVE_IMMINTRIN_H)
 #include <immintrin.h>
+#include <stdlib.h>
 #endif
 
 #include "init.h" // init_navig()

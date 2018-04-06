@@ -143,7 +143,7 @@ am__objects_1 = ./Cuts/3Dcuts.$(OBJEXT) ./Cuts/config_gluons.$(OBJEXT) \
 	./Cuts/cuts.$(OBJEXT) ./Cuts/glueprop.$(OBJEXT) \
 	./Cuts/MOMgg.$(OBJEXT) ./Cuts/MOMggg.$(OBJEXT) \
 	./Cuts/pspace_landau.$(OBJEXT) ./Cuts/smearing_param.$(OBJEXT) \
-	./Cuts/triplet_gen.$(OBJEXT) ./Cuts/gluearb.$(OBJEXT)
+	./Cuts/triplet_gen.$(OBJEXT)
 am__objects_2 = ./Field/clover.$(OBJEXT) ./Field/plaqs_links.$(OBJEXT) \
 	./Field/POLY.$(OBJEXT) ./Field/Qcorr.$(OBJEXT) \
 	./Field/Qmoments.$(OBJEXT) ./Field/Qslab.$(OBJEXT) \
@@ -396,7 +396,7 @@ AM_CFLAGS = -I${TOPDIR}/src/Headers/
 CUTSFILES = ./Cuts/3Dcuts.c ./Cuts/config_gluons.c ./Cuts/cut_output.c \
 	./Cuts/cut_routines.c ./Cuts/cuts.c ./Cuts/glueprop.c \
 	./Cuts/MOMgg.c ./Cuts/MOMggg.c ./Cuts/pspace_landau.c \
-	./Cuts/smearing_param.c ./Cuts/triplet_gen.c ./Cuts/gluearb.c
+	./Cuts/smearing_param.c ./Cuts/triplet_gen.c
 
 FIELDFILES = ./Field/clover.c ./Field/plaqs_links.c ./Field/POLY.c \
 	./Field/Qcorr.c ./Field/Qmoments.c ./Field/Qslab.c ./Field/Qsusc.c 
@@ -563,8 +563,6 @@ Cuts/$(DEPDIR)/$(am__dirstamp):
 ./Cuts/smearing_param.$(OBJEXT): Cuts/$(am__dirstamp) \
 	Cuts/$(DEPDIR)/$(am__dirstamp)
 ./Cuts/triplet_gen.$(OBJEXT): Cuts/$(am__dirstamp) \
-	Cuts/$(DEPDIR)/$(am__dirstamp)
-./Cuts/gluearb.$(OBJEXT): Cuts/$(am__dirstamp) \
 	Cuts/$(DEPDIR)/$(am__dirstamp)
 Field/$(am__dirstamp):
 	@$(MKDIR_P) ./Field
@@ -932,7 +930,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./Cuts/$(DEPDIR)/cut_output.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./Cuts/$(DEPDIR)/cut_routines.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./Cuts/$(DEPDIR)/cuts.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./Cuts/$(DEPDIR)/gluearb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./Cuts/$(DEPDIR)/glueprop.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./Cuts/$(DEPDIR)/pspace_landau.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./Cuts/$(DEPDIR)/smearing_param.Po@am__quote@

@@ -28,9 +28,10 @@
  */
 #include "Mainfile.h"
 
-#include "geometry.h"    // gen_site()
-#include "GLU_bswap.h"   // byte swapping arrays
-#include "plaqs_links.h" // compute the plaquette
+#include "geometry.h"      // gen_site()
+#include "GLU_bswap.h"     // byte swapping arrays
+#include "plaqs_links.h"   // compute the plaquette
+#include "random_config.h" // latt_reunitU()
 
 // read a CERN gauge field
 int
