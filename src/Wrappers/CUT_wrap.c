@@ -25,6 +25,7 @@
 #include "config_gluons.h" // configuration space gluon propagators
 #include "cuts.h" // alpha_s measurements
 #include "GLU_timer.h" // for the timer
+#include "gluearb.h"
 #include "POLY.h" // for the static potential
 #include "Qsusc.h" // for the topological susceptibility correlator
 #include "smearing_param.h" // smeared gluon propagator

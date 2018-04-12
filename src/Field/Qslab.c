@@ -100,8 +100,6 @@ compute_slabs( const GLU_complex *qtop ,
   // compute the slab definition
   for( T1 = 1 ; T1 <= Latt.dims[ SLAB_DIR ] ; T1++ ) {
 
-#ifdef HAVE_FFTW3_H
-
     // set the dimensions of the slab
     size_t dims[ ND ] , subvol = 1 ;
     for( mu = 0 ; mu < ND ; mu++ ) {
@@ -113,24 +111,15 @@ compute_slabs( const GLU_complex *qtop ,
       subvol *= dims[ mu ] ;
     }
 
+#ifdef HAVE_FFTW3_H
+
     #ifdef verbose
     printf( "DIMS :: %zu %zu %zu %zu -> %zu \n" ,
 	    dims[0] , dims[1] , dims[2] , dims[3] , subvol ) ;
     #endif
-    
-    // init parallel threads, maybe
-    if( parallel_ffts( ) == GLU_FAILURE ) {
-      fprintf( stderr , "[PAR] Problem with initialising the OpenMP "
-	       "FFTW routines \n" ) ;
-      break ;
-    }
 
-    GLU_complex *in = fftw_malloc( subvol * sizeof( GLU_complex ) ) ;
-    GLU_complex *out = fftw_malloc( subvol * sizeof( GLU_complex ) ) ;
-
-    // create some small plans
-    fftw_plan forward , backward ;
-    small_create_plans_DFT( &forward , &backward , in , out , dims , ND ) ;
+    struct fftw_small_stuff FFTW ;
+    small_create_plans_DFT( &FFTW , dims , ND ) ;
     
 #endif
 
@@ -144,17 +133,17 @@ compute_slabs( const GLU_complex *qtop ,
       #pragma omp parallel for private(i)
       for( i = 0 ; i < subvol ; i++ ) {
 	const size_t src = slab_idx( i , dims , SLAB_DIR , T0 ) ;
-	in[ i ] = qtop[ src ] ; 
+	FFTW.in[ i ] = qtop[ src ] ; 
       }
-      fftw_execute( forward) ;
+      fftw_execute( FFTW.forward ) ;
       #pragma omp parallel for private(i)
       for( i = 0 ; i < subvol ; i++ ) {
-	out[ i ] *= conj( out[i] ) ;
+	FFTW.out[ i ] *= conj( FFTW.out[i] ) ;
       }
-      fftw_execute( backward) ;
+      fftw_execute( FFTW.backward ) ;
 
       for( i = 0 ; i < subvol ; i++ ) {
-	sum_slab += creal( in[ i ] ) ;
+	sum_slab += creal( FFTW.in[ i ] ) ;
       }
       // perform convolution the dumb way
       #else
@@ -178,14 +167,7 @@ compute_slabs( const GLU_complex *qtop ,
     tsum /= ( subvol ) ;
 
     // cleanup and memory deallocate
-    fftw_destroy_plan( backward ) ;
-    fftw_destroy_plan( forward ) ;
-    fftw_cleanup( ) ;
-    #ifdef OMP_FFTW
-    fftw_cleanup_threads( ) ;
-    #endif
-    fftw_free( in ) ;
-    fftw_free( out ) ;
+    small_clean_up_fftw( FFTW ) ;
 #endif
 
     ct[ T1-1 ] = tsum * NORMSQ / Latt.dims[ SLAB_DIR ] ;

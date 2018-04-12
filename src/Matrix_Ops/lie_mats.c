@@ -16,12 +16,10 @@
     You should have received a copy of the GNU General Public License
     along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 /**
    @file lie_mats.c
    @brief has the lie-matrix definitions and structure constants for fundamental SU(N)
  */
-
 #include "Mainfile.h"
 
 // general structure function

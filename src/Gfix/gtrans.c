@@ -162,6 +162,29 @@ gtransform( struct site *__restrict lat ,
   return ;
 }
 
+//gauge_transform lattice-wide
+void 
+gtransform2( struct site *__restrict lat ,
+	     const GLU_complex *__restrict *__restrict gauge )
+{
+  size_t i ;
+#pragma omp for private(i)
+  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+    #if ND == 4
+    inline_gtransform_local( gauge[i] , lat[i].O[0] , gauge[lat[i].neighbor[0]] ) ;
+    inline_gtransform_local( gauge[i] , lat[i].O[1] , gauge[lat[i].neighbor[1]] ) ;
+    inline_gtransform_local( gauge[i] , lat[i].O[2] , gauge[lat[i].neighbor[2]] ) ;
+    inline_gtransform_local( gauge[i] , lat[i].O[3] , gauge[lat[i].neighbor[3]] ) ;
+    #else
+    size_t mu ;
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      inline_gtransform_local( gauge[i] , lat[i].O[mu] , gauge[lat[i].neighbor[mu]] ) ;
+    }
+    #endif
+  } 
+  return ;
+}
+
 // gauge_transform for the Coulomb definition 
 void
 gtransform_slice( const GLU_complex *__restrict *__restrict gauge , 
@@ -172,6 +195,33 @@ gtransform_slice( const GLU_complex *__restrict *__restrict gauge ,
   size_t i ;
   const size_t slice = LCU  *  t ; 
 #pragma omp parallel for private(i)
+  PFOR(  i = 0  ;  i < LCU  ;  i ++ ) {
+    const size_t j = slice + i ;
+    #if ND == 4   
+    inline_gtransform_local( gauge[i] , lat[j].O[0] , gauge[lat[i].neighbor[0]] ) ;
+    inline_gtransform_local( gauge[i] , lat[j].O[1] , gauge[lat[i].neighbor[1]] ) ;
+    inline_gtransform_local( gauge[i] , lat[j].O[2] , gauge[lat[i].neighbor[2]] ) ;
+    #else
+    size_t mu ;
+    for( mu = 0 ; mu < ND - 1  ; mu++ ) {
+      inline_gtransform_local( gauge[i] , lat[j].O[mu] , gauge[lat[i].neighbor[mu]] ) ;
+    }
+    #endif
+    inline_gtransform_local( gauge[i] , lat[j].O[ND-1] , gauge_up[i] ) ;
+  }
+  return ;
+}
+
+// gauge_transform for the Coulomb definition 
+void
+gtransform_slice2( const GLU_complex *__restrict *__restrict gauge , 
+		   struct site *__restrict lat , 
+		   const GLU_complex *__restrict *__restrict gauge_up ,
+		   const size_t t )
+{
+  size_t i ;
+  const size_t slice = LCU  *  t ; 
+#pragma omp for private(i)
   PFOR(  i = 0  ;  i < LCU  ;  i ++ ) {
     const size_t j = slice + i ;
     #if ND == 4   

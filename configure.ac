@@ -4,18 +4,12 @@
 ## --with-NC= :: number of colors, if not specified defaults to 3
 ## --with-ND= :: number of dimensions, if not specified defaults to 4
 ## --enable-single :: working precision is single, default is double
-## --enable-OMP_FFTW :: enable OMP'd fftw routines (FFTW v3.3 and greater)
 ## --with-fftw= :: directory for the installed FFTW routines if --with-fftw
 ##                 argument is specified without a directory, will look for
 ##                 -lfftw3(f) in /usr/lib/ 
 ## --with-gsl= :: directory for GSL
 ## --with-lapacke= :: directory for lapacke install, used for large-NC eigen
 ##                    operations, good binding with complex.h
-## --with-deriv= :: derivative type in gauge fixing options are :
-##                  deriv_linn , deriv_full , deriv_fulln (last two are
-##  		   exact logarithm variations)
-## --enable-exp_exact :: exact exponentiation into the group being used for the
-##                       gauge transformation matrices in the gauge fixing
 ## --enable-notcondor :: enable the single-machine cache-ing and architecture
 ##                       dependent optimisations
 ## --with-GRACEY_PROJ= :: MOMggg scheme projection number, 0 is default
@@ -162,15 +156,6 @@ AC_ARG_ENABLE([single],
 ##                                                                                           ##
 ###############################################################################################
 
-## I have now written the code to utilise OpenMP parallel FFT routines
-AC_ARG_ENABLE([OMP_FFTW],
-	[ --enable-OMP_FFTW Utilise FFTW's OpenMP parallel FFTs],
-	[case "${enableval}" in
-	yes) OMP_FFTW=true ;;
-	no) OMP_FFTW=false ;;
-	*) AC_MSG_ERROR([bad value ${enableval} for --enable-OMP_FFTW]) ;;
-	esac],[OMP_FFTW=false])
-
 ## Look for openmp, cannot turn on the omp fftw routines without it!
 AC_CHECK_HEADERS([omp.h],[],[OMP_FFTW=false])
 
@@ -312,21 +297,6 @@ AC_ARG_WITH([lapacke],
 AM_CONDITIONAL([DEFLAPACKE],[$lapacke])
 ## Include where it is just in case people want to do something in Makefile.am
 AC_SUBST(LAPACKE)
-
-## Derivative types allowed by the code
-AC_ARG_WITH([deriv],
-	AC_HELP_STRING([--with-deriv=],
-		       [Compile in the gauge group number NC]),
-            [
-	    AC_MSG_NOTICE([User specified deriv, type given as ${with_deriv}])	
-	    case "${with_deriv}" in
-	      deriv_full) AC_DEFINE([deriv_full],[],[Normal derivative, log def gluon fields]) ;;
-	      ## JAMIE :: TODO, work out the functionals being minimised in the CG for these!
-	      ##deriv_fulln) AC_DEFINE([deriv_fulln],[],[Stencil derivative, log def gluon fields]) ;;
-	      ##deriv_linn) AC_DEFINE([deriv_linn],[],[Stencil derivative, linear gluon fields]) ;;
-	      *) AC_MSG_NOTICE([Default deriv : Linear deriv with O(a) approx exponentiation (Fastest).]);;
-	    esac
-	    ],[ AC_MSG_NOTICE([Default deriv : Linear deriv with O(a) approx exponentiation (Fastest).]) ])
 
 ## Use exact exponential in the GF
 AC_ARG_ENABLE([exp_exact],

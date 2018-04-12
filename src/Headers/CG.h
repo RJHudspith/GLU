@@ -30,19 +30,6 @@
  */
 void allocate_traces( const size_t LENGTH ) ;
 
-/**
-   @fn double approx_minimum( const size_t nmeas , const double alphas[ nmeas ] , const double functional[ nmeas ] )
-   @brief finds the approximate minimum of alphas using GLU-bic splines
-   @param nmeas :: number of measurements made
-   @param alphas :: alphas tested
-   @param functional :: the gauge functional at each alpha
-
-   @return the alpha that approximately minimises the functional, or 0 
- */
-double
-approx_minimum( const size_t nmeas , 
-		const double alphas[ nmeas ] ,
-		const double functional[ nmeas ] ) ;
 
 /**
    @fn double coul_gtrans_fields( struct sp_site_herm *__restrict rotato , const struct site *__restrict lat , const GLU_complex *__restrict *__restrict slice_gauge , const size_t t )

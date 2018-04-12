@@ -70,11 +70,8 @@ mom_gauge_spatial( struct site *__restrict A ,
   }
 
   // FFTW routines
-  GLU_complex *out = fftw_malloc( LCU * sizeof( GLU_complex ) ) ; 
-  GLU_complex *in  = fftw_malloc( LCU * sizeof( GLU_complex ) ) ; 
-
-  fftw_plan forward , backward ;
-  small_create_plans_DFT( &forward , &backward , in , out , Latt.dims , ND - 1 ) ;
+  struct fftw_small_stuff FFTW ;
+  small_create_plans_DFT( &FFTW , Latt.dims , ND-1 ) ;
 
   //// End of the search for Wisdom /////
   
@@ -89,24 +86,24 @@ mom_gauge_spatial( struct site *__restrict A ,
 	// FORWARDS
 #ifdef CUT_FORWARD
         #pragma omp parallel for private(i)
-	PFOR( i = 0 ; i < LCU ; i++ ) {
-	  in[i] = A[ slice + i ].O[mu][j] ; 
+        for( i = 0 ; i < LCU ; i++ ) {
+	  FFTW.in[i] = A[ slice + i ].O[mu][j] ; 
 	}
-	fftw_execute( forward ) ; 
+	fftw_execute( FFTW.forward ) ; 
         #pragma omp parallel for private(i)
-	PFOR( i = 0 ; i < LCU ; i++ ) {
-	  A[ slice + i ].O[mu][j] = out[i] ; 
+        for( i = 0 ; i < LCU ; i++ ) {
+	  A[ slice + i ].O[mu][j] = FFTW.out[i] ; 
 	}
 #else
 	// backwards
         #pragma omp parallel for private(i)
-	PFOR( i = 0 ; i < LCU ; i++ ) {
-	  out[i] = A[ slice + i ].O[mu][j] ; 
+        for( i = 0 ; i < LCU ; i++ ) {
+	  FFTW.out[i] = A[ slice + i ].O[mu][j] ; 
 	}
-	fftw_execute( backward ) ; 
+	fftw_execute( FFTW.backward ) ; 
         #pragma omp parallel for private(i)
-	PFOR( i = 0 ; i < LCU ; i++ ) {
-	  A[ slice + i ].O[mu][j] = in[i] ; 
+        for( i = 0 ; i < LCU ; i++ ) {
+	  A[ slice + i ].O[mu][j] = FFTW.in[i] ; 
 	}
 #endif
       }
@@ -114,14 +111,7 @@ mom_gauge_spatial( struct site *__restrict A ,
 
   //average into one sp_site size field
   // et voila! we have our fourier-transformed links in 0-2Pi BZ
-  fftw_free( out ) ; 
-  fftw_free( in ) ; 
-  fftw_destroy_plan( forward ) ; 
-  fftw_destroy_plan( backward ) ; 
-#ifdef OMP_FFTW
-  fftw_cleanup_threads( ) ;
-#endif
-  fftw_cleanup( ) ; 
+  small_clean_up_fftw( FFTW ) ;
 
   return GLU_SUCCESS ;
 }

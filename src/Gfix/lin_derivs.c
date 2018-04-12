@@ -97,11 +97,9 @@ latt_derivnn_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
 #define VAL 0.4444444444444444
 double
 fast_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
-			       double *functional ,
 			       const struct site *__restrict lat , 
 			       const size_t i )
 {
-  *functional = 0.0 ;
 #if NC == 3 
   double REsum0 = 0. , REsum1 = 0. , IMsum1 = 0. , REsum2 = 0. , IMsum2 = 0. ;
   double REsum3 = 0. , REsum4 = 0. , IMsum4 = 0. ;
@@ -118,29 +116,12 @@ fast_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
   for( nu = 0 ; nu < HERMSIZE ; nu++ ) {
     sum[ nu ] = 0. ;
   }
-  for( nu = 0 ; nu < ND ; nu++ ) {
-    *functional += creal( trace( lat[i].O[nu] ) ) ;
-  }
   return latt_deriv_AntiHermitian_proj( sum , lat , i , ND ) ;
 #endif
-
-  // local functional sum accumulator
-  register double loc_sum = 0.0 ;
 
   //calculate the top diagonal for both shift A and A
   size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
-    // compute the functional
-    #if NC == 3
-    loc_sum += creal( lat[i].O[mu][0] ) ;
-    loc_sum += creal( lat[i].O[mu][4] ) ;
-    loc_sum += creal( lat[i].O[mu][8] ) ;
-    #elif NC == 2
-    loc_sum += creal( lat[i].O[mu][0] ) ;
-    loc_sum += creal( lat[i].O[mu][3] ) ;
-    #else
-    loc_sum += creal( trace( lat[i].O[mu] ) ) ;
-    #endif
 
 #if NC == 3 
     // cache some stuff in ....
@@ -211,9 +192,6 @@ fast_deriv_AntiHermitian_proj( GLU_complex sum[ HERMSIZE ] ,
 
 #endif
     }
-  
-  // set the functional
-  *functional = loc_sum ;
 
 #if NC == 3
 

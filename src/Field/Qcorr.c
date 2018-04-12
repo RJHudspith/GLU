@@ -90,7 +90,6 @@ compute_Qcorr( struct site *__restrict lat ,
   // normalisations
   const double NORM = -0.001583143494411527678811 ; // -1.0/(64*Pi*Pi)
   const double NORMSQ = NORM * NORM ;
-  const double mulfac = NORMSQ / (double)LVOLUME ;
 
   // info
   check_psq( CUTINFO ) ;
@@ -114,34 +113,27 @@ compute_Qcorr( struct site *__restrict lat ,
   write_mom_veclist( Ap , size , list , ND ) ;
 
   // set up the matrix-valued array of the topological charge
-#ifdef HAVE_FFTW3_H
-  GLU_complex *qtop = fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
-#else
-  GLU_complex *qtop = malloc( LVOLUME * sizeof( GLU_complex ) ) ;
+  struct fftw_small_stuff FFTW ;
+#ifndef HAVE_FFTW3_H
+  FFTW.in = malloc( LVOLUME * sizeof( GLU_complex ) ) ;
 #endif
   size_t i ;
 
   // allocate the results
   double *qcorr = malloc( size[0] * sizeof( double ) ) ; 
 
-  // fft'd list and plans
-#ifdef HAVE_FFTW3_H
-  GLU_complex *out = NULL ;
-  fftw_plan forward , backward ;
-#endif
-
   // logic to fail
   if( list == NULL ) goto memfree ;
   if( qcorr == NULL ) goto memfree ;
-  if( qtop == NULL ) goto memfree ;
+  if( FFTW.in == NULL ) goto memfree ;
 
   // precompute all of charge densities q(x)
-  compute_Gmunu_array( qtop , lat ) ;
+  compute_Gmunu_array( FFTW.in , lat ) ;
 
   register double sum = 0.0 , sumsq = 0.0 ;
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    sum += creal( qtop[i] ) ;
-    sumsq += creal( qtop[i] * qtop[i] ) ;
+    sum += creal( FFTW.in[i] ) ;
+    sumsq += creal( FFTW.in[i]*FFTW.in[i] ) ;
   }
   fprintf( stdout , "\n[QTOP] Q %zu %1.12e %1.12e %1.12e \n" ,
 	   measurement , sum * NORM , sum * sum * NORMSQ , sumsq * NORMSQ ) ;
@@ -149,46 +141,30 @@ compute_Qcorr( struct site *__restrict lat ,
   // if we have fftw, use it for the contractions
 #ifdef HAVE_FFTW3_H
 
-  // init parallel threads, maybe
-  if( parallel_ffts( ) == GLU_FAILURE ) {
-    fprintf( stderr , "[PAR] Problem with initialising the OpenMP "
-	              "FFTW routines \n" ) ;
-    goto memfree ;
-  }
+  const double mulfac = NORMSQ / (double)LVOLUME ;
 
   // FFT Gmunu
-  out = fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
-
-  small_create_plans_DFT( &forward , &backward , qtop , out , Latt.dims , ND ) ;
+  small_create_plans_DFT( &FFTW , Latt.dims , ND ) ;
 
   // computes the full correlator in p-space and FFTs back
-  fftw_execute( forward ) ;
+  fftw_execute( FFTW.forward ) ;
 
   // is a convolution, Volume norm is for the FFT
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-    out[ i ] *= conj( out[ i ] ) * mulfac ;
+    FFTW.out[ i ] *= conj( FFTW.out[ i ] ) * mulfac ;
   }
 
-  fftw_execute( backward ) ;
-
-  // cleanup and memory deallocate
-  fftw_destroy_plan( backward ) ;
-  fftw_destroy_plan( forward ) ;
-  fftw_cleanup( ) ;
-  #ifdef OMP_FFTW
-  fftw_cleanup_threads( ) ;
-  #endif
-  free( out ) ;
+  fftw_execute( FFTW.backward ) ;
 
   #ifdef verbose
-  fprintf( stdout , "\n[QSUSC] Check sum :: %f \n" , creal( qtop[0] ) ) ;
+  fprintf( stdout , "\n[QSUSC] Check sum :: %f \n" , creal( FFTW.in[0] ) ) ;
   #endif
 
   // loop the possible rsqs
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < size[0] ; i++ ) {
-    qcorr[i] = (double)creal( qtop[ list[i].idx ] ) ;
+    qcorr[i] = (double)creal( FFTW.in[ list[i].idx ] ) ;
   }
 
   // warning, this code is super slow compared to the FFT convolution one
@@ -210,14 +186,14 @@ compute_Qcorr( struct site *__restrict lat ,
       // translate the source from k by a vector separation
       const size_t sink = compute_spacing( separation , source , ND ) ;
       //trace of the products
-      sumqq += creal( qtop[source] * qtop[sink] ) ;
+      sumqq += creal( FFTW.in[source] * FFTW.in[sink] ) ;
     }
     qcorr[i] = sumqq * NORMSQ ;
   }
 #endif
 
   // look at the correlator of this thing too
-  temporal_correlator( qtop , str ) ;
+  temporal_correlator( FFTW.in , str ) ;
 
   // tell us where to go
   fprintf( stdout , "[CUTS] Outputting to %s \n" , str ) ;
@@ -235,9 +211,14 @@ compute_Qcorr( struct site *__restrict lat ,
   free( str ) ;
 
   // free up all of the allocations
-  free( qcorr ) ;  
-  free( qtop ) ;
+  free( qcorr ) ;
 
+#ifdef HAVE_FFTW3_H
+  small_clean_up_fftw( FFTW ) ;
+#else
+  free( FFTW.in ) ;
+#endif
+  
   // free the list
   free( list ) ;
 

@@ -573,14 +573,6 @@ Defines for the gauge fixing routines ( Landau/{}.c )
 #endif
 
 /**
-   @def CG_MAXITERS
-   @brief Conjugate Gradient Maximum Iterations before an Steepest Descent step
- */
-#ifndef CG_MAXITERS
- #define CG_MAXITERS 35
-#endif
-
-/**
    @def CG_TOL
    @brief specific tolerances for the CG
  */
@@ -589,6 +581,18 @@ Defines for the gauge fixing routines ( Landau/{}.c )
 #else
   #define CG_TOL 5E-11
 #endif
+
+/**
+   @def LINE_NSTEPS
+   @brief number of line search probes
+ */
+#define LINE_NSTEPS 3
+
+/**
+   @def CLINE
+   @brief spacing between reduction array for CG coulomb routines
+ */
+#define CLINE (8)
 
 /***********************************************
 

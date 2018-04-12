@@ -24,48 +24,21 @@
 #define GLU_CFACG_H
 
 /**
-   @fn size_t Coulomb_FACG( struct site  *__restrict lat , GLU_complex  *__restrict *__restrict out , GLU_complex  *__restrict *__restrict in , const void *__restrict forward , const void *__restrict backward , const GLU_real * __restrict p_sq , const double accuracy , const size_t max_iter ) ;
-   @brief Conjugate gradient Fourier Accelerated Coulomb gauge fixing code
+   @fn size_t Coulomb_FA( struct site  *__restrict lat , struct fftw_stuff *FFTW , const double accuracy , const size_t max_iter , const GLU_bool FACG ) ;
+   @brief Coulomb gauge fixing codes
    @param lat :: lattice links
-   @param out :: FFTW temporary
-   @param in :: derivative of the fields
-   @param forward :: FFTW forward transform plan
-   @param backward :: FFTW backward transform plan
+   @param FFTW :: fftw temporaries and plans
    @param accuracy :: the accuracy we wish to attain
    @param max_iter :: the maximum number of (per slice) iterations we wish to have before random transform
+   @param FACG :: are we using the CG routines?
    @return the maximum number of iterations (i.e. the sum of each slice's) or 0 if something went wrong
  */
 size_t
-Coulomb_FACG( struct site  *__restrict lat , 
-	      GLU_complex  *__restrict *__restrict out , 
-	      GLU_complex  *__restrict *__restrict in , 
-	      const void *__restrict forward , 
-	      const void *__restrict backward , 
-	      const GLU_real * __restrict p_sq ,
-	      const double accuracy ,
-	      const size_t max_iter ) ;
-/**
-   @fn size_t Coulomb_FASD( struct site  *__restrict lat , GLU_complex  *__restrict *__restrict out , GLU_complex  *__restrict *__restrict in , const void *__restrict forward , const void *__restrict backward , const GLU_real * __restrict p_sq , const double accuracy , const size_t max_iter ) ;
-   @brief steepest descent Fourier Accelerated Coulomb gauge fixing code
-   @param lat :: lattice links
-   @param out :: FFTW temporary
-   @param in :: derivative of the fields
-   @param forward :: FFTW forward transform plan
-   @param backward :: FFTW backward transform plan
-   @param psq :: precomputed psq table
-   @param accuracy :: the accuracy we wish to attain
-   @param max_iter :: the maximum number of (per slice) iterations we wish to have before random transform
-   @return the maximum number of iterations (i.e. the sum of each slice's) or 0 if something went wrong
- */
-size_t
-Coulomb_FASD( struct site  *__restrict lat , 
-	      GLU_complex  *__restrict *__restrict out , 
-	      GLU_complex  *__restrict *__restrict in , 
-	      const void *__restrict forward , 
-	      const void *__restrict backward , 
-	      const GLU_real * __restrict p_sq ,
-	      const double accuracy ,
-	      const size_t max_iter ) ;
+Coulomb_FA( struct site  *__restrict lat , 
+	    struct fftw_stuff *FFTW ,
+	    const double accuracy ,
+	    const size_t max_iter ,
+	    const GLU_bool FACG ) ;
 
 /**
    @fn void query_probes_Coulomb( void )

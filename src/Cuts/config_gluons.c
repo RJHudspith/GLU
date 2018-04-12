@@ -102,21 +102,10 @@ spatial_correlator( struct site *__restrict A ,
 		    const size_t spacing )
 {
   if( spacing > Latt.dims[ND-1] ) { return GLU_FAILURE ; }
-  // init parallel threads, maybe
-  if( parallel_ffts( ) == GLU_FAILURE ) {
-    fprintf( stderr , "[PAR] Problem with initialising "
-	              "the OpenMP FFTW routines \n" ) ;
-    // should clean up the memory here
-    return GLU_FAILURE ;
-  }
 
   // FFTW routines
-  GLU_complex *out = fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
-  GLU_complex *in  = fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
-
-  // create some plans
-  fftw_plan forward , backward ;
-  small_create_plans_DFT( &forward , &backward , in , out , Latt.dims , ND ) ;
+  struct fftw_small_stuff FFTW ;
+  small_create_plans_DFT( &FFTW , Latt.dims , ND ) ;
 
   //forward transform
   size_t mu , i , j ;
@@ -126,23 +115,23 @@ spatial_correlator( struct site *__restrict A ,
       #ifdef CUT_FORWARD
       #pragma omp parallel for private(i)
       PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-	in[i] = A[i].O[mu][j] ;
+	FFTW.in[i] = A[i].O[mu][j] ;
       }
-      fftw_execute( forward ) ;
+      fftw_execute( FFTW.forward ) ;
       #pragma omp parallel for private(i)
       PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-	A[i].O[mu][j] = out[i] ;
+	A[i].O[mu][j] = FFTW.out[i] ;
       }
       #else
       // BACKWARD TRANSFORM
       #pragma omp parallel for private(i)
       PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-	out[i] = A[i].O[mu][j] ;
+	FFTW.out[i] = A[i].O[mu][j] ;
       }
-      fftw_execute( backward ) ;
+      fftw_execute( FFTW.backward ) ;
       #pragma omp parallel for private(i)
       PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-	A[i].O[mu][j] = in[i] ;
+	A[i].O[mu][j] = FFTW.in[i] ;
       }
       #endif
     }
@@ -153,26 +142,26 @@ spatial_correlator( struct site *__restrict A ,
   for( i = 0 ; i < LVOLUME ; i++ ) {
     GLU_complex tr , sum = 0.0 ;
     #ifdef CUT_FORWARD
-    out[i] = 0 ;
+    FFTW.out[i] = 0 ;
     #else
-    in[i] = 0 ;
+    FFTW.in[i] = 0 ;
     #endif
     for( mu = 0 ; mu < ND ; mu++ ) {
       trace_ab_dag( &tr , A[i].O[mu] , A[i].O[mu] ) ;
       sum += tr ; 
     }
     #ifdef CUT_FORWARD
-    out[i] = sum ;
+    FFTW.out[i] = sum ;
     #else
-    in[i] = sum ;
+    FFTW.in[i] = sum ;
     #endif
   }
 
   // fft back into config space
 #ifdef CUT_FORWARD
-  fftw_execute( backward ) ;
+  fftw_execute( FFTW.backward ) ;
 #else
-  fftw_execute( forward ) ;
+  fftw_execute( FFTW.forward ) ;
 #endif
 
   // compute the sum
@@ -180,9 +169,9 @@ spatial_correlator( struct site *__restrict A ,
 #pragma omp parallel for private(i)
   for( t = 0 ; t < Latt.dims[ND-1] ; t++ ) {
     #ifdef CUT_FORWARD
-    GLU_complex *p = in + LCU * t ;
+    GLU_complex *p = FFTW.in + LCU * t ;
     #else
-    GLU_complex *p = out + LCU * t ;
+    GLU_complex *p = FFTW.out + LCU * t ;
     #endif
     register double sum = 0 ;
     for( i = 0 ; i < LCU ; i++ ) {
@@ -193,14 +182,7 @@ spatial_correlator( struct site *__restrict A ,
   }
 
   // free the FFTs
-  fftw_destroy_plan( backward ) ;
-  fftw_destroy_plan( forward ) ;
-  fftw_cleanup( ) ;
-#ifdef OMP_FFTW
-  fftw_cleanup_threads( ) ;
-#endif
-  fftw_free( out ) ;  
-  fftw_free( in ) ;
+  small_clean_up_fftw( FFTW ) ;
 
   return GLU_SUCCESS ;
 }

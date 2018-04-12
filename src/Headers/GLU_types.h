@@ -250,4 +250,45 @@ struct Qmoments {
   double *Q2 ;
 } ;
 
+struct fftw_small_stuff {
+  GLU_complex *out ;
+  GLU_complex *in ;
+#ifdef HAVE_FFTW3_H
+  fftw_plan forward ;
+  fftw_plan backward ;
+#else
+  int forward ;
+  int backward ;
+#endif
+  GLU_real *psq ;
+} ;
+
+struct fftw_stuff {
+  GLU_complex **out ;
+  GLU_complex **in ;
+#ifdef HAVE_FFTW3_H
+  fftw_plan *forward ;
+  fftw_plan *backward ;
+#else
+  int *forward ;
+  int *backward ;
+#endif
+  GLU_real *psq ;
+} ;
+
+// temporary allocation structures
+struct CGtemps {
+  double *red ;
+  GLU_complex **sn ;
+  GLU_complex **in_old ;
+  struct s_site *rotato ;
+  struct draughtboard db ;
+} ;
+
+struct gauges {
+  GLU_complex **g ;
+  GLU_complex **g_up ;
+  GLU_complex **g_end ;
+} ;
+
 #endif

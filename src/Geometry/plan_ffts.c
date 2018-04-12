@@ -27,30 +27,12 @@
 // guard the whole thing
 #ifdef HAVE_FFTW3_H
 
-// I have reason to believe that this gives better results //FFTW_PATIENT
+// I have reason to believe that this gives better results
 // FFTW_PATIENT OVERWRITES the data in the arrray given, be warned!
 #define GLU_PLAN FFTW_PATIENT
 
 // for ease of reading
 enum{ NOPLAN = 0 } ;
-
-// have a look for parallel ffts
-int
-parallel_ffts( void )
-{
-  // initialise parallel fft ?
-#ifdef OMP_FFTW
-  if( fftw_init_threads() == 0 ) {
-    return GLU_FAILURE ;
-  } else {
-    // in here I set the number of fftw threads to be the same
-    // as the usual number of parallel threads ..
-    fftw_plan_with_nthreads( Latt.Nthreads ) ;
-    fprintf( stdout , "[PAR] FFTW using %d thread(s) \n" , Latt.Nthreads ) ;
-  }
-#endif
-  return GLU_SUCCESS ;
-}
 
 // see if we have wisdom already
 static char *
@@ -73,14 +55,8 @@ obtain_wisdom( int *planflag ,
   #else
   sprintf( prec_str , "DOUBLE" ) ;
   #endif
-  // openmp'd wisdom
-  #ifdef OMP_FFTW
-  sprintf( str , "%s/Local/Wisdom/%s_%sOMPnt%d_SU%d_" , 
-	   HAVE_PREFIX , prec_str , type , nthreads , NC ) ;
-  #else
   sprintf( str , "%s/Local/Wisdom/%s_%sSU%d_" , 
 	   HAVE_PREFIX , prec_str , type , NC ) ;
-  #endif
   for( mu = 0 ; mu < DIR - 1 ; mu++ ) {
     sprintf( str , "%s%zux" , str , dims[ mu ] ) ;
   }
@@ -103,33 +79,48 @@ obtain_wisdom( int *planflag ,
 
 // record both the forward and backward
 void
-create_plans_DFT( fftw_plan *__restrict forward , 
-		  fftw_plan *__restrict backward ,
-		  GLU_complex *__restrict *__restrict in , 
-		  GLU_complex *__restrict *__restrict out ,
+create_plans_DFT( struct fftw_stuff *FFTW ,
 		  const size_t dims[ ND ] ,
 		  const int ARR_SIZE ,
 		  const int DIR )
 {
   // set up our fft
-  int dimes[ DIR ] , mu , planflag ;
+  size_t VOL = 1 , mu , i ;
+  int dimes[ DIR ] , planflag ;
   
   // swap these defs around as FFTW and I disagree on orderings
   for( mu = 0 ; mu < DIR ; mu++ ) {
     dimes[ mu ] = dims[ DIR - 1 - mu ] ;
+    VOL *= dims[ DIR - 1 - mu ] ;
   }
 
   #ifdef verbose
   start_timer( ) ;
   #endif
+
+  FFTW -> forward  = malloc( ARR_SIZE * sizeof( fftw_plan ) ) ; 
+  FFTW -> backward = malloc( ARR_SIZE * sizeof( fftw_plan ) ) ; 
+  FFTW -> out      = fftw_malloc( ARR_SIZE * sizeof( GLU_complex* ) ) ; 
+  FFTW -> in       = fftw_malloc( ARR_SIZE * sizeof( GLU_complex* ) ) ; 
+
+#pragma omp parallel
+  {
+#pragma omp for private(i)
+    for(  i = 0 ; i < ARR_SIZE ; i++  ) {
+      FFTW -> out[i] = ( GLU_complex* )fftw_malloc( VOL * sizeof( GLU_complex ) ) ; 
+      FFTW -> in[i] = ( GLU_complex* )fftw_malloc( VOL * sizeof( GLU_complex ) ) ; 
+    }
+  }
   
   char *str = obtain_wisdom( &planflag , dims , DIR , "" ) ;
 
   for( mu = 0 ; mu < ARR_SIZE ; mu++ ) {
-    forward[mu] = fftw_plan_dft( DIR , dimes , in[mu] , out[mu] , 
-				 FFTW_FORWARD , GLU_PLAN ) ; 
-    backward[mu] = fftw_plan_dft( DIR , dimes , out[mu] , in[mu] , 
-				  FFTW_BACKWARD , GLU_PLAN ) ;
+    FFTW -> forward[mu] = fftw_plan_dft( DIR , dimes ,
+					 FFTW -> in[mu] , FFTW -> out[mu] , 
+					 FFTW_FORWARD , GLU_PLAN ) ; 
+    FFTW -> backward[mu] = fftw_plan_dft( DIR , dimes ,
+					  FFTW -> out[mu] , FFTW -> in[mu] , 
+					  FFTW_BACKWARD , GLU_PLAN ) ;
   }
 
   // I want to know how long FFTW is taking to plan its FFTs
@@ -150,49 +141,45 @@ create_plans_DFT( fftw_plan *__restrict forward ,
   return ;
 }
 
-// plans for the DHT, only need one plan as it is its own inverse
+/// Small plan does not care about the NC unlike the above
 void
-create_plans_DHT( fftw_plan *__restrict plan , 
-		  GLU_real *__restrict *__restrict in , 
-		  GLU_real *__restrict *__restrict out ,
-		  const size_t dims[ ND ] ,
-		  const int ARR_SIZE ,
-		  const int DIR )
+small_create_plans_DFT( struct fftw_small_stuff *FFTW ,
+			const size_t dims[ ND ] ,
+			const int DIR )
 {
   // set up our fft
-  int dimes[ DIR ] , mu , planflag ;
-
-  // swap these defs around 
+  size_t VOL = 1 , mu ;
+  int dimes[ DIR ] , planflag ;
+  // swap these defs around
   for( mu = 0 ; mu < DIR ; mu++ ) {
     dimes[ mu ] = dims[ DIR - 1 - mu ] ;
+    VOL *= dims[ DIR - 1 - mu ] ;
   }
 
-  fftw_r2r_kind l[ND] ; 
+  // allocations
+  FFTW -> in = fftw_malloc( VOL * sizeof( GLU_complex ) ) ;
+  FFTW -> out = fftw_malloc( VOL * sizeof( GLU_complex ) ) ;
 
-  // we use a real to real dht, is is very much a halfcomplex to real trans .
-  for( mu = 0 ; mu < ND ; mu++ ) {
-    l[mu] = FFTW_DHT ;
-  }
-
-  // initialise the timer
+  // initialise the clock
   #ifdef verbose
   start_timer( ) ;
   #endif
-  
-  char *str = obtain_wisdom( &planflag , dims , DIR , "DHT_" ) ;
 
-  // and organise the plans
-  for( mu = 0 ; mu < ARR_SIZE ; mu++ ) {
-    plan[mu] = fftw_plan_r2r( DIR , dimes , in[mu] , out[mu] , l , 
-			      GLU_PLAN ) ; 
-  }
+  char *str = obtain_wisdom( &planflag , dims , DIR , "single_" ) ;
+
+  FFTW -> forward = fftw_plan_dft( DIR , dimes ,
+				   FFTW -> in , FFTW -> out , 
+				   FFTW_FORWARD , GLU_PLAN ) ; 
+  FFTW -> backward = fftw_plan_dft( DIR , dimes ,
+				    FFTW -> out , FFTW -> in , 
+				    FFTW_BACKWARD , GLU_PLAN ) ; 
 
   // I want to know how long FFTW is taking to plan its FFTs
   #ifdef verbose
   print_time( ) ;
   fprintf( stdout , "[FFTW] plans finished\n\n" ) ;
   #endif
-  
+
 #ifndef CONDOR_MODE
   if( planflag == NOPLAN ) {
     FILE *wizzard = fopen( str , "w" ) ; 
@@ -205,49 +192,37 @@ create_plans_DHT( fftw_plan *__restrict plan ,
   return ;
 }
 
-/// Small plan does not care about the NC unlike the above
 void
-small_create_plans_DFT( fftw_plan *__restrict forward , 
-			fftw_plan *__restrict backward ,
-			GLU_complex *__restrict in , 
-			GLU_complex *__restrict out ,
-			const size_t dims[ ND ] ,
-			const int DIR )
+clean_up_fftw( struct fftw_stuff FFTW ,
+	       const int ARR_SIZE )
 {
-  // set up our fft
-  int dimes[ DIR ] , mu , planflag ;
-  // swap these defs around
-  for( mu = 0 ; mu < DIR ; mu++ ) {
-    dimes[ mu ] = dims[ DIR - 1 - mu ] ;
+  size_t i ;
+  for( i = 0 ; i < ARR_SIZE; i++ ) {
+    fftw_destroy_plan( FFTW.forward[i] ) ;   
+    fftw_destroy_plan( FFTW.backward[i] ) ;  
+    fftw_free( FFTW.out[i] ) ; 
+    fftw_free( FFTW.in[i] ) ; 
   }
-
-  // initialise the clock
-  #ifdef verbose
-  start_timer( ) ;
-  #endif
-
-  char *str = obtain_wisdom( &planflag , dims , DIR , "single_" ) ;
-
-  *forward = fftw_plan_dft( DIR , dimes , in , out , 
-			    FFTW_FORWARD , GLU_PLAN ) ; 
-  *backward = fftw_plan_dft( DIR , dimes , out , in , 
-			     FFTW_BACKWARD , GLU_PLAN ) ; 
-
-  // I want to know how long FFTW is taking to plan its FFTs
-  #ifdef verbose
-  print_time( ) ;
-  fprintf( stdout , "[FFTW] plans finished\n\n" ) ;
-  #endif
-
-#ifndef CONDOR_MODE
-  if( planflag == NOPLAN ) {
-    FILE *wizzard = fopen( str , "w" ) ; 
-    fftw_export_wisdom_to_file( wizzard ) ; 
-    fclose( wizzard ) ; 
+  fftw_free( FFTW.out ) ; 
+  fftw_free( FFTW.in ) ; 
+  free( FFTW.forward ) ; 
+  free( FFTW.backward ) ; 
+  fftw_cleanup( ) ;
+  if( FFTW.psq != NULL ) {
+    free( FFTW.psq ) ; 
   }
-#endif
-  free( str ) ;
+  return ;
+}
 
+void
+small_clean_up_fftw( struct fftw_small_stuff FFTW )
+{
+  fftw_free( FFTW.out ) ; 
+  fftw_free( FFTW.in ) ; 
+  fftw_cleanup( ) ;
+  if( FFTW.psq != NULL ) {
+    free( FFTW.psq ) ; 
+  }
   return ;
 }
 

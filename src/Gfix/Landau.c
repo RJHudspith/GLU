@@ -102,8 +102,8 @@ luxury_copy_fast( struct site *__restrict lat ,
   size_t i , iters = 0 , copies ;
 
   struct site *lat_copy = NULL , *lat_best = NULL ;
-  if( GLU_malloc( (void**)&lat_copy , 16 , LVOLUME * sizeof( struct site ) ) != 0 ||
-      GLU_malloc( (void**)&lat_best , 16 , LVOLUME * sizeof( struct site ) ) != 0 ) {
+  if( GLU_malloc( (void**)&lat_copy , ALIGNMENT , LVOLUME * sizeof( struct site ) ) != 0 ||
+      GLU_malloc( (void**)&lat_best , ALIGNMENT , LVOLUME * sizeof( struct site ) ) != 0 ) {
     fprintf( stderr , "[GF] luxury_copy_fast temporary lattice allocation failure\n" ) ;
     return iters ;
   }
@@ -192,11 +192,7 @@ luxury_copy_fast( struct site *__restrict lat ,
 static size_t
 ( *FA_callback ) ( struct site *__restrict lat ,
 		   GLU_complex *__restrict *__restrict gauge ,
-		   GLU_complex *__restrict *__restrict out ,
-		   GLU_complex *__restrict *__restrict in ,
-		   const void *__restrict forward ,
-		   const void *__restrict backward ,
-		   const GLU_real *psq ,
+		   struct fftw_stuff FFTW ,
 		   double *tr ,
 		   const double acc ,
 		   const size_t max_iters ) ;
@@ -212,7 +208,7 @@ select_callback( const int improvement )
     #ifdef GLU_GFIX_SD
     FA_callback = FASD ; 
     #else
-    FA_callback = FACG ; query_probes_Landau( ) ;
+    FA_callback = FACG ;
     #endif
   }
   #else
@@ -222,38 +218,12 @@ select_callback( const int improvement )
     #ifdef GLU_GFIX_SD
     FA_callback = FASD ;
     #else
-    FA_callback = FACG ; query_probes_Landau( ) ;
+    FA_callback = FACG ;
     #endif
   } 
   #endif
   return ;
 }
-
-#ifdef HAVE_FFTW3_H // Fourier acceleration routines
-
-// precomputatation of the lattice momentum
-static void
-precompute_momenta( GLU_real *__restrict psq )
-{
-  size_t i ;
-  // factor due to the different momentum def 
-#if ( defined deriv_linn ) || ( defined deriv_fulln ) 
-  //const GLU_real factor = 1.0 / MAX_LANDAU ; //4.0 / 3.0 *
-#elif defined deriv_fullnn
-  //const GLU_real factor = 68.0 / 45.0 * MAX_LANDAU ; 
-#endif
-  #pragma omp parallel for private(i) shared(psq)
-  PFOR(  i = 0 ; i < LVOLUME ; i++  ) {
-    #if ( defined deriv_linn ) || ( defined deriv_fulln ) || ( defined deriv_fullnn )
-    psq[i] = MAX_LANDAU / ( gen_p_sq_imp( i , ND )  ) ; 
-    #else
-    psq[i] = MAX_LANDAU / ( gen_p_sq( i , ND )  ) ; 
-    #endif
-  }
-  return ;
-}
-
-#endif // FFTW
 
 // should return failure if this really messes up
 int
@@ -286,53 +256,39 @@ Landau( struct site *__restrict lat ,
 {
   double theta = 0. ; 
   size_t i ;
+  
+  struct fftw_stuff FFTW ;
 
 #ifdef HAVE_FFTW3_H
-  if( parallel_ffts( ) == GLU_FAILURE ) {
-    printf( "[PAR] Problem with initialising the OpenMP FFTW routines \n" ) ;
-    // should clean up the memory here
-    return GLU_FAILURE ;
+
+  FFTW.psq      = malloc( LVOLUME * sizeof( GLU_real ) ) ; 
+  #pragma omp parallel
+  {
+    #pragma omp for private(i)
+    for(  i = 0 ; i < LVOLUME ; i++  ) {
+      FFTW.psq[i] = MAX_LANDAU / ( gen_p_sq( i , ND )  ) ; 
+    }
   }
-
-  fftw_plan *forward  = malloc( ( TRUE_HERM ) * sizeof( fftw_plan ) ) ; 
-  fftw_plan *backward = malloc( ( TRUE_HERM ) * sizeof( fftw_plan ) ) ; 
-  GLU_complex **out   = fftw_malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
-  GLU_complex **in    = fftw_malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
-
-  #pragma omp parallel for private(i)
-  PFOR(  i = 0 ; i < TRUE_HERM ; i++  ) {
-    out[i] = ( GLU_complex* )fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ; 
-    in[i] = ( GLU_complex* )fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ; 
-  }
-
-  GLU_real *psq = malloc( LVOLUME * sizeof( GLU_real ) ) ; 
-  precompute_momenta( psq ) ;
 
   /////////////// Look for Wisdom //////////////
-
-  create_plans_DFT( forward , backward , in , out , Latt.dims , TRUE_HERM , ND ) ;
+  create_plans_DFT( &FFTW , Latt.dims , TRUE_HERM , ND ) ;
 
   ///////// End of the search for Wisdom //////
 #else 
-  GLU_complex **in = malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
+  FFTW.in = malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
   #pragma omp parallel for private(i)
   PFOR(  i = 0 ; i < TRUE_HERM ; i++  ) {
-    GLU_malloc( (void**)&in[i] , 16 , LVOLUME * sizeof( GLU_complex ) ) ;
+    GLU_malloc( (void**)&FFTW.in[i] , ALIGNMENT , LVOLUME * sizeof( GLU_complex ) ) ;
   }
   // these are really dummy variables that don't get used in the SD
-  GLU_complex **out = NULL ;
-  GLU_real *psq = NULL ;
-  int *forward = NULL , *backward = NULL ;
+  FFTW.out = NULL ; FFTW.psq = NULL ;
+  FFTW.forward = NULL , FFTW.backward = NULL ;
 #endif
 
   // set up the FA method callback
   select_callback( improvement )  ;
 
-  size_t iters = FA_callback( lat , gauge , 
-			      out , in ,
-			      forward , backward , 
-			      psq , 
-			      &theta , accuracy , iter ) ;
+  size_t iters = FA_callback( lat , gauge , FFTW , &theta , accuracy , iter ) ;
 
   // random restart portion of the code
   size_t failure = 0 ; 
@@ -350,10 +306,7 @@ Landau( struct site *__restrict lat ,
       if( improvement == MAG_IMPROVE ) { mag( lat , gauge ) ; }
       
       // and the callback
-      iters_loc = FA_callback( lat , gauge , 
-			       out , in ,
-			       forward , backward , 
-			       psq , 
+      iters_loc = FA_callback( lat , gauge , FFTW ,
 			       &theta , accuracy , iter ) ;
 
       // if we succeed we break the loop
@@ -371,31 +324,16 @@ Landau( struct site *__restrict lat ,
   // end of random transform loop -> Usually not needed //
 
  MemFree :
+  
 #ifdef HAVE_FFTW3_H
   // free mallocs
-  #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < TRUE_HERM ; i++ ) {
-    fftw_destroy_plan( forward[i] ) ;   
-    fftw_destroy_plan( backward[i] ) ;  
-    fftw_free( out[i] ) ; 
-    fftw_free( in[i] ) ; 
-  }
-  fftw_free( out ) ; 
-  fftw_free( in ) ; 
-  free( psq ) ; 
-  free( forward ) ; 
-  free( backward ) ; 
-  fftw_cleanup( ) ; 
-  #ifdef OMP_FFTW
-  // parallel
-  fftw_cleanup_threads( ) ;
-  #endif
+  clean_up_fftw( FFTW , TRUE_HERM ) ;
 #else
   #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < TRUE_HERM ; i++ ) {
-    free( in[i] ) ; 
+    free( FFTW.in[i] ) ; 
   }
-  free( in ) ; 
+  free( FFTW.in ) ; 
 #endif
 
   if( failure == GF_GLU_FAILURES ) {

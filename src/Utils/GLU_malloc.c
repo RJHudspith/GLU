@@ -20,13 +20,10 @@
    @file corr_malloc.c
    @brief memory allocation wrapper
  */
-#define _POSIX_C_SOURCE 200809L
-
 #include "Mainfile.h"
 
 #if (defined HAVE_IMMINTRIN_H)
 #include <immintrin.h>
-#include <stdlib.h>
 #endif
 
 #include "init.h" // init_navig()
@@ -50,20 +47,23 @@ struct site *
 allocate_lat( void )
 {
   struct site *lat = NULL ;
-  size_t i , mu ;
+  size_t i , flag = 0 ;
   if( GLU_malloc( (void**)&lat , ALIGNMENT , LVOLUME * sizeof( struct site ) ) != 0 ) {
     return NULL ;
   }
+  #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     if( GLU_malloc( (void**)&lat[i].O , ALIGNMENT , ND * sizeof( GLU_complex* ) ) != 0 ) {
-    return NULL ;
+      flag = 1 ;
     }
+    size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       if( GLU_malloc( (void**)&lat[i].O[mu] , ALIGNMENT , NCNC * sizeof( GLU_complex ) ) != 0 ) {
-      return NULL ;
+	flag = 1 ;
       }
     }
   }
+  if( flag == 1 ) return NULL ;
   init_navig( lat ) ;
   return lat ;
 }
@@ -95,22 +95,25 @@ allocate_s_site( const size_t LENGTH1 ,
 		 const size_t LENGTH2 ,
 		 const size_t LENGTH3 )
 {
-  size_t i , mu ;
+  size_t i , flag = 0 ;
   struct s_site *lat = NULL ;
   if( GLU_malloc( (void**)&lat , ALIGNMENT , LENGTH1 * sizeof( struct s_site ) ) != 0 ) {
     return NULL ;
   }
+  #pragma omp parallel for private(i)
   for( i = 0 ; i < LENGTH1 ; i++ ) {
     if( GLU_malloc( (void**)&lat[i].O , ALIGNMENT , LENGTH2 * sizeof( GLU_complex* ) ) != 0 ) {
-      return NULL ;
+      flag = 1 ;
     }
-    // 
+    //
+    size_t mu ;
     for( mu = 0 ; mu < LENGTH2 ; mu++ ) {
       if( GLU_malloc( (void**)&lat[i].O[mu] , ALIGNMENT , LENGTH3 * sizeof( GLU_complex ) ) != 0 ) {
-	return NULL ;
+	flag = 1 ;
       }
     }
   }
+  if( flag == 1 ) return NULL ;
   return lat ;
 }
 

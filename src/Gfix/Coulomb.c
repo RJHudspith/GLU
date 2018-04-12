@@ -20,7 +20,6 @@
   @file Coulomb.c
   @brief coulomb gauge fixing code, fixes each time-slice in turn and restarts with a random gauge transform if there is a problem ...
  */
-
 #include "Mainfile.h"
 
 #include "CFACG.h"        // Coulomb Conjugate Gradient
@@ -28,28 +27,13 @@
 #include "plan_ffts.h"    // fftw plan wrapper
 #include "plaqs_links.h"  // plaqutte and link measurements
 
-// cute little callback
-static size_t
-( *FA_callback ) ( struct site *__restrict lat ,
-		   GLU_complex *__restrict *__restrict out , 
-		   GLU_complex *__restrict *__restrict in , 
-		   const void *__restrict forward , 
-		   const void *__restrict backward , 
-		   const GLU_real *psq , 
-		   const double acc , 
-		   const size_t max_iters ) ;
-
-// callback selector
-static void
-select_callback( void ) 
+#ifdef HAVE_FFTW3_H
+void
+set_FFTW( struct fftw_stuff *FFTW )
 {
-#ifdef GLU_GFIX_SD
-  FA_callback = Coulomb_FASD ;
-#else
-  FA_callback = Coulomb_FACG ; query_probes_Coulomb( ) ;
-#endif
-  return ;
+
 }
+#endif
 
 // Coulomb gauge fixing code
 size_t
@@ -63,85 +47,56 @@ Coulomb( struct site *__restrict lat ,
   fprintf( stdout , "[GF] Initial Tlink :: %1.15f || Slink :: %1.15f \n"
 	   "[GF] Plaquette :: %1.15f \n", 
 	   tlink , splink , av_plaquette( lat ) ) ; 
+
+  struct fftw_stuff FFTW ;
+  size_t i ;
   
   // put an ifdef guard here as SD requires none of this ...
 #ifdef HAVE_FFTW3_H
 
-  if( parallel_ffts( ) == GLU_FAILURE ) {
-    fprintf( stderr , "Problem with initialising the OpenMP"
-	     " FFTW routines \n" ) ;
-    return GLU_FAILURE ;
-  }
-
-  fftw_plan *forward  = malloc( ( TRUE_HERM ) * sizeof( fftw_plan ) ) ; 
-  fftw_plan *backward = malloc( ( TRUE_HERM ) * sizeof( fftw_plan ) ) ; 
-  GLU_complex **out   = fftw_malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
-  GLU_complex **in    = fftw_malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
-
-  size_t i ; 
-  #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < TRUE_HERM ; i ++  ) {
-    out[i] = ( GLU_complex* )fftw_malloc( LCU * sizeof( GLU_complex ) ) ; 
-    in[i] = ( GLU_complex* )fftw_malloc( LCU * sizeof( GLU_complex ) ) ; 
-  }
-
-  GLU_real *psq = malloc( LCU * sizeof( GLU_real ) ) ; 
-
+  FFTW.psq = malloc( LCU * sizeof( GLU_real ) ) ; 
+  
   // we calculate the lattice p-squared here and pass it to the FFT-accelerator
 #pragma omp parallel for private(i) 
   PFOR( i = 0 ; i < LCU ; i ++ ) {
-    psq[i] = MAX_COULOMB / ( gen_p_sq( i , ND - 1 ) ) ;
+    FFTW.psq[i] = MAX_COULOMB / ( gen_p_sq( i , ND - 1 ) ) ;
   }
 
   // create the fftw plans, or read them if they are stored
-  create_plans_DFT( forward , backward , in , out , Latt.dims , TRUE_HERM , ND - 1 ) ;
+  create_plans_DFT( &FFTW , Latt.dims , TRUE_HERM , ND - 1 ) ;
 
   /////  End of the search for Wisdom  ////
 #else
   
-  GLU_complex **in = malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
-  size_t i ;
+  FFTW.in = malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
   #pragma omp parallel for private(i)
   PFOR(  i = 0 ; i < TRUE_HERM ; i++  ) {
-    in[i] = ( GLU_complex* )malloc( LCU * sizeof( GLU_complex ) ) ; 
+    FFTW.in[i] = ( GLU_complex* )malloc( LCU * sizeof( GLU_complex ) ) ; 
   }
   // these are dummy arrays
-  GLU_complex **out = NULL ;
-  GLU_real *psq = NULL ;
-  int *forward = NULL , *backward = NULL ;
+  FFTW.out = NULL ;
+  FFTW.psq = NULL ;
+  FFTW.forward = NULL ;
+  FFTW.backward = NULL ;
 
 #endif
-  select_callback( ) ;
-
-  const size_t iters =  FA_callback( lat , out , in ,
-				     forward , backward , 
-				     psq , 
-				     accuracy , iter ) ;
+  
+  const size_t iters =
+    #ifdef GLU_GFIX_SD
+    Coulomb_FA( lat , &FFTW , accuracy , iter , GLU_FALSE ) ;
+    #else
+    Coulomb_FA( lat , &FFTW , accuracy , iter , GLU_TRUE ) ;
+    #endif
  
 #ifdef HAVE_FFTW3_H
-
-  // cleanup the mallocs and whatnot
-#pragma omp parallel for private(i) 
-  PFOR( i = 0 ; i < TRUE_HERM ; i ++  ) {
-      fftw_destroy_plan( forward[i] ) ;  
-      fftw_destroy_plan( backward[i] ) ;  
-      fftw_free( out[i] ) ; 
-      fftw_free( in[i] ) ; 
-    }
-  free( forward ) ;
-  free( backward );
-  fftw_cleanup(  ) ; 
-  free( psq ) ; 
-  free( out ) ; 
-  free( in ) ; 
-
+    clean_up_fftw( FFTW , TRUE_HERM ) ;
 #else
   
   #pragma omp parallel for private(i) 
   PFOR( i = 0 ; i < TRUE_HERM ; i ++  ) {
-    free( in[i] ) ;
+    free( FFTW.in[i] ) ;
   }
-  free( in ) ;
+  free( FFTW.in ) ;
 
 #endif
 

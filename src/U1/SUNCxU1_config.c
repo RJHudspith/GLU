@@ -22,7 +22,6 @@
 
    @warning requires FFTW linking to work
  */
-
 #include "Mainfile.h"
 
 // and the other headers it uses
@@ -75,10 +74,7 @@ conjugate_site( const size_t i )
   return get_site_2piBZ( x , ND ) ;
 }
 
-#ifndef U1_DHT
-
 // periodic fields using the DFT
-
 static void 
 periodic_dft( GLU_complex *__restrict *__restrict fields )
 {
@@ -129,55 +125,6 @@ periodic_dft( GLU_complex *__restrict *__restrict fields )
   return ;
 }
 
-#else
-
-// The DHT's periodicity requirements are basically the same, just use
-// real fields ...
-static void 
-periodic_dht( GLU_real *__restrict *__restrict fields )
-{
-  // again we know that there are no self-conjugate momenta beyond this point
-  //const int SYMM_POINT = LVOLUME ; was basically the old code
-  const int SYMM_POINT = compute_zeropoint( ) + 1 ; 
-  int *count = calloc( SYMM_POINT , sizeof(int) ) ; // set up a counter
-
-  size_t i ;
-#pragma omp parallel for private(i)
-  for( i = 0 ; i < SYMM_POINT ; i++ ) {
-    const uint32_t thread = get_GLU_thread( ) ;
-    if( likely( count[i] == CONJUGATE_NOT_IN_LIST ) ) {
-      count[i] = CONJUGATE_IN_LIST ; // set the element of the list to 1
-      // get the momenta at "i" in the -pi to pi BZ 
-      const size_t b = conjugate_site( i ) ;
-      size_t mu ;
-      #if ND%2 == 0
-      for( mu = 0 ; mu < ND ; mu += 2 ) {
-	register const GLU_complex cache = r2 * par_polar_box( thread ) ;
-	fields[ mu ][ i ] = fields[ mu ][ b ] = creal( cache ) ;
-	fields[ mu + 1 ][ i ] = fields[ mu + 1 ][ b ] = cimag( cache ) ;
-      }
-      #else
-      fields[ 0 ][ i ] = fields[ 0 ][ b ] = r2 * creal( par_polar_box( thread ) ) ;
-      for( mu = 1 ; mu < ND ; mu += 2 ) {
-	register const GLU_complex cache = r2 * par_polar_box( thread ) ;
-	fields[ mu ][ i ]     = fields[ mu ][ b ]     = creal( cache ) ;
-	fields[ mu + 1 ][ i ] = fields[ mu + 1 ][ b ] = cimag( cache ) ;
-      }
-      #endif
-
-      if( b < SYMM_POINT ) {
-	count[b] = CONJUGATE_IN_LIST ; // set count[b] = 1 as well, it is already included
-      }
-      // and we are finished
-    }
-  }
-
-  free( count ) ;
-  return ;
-}
-
-#endif
-
 // create the U1 fields
 static int
 create_u1( GLU_real *__restrict *__restrict U ,
@@ -190,11 +137,6 @@ create_u1( GLU_real *__restrict *__restrict U ,
   return GLU_FAILURE ;
 
 #else
-  if( parallel_ffts( ) == GLU_FAILURE ) {
-    fprintf( stderr , "[PAR] Problem with initialising the OpenMP "
-	     "FFTW routines \n" ) ;
-    return GLU_FAILURE ;
-  }
 
   // alpha = 0.0795775387 is beta = 1 , gives noncompact plaq = 0.25 , test
   const GLU_real Nbeta = LVOLUME / ( ND * MPI * alpha ) ;
@@ -208,39 +150,12 @@ create_u1( GLU_real *__restrict *__restrict U ,
   // initialise the rng
   initialise_par_rng( NULL ) ;
 
-#ifdef U1_DHT
-
-  fprintf( stdout , "[U(1)] Using the DHT U1 code ... \n\n" ) ;
-
-  GLU_real **in = fftw_malloc( ND * sizeof( GLU_real* ) ) ;
-  GLU_real **out = fftw_malloc( ND * sizeof( GLU_real* ) ) ;
-  for( i = 0 ; i < ND ; i++ ) {
-    in[i] = ( GLU_real* )fftw_malloc( LVOLUME * sizeof( GLU_real ) ) ;
-    out[i] = ( GLU_real* )fftw_malloc( LVOLUME * sizeof( GLU_real ) ) ;
-  }
-
-  fftw_plan plan[ ND ] ;
-  create_plans_DHT( plan , in , out , Latt.dims , ND , ND ) ;
-
-  periodic_dht( in ) ;
-
-#else
-
   fprintf( stdout , "[U(1)] Using the DFT U1 code ... \n\n" ) ;
 
-  GLU_complex **in = fftw_malloc( ND * sizeof( GLU_complex* ) ) ;
-  GLU_complex **out = fftw_malloc( ND * sizeof( GLU_complex* ) ) ;
-  for( i = 0 ; i < ND ; i++ ) {
-    in[i] = ( GLU_complex* )fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
-    out[i] = ( GLU_complex* )fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
-  }
-  
-  fftw_plan plan[ ND ] , backward[ ND ] ;
-  create_plans_DFT( plan , backward , in , out , Latt.dims , ND , ND ) ;
+  struct fftw_stuff FFTW ;
+  create_plans_DFT( &FFTW , Latt.dims , ND , ND ) ;
 
-  periodic_dft( in ) ;
-
-#endif
+  periodic_dft( FFTW.in ) ;
 
   // set up the distribution with the lattice mom
 #pragma omp parallel for private(i)
@@ -249,25 +164,25 @@ create_u1( GLU_real *__restrict *__restrict U ,
     const GLU_real f = 1.0 / (GLU_real)sqrt( gen_p_sq_feyn( i , &flag ) ) ;
 
     // these should become SIMD'd or something
-    if( unlikely ( flag == 1 ) ) {
+    if( flag == 1 ) {
       #if ND == 4
-      in[0][i] = in[1][i] = in[2][i] = in[3][i] = 0. + I * 0. ; 
+      FFTW.in[0][i] = FFTW.in[1][i] = FFTW.in[2][i] = FFTW.in[3][i] = 0. + I * 0. ; 
       #else
       size_t mu ;
       for( mu = 0 ; mu < ND ; mu++ ) {
-	in[mu][i] = 0. ;
+	FFTW.in[mu][i] = 0. ;
       }
       #endif
     } else {
       #if ND == 4
-      in[0][i] *= f ;
-      in[1][i] *= f ;
-      in[2][i] *= f ;
-      in[3][i] *= f ;
+      FFTW.in[0][i] *= f ;
+      FFTW.in[1][i] *= f ;
+      FFTW.in[2][i] *= f ;
+      FFTW.in[3][i] *= f ;
       #else
       size_t mu ;
       for( mu = 0 ; mu < ND ; mu++ ) {
-	in[mu][i] *= f ;
+	FFTW.in[mu][i] *= f ;
       }
       #endif
     }
@@ -275,45 +190,24 @@ create_u1( GLU_real *__restrict *__restrict U ,
 
   // fft the fields allow for the parallel omp-ified fftws
   size_t mu ;
-#ifdef OMP_FFTW
-  for( mu = 0 ; mu < ND ; mu++ ) {
-    PSPAWN fftw_execute( plan[ mu ] ) ;
-  }
-  PSYNC ;
-#else
+
   #pragma omp parallel for private(mu) 
   for( mu = 0 ; mu < ND ; mu++ ) {
-    PSPAWN fftw_execute( plan[ mu ] ) ;
+    fftw_execute( FFTW.forward[ mu ] ) ;
   }
-  PSYNC ;
-#endif
 
   const GLU_real rbeta = 1.0 / (GLU_real)sqrt( Nbeta ) ;
 #pragma omp parallel for private(i)
   PFOR( i = 0 ; i < LVOLUME ; i++ )  {
     size_t nu ;
     for( nu = 0 ; nu < ND ; nu ++ ) {
-      U[ nu ][ i ] = out[ nu ][ i ] * rbeta ;
+      U[ nu ][ i ] = FFTW.out[ nu ][ i ] * rbeta ;
     }
   }
 
   print_time( ) ;
 
-  // FREE STUFF
- for( mu = 0 ; mu < ND ; mu++ ) {
-   fftw_free( in[mu] ) ;
-   fftw_free( out[mu] ) ;
-   fftw_destroy_plan( plan[ mu ] ) ;  
-   #ifndef U1_DHT // DHT's forward and backward plans are the same
-   fftw_destroy_plan( backward[ mu ] ) ;  
-   #endif
- }
- fftw_free( in ) ;
- fftw_free( out ) ;
- fftw_cleanup( ) ; 
-#ifdef OMP_FFTW
- fftw_cleanup_threads( ) ; 
-#endif
+  clean_up_fftw( FFTW , ND ) ;
 
 #endif
  return GLU_SUCCESS ;

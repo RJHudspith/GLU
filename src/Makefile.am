@@ -21,17 +21,19 @@ GEOMETRYFILES=./Geometry/BPST_config.c ./Geometry/geometry.c \
 	./Geometry/init.c ./Geometry/plan_ffts.c ./Geometry/random_config.c \
 	./Geometry/draughtboard.c
 
+## Gauge-fixing codes
+GFIXFILES=./Gfix/CFACG.c ./Gfix/CG.c ./Gfix/CGalloc.c\
+	./Gfix/Coulomb.c ./Gfix/FACG.c \
+	 ./Gfix/gftests.c ./Gfix/gtrans.c ./Gfix/Gfix.c \
+	./Gfix/lin_derivs.c ./Gfix/line_search.c \
+	./Gfix/log_derivs.c ./Gfix/MAG.c \
+	./Gfix/Or.c
+
 ## file readers and writers
 IOFILES=./IO/chklat_stuff.c ./IO/CERN.c ./IO/crc.c ./IO/HIREP.c \
 	./IO/input_help.c ./IO/input_reader.c ./IO/read_config.c \
 	./IO/readers.c 	./IO/read_headers.c ./IO/Scidac.c \
 	./IO/write_headers.c ./IO/writers.c ./IO/XML_info.c
-
-## Gauge-fixing codes
-LANDAUFILES=./Landau/CFACG.c ./Landau/CG.c ./Landau/Coulomb.c ./Landau/FACG.c \
-	 ./Landau/gftests.c ./Landau/gtrans.c ./Landau/Landau.c \
-	./Landau/lin_derivs.c ./Landau/log_derivs.c ./Landau/MAG.c \
-	./Landau/Or.c
 
 ## home-spun matrix operations
 MATRIXOPSFILES=./Matrix_Ops/effs.c ./Matrix_Ops/evalues.c \
@@ -84,8 +86,8 @@ libGLU_a_SOURCES = \
 	${CUTSFILES} \
 	${FIELDFILES} \
 	${GEOMETRYFILES} \
+	${GFIXFILES} \
 	${IOFILES} \
-	${LANDAUFILES} \
 	${MATRIXOPSFILES} \
 	${MMULFILES} \
 	${SMEARFILES} \
@@ -99,8 +101,8 @@ include_HEADERS =
 	$(CUTSFILES:./Cuts/%.c=./Headers/%.h) \
 	$(FIELDFILES:./Fild/%.c=./Headers/%.h) \
 	$(GEOMETRYFILES:./Geometry/%.c=./Headers/%.h) \
+	$(GFIXFILES:./Gfix/%.c=./Headers/%.h) \
 	$(IOFILES:./IO/%.c=./Headers/%.h) \
-	$(LANDAUFILES:./Landau/%.c=./Headers/%.h) \
 	$(MATRIXOPSFILES:./Matrix_Ops/%.c=./Headers/%.h) \
 	$(MMULFILES:./Matrix_Ops/MMUL/%.c=./Headers/%.h) \
 	$(U1FILES:./U1/%.c=./Headers/%.h) \

@@ -45,12 +45,6 @@ static int
 mom_gauge( struct site *__restrict A ,
 	   const lie_field_def def )
 {
-  if( parallel_ffts( ) == GLU_FAILURE ) {
-    fprintf( stderr , "[PAR] Problem with initialising the OpenMP "
-	              "FFTW routines \n" ) ;
-    return GLU_FAILURE ;
-  }
-
   // callback for the log definition
   void (*log)( GLU_complex Q[ NCNC ] ,
 	       const GLU_complex U[ NCNC ] ) = Hermitian_proj ;
@@ -74,11 +68,8 @@ mom_gauge( struct site *__restrict A ,
   }
   
   /// FFTW routines
-  GLU_complex *out = fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
-  GLU_complex *in = fftw_malloc( LVOLUME * sizeof( GLU_complex ) ) ;
-
-  fftw_plan forward , backward ;
-  small_create_plans_DFT( &forward , &backward , in , out , Latt.dims , ND ) ;
+  struct fftw_small_stuff FFTW ;
+  small_create_plans_DFT( &FFTW , Latt.dims , ND ) ;
 
   // do the FFTs
   size_t mu , j ;
@@ -88,37 +79,30 @@ mom_gauge( struct site *__restrict A ,
       #ifdef CUT_FORWARD
       #pragma omp parallel for private(i)
       PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-	in[i] = A[i].O[mu][j] ;
+	FFTW.in[i] = A[i].O[mu][j] ;
       }
-      fftw_execute( forward ) ;
+      fftw_execute( FFTW.forward ) ;
       #pragma omp parallel for private(i)
       PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-	A[i].O[mu][j] = out[i] ;
+	A[i].O[mu][j] = FFTW.out[i] ;
       }
       #else
       // backwards transform
       #pragma omp parallel for private(i)
       PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-	out[i] = A[i].O[mu][j] ;
+	FFTW.out[i] = A[i].O[mu][j] ;
       }
-      fftw_execute( backward ) ;
+      fftw_execute( FFTW.backward ) ;
       #pragma omp parallel for private(i)
       PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-	A[i].O[mu][j] = in[i] ;
+	A[i].O[mu][j] = FFTW.in[i] ;
       }
       #endif
     }
   }
 
   //et voila! we have our fourier-transformed links in 0-2Pi BZ
-  fftw_destroy_plan( forward ) ;
-  fftw_destroy_plan( backward ) ;
-  fftw_cleanup( ) ;
-#ifdef OMP_FFTW
-  fftw_cleanup_threads( ) ;
-#endif
-  fftw_free( out ) ;  
-  fftw_free( in ) ;
+  small_clean_up_fftw( FFTW ) ;
 
   return GLU_SUCCESS ;
 }
