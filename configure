@@ -743,11 +743,9 @@ enable_dependency_tracking
 with_NC
 with_ND
 enable_single
-enable_OMP_FFTW
 with_fftw
 with_gsl
 with_lapacke
-with_deriv
 enable_exp_exact
 enable_notcondor
 with_GRACEY_PROJ
@@ -1413,7 +1411,6 @@ Optional Features:
   --disable-dependency-tracking
                           speeds up one-time build
  --enable-single Have our links in single or double precision
- --enable-OMP_FFTW Utilise FFTW's OpenMP parallel FFTs
  --enable-exp_exact Exact exponentiation into the group for the gauge fixing
  --enable-notcondor Allows for the saving of FFT plans and some simple hashing and whatever
  --enable-verbiage
@@ -1434,7 +1431,6 @@ Optional Packages:
   --with-fftw=<name>      Specify FFTW location for the GF
   --with-gsl=<name>       Specify GSL location for the GF
   --with-lapacke=<name>   Specify Lapacke location for the stouting and stuff
-  --with-deriv=           Compile in the gauge group number NC
   --with-GRACEY_PROJ=     Compile in the specific nonexceptional projector of
                           interest
   --with-IMPROVED_C0=     The 1x1 improved term
@@ -5064,19 +5060,6 @@ fi
 ##                                                                                           ##
 ###############################################################################################
 
-## I have now written the code to utilise OpenMP parallel FFT routines
-# Check whether --enable-OMP_FFTW was given.
-if test "${enable_OMP_FFTW+set}" = set; then :
-  enableval=$enable_OMP_FFTW; case "${enableval}" in
-	yes) OMP_FFTW=true ;;
-	no) OMP_FFTW=false ;;
-	*) as_fn_error $? "bad value ${enableval} for --enable-OMP_FFTW" "$LINENO" 5 ;;
-	esac
-else
-  OMP_FFTW=false
-fi
-
-
 ## Look for openmp, cannot turn on the omp fftw routines without it!
 for ac_header in omp.h
 do :
@@ -5352,30 +5335,6 @@ else
 fi
 
 ## Include where it is just in case people want to do something in Makefile.am
-
-
-## Derivative types allowed by the code
-
-# Check whether --with-deriv was given.
-if test "${with_deriv+set}" = set; then :
-  withval=$with_deriv;
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: User specified deriv, type given as ${with_deriv}" >&5
-$as_echo "$as_me: User specified deriv, type given as ${with_deriv}" >&6;}
-	    case "${with_deriv}" in
-	      deriv_full)
-$as_echo "#define deriv_full /**/" >>confdefs.h
- ;;
-	      ## JAMIE :: TODO, work out the functionals being minimised in the CG for these!
-	      ##deriv_fulln) AC_DEFINE([deriv_fulln],[],[Stencil derivative, log def gluon fields]) ;;
-	      ##deriv_linn) AC_DEFINE([deriv_linn],[],[Stencil derivative, linear gluon fields]) ;;
-	      *) { $as_echo "$as_me:${as_lineno-$LINENO}: Default deriv : Linear deriv with O(a) approx exponentiation (Fastest)." >&5
-$as_echo "$as_me: Default deriv : Linear deriv with O(a) approx exponentiation (Fastest)." >&6;};;
-	    esac
-
-else
-   { $as_echo "$as_me:${as_lineno-$LINENO}: Default deriv : Linear deriv with O(a) approx exponentiation (Fastest)." >&5
-$as_echo "$as_me: Default deriv : Linear deriv with O(a) approx exponentiation (Fastest)." >&6;}
-fi
 
 
 ## Use exact exponential in the GF

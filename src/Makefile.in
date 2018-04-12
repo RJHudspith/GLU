@@ -153,19 +153,20 @@ am__objects_3 = ./Geometry/BPST_config.$(OBJEXT) \
 	./Geometry/plan_ffts.$(OBJEXT) \
 	./Geometry/random_config.$(OBJEXT) \
 	./Geometry/draughtboard.$(OBJEXT)
-am__objects_4 = ./IO/chklat_stuff.$(OBJEXT) ./IO/CERN.$(OBJEXT) \
+am__objects_4 = ./Gfix/CFACG.$(OBJEXT) ./Gfix/CG.$(OBJEXT) \
+	./Gfix/CGalloc.$(OBJEXT) ./Gfix/Coulomb.$(OBJEXT) \
+	./Gfix/FACG.$(OBJEXT) ./Gfix/gftests.$(OBJEXT) \
+	./Gfix/gtrans.$(OBJEXT) ./Gfix/Landau.$(OBJEXT) \
+	./Gfix/lin_derivs.$(OBJEXT) ./Gfix/line_search.$(OBJEXT) \
+	./Gfix/log_derivs.$(OBJEXT) ./Gfix/MAG.$(OBJEXT) \
+	./Gfix/Or.$(OBJEXT)
+am__objects_5 = ./IO/chklat_stuff.$(OBJEXT) ./IO/CERN.$(OBJEXT) \
 	./IO/crc.$(OBJEXT) ./IO/HIREP.$(OBJEXT) \
 	./IO/input_help.$(OBJEXT) ./IO/input_reader.$(OBJEXT) \
 	./IO/read_config.$(OBJEXT) ./IO/readers.$(OBJEXT) \
 	./IO/read_headers.$(OBJEXT) ./IO/Scidac.$(OBJEXT) \
 	./IO/write_headers.$(OBJEXT) ./IO/writers.$(OBJEXT) \
 	./IO/XML_info.$(OBJEXT)
-am__objects_5 = ./Landau/CFACG.$(OBJEXT) ./Landau/CG.$(OBJEXT) \
-	./Landau/Coulomb.$(OBJEXT) ./Landau/FACG.$(OBJEXT) \
-	./Landau/gftests.$(OBJEXT) ./Landau/gtrans.$(OBJEXT) \
-	./Landau/Landau.$(OBJEXT) ./Landau/lin_derivs.$(OBJEXT) \
-	./Landau/log_derivs.$(OBJEXT) ./Landau/MAG.$(OBJEXT) \
-	./Landau/Or.$(OBJEXT)
 am__objects_6 = ./Matrix_Ops/effs.$(OBJEXT) \
 	./Matrix_Ops/evalues.$(OBJEXT) ./Matrix_Ops/exactQ.$(OBJEXT) \
 	./Matrix_Ops/expMat.$(OBJEXT) ./Matrix_Ops/givens.$(OBJEXT) \
@@ -405,15 +406,17 @@ GEOMETRYFILES = ./Geometry/BPST_config.c ./Geometry/geometry.c \
 	./Geometry/init.c ./Geometry/plan_ffts.c ./Geometry/random_config.c \
 	./Geometry/draughtboard.c
 
+GFIXFILES = ./Gfix/CFACG.c ./Gfix/CG.c ./Gfix/CGalloc.c\
+	./Gfix/Coulomb.c ./Gfix/FACG.c \
+	 ./Gfix/gftests.c ./Gfix/gtrans.c ./Gfix/Landau.c \
+	./Gfix/lin_derivs.c ./Gfix/line_search.c \
+	./Gfix/log_derivs.c ./Gfix/MAG.c \
+	./Gfix/Or.c
+
 IOFILES = ./IO/chklat_stuff.c ./IO/CERN.c ./IO/crc.c ./IO/HIREP.c \
 	./IO/input_help.c ./IO/input_reader.c ./IO/read_config.c \
 	./IO/readers.c 	./IO/read_headers.c ./IO/Scidac.c \
 	./IO/write_headers.c ./IO/writers.c ./IO/XML_info.c
-
-LANDAUFILES = ./Landau/CFACG.c ./Landau/CG.c ./Landau/Coulomb.c ./Landau/FACG.c \
-	 ./Landau/gftests.c ./Landau/gtrans.c ./Landau/Landau.c \
-	./Landau/lin_derivs.c ./Landau/log_derivs.c ./Landau/MAG.c \
-	./Landau/Or.c
 
 MATRIXOPSFILES = ./Matrix_Ops/effs.c ./Matrix_Ops/evalues.c \
 	./Matrix_Ops/exactQ.c ./Matrix_Ops/expMat.c \
@@ -457,8 +460,8 @@ libGLU_a_SOURCES = \
 	${CUTSFILES} \
 	${FIELDFILES} \
 	${GEOMETRYFILES} \
+	${GFIXFILES} \
 	${IOFILES} \
-	${LANDAUFILES} \
 	${MATRIXOPSFILES} \
 	${MMULFILES} \
 	${SMEARFILES} \
@@ -602,6 +605,38 @@ Geometry/$(DEPDIR)/$(am__dirstamp):
 	Geometry/$(DEPDIR)/$(am__dirstamp)
 ./Geometry/draughtboard.$(OBJEXT): Geometry/$(am__dirstamp) \
 	Geometry/$(DEPDIR)/$(am__dirstamp)
+Gfix/$(am__dirstamp):
+	@$(MKDIR_P) ./Gfix
+	@: > Gfix/$(am__dirstamp)
+Gfix/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) ./Gfix/$(DEPDIR)
+	@: > Gfix/$(DEPDIR)/$(am__dirstamp)
+./Gfix/CFACG.$(OBJEXT): Gfix/$(am__dirstamp) \
+	Gfix/$(DEPDIR)/$(am__dirstamp)
+./Gfix/CG.$(OBJEXT): Gfix/$(am__dirstamp) \
+	Gfix/$(DEPDIR)/$(am__dirstamp)
+./Gfix/CGalloc.$(OBJEXT): Gfix/$(am__dirstamp) \
+	Gfix/$(DEPDIR)/$(am__dirstamp)
+./Gfix/Coulomb.$(OBJEXT): Gfix/$(am__dirstamp) \
+	Gfix/$(DEPDIR)/$(am__dirstamp)
+./Gfix/FACG.$(OBJEXT): Gfix/$(am__dirstamp) \
+	Gfix/$(DEPDIR)/$(am__dirstamp)
+./Gfix/gftests.$(OBJEXT): Gfix/$(am__dirstamp) \
+	Gfix/$(DEPDIR)/$(am__dirstamp)
+./Gfix/gtrans.$(OBJEXT): Gfix/$(am__dirstamp) \
+	Gfix/$(DEPDIR)/$(am__dirstamp)
+./Gfix/Landau.$(OBJEXT): Gfix/$(am__dirstamp) \
+	Gfix/$(DEPDIR)/$(am__dirstamp)
+./Gfix/lin_derivs.$(OBJEXT): Gfix/$(am__dirstamp) \
+	Gfix/$(DEPDIR)/$(am__dirstamp)
+./Gfix/line_search.$(OBJEXT): Gfix/$(am__dirstamp) \
+	Gfix/$(DEPDIR)/$(am__dirstamp)
+./Gfix/log_derivs.$(OBJEXT): Gfix/$(am__dirstamp) \
+	Gfix/$(DEPDIR)/$(am__dirstamp)
+./Gfix/MAG.$(OBJEXT): Gfix/$(am__dirstamp) \
+	Gfix/$(DEPDIR)/$(am__dirstamp)
+./Gfix/Or.$(OBJEXT): Gfix/$(am__dirstamp) \
+	Gfix/$(DEPDIR)/$(am__dirstamp)
 IO/$(am__dirstamp):
 	@$(MKDIR_P) ./IO
 	@: > IO/$(am__dirstamp)
@@ -630,34 +665,6 @@ IO/$(DEPDIR)/$(am__dirstamp):
 	IO/$(DEPDIR)/$(am__dirstamp)
 ./IO/XML_info.$(OBJEXT): IO/$(am__dirstamp) \
 	IO/$(DEPDIR)/$(am__dirstamp)
-Landau/$(am__dirstamp):
-	@$(MKDIR_P) ./Landau
-	@: > Landau/$(am__dirstamp)
-Landau/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) ./Landau/$(DEPDIR)
-	@: > Landau/$(DEPDIR)/$(am__dirstamp)
-./Landau/CFACG.$(OBJEXT): Landau/$(am__dirstamp) \
-	Landau/$(DEPDIR)/$(am__dirstamp)
-./Landau/CG.$(OBJEXT): Landau/$(am__dirstamp) \
-	Landau/$(DEPDIR)/$(am__dirstamp)
-./Landau/Coulomb.$(OBJEXT): Landau/$(am__dirstamp) \
-	Landau/$(DEPDIR)/$(am__dirstamp)
-./Landau/FACG.$(OBJEXT): Landau/$(am__dirstamp) \
-	Landau/$(DEPDIR)/$(am__dirstamp)
-./Landau/gftests.$(OBJEXT): Landau/$(am__dirstamp) \
-	Landau/$(DEPDIR)/$(am__dirstamp)
-./Landau/gtrans.$(OBJEXT): Landau/$(am__dirstamp) \
-	Landau/$(DEPDIR)/$(am__dirstamp)
-./Landau/Landau.$(OBJEXT): Landau/$(am__dirstamp) \
-	Landau/$(DEPDIR)/$(am__dirstamp)
-./Landau/lin_derivs.$(OBJEXT): Landau/$(am__dirstamp) \
-	Landau/$(DEPDIR)/$(am__dirstamp)
-./Landau/log_derivs.$(OBJEXT): Landau/$(am__dirstamp) \
-	Landau/$(DEPDIR)/$(am__dirstamp)
-./Landau/MAG.$(OBJEXT): Landau/$(am__dirstamp) \
-	Landau/$(DEPDIR)/$(am__dirstamp)
-./Landau/Or.$(OBJEXT): Landau/$(am__dirstamp) \
-	Landau/$(DEPDIR)/$(am__dirstamp)
 Matrix_Ops/$(am__dirstamp):
 	@$(MKDIR_P) ./Matrix_Ops
 	@: > Matrix_Ops/$(am__dirstamp)
@@ -909,8 +916,8 @@ mostlyclean-compile:
 	-rm -f ./Cuts/*.$(OBJEXT)
 	-rm -f ./Field/*.$(OBJEXT)
 	-rm -f ./Geometry/*.$(OBJEXT)
+	-rm -f ./Gfix/*.$(OBJEXT)
 	-rm -f ./IO/*.$(OBJEXT)
-	-rm -f ./Landau/*.$(OBJEXT)
 	-rm -f ./Matrix_Ops/*.$(OBJEXT)
 	-rm -f ./Matrix_Ops/MMUL/*.$(OBJEXT)
 	-rm -f ./Run/*.$(OBJEXT)
@@ -947,6 +954,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./Geometry/$(DEPDIR)/init.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./Geometry/$(DEPDIR)/plan_ffts.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./Geometry/$(DEPDIR)/random_config.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./Gfix/$(DEPDIR)/CFACG.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./Gfix/$(DEPDIR)/CG.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./Gfix/$(DEPDIR)/CGalloc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./Gfix/$(DEPDIR)/Coulomb.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./Gfix/$(DEPDIR)/FACG.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./Gfix/$(DEPDIR)/Landau.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./Gfix/$(DEPDIR)/MAG.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./Gfix/$(DEPDIR)/Or.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./Gfix/$(DEPDIR)/gftests.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./Gfix/$(DEPDIR)/gtrans.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./Gfix/$(DEPDIR)/lin_derivs.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./Gfix/$(DEPDIR)/line_search.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./Gfix/$(DEPDIR)/log_derivs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./IO/$(DEPDIR)/CERN.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./IO/$(DEPDIR)/HIREP.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./IO/$(DEPDIR)/Scidac.Po@am__quote@
@@ -960,17 +980,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./IO/$(DEPDIR)/readers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./IO/$(DEPDIR)/write_headers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./IO/$(DEPDIR)/writers.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./Landau/$(DEPDIR)/CFACG.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./Landau/$(DEPDIR)/CG.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./Landau/$(DEPDIR)/Coulomb.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./Landau/$(DEPDIR)/FACG.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./Landau/$(DEPDIR)/Landau.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./Landau/$(DEPDIR)/MAG.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./Landau/$(DEPDIR)/Or.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./Landau/$(DEPDIR)/gftests.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./Landau/$(DEPDIR)/gtrans.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./Landau/$(DEPDIR)/lin_derivs.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./Landau/$(DEPDIR)/log_derivs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./Matrix_Ops/$(DEPDIR)/LU.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./Matrix_Ops/$(DEPDIR)/LU_SSE.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./Matrix_Ops/$(DEPDIR)/U_Nops.Po@am__quote@
@@ -1212,10 +1221,10 @@ distclean-generic:
 	-rm -f Field/$(am__dirstamp)
 	-rm -f Geometry/$(DEPDIR)/$(am__dirstamp)
 	-rm -f Geometry/$(am__dirstamp)
+	-rm -f Gfix/$(DEPDIR)/$(am__dirstamp)
+	-rm -f Gfix/$(am__dirstamp)
 	-rm -f IO/$(DEPDIR)/$(am__dirstamp)
 	-rm -f IO/$(am__dirstamp)
-	-rm -f Landau/$(DEPDIR)/$(am__dirstamp)
-	-rm -f Landau/$(am__dirstamp)
 	-rm -f Matrix_Ops/$(DEPDIR)/$(am__dirstamp)
 	-rm -f Matrix_Ops/$(am__dirstamp)
 	-rm -f Matrix_Ops/MMUL/$(DEPDIR)/$(am__dirstamp)
@@ -1242,7 +1251,7 @@ clean-am: clean-binPROGRAMS clean-generic clean-libLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ./Cuts/$(DEPDIR) ./Field/$(DEPDIR) ./Geometry/$(DEPDIR) ./IO/$(DEPDIR) ./Landau/$(DEPDIR) ./Matrix_Ops/$(DEPDIR) ./Matrix_Ops/MMUL/$(DEPDIR) ./Run/$(DEPDIR) ./Smear/$(DEPDIR) ./U1/$(DEPDIR) ./Update/$(DEPDIR) ./Utils/$(DEPDIR) ./Wrappers/$(DEPDIR)
+	-rm -rf ./Cuts/$(DEPDIR) ./Field/$(DEPDIR) ./Geometry/$(DEPDIR) ./Gfix/$(DEPDIR) ./IO/$(DEPDIR) ./Matrix_Ops/$(DEPDIR) ./Matrix_Ops/MMUL/$(DEPDIR) ./Run/$(DEPDIR) ./Smear/$(DEPDIR) ./U1/$(DEPDIR) ./Update/$(DEPDIR) ./Utils/$(DEPDIR) ./Wrappers/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -1288,7 +1297,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ./Cuts/$(DEPDIR) ./Field/$(DEPDIR) ./Geometry/$(DEPDIR) ./IO/$(DEPDIR) ./Landau/$(DEPDIR) ./Matrix_Ops/$(DEPDIR) ./Matrix_Ops/MMUL/$(DEPDIR) ./Run/$(DEPDIR) ./Smear/$(DEPDIR) ./U1/$(DEPDIR) ./Update/$(DEPDIR) ./Utils/$(DEPDIR) ./Wrappers/$(DEPDIR)
+	-rm -rf ./Cuts/$(DEPDIR) ./Field/$(DEPDIR) ./Geometry/$(DEPDIR) ./Gfix/$(DEPDIR) ./IO/$(DEPDIR) ./Matrix_Ops/$(DEPDIR) ./Matrix_Ops/MMUL/$(DEPDIR) ./Run/$(DEPDIR) ./Smear/$(DEPDIR) ./U1/$(DEPDIR) ./Update/$(DEPDIR) ./Utils/$(DEPDIR) ./Wrappers/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -1330,8 +1339,8 @@ uninstall-am: uninstall-binPROGRAMS uninstall-includeHEADERS \
 	$(CUTSFILES:./Cuts/%.c=./Headers/%.h) \
 	$(FIELDFILES:./Fild/%.c=./Headers/%.h) \
 	$(GEOMETRYFILES:./Geometry/%.c=./Headers/%.h) \
+	$(GFIXFILES:./Gfix/%.c=./Headers/%.h) \
 	$(IOFILES:./IO/%.c=./Headers/%.h) \
-	$(LANDAUFILES:./Landau/%.c=./Headers/%.h) \
 	$(MATRIXOPSFILES:./Matrix_Ops/%.c=./Headers/%.h) \
 	$(MMULFILES:./Matrix_Ops/MMUL/%.c=./Headers/%.h) \
 	$(U1FILES:./U1/%.c=./Headers/%.h) \

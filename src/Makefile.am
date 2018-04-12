@@ -24,7 +24,7 @@ GEOMETRYFILES=./Geometry/BPST_config.c ./Geometry/geometry.c \
 ## Gauge-fixing codes
 GFIXFILES=./Gfix/CFACG.c ./Gfix/CG.c ./Gfix/CGalloc.c\
 	./Gfix/Coulomb.c ./Gfix/FACG.c \
-	 ./Gfix/gftests.c ./Gfix/gtrans.c ./Gfix/Gfix.c \
+	 ./Gfix/gftests.c ./Gfix/gtrans.c ./Gfix/Landau.c \
 	./Gfix/lin_derivs.c ./Gfix/line_search.c \
 	./Gfix/log_derivs.c ./Gfix/MAG.c \
 	./Gfix/Or.c
