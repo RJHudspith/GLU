@@ -6,7 +6,7 @@ theory library for various gluonic observables. It is written in the c programmi
 
 The library can be used for:
 
-File conversion : Support for ILDG, Scidac, NERSC, HiRep and MILC configuration files. Both reading and writing.
+File conversion : Support for ILDG, Scidac, NERSC, HiRep, MILC, and CERN configuration files. Both reading and writing.
 
 Gauge fixing : Landau and Coulomb gauge fixing is possible. With binding to the FFTW library, Fourier Accelerated routines
                for very fast gauge fixing have been implemented.
@@ -20,6 +20,8 @@ Quenched U1 : The code allows for the computation of a SU(NC)xU(1) gauge field, 
 Gauge correlators : Static potential computations, topological charge correlation functions and configuration space gluon 
                     propagators can be computed. With binding to FFTW, momentum space gluon correlation function 
                     calculations are also possible.
+
+Update : Heatbath updating and configuration generation is possible.
                     
 Plus plenty more to be found in the documentation.
 
@@ -41,13 +43,6 @@ If compiling for a different number of colors (NC) or dimensions (ND) the option
 --with-NC={} --with-ND={}
 
 are your friends.
-
-If you want to include the thread-parallel FFTW routines then
-
-CFLAGS="-fopenmp" --enable-OMP_FFTW
-
-Should be used, this then looks in the FFTW directory that you have compiled for
-libfftw3_omp.a
 
 There a bunch of other options that are briefly synopsised at the top of configure.ac.
 
