@@ -55,6 +55,10 @@ compute_Gmunu( double *__restrict GG ,
 	       double *__restrict qtop ,
 	       const struct site *__restrict lat ) ;
 
+void
+compute_Gmunu_th( double *red , 
+		  const struct site *lat ) ;
+
 /**
    @fn void compute_Gmunu_array( GLU_complex *__restrict *__restrict qtop , const struct site *__restrict lat )
    @brief \f$ O(a^4) \f$ tree-improved field strength tensor from <a href="http://arxiv.org/abs/hep-lat/0203008"> paper </a>

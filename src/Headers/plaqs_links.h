@@ -60,6 +60,10 @@ all_plaquettes( const struct site *__restrict lat ,
 double 
 av_plaquette( const struct site *__restrict lat ) ;
 
+double 
+av_plaquette_th( double *red ,
+		 const struct site *__restrict lat ) ;
+
 /**
    @fn double s_plaq( const struct site *__restrict lat ) 
    @brief computes the average plaquette in spatial direction 

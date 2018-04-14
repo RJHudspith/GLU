@@ -64,12 +64,12 @@ hyp_chooser( struct site *__restrict lat ,
     }
     switch( meminfo ){
     case FAST :
-      flow4d_RK_fast( lat , SMINFO.smiters , 
-		      GLU_FORWARD , GENTYPE ) ;
+      flow4d_RK( lat , SMINFO.smiters , 
+		 GLU_FORWARD , GENTYPE , GLU_FALSE ) ;
       return ;
     case MODERATE :
-      flow4d_RK_slow( lat , SMINFO.smiters , 
-		      GLU_FORWARD , GENTYPE ) ;
+      flow4d_RK( lat , SMINFO.smiters , 
+		 GLU_FORWARD , GENTYPE , GLU_TRUE ) ;
       return ;
     }
   }

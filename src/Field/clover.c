@@ -1038,6 +1038,50 @@ compute_Gmunu( double *__restrict GG ,
 
 // this is the driving code for the computation
 void
+compute_Gmunu_th( double *red , 
+		  const struct site *__restrict lat )
+{
+  // I put plaquette in space 0 and qtop in space 1 
+  size_t i ;
+  // control factors
+#ifndef NK5
+  fClover_k1 = fabs( Clover_k1 ) ;
+  fClover_k2 = fabs( Clover_k2 ) ;
+  fClover_k3 = fabs( Clover_k3 ) ;
+  fClover_k4 = fabs( Clover_k4 ) ;
+  fClover_k5 = fabs( k5 ) ;
+#endif
+
+  // set reduction array to zero
+#pragma omp for private(i)
+  for( i = 0 ; i < CLINE*Latt.Nthreads ; i++ ) {
+    red[ i ] = 0.0 ;
+  }
+  
+#pragma omp for private(i)
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    double plsp , plt , q ;
+    const size_t th = get_GLU_thread() ;
+    compute_Gmunu_kernel( &plt , &plsp , &q , lat ,
+			  i , 3 , 0 , 1 , 2  ) ;
+    red[ 0 + CLINE*th ] += plt + plsp ;
+    red[ 1 + CLINE*th ] += q ; 
+    //
+    compute_Gmunu_kernel( &plt , &plsp , &q , lat ,
+			  i , 3 , 1 , 2 , 0  ) ;
+    red[ 0 + CLINE*th ] += plt + plsp ;
+    red[ 1 + CLINE*th ] += q ; 
+    //
+    compute_Gmunu_kernel( &plt , &plsp , &q , lat ,
+			  i , 3 , 2 , 0 , 1  ) ;
+    red[ 0 + CLINE*th ] += plt + plsp ;
+    red[ 1 + CLINE*th ] += q ; 
+  }
+  return ;
+}
+
+// this is the driving code for the computation
+void
 compute_Gmunu_array( GLU_complex *__restrict qtop , // an LVOLUME array for the qtop
 		     const struct site *__restrict lat )
 {

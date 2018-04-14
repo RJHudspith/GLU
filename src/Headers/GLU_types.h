@@ -291,4 +291,14 @@ struct gauges {
   GLU_complex **g_end ;
 } ;
 
+// temporary storage
+struct wflow_temps {
+  struct s_site *lat2 ;
+  struct s_site *lat3 ;
+  struct s_site *lat4 ;
+  struct s_site *Z ;
+  struct site *lat_two ;
+  double *red ;
+} ;
+
 #endif

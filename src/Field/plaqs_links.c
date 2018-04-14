@@ -275,6 +275,33 @@ av_plaquette( const struct site *__restrict lat )
   return 2.0 * plaq /(double)( NC * ND * ( ND - 1 ) * LVOLUME ) ; 
 }
 
+// average plaquette
+void
+av_plaquette_th( double *red ,
+		 const struct site *__restrict lat )
+{
+  size_t i ; 
+#pragma omp for private(i) 
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    register double p = 0. , face ;
+    size_t mu , nu , t , s ;
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      t = lat[i].neighbor[mu] ; 
+      for( nu = 0 ; nu < mu ; nu++ ) {
+	s = lat[i].neighbor[nu] ;
+	face = complete_plaquette( lat[ i ].O[mu] , 
+				   lat[ t ].O[nu] , 
+				   lat[ s ].O[mu] , 
+				   lat[ i ].O[nu] ) ; 
+	p = p + (double)face ;
+      }
+    }
+    const size_t th = get_GLU_thread() ;
+    red[ 3 + CLINE*th ] += p ;
+  }
+  return ;
+}
+
 // spatial plaquettes ..
 double 
 s_plaq( const struct site *__restrict lat )

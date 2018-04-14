@@ -122,11 +122,8 @@ second_deriv( const double flow_prev ,
  */
 void
 step_distance( struct site *__restrict lat ,
-	       struct s_site *__restrict lat2 ,
-	       struct s_site *__restrict Z ,
-	       const double rk1 ,
-	       const double rk2 , 
-	       const double rk3 ,
+	       struct wflow_temps WF ,
+	       const double delta_t ,
 	       const smearing_types SM_TYPE ,  
 	       void (*project)( GLU_complex log[ NCNC ] , 
 					 GLU_complex *__restrict staple , 
@@ -153,17 +150,32 @@ step_distance( struct site *__restrict lat ,
  */
 void
 step_distance_memcheap( struct site *__restrict lat ,
-			struct s_site *__restrict lat2 ,
-			struct s_site *__restrict lat3 ,
-			struct s_site *__restrict lat4 ,
-			struct s_site *__restrict Z ,
-			const double rk1 ,
-			const double rk2 , 
-			const double rk3 , 
+			struct wflow_temps WF ,
+			const double delta_t ,
 			const smearing_types SM_TYPE ,
 			void (*project)( GLU_complex log[ NCNC ] , 
 					 GLU_complex *__restrict staple , 
 					 const GLU_complex link[ NCNC ] , 
 					 const double smear_alpha ) ) ;
+
+int
+allocate_WF( struct wflow_temps *WF ,
+	     const GLU_bool memcheap ,
+	     const GLU_bool adaptive ) ;
+
+void
+free_WF( struct wflow_temps *WF ,
+         const GLU_bool memcheap ,
+	 const GLU_bool adaptive ) ;
+
+void
+update_meas_list( struct wfmeas *head ,
+		  struct wfmeas *curr ,
+		  double *red ,
+		  const double new_plaq ,
+		  const double t ,
+		  const double delta_t ,
+		  const double errmax ,
+		  const struct site *lat ) ;
 
 #endif

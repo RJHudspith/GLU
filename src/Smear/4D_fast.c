@@ -45,7 +45,7 @@ get_lv1( struct s_site *__restrict lev1 ,
 {
   size_t i ; 
   //do the whole lattice
-#pragma omp parallel for private(i) SCHED
+#pragma omp for private(i) SCHED
   PFOR( i = 0 ; i < LVOLUME ; i++ ) {
     GLU_complex a[ NCNC ] GLUalign , b[ NCNC ] GLUalign ;
     GLU_complex c[ NCNC ] GLUalign ;
@@ -96,7 +96,7 @@ get_lv2( struct s_site *__restrict lev2 ,
 			   const double al ) )
 {
   size_t i ;
-#pragma omp parallel for private(i) SCHED
+#pragma omp for private(i) SCHED
   PFOR( i = 0  ;  i < LVOLUME  ;  i++ ) {
     size_t rho = 0 , sigma = 0 ;
     size_t ii = 0 , mu , nu ;
@@ -274,84 +274,90 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
   }
 
   // do the smearing
-  size_t count = 0 ; 
-  for( count = 1 ; count <= smiters ; count++ ) {
-    size_t i ;
-    get_lv1( lev1 , lat , type , project ) ; 
-    get_lv2( lev2 , lev1 , lat , type , project ) ;
-    const size_t bck = lat[0].back[ ND - 1 ] ; 
-    #pragma omp parallel for private(i) SCHED
-    PFOR( i = 0 ; i < LCU ; i++ ) {
-      const size_t back = bck + i ;
-      size_t mu ;
-      GLU_complex stap[ NCNC ] GLUalign ;
-      for( mu = 0 ; mu < ND ; mu++ ) {
-	zero_mat( stap ) ;
-	gen_staples_4D( stap , lev2 , lat , back , mu , type ) ; 
-	project( lat4[i].O[mu] , stap , lat[back].O[mu] , alpha1 , 
-		 one_min_a1 ) ; 
-      }
-    }
-    //loop time slices
-    ///////////////////////////////////////
-    size_t t ;
-    for( t = 0 ; t < Latt.dims[ ND - 1 ] - 1 ; t++ ) {
-      const size_t slice = LCU * t ; 
-      const size_t bck = lat[ slice ].back[ ND - 1 ] ;
-      #pragma omp parallel for private(i) SCHED
-      PFOR( i = 0 ; i < LCU ; i++ )  {
-	const size_t it = slice + i ; 
-	GLU_complex stap[ NCNC ] GLUalign ;
+#pragma omp parallel
+  {
+    size_t count = 0 ; 
+    for( count = 1 ; count <= smiters ; count++ ) {
+
+      #pragma omp barrier
+      
+      size_t i ;
+      get_lv1( lev1 , lat , type , project ) ; 
+      get_lv2( lev2 , lev1 , lat , type , project ) ;
+      const size_t bck = lat[0].back[ ND - 1 ] ; 
+      #pragma omp for private(i) SCHED
+      for( i = 0 ; i < LCU ; i++ ) {
+	const size_t back = bck + i ;
 	size_t mu ;
+	GLU_complex stap[ NCNC ] GLUalign ;
 	for( mu = 0 ; mu < ND ; mu++ ) {
 	  zero_mat( stap ) ;
-	  gen_staples_4D( stap , lev2 , lat , it , mu , type ) ; 
-	  project( lat2[i].O[mu] , stap , lat[it].O[mu] , alpha1 , 
+	  gen_staples_4D( stap , lev2 , lat , back , mu , type ) ; 
+	  project( lat4[i].O[mu] , stap , lat[back].O[mu] , alpha1 , 
 		   one_min_a1 ) ; 
 	}
-	// this is only a legal maneuver for this method
-	//put temp into the previous time-slice
-	register const size_t back = bck + i ;
-	for( mu = 0 ; mu < ND ; mu++ ) {
-	  if( likely( t != 0 ) ) { 
-	    equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
+      }
+      ///////////////////
+      //loop time slices
+      ///////////////////
+      size_t t ;
+      for( t = 0 ; t < Latt.dims[ ND - 1 ] - 1 ; t++ ) {
+	const size_t slice = LCU * t ; 
+	const size_t bck = lat[ slice ].back[ ND - 1 ] ;
+        #pragma omp for private(i) SCHED
+	for( i = 0 ; i < LCU ; i++ )  {
+	  const size_t it = slice + i ; 
+	  GLU_complex stap[ NCNC ] GLUalign ;
+	  size_t mu ;
+	  for( mu = 0 ; mu < ND ; mu++ ) {
+	    zero_mat( stap ) ;
+	    gen_staples_4D( stap , lev2 , lat , it , mu , type ) ; 
+	    project( lat2[i].O[mu] , stap , lat[it].O[mu] , alpha1 , 
+		     one_min_a1 ) ; 
 	  }
-	  equiv( lat3[i].O[mu] , lat2[i].O[mu] ) ;
+	  // this is only a legal maneuver for this method
+	  //put temp into the previous time-slice
+	  register const size_t back = bck + i ;
+	  for( mu = 0 ; mu < ND ; mu++ ) {
+	    if( t != 0 ) { 
+	      equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
+	    }
+	    equiv( lat3[i].O[mu] , lat2[i].O[mu] ) ;
+	  }
+	  //
 	}
-	//
       }
-    }
-    //put last and last but one time slice in
-    ////////////////////////////////////////////
-    const size_t slice = LCU * t ;
-    const size_t behind = lat[ slice ].back[ ND - 1 ] ;
-    #pragma omp parallel for private(i) 
-    PFOR( i = 0 ; i < LCU ; i++ ) {
-      register const size_t back = behind + i , it = slice + i ; 
-      register size_t mu ;
-      for( mu = 0 ; mu < ND ; mu++ ) {
-	equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
-	equiv( lat[it].O[mu]   , lat4[i].O[mu] ) ;
+      //put last and last but one time slice in
+      ////////////////////////////////////////////
+      const size_t slice = LCU * t ;
+      const size_t behind = lat[ slice ].back[ ND - 1 ] ;
+      #pragma omp for private(i) 
+      for( i = 0 ; i < LCU ; i++ ) {
+	register const size_t back = behind + i , it = slice + i ;
+	register size_t mu ;
+	for( mu = 0 ; mu < ND ; mu++ ) {
+	  equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
+	  equiv( lat[it].O[mu]   , lat4[i].O[mu] ) ;
+	}
       }
-    }
 
-    // Are we looking for the topological charge? this is the routine for you
-    // as in the wilson flow routine YOU provide the maximum iterations available
-    // breaks on convergence
-    #ifdef TOP_VALUE
-    if( count > TOP_VALUE && count%5 == 0 ) {
-      if( gauge_topological_meas( lat , &qtop_new , &qtop_old , count-1 ) 
-	  == GLU_SUCCESS ) { break ; }
-    }
-    #endif
+      // Are we looking for the topological charge? this is the routine for you
+      // as in the wilson flow routine YOU provide the maximum iterations available
+      // breaks on convergence
+      #ifdef TOP_VALUE
+      if( count > TOP_VALUE && count%5 == 0 ) {
+	//if( gauge_topological_meas( lat , &qtop_new , &qtop_old , count-1 ) 
+	//    == GLU_SUCCESS ) { break ; }
+      }
+      #endif
 
-    #ifdef verbose
-    print_smearing_obs( lat , count ) ;
-    #endif
+      #ifdef verbose
+      print_smearing_obs( lat , count ) ;
+      #endif
+    }
   }
-
   #ifndef verbose
-  print_smearing_obs( lat , count ) ;
+  print_smearing_obs( lat , smiters ) ;
   #endif
   
   // free that memory //

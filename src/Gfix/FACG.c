@@ -192,7 +192,6 @@ steep_Landau_FASD( GLU_complex **gauge ,
 		   const size_t max_iters )
 {
   size_t k , loc_iters = 0 ;
-  double trAA = 0.0 ;
   
  top:
 #pragma omp barrier
@@ -204,6 +203,7 @@ steep_Landau_FASD( GLU_complex **gauge ,
   
   steep_Landau_FA( CG.red , gauge , lat , FFTW ) ;
 
+  double trAA = 0.0 ;
   for( k = 0 ; k < Latt.Nthreads ; k++ ) {
     trAA += CG.red[ LINE_NSTEPS + 2 + k*CLINE ] ;
   }
@@ -344,10 +344,9 @@ FACG( struct site *lat ,
     goto end ;
   }
 
-  size_t loc_iters = 1 ;
-
 #pragma omp parallel
-  {    
+  {
+    size_t loc_iters = 1 ;
   top :
     loc_iters = steep_Landau_FACG( gauge , lat , FFTW , CG , th ,
 				   acc , max_iters ) ;
@@ -401,11 +400,9 @@ FASD( struct site *lat ,
     goto end ;
   }
 
-  size_t loc_iters = 1 ;
-
 #pragma omp parallel
   {
-    
+    size_t loc_iters = 1 ;    
   top :
     loc_iters = steep_Landau_FASD( gauge , lat , FFTW , CG , th ,
 				   acc , max_iters ) ;

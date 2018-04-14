@@ -43,7 +43,7 @@ smear3D( struct site *__restrict lat ,
   return GLU_SUCCESS ;
 #else
   // successfully do nothing
-  if( unlikely( smiters == 0 ) ) { return GLU_SUCCESS ; }
+  if( smiters == 0 ) { return GLU_SUCCESS ; }
 
 #if ND != 4 
   const GLU_real alpha1 = Latt.sm_alpha[0] / ( ( ND-1 ) * ( ND -2 ) ) ;
@@ -84,58 +84,67 @@ smear3D( struct site *__restrict lat ,
     return GLU_FAILURE ;
   }
 
-  size_t count = 0 ; 
-  for( count = 1 ; count <= smiters ; count++ ) {
-    #ifdef SYMANZIK_ONE_LOOP
-    improve = av_plaquette( lat ) ;
-    #endif
-    /////////////////////
-    //loop time slices
-    /////////////////////
-    size_t i , t ;
-    for( t = 0 ; t < Latt.dims[ ND -1 ] ; t++ ) {
-      const size_t slice = LCU * t ;
-      #pragma omp parallel for private(i)
-      PFOR( i = 0 ; i < LCU ; i++ ) {
-	const size_t it = slice + i ; 
-	size_t mu ;
-	for( mu = 0 ; mu < ND - 1 ; mu++ ) {
-	  GLU_complex stap[ NCNC ] GLUalign ;
-	  zero_mat( stap ) ;
-          #ifdef IMPROVED_SMEARING
-	  all_staples_improve( stap , lat , it , mu , ND - 1 , type ) ; 
-          #else
-	  all_staples( stap , lat , it , mu , ND - 1 , type ) ; 
-          #endif
-	  project( lat2[ i ].O[ mu ] , stap , lat[ it ].O[ mu ] , alpha1 , 
-		   one_min_a1 ) ;
-	}
-      }
-      #pragma omp parallel for private(i) 
-      PFOR( i = 0 ; i < LCU ; i++ )  {
-	const size_t it = slice + i ;
-	size_t mu ;
-	for( mu = 0 ; mu < (ND-1) ; mu++ ) {
-	  equiv( lat[it].O[mu] , lat2[i].O[mu] ) ;
-	}
-      }
-    }
+#pragma omp parallel
+  {
+    size_t count = 0 ; 
+    for( count = 1 ; count <= smiters ; count++ ) {
 
-    #ifdef TOP_VALUE
-    if( count > TOP_VALUE ) {
-      if( gauge_topological_meas( lat , &qtop_new , &qtop_old , count-1 ) 
-	  == GLU_SUCCESS ) { break ; }
-    }
-    #endif
+      #pragma omp barrier
       
-    #ifdef verbose
-    print_smearing_obs( lat , count ) ;
-    #endif
-  }
+      #ifdef SYMANZIK_ONE_LOOP
+      // JAMIE - TODO fix this!!
+      //improve = av_plaquette( lat ) ;
+      #endif
+      /////////////////////
+      //loop time slices
+      /////////////////////
+      size_t i , t ;
+      for( t = 0 ; t < Latt.dims[ ND -1 ] ; t++ ) {
+	const size_t slice = LCU * t ;
+        #pragma omp for private(i)
+	for( i = 0 ; i < LCU ; i++ ) {
+	  const size_t it = slice + i ; 
+	  size_t mu ;
+	  for( mu = 0 ; mu < ND - 1 ; mu++ ) {
+	    GLU_complex stap[ NCNC ] GLUalign ;
+	    zero_mat( stap ) ;
+            #ifdef IMPROVED_SMEARING
+	    all_staples_improve( stap , lat , it , mu , ND - 1 , type ) ; 
+            #else
+	    all_staples( stap , lat , it , mu , ND - 1 , type ) ; 
+            #endif
+	    project( lat2[ i ].O[ mu ] , stap , lat[ it ].O[ mu ] , alpha1 , 
+		     one_min_a1 ) ;
+	  }
+	}
+        #pragma omp for private(i) 
+	for( i = 0 ; i < LCU ; i++ )  {
+	  const size_t it = slice + i ;
+	  size_t mu ;
+	  for( mu = 0 ; mu < (ND-1) ; mu++ ) {
+	    equiv( lat[it].O[mu] , lat2[i].O[mu] ) ;
+	  }
+	}
+      }
 
+      #ifdef TOP_VALUE
+      if( count > TOP_VALUE ) {
+	/* JAMIE - TODO make sure this works!!!
+	if( gauge_topological_meas( lat , &qtop_new , &qtop_old , count-1 ) 
+	    == GLU_SUCCESS ) { break ; }
+	*/
+      }
+      #endif
+      
+      #ifdef verbose
+      print_smearing_obs( lat , count ) ;
+      #endif
+    }
+  }
+  
 #ifndef verbose
   // -- the counter here as we stop at smiters not simters+1
-  print_smearing_obs( lat , count-1 ) ;
+  print_smearing_obs( lat , smiters ) ;
 #endif
 
   // free our temporary lattice
@@ -152,7 +161,7 @@ smear4D( struct site *__restrict lat ,
 	 const smearing_types type )
 {
   // successfully do nothing
-  if( unlikely( smiters == 0 ) ) { return GLU_SUCCESS ; }
+  if( smiters == 0 ) { return GLU_SUCCESS ; }
 
 #if ND != 4 
   const GLU_real alpha1 = ND > 2 ? Latt.sm_alpha[0] / ( ( ND - 1 ) * ( ND - 2 ) ) : Latt.sm_alpha[0] ;
@@ -204,133 +213,141 @@ smear4D( struct site *__restrict lat ,
     return GLU_FAILURE ;
   }
 #endif
-  
-  size_t count = 0 ;
-  for( count = 1 ; count <= smiters ; count++ ) {
 
-    #ifdef SYMANZIK_ONE_LOOP
-    improve = av_plaquette( lat ) ;
-    #endif
 
-    //this bit initialises the calculation by working out the staples for the last time slice first
-    #ifdef IMPROVED_SMEARING
-    const size_t back = lat[ lat[0].back[ ND-1 ] ].back[ ND-1 ] ;
-    #else
-    const size_t back = lat[ 0 ].back[ ND - 1 ] ;
-    #endif
+#pragma omp parallel
+  {
+    size_t count = 0 ;
+    for( count = 1 ; count <= smiters ; count++ ) {
 
-    size_t i , t ;
-    #pragma omp parallel for private(i) SCHED
-    #ifdef IMPROVED_SMEARING
-    PFOR( i = 0 ; i < 2*LCU ; i++ ) {
-    #else
-    PFOR( i = 0 ; i < LCU ; i++ ) {
-    #endif
-      const size_t bck = back + i ;
-      register size_t mu ;
-      for( mu = 0 ; mu < ND ; mu++ ) { 
-	GLU_complex stap[ NCNC ] GLUalign ;
-	zero_mat( stap ) ;
-        #ifdef IMPROVED_SMEARING
-	all_staples_improve( stap , lat , bck , mu , ND , type ) ;
-        #else
-	all_staples( stap , lat , bck , mu , ND , type ) ;
-        #endif
-	project( lat4[ i ].O[ mu ] , stap , lat[ bck ].O[ mu ] , alpha1 ,
-		 one_min_a1 ) ; 
-      }
-    }
-    #ifdef IMPROVED_SMEARING
-    for( t = 0 ; t < Latt.dims[ ND - 1 ] - 2 ; t++ ) {
-    #else
-    for( t = 0 ; t < Latt.dims[ ND - 1 ] - 1 ; t++ ) {
-    #endif
-      const size_t slice = LCU * t ; 
-      #pragma omp parallel for private(i) SCHED
-      PFOR( i = 0 ; i < LCU ; i++ ) {
-	const size_t it = slice + i ;
-	size_t mu ;
-	for( mu = 0 ; mu < ND ; mu++ ) {
-	  GLU_complex stap[ NCNC ] ;
+      #pragma omp barrier
+      
+      #ifdef SYMANZIK_ONE_LOOP
+      // JAMIE FIX THIS
+      //improve = av_plaquette( lat ) ;
+      #endif
+
+      //this bit initialises the calculation by working out the staples for the last time slice first
+      #ifdef IMPROVED_SMEARING
+      const size_t back = lat[ lat[0].back[ ND-1 ] ].back[ ND-1 ] ;
+      #else
+      const size_t back = lat[ 0 ].back[ ND - 1 ] ;
+      #endif
+
+      size_t i , t ;
+      #pragma omp for private(i) SCHED
+      #ifdef IMPROVED_SMEARING
+      for( i = 0 ; i < 2*LCU ; i++ ) {
+      #else
+      for( i = 0 ; i < LCU ; i++ ) {
+      #endif
+	const size_t bck = back + i ;
+	register size_t mu ;
+	for( mu = 0 ; mu < ND ; mu++ ) { 
+	  GLU_complex stap[ NCNC ] GLUalign ;
 	  zero_mat( stap ) ;
           #ifdef IMPROVED_SMEARING
-	  all_staples_improve( stap , lat , it , mu , ND , type ) ;
+	  all_staples_improve( stap , lat , bck , mu , ND , type ) ;
           #else
-	  all_staples( stap , lat , it , mu , ND , type ) ;
+	  all_staples( stap , lat , bck , mu , ND , type ) ;
           #endif
-	  project( lat2[ i ].O[ mu ] , stap , lat[ it ].O[ mu ] , alpha1 ,
+	  project( lat4[ i ].O[ mu ] , stap , lat[ bck ].O[ mu ] , alpha1 ,
 		   one_min_a1 ) ; 
 	}
       }
-
       #ifdef IMPROVED_SMEARING
-      const size_t bck = lat[ lat[ slice ].back[ ND-1 ] ].back[ ND-1 ] ;
+      for( t = 0 ; t < Latt.dims[ ND - 1 ] - 2 ; t++ ) {
       #else
-      const size_t bck = lat[ slice ].back[ ND -1 ] ;
+      for( t = 0 ; t < Latt.dims[ ND - 1 ] - 1 ; t++ ) {
+      #endif
+	const size_t slice = LCU * t ; 
+        #pragma omp for private(i) SCHED
+	for( i = 0 ; i < LCU ; i++ ) {
+	  const size_t it = slice + i ;
+	  size_t mu ;
+	  for( mu = 0 ; mu < ND ; mu++ ) {
+	    GLU_complex stap[ NCNC ] ;
+	    zero_mat( stap ) ;
+            #ifdef IMPROVED_SMEARING
+	    all_staples_improve( stap , lat , it , mu , ND , type ) ;
+            #else
+	    all_staples( stap , lat , it , mu , ND , type ) ;
+            #endif
+	    project( lat2[ i ].O[ mu ] , stap , lat[ it ].O[ mu ] , alpha1 ,
+		     one_min_a1 ) ; 
+	  }
+	}
+
+        #ifdef IMPROVED_SMEARING
+	const size_t bck = lat[ lat[ slice ].back[ ND-1 ] ].back[ ND-1 ] ;
+        #else
+	const size_t bck = lat[ slice ].back[ ND -1 ] ;
+        #endif
+
+        #pragma omp for private(i)
+	for( i = 0 ; i < LCU ; i++ ) {
+	  register size_t mu ;
+	  for( mu = 0 ; mu < ND ; mu++ ) {
+	    #ifdef IMPROVED_SMEARING
+	    if( t > 1 ) {
+	      register const size_t back = bck + i ;
+	      equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
+	    }
+	    equiv( lat3[i].O[mu]     , lat3[i+LCU].O[mu] ) ;
+	    equiv( lat3[i+LCU].O[mu] , lat2[i].O[mu] ) ;
+	    #else
+	    if( t != 0 ) {
+	      register const size_t back = bck + i ;
+	      equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
+	    }
+	    equiv( lat3[i].O[mu] , lat2[i].O[mu] ) ;
+            #endif
+	  }
+	}
+      }
+ 
+      // put the last couple back in ....
+      const size_t slice = LCU * t ;
+      const size_t behind = lat[ slice ].back[ ND - 1 ] ;
+      #ifdef IMPROVED_SMEARING
+      const size_t behind2 = lat[ behind ].back[ ND-1 ] ;
       #endif
 
       #pragma omp parallel for private(i)
-      PFOR( i = 0 ; i < LCU ; i++ ) {
-	register size_t mu ;
+      for( i = 0 ; i < LCU ; i++ ) {
+	register const size_t back = behind + i ;
+	register const size_t it = slice + i ;
+	size_t mu ;
 	for( mu = 0 ; mu < ND ; mu++ ) {
-	  #ifdef IMPROVED_SMEARING
-	  if( t > 1 ) {
-	    register const size_t back = bck + i ;
-	    equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
-	  }
-	  equiv( lat3[i].O[mu]     , lat3[i+LCU].O[mu] ) ;
-	  equiv( lat3[i+LCU].O[mu] , lat2[i].O[mu] ) ;
-	  #else
-	  if( t != 0 ) {
-	    register const size_t back = bck + i ;
-	    equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
-	  }
-	  equiv( lat3[i].O[mu] , lat2[i].O[mu] ) ;
+          #ifdef IMPROVED_SMEARING
+	  equiv( lat[behind2+i].O[mu] , lat3[i].O[mu] ) ;
+	  equiv( lat[back].O[mu]      , lat3[i].O[mu] ) ;
+	  equiv( lat[it].O[mu]        , lat4[i].O[mu] ) ;
+	  equiv( lat[it+LCU].O[mu]    , lat4[i+LCU].O[mu] ) ;
+          #else
+	  equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
+	  equiv( lat[it].O[mu]   , lat4[i].O[mu] ) ;
           #endif
 	}
       }
-    }
- 
-    // put the last couple back in ....
-    const size_t slice = LCU * t ;
-    const size_t behind = lat[ slice ].back[ ND - 1 ] ;
-    #ifdef IMPROVED_SMEARING
-    const size_t behind2 = lat[ behind ].back[ ND-1 ] ;
-    #endif
 
-    #pragma omp parallel for private(i)
-    PFOR( i = 0 ; i < LCU ; i++ ) {
-      register const size_t back = behind + i ;
-      register const size_t it = slice + i ;
-      size_t mu ;
-      for( mu = 0 ; mu < ND ; mu++ ) {
-        #ifdef IMPROVED_SMEARING
-	equiv( lat[behind2+i].O[mu] , lat3[i].O[mu] ) ;
-	equiv( lat[back].O[mu]      , lat3[i].O[mu] ) ;
-	equiv( lat[it].O[mu]        , lat4[i].O[mu] ) ;
-	equiv( lat[it+LCU].O[mu]    , lat4[i+LCU].O[mu] ) ;
-        #else
-	equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
-	equiv( lat[it].O[mu]   , lat4[i].O[mu] ) ;
-        #endif
+      #ifdef TOP_VALUE
+      if( count > TOP_VALUE ) {
+	//if( gauge_topological_meas( lat , &qtop_new , &qtop_old , count-1 ) 
+	//    == GLU_SUCCESS ) { break ; }
       }
-    }
-
-    #ifdef TOP_VALUE
-    if( count > TOP_VALUE ) {
-      if( gauge_topological_meas( lat , &qtop_new , &qtop_old , count-1 ) 
-	  == GLU_SUCCESS ) { break ; }
-    }
-    #endif
+      #endif
  
-    #ifdef verbose
-    print_smearing_obs( lat , count ) ;
-    #endif
-    // end of iterations loop
-  }
+      #ifdef verbose
+      print_smearing_obs( lat , count ) ;
+      #endif
+     // end of iterations loop
+     }
+   // end of parallel section
+   }
 
 #ifndef verbose
- print_smearing_obs( lat , count-1 ) ;
+   print_smearing_obs( lat , smiters ) ;
 #endif
 
   // free stuff !

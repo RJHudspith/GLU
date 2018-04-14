@@ -412,6 +412,8 @@ steep_step_FASD( GLU_complex **gauge ,
       *tr += CG.red[ LINE_NSTEPS + 2 + CLINE*k ] ;
   }
   *tr *= GFNORM_COULOMB ;
+
+  loc_iters++ ;
   
   if( ( *tr > accuracy ) && ( loc_iters < max_iters) ) goto top ;
   
