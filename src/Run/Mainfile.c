@@ -20,7 +20,6 @@
    @file Mainfile.c
    @brief the driver for the rest of the code
  */
-
 // Usual dependencies
 #include "Mainfile.h"
 
@@ -53,6 +52,8 @@ main( const int argc ,
   // parse the input file into a nice big struct
   struct infile_data infile_struct ;
   if( get_input_data( &infile_struct , argv[ INPUT_FILE ] ) == GLU_FAILURE ) {
+    fprintf( stderr , "[INPUT] error reading input file %s\n" ,
+	     argv[ INPUT_FILE ] ) ;
     return GLU_FAILURE ;
   }
 
@@ -77,7 +78,7 @@ main( const int argc ,
 		 argv[ WRITE ] , INFILE.storage , INFILE.output_details ) ;
     break ;
   case MODE_HEATBATH :
-    heatbath( argv[ READ ] , INFILE.HBINFO , INFILE.head , argv[ WRITE ] , 
+    heatbath( argv[ READ ] , INFILE.HBINFO , argv[ WRITE ] , 
 	      INFILE.storage , INFILE.output_details ) ;
     break ;
   default :

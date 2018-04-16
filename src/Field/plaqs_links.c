@@ -30,10 +30,8 @@
 #endif
 
 #if (defined HAVE_IMMINTRIN_H) && !(defined SINGLE_PREC)
-
 #include <immintrin.h>
 #include "SSE2_OPS.h"
-
 #endif
 
 //// My plaquette code, uses expressions for the trace of four matrices 
@@ -255,7 +253,7 @@ av_plaquette( const struct site *__restrict lat )
 {
   double plaq = 0. ;
   size_t i ; 
-#pragma omp parallel for private(i) reduction(+:plaq) 
+  //#pragma omp parallel for private(i) reduction(+:plaq) 
   for( i = 0 ; i < LVOLUME ; i++ ) {
     register double p = 0. , face ;
     size_t mu , nu , t , s ;
@@ -308,7 +306,7 @@ s_plaq( const struct site *__restrict lat )
 {
   double plaq = 0. ;
   size_t i ; 
-#pragma omp parallel for private(i) reduction(+:plaq) 
+  //#pragma omp parallel for private(i) reduction(+:plaq) 
   for( i = 0 ; i < LVOLUME ; i++ ) {
     register double p = 0. , face ;
     size_t mu , nu , t , s ;
@@ -335,7 +333,7 @@ t_plaq( const struct site *__restrict lat )
   double plaq = 0. ;
   size_t i ; 
   const size_t mu = ND - 1 ;
-#pragma omp parallel for private(i) reduction(+:plaq) 
+  //#pragma omp parallel for private(i) reduction(+:plaq) 
   for( i = 0 ; i < LVOLUME ; i++ ) {
     register double p = 0. , face ;
     size_t nu , t = lat[i].neighbor[mu] , s ; 
@@ -377,9 +375,9 @@ lattice_gmunu( const struct site *__restrict lat ,
 // sexy wrapper for the topological charge measurements
 int
 gauge_topological_meas( const struct site *__restrict lat , 
-			double *qtop_new , 
-			double *qtop_old , 
-			const int iter )
+			   double *qtop_new , 
+			   double *qtop_old , 
+			   const int iter )
 {
   // set up a tolerance for how close to an integer we wish to be
   const double QTOP_TOL = 5.0E-3 ;
@@ -391,12 +389,62 @@ gauge_topological_meas( const struct site *__restrict lat ,
   const int qint = (int)( *qtop_new > 0. ? *qtop_new + 0.5 : *qtop_new - 0.5 ) ;
   // The two tests are the difference between the newest topological charge and
   // the previous, suggesting convergence.
+  // And the more stringent test of "closeness to an integer" which is allowed 
+  // to be off by a little bit more. This is certainly a heuristic measure!
+  if( fabs( *qtop_old - *qtop_new ) < QTOP_TOL &&
+      // +/- 0.10 seems ok to define integer?
+      fabs( qint - *qtop_new ) < 0.10 ) { 
+    fprintf( stdout , "\n[QTOP] {CONFIG} %zu {QTOP} %d \n\n" , 
+	     Latt.flow , qint ) ;
+    return GLU_SUCCESS ;
+  }
+  *qtop_old = *qtop_new ;
+  return GLU_FAILURE ;
+}
+
+// sexy wrapper for the topological charge measurements
+int
+gauge_topological_meas_th( double *red , 
+			   const struct site *__restrict lat , 
+			   double *qtop_new , 
+			   double *qtop_old , 
+			   const size_t iter )
+{
+  // set up a tolerance for how close to an integer we wish to be
+  const double QTOP_TOL = 5.0E-3 ;
+
+  compute_Gmunu_th( red , lat ) ;
+  
+  double GT = 0.0 , Q = 0.0 ;
+  size_t i ;
+  for( i = 0 ; i < Latt.Nthreads ; i++ ) {
+    GT += red[ 0 + CLINE*i ] ;
+    Q  += red[ 1 + CLINE*i ] ;
+  }
+  GT /= ( 16.*LVOLUME ) ;
+  Q *= -0.001583143494411527678811 ;
+
+  *qtop_new = Q ;
+
+#pragma omp master
+  {
+    fprintf( stdout , "[QTOP] {iter} %zu {GG} %g {q} %g {diff} %g \n" ,
+	     iter , GT , *qtop_new , fabs( *qtop_old - *qtop_new ) ) ;
+  }
+  
+  // rounded integer value for the topological charge
+  const int qint = (int)( *qtop_new > 0. ? *qtop_new + 0.5 : *qtop_new - 0.5 ) ;
+  // The two tests are the difference between the newest topological charge and
+  // the previous, suggesting convergence.
   // And the more stringent test of "closeness to an integer" which is allowed to be
   // off by a little bit more. This is certainly a heuristic measure!
   if( fabs( *qtop_old - *qtop_new ) < QTOP_TOL &&
       fabs( qint - *qtop_new ) < 0.10 ) { // +/- 0.10 seems ok to define integer?
-    fprintf( stdout , "\n[QTOP] {CONFIG} %zu {QTOP} %d \n\n" , 
-	     Latt.flow , qint ) ;
+#pragma omp master
+    {
+      fprintf( stdout , "\n[QTOP] {CONFIG} %zu {QTOP} %d \n\n" , 
+	       Latt.flow , qint ) ;
+    }
     return GLU_SUCCESS ;
   }
   *qtop_old = *qtop_new ;
@@ -413,7 +461,7 @@ all_links( const struct site *__restrict lat ,
 {
   double splink = 0.0 , tlink = 0.0 ; 
   size_t i ; 
-#pragma omp parallel for private(i) reduction(+:splink) reduction(+:tlink)
+  //#pragma omp parallel for private(i) reduction(+:splink) reduction(+:tlink)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     double p = 0. , res ;
     size_t mu ;
@@ -443,7 +491,7 @@ indivlinks( const struct site *__restrict lat , GLU_real *max )
   omp_init_lock( &writelock ) ;
   #endif
 
-#pragma omp parallel for private(i) reduction(+:link)
+  //#pragma omp parallel for private(i) reduction(+:link)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     double loc_link = 0. , res ;
     size_t mu ;
@@ -476,7 +524,7 @@ links( const struct site *__restrict lat )
 {
   double link = 0.0 ; 
   size_t i ; 
-#pragma omp parallel for private(i) reduction(+:link)
+  //#pragma omp parallel for private(i) reduction(+:link)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     double p = 0. , res ;
     size_t mu ;
@@ -495,7 +543,7 @@ s_links( const struct site *__restrict lat )
 {
   double link = 0.0 ; 
   size_t i ; 
-#pragma omp parallel for private(i) reduction(+:link)
+  //#pragma omp parallel for private(i) reduction(+:link)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     double p = 0. , res ;
     int mu ;
@@ -514,7 +562,7 @@ t_links( const struct site *__restrict lat )
 {    
   double link = 0.0 ; 
   size_t i ; 
-#pragma omp parallel for private(i) reduction(+:link)
+  //#pragma omp parallel for private(i) reduction(+:link)
   for( i = 0 ; i < LVOLUME ; i++ ) { 
     double res = 0. ; 
     speed_trace_Re( &res , lat[i].O[ ND - 1 ] ) ; 

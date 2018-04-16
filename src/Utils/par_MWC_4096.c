@@ -51,13 +51,18 @@ free_par_MWC_4096( void )
 {
   size_t i ;
   for( i = 0 ; i < Latt.Nthreads ; i++ ) {
-    free( table[i] ) ;
+    if( table[i] != NULL ) {
+      free( table[i] ) ;
+    }
   }
   if( mcwc_i != NULL ) {
     free( mcwc_i ) ;
   }
   if( carry != NULL ) {
     free( carry ) ;
+  }
+  if( table != NULL ) {
+    free( table ) ;
   }
   return ;
 }

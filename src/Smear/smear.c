@@ -49,16 +49,19 @@ smear3D( struct site *__restrict lat ,
   const GLU_real alpha1 = Latt.sm_alpha[0] / ( ( ND-1 ) * ( ND -2 ) ) ;
   const GLU_real one_min_a1 = ( 1.0 - Latt.sm_alpha[0] ) ;
 #endif
+  
+  struct s_site *lat2 = NULL ;
+  double *red = NULL ;
+  int FLAG = GLU_SUCCESS ;
 
-  #ifdef TOP_VALUE
-  double qtop_new , qtop_old = 0. ;
-  #endif
+#ifdef TOP_VALUE
+  red = malloc( CLINE*Latt.Nthreads*sizeof(double) ) ;
+#endif
 
   // allocate temporary lattice field
-  struct s_site *lat2 = NULL ;
   if( ( lat2 = allocate_s_site( LCU , (ND-1) , NCNC ) ) == NULL ) {
     fprintf( stderr , "[SMEARING] field allocation failure\n" ) ;
-    return GLU_FAILURE ;
+    FLAG = GLU_FAILURE ; goto memfree ;
   }
 
   // callback for the projections
@@ -86,14 +89,18 @@ smear3D( struct site *__restrict lat ,
 
 #pragma omp parallel
   {
-    size_t count = 0 ; 
-    for( count = 1 ; count <= smiters ; count++ ) {
+#ifdef TOP_VALUE
+    double qtop_new , qtop_old = 0. ;
+#endif
+    size_t count = 0 ;
+    GLU_bool top_found = GLU_FALSE ;
+    
+    for( count = 1 ; count <= smiters && top_found != GLU_TRUE ; count++ ) {
 
       #pragma omp barrier
       
       #ifdef SYMANZIK_ONE_LOOP
-      // JAMIE - TODO fix this!!
-      //improve = av_plaquette( lat ) ;
+      const double improve = av_plaquette( lat ) ;
       #endif
       /////////////////////
       //loop time slices
@@ -129,10 +136,15 @@ smear3D( struct site *__restrict lat ,
 
       #ifdef TOP_VALUE
       if( count > TOP_VALUE ) {
-	/* JAMIE - TODO make sure this works!!!
-	if( gauge_topological_meas( lat , &qtop_new , &qtop_old , count-1 ) 
-	    == GLU_SUCCESS ) { break ; }
-	*/
+        #pragma omp for private(i)
+	for( i = 0 ; i < CLINE*Latt.Nthreads ; i++ ) {
+	  red[ i ] = 0.0 ;
+	}
+	if( gauge_topological_meas_th( red , lat , &qtop_new ,
+				       &qtop_old , count-1 ) 
+	    == GLU_SUCCESS ) {
+	  top_found = GLU_TRUE ;
+	}
       }
       #endif
       
@@ -140,17 +152,22 @@ smear3D( struct site *__restrict lat ,
       print_smearing_obs( lat , count ) ;
       #endif
     }
+    
+#ifndef verbose
+  print_smearing_obs( lat , count ) ;
+#endif
+  }
+
+ memfree :
+
+  if( red != NULL ) {
+    free( red ) ;
   }
   
-#ifndef verbose
-  // -- the counter here as we stop at smiters not simters+1
-  print_smearing_obs( lat , smiters ) ;
-#endif
-
   // free our temporary lattice
   free_s_site( lat2 , LCU , (ND-1) , NCNC ) ;
 
-  return GLU_SUCCESS ;
+  return FLAG ;
 #endif
 }
 
@@ -168,10 +185,15 @@ smear4D( struct site *__restrict lat ,
   const GLU_real one_min_a1 = ( 1.0 - Latt.sm_alpha[0] ) ;
 #endif	
 				     
-  #ifdef TOP_VALUE
-  double qtop_new , qtop_old = 0. ;
-  #endif
 
+  struct s_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
+  double *red = NULL ;
+  int FLAG = GLU_SUCCESS ;
+  
+#ifdef TOP_VALUE
+  red = malloc( CLINE*Latt.Nthreads*sizeof( double ) ) ;
+#endif
+  
   // callback for the projections
   void (*project) ( GLU_complex smeared_link[ NCNC ] , 
 		    GLU_complex staple[ NCNC ] , 
@@ -191,40 +213,43 @@ smear4D( struct site *__restrict lat ,
     break ;
   default :
     fprintf( stderr , "[SMEAR] Unrecognised type [ %d ] ... Leaving \n" , 
-	     type ) ; 
-    return GLU_FAILURE ;
+	     type ) ;
+    FLAG = GLU_FAILURE ; goto memfree ;
   }
 
-  struct s_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
   if( ( lat2 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ) {
     fprintf( stderr , "[SMEARING] field allocation failure\n" ) ;
-    return GLU_FAILURE ;
+    FLAG = GLU_FAILURE ; goto memfree ;
   }
 #ifdef IMPROVED_SMEARING
   if( ( lat3 = allocate_s_site( 2*LCU , ND , NCNC ) ) == NULL || 
       ( lat4 = allocate_s_site( 2*LCU , ND , NCNC ) ) == NULL ) {
     fprintf( stderr , "[SMEARING] field allocation failure\n" ) ;
-    return GLU_FAILURE ;
+    FLAG = GLU_FAILURE ; goto memfree ;
   }
 #else
   if( ( lat3 = allocate_s_site( LCU , ND , NCNC ) ) == NULL || 
       ( lat4 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ) {
     fprintf( stderr , "[SMEARING] field allocation failure\n" ) ;
-    return GLU_FAILURE ;
+    FLAG = GLU_FAILURE ; goto memfree ;
   }
 #endif
 
 
 #pragma omp parallel
   {
+    #ifdef TOP_VALUE
+    double qtop_new , qtop_old = 0. ;
+    #endif
+
     size_t count = 0 ;
-    for( count = 1 ; count <= smiters ; count++ ) {
+    GLU_bool top_found = GLU_FALSE ;
+    for( count = 1 ; count <= smiters && top_found != GLU_TRUE ; count++ ) {
 
       #pragma omp barrier
       
       #ifdef SYMANZIK_ONE_LOOP
-      // JAMIE FIX THIS
-      //improve = av_plaquette( lat ) ;
+      improve = av_plaquette( lat ) ;
       #endif
 
       //this bit initialises the calculation by working out the staples for the last time slice first
@@ -332,33 +357,45 @@ smear4D( struct site *__restrict lat ,
       }
 
       #ifdef TOP_VALUE
-      if( count > TOP_VALUE ) {
-	//if( gauge_topological_meas( lat , &qtop_new , &qtop_old , count-1 ) 
-	//    == GLU_SUCCESS ) { break ; }
+      if( count > TOP_VALUE && count%5 == 0 ) {
+        #pragma omp for private(i)
+	for( i = 0 ; i < CLINE*Latt.Nthreads ; i++ ) {
+	  red[i] = 0.0 ;
+	}
+	if( gauge_topological_meas_th( red , lat , &qtop_new ,
+				       &qtop_old , count-1 ) 
+	    == GLU_SUCCESS ) {
+	  top_found = GLU_TRUE ;
+	}
       }
       #endif
  
       #ifdef verbose
       print_smearing_obs( lat , count ) ;
       #endif
-     // end of iterations loop
-     }
-   // end of parallel section
-   }
-
+      // end of iterations loop
+    }
+    // end of parallel section
 #ifndef verbose
-   print_smearing_obs( lat , smiters ) ;
+    print_smearing_obs( lat , count ) ;
 #endif
+  }
 
+memfree :
+
+  if( red != NULL ) {
+     free( red ) ;
+  }
+  
   // free stuff !
- free_s_site( lat2 , LCU , ND , NCNC ) ;
+  free_s_site( lat2 , LCU , ND , NCNC ) ;
 #ifdef IMPROVED_SMEARING
- free_s_site( lat3 , 2*LCU , ND , NCNC ) ;
- free_s_site( lat4 , 2*LCU , ND , NCNC ) ;
+  free_s_site( lat3 , 2*LCU , ND , NCNC ) ;
+  free_s_site( lat4 , 2*LCU , ND , NCNC ) ;
 #else
- free_s_site( lat3 , LCU , ND , NCNC ) ;
- free_s_site( lat4 , LCU , ND , NCNC ) ;
+  free_s_site( lat3 , LCU , ND , NCNC ) ;
+  free_s_site( lat4 , LCU , ND , NCNC ) ;
 #endif
 
-  return GLU_SUCCESS ;
+  return FLAG ;
 }

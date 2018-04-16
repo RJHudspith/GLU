@@ -27,14 +27,6 @@
 #include "plan_ffts.h"    // fftw plan wrapper
 #include "plaqs_links.h"  // plaqutte and link measurements
 
-#ifdef HAVE_FFTW3_H
-void
-set_FFTW( struct fftw_stuff *FFTW )
-{
-
-}
-#endif
-
 // Coulomb gauge fixing code
 size_t
 Coulomb( struct site *__restrict lat , 

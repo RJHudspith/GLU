@@ -2,8 +2,9 @@
    @file par_rng.c
    @brief parallel RNG codes live here
    @warning these are parallelised the stupid way
-
-   TODO :: write it in such a way that if we don't have openmp this still works
+   @warning changed the default behaviour such that if the rng state 
+            has changed we just re-initialise the pool instead of 
+	    failing
  */
 #include "Mainfile.h"
 
@@ -190,6 +191,14 @@ par_rng_int( const uint32_t thread )
   return (uint32_t)( UINT32_MAX * par_rng_dbl( thread ) ) ;
 }
 
+// really laudible behaviour
+static int
+init_new_rng_sequence( void )
+{
+  fprintf( stderr , "[PAR_RNG] WARNING :: Initialising NEW rng sequence\n" ) ;
+  return initialise_par_rng( NULL ) ;
+}
+
 // read in the parallel rng state
 int
 read_par_rng_state( const char *infile )
@@ -200,35 +209,36 @@ read_par_rng_state( const char *infile )
 
   if( in == NULL ) {
     fprintf( stderr , "[PAR_RNG] State file %s not found\n" , infile ) ;
-    return GLU_FAILURE ;
+    return init_new_rng_sequence( ) ;
   }
   
   if( ( hdr = get_header( in ) ) == NULL ) {
     fprintf( stderr , "[PAR_RNG] Unable to read state header\n" ) ;
-    return GLU_FAILURE ;
+    return init_new_rng_sequence( ) ;
   }
 
   // check Nthreads
   size_t Nthreads ;
   if( get_size_t( "NTHREADS" , hdr , &Nthreads ) == GLU_FAILURE ) {
     fprintf( stderr , "[PAR_RNG] NTHREADS not found in header\n" ) ;
-    return GLU_FAILURE ;
+    return init_new_rng_sequence( ) ;
   }
   if( Nthreads != (size_t)Latt.Nthreads ) {
-    fprintf( stderr , "[PAR_RNG] RNG Nthreads not the same as Latt.Nthreads\n" ) ;
-    return GLU_FAILURE ;
+    fprintf( stderr , "[PAR_RNG] RNG Nthreads (%zu) not the same as "
+	     "Latt.Nthreads (%u)\n" , Nthreads , Latt.Nthreads ) ;
+    return init_new_rng_sequence( ) ;
   }
 
   // figure out what RNG we are using and make sure it is consistent
   if( get_string( "RNG" , hdr , &str ) == GLU_FAILURE ) {
     fprintf( stderr , "[PAR_RNG] RNG type not found" ) ;
-    return GLU_FAILURE ;
+    return init_new_rng_sequence( ) ;
   }
 
 #if (defined KISS_RNG)
   if( strcmp(  " PAR_KISS" , str ) ) {
     fprintf( stderr , "[PAR_RNG] state RNG differs from compiled (KISS) RNG\n" ) ;
-    return GLU_FAILURE ;
+    return init_new_rng_sequence( ) ;
   }
   if( read_par_KISS_table( in ) == GLU_FAILURE ) {
     return GLU_FAILURE ;
@@ -236,7 +246,7 @@ read_par_rng_state( const char *infile )
 #elif (defined MWC_4096_RNG)
   if( strcmp(  " PAR_MWC_4096" , str ) ) {
     fprintf( stderr , "[PAR_RNG] state RNG differs from compiled (MWC_4096) RNG\n" ) ;
-    return GLU_FAILURE ;
+    return init_new_rng_sequence( ) ;
   }
   if( read_par_MWC_4096_table( in ) == GLU_FAILURE ) {
     return GLU_FAILURE ;
@@ -244,7 +254,7 @@ read_par_rng_state( const char *infile )
 #elif (defined XOR_1024_RNG)
   if( strcmp(  " PAR_XOR_1024" , str ) ) {
     fprintf( stderr , "[PAR_RNG] state RNG differs from compiled (XOR_1024) RNG\n" ) ;
-    return GLU_FAILURE ;
+    return init_new_rng_sequence( ) ;
   }
   if( read_par_XOR_1024_table( in ) == GLU_FAILURE ) {
     return GLU_FAILURE ;
@@ -252,7 +262,7 @@ read_par_rng_state( const char *infile )
 #elif (defined MWC_1038_RNG)
   if( strcmp(  " PAR_MWC_1038" , str ) ) {
     fprintf( stderr , "[PAR_RNG] state RNG differs from compiled (MWC_1038) RNG\n" ) ;
-    return GLU_FAILURE ;
+    return init_new_rng_sequence( ) ;
   }
   if( read_par_MWC_1038_table( in ) == GLU_FAILURE ) {
     return GLU_FAILURE ;
@@ -260,7 +270,7 @@ read_par_rng_state( const char *infile )
 #elif (defined WELL_512_RNG)
   if( strcmp(  " PAR_WELL_512" , str ) ) {
     fprintf( stderr , "[PAR_RNG] state RNG differs from compiled (WELL_512) RNG\n" ) ;
-    return GLU_FAILURE ;
+    return init_new_rng_sequence( ) ;
   }
   if( read_par_WELL_512_table( in ) == GLU_FAILURE ) {
     return GLU_FAILURE ;
@@ -268,7 +278,7 @@ read_par_rng_state( const char *infile )
 #else
   if( strcmp(  " PAR_MWC_4096" , str ) ) {
     fprintf( stderr , "[PAR_RNG] state RNG differs from compiled (MWC_4096) RNG\n" ) ;
-    return GLU_FAILURE ;
+    return init_new_rng_sequence( ) ;
   }
   if( read_par_MWC_4096_table( in ) == GLU_FAILURE ) {
     return GLU_FAILURE ;

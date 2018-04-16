@@ -24,7 +24,6 @@
 
    @warning Calls the smearing wrapper, hence overwrites the lattice links
  */
-
 #include "Mainfile.h"
 
 #include "cut_output.h"   // to automatically format our output file
@@ -76,6 +75,39 @@ poly( const struct site *__restrict lat ,
     sum = sum + (double complex)trace( poly ) ;
   }
   return sum / subvolume ;
+}
+
+// computes a polyakov line, looping around the dimension "dir"
+void
+poly2( double *red ,
+       const struct site *__restrict lat , 
+       size_t dir )
+{
+  // if you have stupidly set the dimension to something unreasonable
+  // default the direction to ND
+  if( dir > ND ) { dir = ND ; }
+  size_t i , subvolume = 1 ;
+  for( i = 0 ; i < ND ; i++ ) {
+    subvolume *= (i!=dir)? Latt.dims[i] : 1 ;
+  }
+#pragma omp for private(i)
+  for( i = 0 ; i < subvolume ; i++ ) {
+    GLU_complex poly[ NCNC ] ;
+    // use the correct site for one of the hypercubes ...
+    int x[ ND ] ;
+    get_mom_2piBZ( x , i , dir ) ;
+    const size_t k = gen_site( x ) ;
+    small_poly( poly , lat , k , dir , Latt.dims[dir] ) ;
+    const size_t th = get_GLU_thread();
+    const double complex pl = trace( poly ) ;
+    red[ 2*dir + th*CLINE ] += creal( pl ) ;
+    red[ 2*dir + 1 + th*CLINE ] += cimag( pl ) ;
+  }
+#pragma omp for private(i)
+  for( i = 0 ; i < Latt.Nthreads ; i++ ) {
+    red[ 2*dir + i*CLINE ] /= subvolume ;
+    red[ 2*dir + 1 + i*CLINE ] /= subvolume ;
+  }
 }
 
 // If we have FFTW we use it for the convolutions instead of our slow

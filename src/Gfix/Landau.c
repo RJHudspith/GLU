@@ -25,7 +25,6 @@
   If we do not reach adequate convergence #GF_GLU_FAILURES restart(s)
   with a random gauge transform is(are) performed.
  */
-
 #include "Mainfile.h"
 
 #include "FACG.h"          // Fourier-Accelerated Conjugate Gradient

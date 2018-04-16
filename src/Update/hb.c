@@ -187,18 +187,21 @@ hb_lattice( struct site *lat ,
   for( mu = 0 ; mu < ND ; mu++ ) {
     // single node until I figure out the coloring
 #ifdef IMPROVED_SMEARING
-    for( i = 0 ; i < LVOLUME ; i++ ) {
-      GLU_complex stap[ NCNC ] GLUalign ;
-      zero_mat( stap ) ;
-      all_staples_improve( stap , lat , i , mu , ND , SM_APE ) ;
-      hb( lat[ i ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
+#pragma omp single
+    {
+      for( i = 0 ; i < LVOLUME ; i++ ) {
+	GLU_complex stap[ NCNC ] GLUalign ;
+	zero_mat( stap ) ;
+	all_staples_improve( stap , lat , i , mu , ND , SM_APE ) ;
+	hb( lat[ i ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
+      }
     }
 #else
     size_t c ;
     // loop draughtboard coloring
     for( c = 0 ; c < db.Ncolors ; c++ ) {
       // parallel loop over all sites with this coloring
-      #pragma omp parallel for private(i)
+#pragma omp for private(i) //schedule(dynamic)
       for( i = 0 ; i < db.Nsquare[c] ; i++ ) {
 	const size_t it = db.square[c][i] ;
 	GLU_complex stap[ NCNC ] GLUalign ;
@@ -208,7 +211,7 @@ hb_lattice( struct site *lat ,
       }
       // and that is it
     }
-#endif
   }
+#endif
   return GLU_SUCCESS ;
 }

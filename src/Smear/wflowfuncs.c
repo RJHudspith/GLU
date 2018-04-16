@@ -504,13 +504,13 @@ allocate_WF( struct wflow_temps *WF ,
   WF->lat_two = NULL ; WF->red = NULL ;
   int FLAG = GLU_SUCCESS ;
   if( adaptive == GLU_TRUE ) {
-    if( ( WF->lat2 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ) {
+    if( ( WF->lat_two = allocate_lat( ) ) == NULL ) {
       fprintf( stderr , "[WFLOW] adaptive allocation failure \n" ) ;
       FLAG = GLU_FAILURE ;
     }
   }
   if( memcheap == GLU_TRUE ) {
-    if( ( WF->lat_two = allocate_lat( ) ) == NULL ||
+    if( ( WF->lat2 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ||
 	( WF->Z    = allocate_s_site( LVOLUME , ND , TRUE_HERM ) ) == NULL ||
 #ifdef IMPROVED_SMEARING
 	( WF->lat3 = allocate_s_site( 2*LCU , ND , NCNC ) ) == NULL ||
@@ -539,10 +539,13 @@ free_WF( struct wflow_temps *WF ,
          const GLU_bool memcheap ,
 	 const GLU_bool adaptive )
 {
+  if( adaptive == GLU_TRUE ) {
+    free_lat( WF->lat_two ) ;
+  }
+  if( WF -> red != NULL ) {
+    free( WF->red ) ;
+  }
   if( memcheap == GLU_TRUE ) {
-    if( WF -> red != NULL ) {
-      free( WF->red ) ;
-    }
     // free our fields
     free_s_site( WF->Z , LVOLUME , ND , TRUE_HERM ) ;
 #if IMPROVED_SMEARING
@@ -554,15 +557,9 @@ free_WF( struct wflow_temps *WF ,
     free_s_site( WF->lat3 , LCU , ND , NCNC ) ;
     free_s_site( WF->lat4 , LCU , ND , NCNC ) ;
 #endif
-    free_lat( WF->lat_two ) ;
   } else {
     // free our fields
-    if( WF -> red != NULL ) {
-      free( WF->red ) ;
-    }
-    if( adaptive == GLU_TRUE ) {
-      free_s_site( WF->lat2 , LVOLUME , ND , NCNC ) ;
-    }
+    free_s_site( WF->lat2 , LVOLUME , ND , NCNC ) ;
     free_s_site( WF->Z , LVOLUME , ND , TRUE_HERM ) ;
   }
   return ;

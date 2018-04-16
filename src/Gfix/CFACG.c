@@ -62,8 +62,7 @@ get_info( const size_t t ,
 
 // bit that calculates the steepest descent with fourier acceleration
 static void
-steep_deriv_CG( double *red ,
-		GLU_complex **in ,
+steep_deriv_CG( GLU_complex **in ,
 		struct s_site *rotato ,
 		const struct site *lat , 
 		const GLU_complex **slice_gauge , 
@@ -80,7 +79,7 @@ steep_deriv_CG( double *red ,
       gtransform_local( slice_gauge[i] , rotato[i].O[mu] , slice_gauge[it] ) ;
     }
   }
-  
+
   #pragma omp for private(i)
   for( i = 0 ; i < LCU ; i ++ ) {
     // compute gauge rotated derivatives
@@ -112,27 +111,8 @@ steep_deriv_CG( double *red ,
       #endif
     }
 
-    register double der = 0.0 ;
-#if NC == 3
-    der += creal( sum[0] * sum[0] ) ;
-    der += creal( sum[1] * conj( sum[1] ) ) ;
-    der += creal( sum[2] * conj( sum[2] ) ) ;
-    der += creal( sum[3] * sum[3] ) ;
-    der += creal( sum[4] * conj( sum[4] ) ) ;
-    der += creal( sum[0] * sum[3] ) ;
-#elif NC == 2
-    der += creal( sum[0] * sum[0] ) ;
-    der += creal( sum[1] * conj( sum[1] ) ) ;
-#else
-    GLU_real tr ;
-    trace_ab_herm_short( &tr , sum , sum ) ;
-    der = (double)tr ;
-#endif
-    // The trace has a factor of 2, as does the def 2 tr(AA) = \delta_ab A^a A^b
-    der *= 4.0 ;
-
     // make it antihermitian
-#if NC == 3
+    #if NC == 3
     // for SU(3) I pack the first FFT with the two explicitly
     // real diagonal elements
     // to save on a Fourier transform ..
@@ -140,16 +120,13 @@ steep_deriv_CG( double *red ,
     in[1][i] = I * sum[1] ;
     in[2][i] = I * sum[2] ;
     in[3][i] = I * sum[4] ;
-#elif NC == 2
+    #elif NC == 2
     in[0][i] = I * sum[0] ; in[1][i] = I * sum[1] ;
-#else
+    #else
     for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
       in[mu][i] = I * sum[mu] ;
     }
-#endif
-    const size_t th = get_GLU_thread() ;
-
-    red[ LINE_NSTEPS + 2 + CLINE*th ] += der ;
+    #endif
   }
 
   return ;
@@ -157,24 +134,22 @@ steep_deriv_CG( double *red ,
 
 // is the same for Landau and Coulomb just with different LENGTHS
 void
-FOURIER_ACCELERATE2( struct fftw_stuff *FFTW ,
-		     const size_t LENGTH ) 
+FOURIER_ACCELERATE2( struct fftw_stuff *FFTW ) 
 {
 #ifdef HAVE_FFTW3_H
   const fftw_plan *forw = ( const fftw_plan* )FFTW -> forward ;
   const fftw_plan *back = ( const fftw_plan* )FFTW -> backward ;
   // single core FFT's
   size_t mu ;
-  #pragma omp for private(mu) schedule(dynamic)
+#pragma omp for private(mu) schedule(dynamic)
   for( mu = 0 ; mu < TRUE_HERM ; mu++ ) {
-    PSPAWN fftw_execute( forw[mu] ) ; 
+    fftw_execute( forw[mu] ) ; 
     size_t i ;
-    PFOR( i = 0 ; i < LCU ; i++ ) {
+    for( i = 0 ; i < LCU ; i++ ) {
       FFTW -> out[ mu ][ i ] *= FFTW -> psq[i] ;
     }
-    PSPAWN fftw_execute( back[mu] ) ; 
+    fftw_execute( back[mu] ) ; 
   }
-  PSYNC ;
 #endif
   return ;
 }
@@ -184,8 +159,9 @@ sum_PR( double *red ,
 	const GLU_complex **in , 
 	const GLU_complex **in_old )
 {
+  double c[2] = { 0. , 0. } ;
   size_t i ;
-#pragma omp for private(i)
+  #pragma omp for private(i)
   for( i = 0 ; i < LCU ; i++ ) {
     double loc_sum1 = 0.0 , loc_sum2 = 0.0 ;
     loc_sum1 += creal(in[0][i]) * creal(in[0][i]) + cimag(in[0][i])*cimag(in[0][i]) 
@@ -203,12 +179,21 @@ sum_PR( double *red ,
     loc_sum2 += 2.0 * ( creal( in[2][i] ) * creal( temp ) + cimag( in[2][i] ) * cimag( temp ) ) ;
     temp = in[3][i] - in_old[3][i] ;
     loc_sum2 += 2.0 * ( creal( in[3][i] ) * creal( temp ) + cimag( in[3][i] ) * cimag( temp ) ) ;
-
+    
     const size_t th = get_GLU_thread() ;
 
-    red[ LINE_NSTEPS + th * CLINE ] += 2*loc_sum1 ;
-    red[ LINE_NSTEPS + 1 + th * CLINE ] += loc_sum2 ;
+    // kahan summations
+    const double y = 2*loc_sum1 - c[0] ;
+    const double t = red[ LINE_NSTEPS + th * CLINE ] + y ;
+    c[0] = ( t - red[ LINE_NSTEPS + th * CLINE ] ) - y ;
+    red[ LINE_NSTEPS + th * CLINE ] = t ;
+
+    const double y2 = loc_sum2 - c[1] ;
+    const double t2 = red[ LINE_NSTEPS + 1 + th * CLINE ] + y2 ;
+    c[1] = ( t2 - red[ LINE_NSTEPS + 1 + th * CLINE ] ) - y2 ;
+    red[ LINE_NSTEPS + 1 + th * CLINE ] = t2 ;
   }
+
   return ;
 }
 
@@ -216,9 +201,10 @@ static void
 sum_DER2( double *red ,
 	  const GLU_complex **in )
 {
+  double c[1] = { 0. } ;
   size_t i ;
-#pragma omp for private(i)
-  PFOR( i = 0 ; i < LCU ; i++ ) {
+  #pragma omp for private(i)
+  for( i = 0 ; i < LCU ; i++ ) {
     register double loc_sum = 0.0 ;
 #if NC == 3
     loc_sum += creal(in[0][i]) * creal(in[0][i]) + cimag(in[0][i])*cimag(in[0][i]) 
@@ -241,7 +227,11 @@ sum_DER2( double *red ,
 #endif
     const size_t th = get_GLU_thread() ;
 
-    red[ LINE_NSTEPS + th*CLINE ] += 2*loc_sum ;
+    // kahan summations
+    const double y = 2*loc_sum - c[0] ;
+    const double t = red[ LINE_NSTEPS + th * CLINE ] + y ;
+    c[0] = ( t - red[ LINE_NSTEPS + th * CLINE ] ) - y ;
+    red[ LINE_NSTEPS + th * CLINE ] = t ;
   }
   return ;
 }
@@ -254,12 +244,12 @@ steep_step_SD( GLU_complex **slice_gauge ,
 	       const struct site *lat , 
 	       const size_t t )
 {
-  steep_deriv_CG( CG.red , FFTW -> in , CG.rotato , lat ,
+  steep_deriv_CG( FFTW -> in , CG.rotato , lat ,
   		  (const GLU_complex**)slice_gauge , t ) ;
 
   // if we want to Fourier accelerate, we call this otherwise it is the SD
-  FOURIER_ACCELERATE2( FFTW , LCU ) ;
-
+  FOURIER_ACCELERATE2( FFTW ) ;
+  
 #if !(defined GLU_GFIX_SD) && !(defined GLU_FR_CG)
   line_search_Coulomb( CG.red , slice_gauge , CG.rotato , CG.db , lat , 
 		       (const GLU_complex**)FFTW -> in , t ) ;
@@ -289,29 +279,29 @@ steep_step_FACG( GLU_complex **gauge ,
   for( k = 0 ; k < CLINE*Latt.Nthreads ; k++ ) {
     CG.red[ k ] = 0.0 ;
   }
+
+  steep_deriv_CG( FFTW -> in , CG.rotato , lat ,
+  		  (const GLU_complex**)gauge , t ) ;
+
+  // if we want to Fourier accelerate, we call this otherwise it is the SD
+  FOURIER_ACCELERATE2( FFTW ) ;
+
+  sum_DER2( CG.red , (const GLU_complex**)FFTW -> in ) ;
   
-  // SD start
-  steep_step_SD( gauge , CG , FFTW , lat , t ) ;
-  
+  double inold2 = 0.0 ;
   for( k = 0 ; k < Latt.Nthreads ; k++ ) {
-    trAA += CG.red[ LINE_NSTEPS + 2 + k*CLINE ] ;
+    inold2 += CG.red[ LINE_NSTEPS + CLINE*k ] ;
   }
-  *tr = trAA * GFNORM_COULOMB ;
+  *tr = inold2 * GFNORM_COULOMB ;
   
-#pragma omp for nowait private(i)
+  line_search_Coulomb( CG.red , gauge , CG.rotato , CG.db , lat , 
+		       (const GLU_complex**)FFTW -> in , t ) ;
+    
+#pragma omp for private(i)
   for( i = 0 ; i < TRUE_HERM*LCU ; i++ ) {
     const size_t idx = i/LCU , j = i%LCU ;
     CG.sn[idx][j] = CG.in_old[idx][j] = FFTW -> in[idx][j] ;
   }
-  
-  // compute the quantity Tr( dA dA )
-  sum_DER2( CG.red , (const GLU_complex**)FFTW -> in ) ;
-  
-  double der = 0.0 ;
-  for( k = 0 ; k < Latt.Nthreads ; k++ ) {
-    der += CG.red[ LINE_NSTEPS + CLINE*k ] ;
-  }
-  double inold2 = der ;
   
   // loop a set number of CG-iterations
   size_t loc_iters = 0 ;
@@ -325,41 +315,36 @@ steep_step_FACG( GLU_complex **gauge ,
     
   // set everything to zero
   insum2 = sum_conj2 =  trAA = 0.0 ;
-#pragma omp for nowait private(k)
+#pragma omp for private(k)
   for( k = 0 ; k < CLINE*Latt.Nthreads ; k++ ) {
     CG.red[ k ] = 0.0 ;
   }
   
-  steep_deriv_CG( CG.red , FFTW -> in , CG.rotato , lat ,
+  steep_deriv_CG( FFTW -> in , CG.rotato , lat ,
 		  (const GLU_complex**)gauge ,  t ) ;
   
-  // normalise the measure
-  for( k = 0 ; k < Latt.Nthreads ; k++ ) {
-    trAA += CG.red[ LINE_NSTEPS + 2 + k*CLINE ] ;
-  }
-  *tr = trAA * GFNORM_COULOMB ;
-  
-  FOURIER_ACCELERATE2( FFTW , LCU ) ;
+  FOURIER_ACCELERATE2( FFTW ) ;
   
   sum_PR( CG.red , (const GLU_complex**)FFTW -> in ,
 	  (const GLU_complex**)CG.in_old ) ;
-  
+
   // reduction happens for all threads
   for( k = 0 ; k < Latt.Nthreads ; k++ ) {
     insum2 += CG.red[ LINE_NSTEPS + CLINE*k ] ;
     sum_conj2 += CG.red[ LINE_NSTEPS + 1 + CLINE*k ] ;
   }
+  *tr = insum2 * GFNORM_COULOMB ;
   
   // compute the beta value, who knows what value is best?
   double beta = PRfmax( 0.0 , sum_conj2 / inold2 ) ;
   
   // switch to the fletcher reeves
-  if( *tr < CG_TOL) {
+  if( *tr < CG_TOL ) {
     beta = insum2 / inold2 ;
   }
   inold2 = insum2 ;
   
-#pragma omp for private(i)
+  #pragma omp for private(i)
   for( i = 0 ; i < TRUE_HERM*LCU ; i++ ) {
     size_t idx = i/LCU , j = i%LCU ;
     GLU_complex *pin = FFTW -> in[idx] ;
@@ -407,6 +392,8 @@ steep_step_FASD( GLU_complex **gauge ,
   }
   
   steep_step_SD( gauge , CG , FFTW , lat , t ) ;
+
+  sum_DER2( CG.red , (const GLU_complex**)FFTW -> in ) ;
   
   for( k = 0 ; k < Latt.Nthreads ; k++ ) {
       *tr += CG.red[ LINE_NSTEPS + 2 + CLINE*k ] ;
@@ -617,6 +604,8 @@ Coulomb_FA( struct site  *__restrict lat ,
 
   // and free all of that memory, especially rotato
  memfree :
+
+  free_par_rng() ;
 
   free_temp_cg( G , CG , FACG ) ;
  

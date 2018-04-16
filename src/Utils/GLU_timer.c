@@ -50,18 +50,7 @@ print_time( void )
 {
   gettimeofday( &GLUtimer , NULL ) ;
   double diff = GLUtimer.tv_sec + ( GLUtimer.tv_usec/ 1E6 ) - t1 ;
-  fprintf( stdout , "\n[TIMER] elapsed :: " ) ;
-  if( diff > 60 ) {
-    diff /= 60. ;
-    if( diff > 60 ) {
-      diff /= 60. ;
-      fprintf( stdout , "%f (hours) \n", diff ) ;
-    } else {
-      fprintf( stdout , "%f (minutes) \n", diff ) ;
-    }
-  } else {
-    fprintf( stdout , "%f (seconds) \n", diff ) ;
-  }
+  fprintf( stdout , "\n[TIMER] elapsed :: %e s \n", diff ) ;
   return diff ;
 }
 

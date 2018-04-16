@@ -51,4 +51,10 @@ double complex
 poly( const struct site *__restrict lat , 
       int dir ) ;
 
+// threaded reduced version
+void
+poly2( double *red ,
+       const struct site *__restrict lat , 
+       int dir ) ;
+
 #endif

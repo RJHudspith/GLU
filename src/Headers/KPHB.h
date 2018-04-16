@@ -24,14 +24,13 @@
 #define KPHB_H
 
 /**
-   @fn int hb_update( struct site *lat , const struct hb_info HBINFO , const char *traj_name , const GLU_output storage , const char *output_details , const GLU_bool continuation )
+   @fn int hb_update( struct site *lat , const struct hb_info HBINFO , const char *traj_name , const GLU_output storage , const char *output_details )
    @brief Heatbath-Overrelaxation algorithm
    @param lat :: lattice gauge field
    @param HBINFO :: heatbath information
    @param traj_name :: trajectory name to write out
    @param storage :: gauge field storage type to write out
    @param output_details :: information for the configuration file
-   @param continuation :: is this a continuation run?
    @return #GLU_SUCCESS or #GLU_FAILURE
    @warning overwrites lat
  */
@@ -40,7 +39,6 @@ hb_update( struct site *lat ,
 	   const struct hb_info HBINFO ,
 	   const char *traj_name ,
 	   const GLU_output storage , 
-	   const char *output_details ,
-	   const GLU_bool continuation ) ;
+	   const char *output_details ) ;
 
 #endif

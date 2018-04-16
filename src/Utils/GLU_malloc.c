@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (GLU_malloc.c) is part of GLU.
 
@@ -17,9 +17,11 @@
     along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
-   @file corr_malloc.c
+   @file GLU_malloc.c
    @brief memory allocation wrapper
  */
+#define _POSIX_C_SOURCE 200809L
+
 #include "Mainfile.h"
 
 #if (defined HAVE_IMMINTRIN_H)

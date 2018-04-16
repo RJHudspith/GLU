@@ -39,7 +39,7 @@ exponentiate_gauge_CG( GLU_complex **gauge ,
 {
   size_t i ;
   // the derivative in this form is antihermitian i.e -> i.dA
-#pragma omp for nowait private(i)
+#pragma omp for private(i)
   PFOR( i = 0 ; i < LCU ; i++ ) {
     GLU_complex temp[ NCNC ] GLUalign , temp2[ NCNC ] GLUalign ;
     set_gauge_matrix( temp , in , alpha , i ) ;
@@ -138,6 +138,7 @@ line_search_Coulomb( double *red ,
 		     const GLU_complex **in ,
 		     const size_t t )
 {
+  double c[ 3 ] = { 0. , 0. , 0. } ;
   size_t i , j ;
   #pragma omp for private(i)
   for( i = 0 ; i < db.Nsquare[0] ; i++ ) {
@@ -179,10 +180,12 @@ line_search_Coulomb( double *red ,
     const size_t th = get_GLU_thread() ;
     // reductions
     for( n = 0 ; n < LINE_NSTEPS ; n++ ) {
-      red[ n + th * CLINE ] += loc_v[ n ] ;
+      const double y = loc_v[n] - c[n] ;
+      const double t = red[ n + th * CLINE ] + y ;
+      c[n] = ( t - red[ n + th * CLINE ] ) - y ;
+      red[ n + th * CLINE ] = t ;
     }
   }
-      
   // compute the vals
   double val[ LINE_NSTEPS ] ;
   for( j = 0 ; j < LINE_NSTEPS ; j++ ) {

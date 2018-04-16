@@ -25,7 +25,6 @@
    <br>
    Computes the links when needed rather than precomputation
  */
-
 #include "Mainfile.h"
 #include "plaqs_links.h"
 #include "projectors.h"
@@ -196,10 +195,13 @@ HYsmearND( struct site *__restrict lat ,
   // successfully do nothing
   if( smiters == 0 ) { return GLU_SUCCESS ; }
 
+  struct s_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
+  double *red = NULL ;
+  int FLAG = GLU_SUCCESS ;
 #ifdef TOP_VALUE
-  double qtop_new , qtop_old = 0.0 ;
+  red = malloc( CLINE*Latt.Nthreads*sizeof( double ) ) ;
 #endif
-
+  
   // callback for the projections
   void (*project) ( GLU_complex smeared_link[ NCNC ] , 
 		    GLU_complex staple[ NCNC ] , 
@@ -219,44 +221,49 @@ HYsmearND( struct site *__restrict lat ,
     break ;
   default :
     fprintf( stderr , "[SMEAR] Unrecognised type [ %d ] ... Leaving \n" , 
-	     type ) ; 
-    return GLU_FAILURE ;
+	     type ) ;
+    FLAG = GLU_FAILURE ; goto memfree ;
   }
 
   // initialise our smearing parameters and print their values to the screen
   init_smearing_alphas( directions ) ;
 
   // allocate temporaries
-  struct s_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
   if( ( lat2 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ||
       ( lat3 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ||
       ( lat4 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ) {
     fprintf( stderr , "[SMEARING] field allocation failure\n" ) ;
-    return GLU_FAILURE ;
+    FLAG = GLU_FAILURE ; goto memfree ;
   }
 
-  const size_t lev = directions - 1 ;
-  size_t count = 0 ; 
-  size_t i , t ;
-  for( count = 1 ; count <= smiters ; count++ ) {
-    const size_t back = lat[ 0 ].back[ ND - 1 ] ;
-    #pragma omp parallel for private(i) SCHED
-    PFOR( i = 0 ; i < LCU ; i++ ) {
-      const size_t bck = back + i ;
-      size_t mu , list_dirs[ directions - lev ] ;
-      for( mu = 0 ; mu < directions ; mu++ ) {
-	size_t d ;
-	for( d = 0 ; d < directions-lev ; d++ ) { list_dirs[d] = mu ; }
-	recurse_staples( lat4[i].O[mu] , lat , bck , lev ,
-			 directions , list_dirs , type , project ) ; 
+#pragma omp parallel
+  {
+    #ifdef TOP_VALUE
+    double qtop_new , qtop_old = 0.0 ;
+    #endif
+    const size_t lev = directions - 1 ;
+    size_t count = 0 ; 
+    size_t i , t ;
+    GLU_bool found_top = GLU_FALSE ;
+    for( count = 1 ; count <= smiters && found_top != GLU_TRUE ; count++ ) {
+      const size_t back = lat[ 0 ].back[ ND - 1 ] ;
+      #pragma omp for private(i)
+      for( i = 0 ; i < LCU ; i++ ) {
+	const size_t bck = back + i ;
+	size_t mu , list_dirs[ directions - lev ] ;
+	for( mu = 0 ; mu < directions ; mu++ ) {
+	  size_t d ;
+	  for( d = 0 ; d < directions-lev ; d++ ) { list_dirs[d] = mu ; }
+	  recurse_staples( lat4[i].O[mu] , lat , bck , lev ,
+			   directions , list_dirs , type , project ) ; 
+	}
       }
-    }
-    //loop time slices
-    for( t = 0 ; t < ( Latt.dims[ ND - 1 ] - 1 ) ; t++ ) {
-      const size_t slice = LCU * t ;
+      //loop time slices
+      for( t = 0 ; t < ( Latt.dims[ ND - 1 ] - 1 ) ; t++ ) {
+	const size_t slice = LCU * t ;
 
-      #pragma omp parallel for private(i) SCHED
-      PFOR( i = 0 ; i < LCU ; i++ ) {
+      #pragma omp for private(i) SCHED
+      for( i = 0 ; i < LCU ; i++ ) {
 	const size_t it = slice + i ; 
 	size_t mu , list_dirs[ directions - lev ] , d ;
 	for( mu = 0 ; mu < directions ; mu++ ) {
@@ -267,8 +274,8 @@ HYsmearND( struct site *__restrict lat ,
       }
 	  
       const size_t bck = lat[slice].back[ ND - 1 ] ;
-      #pragma omp parallel for private(i)
-      PFOR( i = 0 ; i < LCU ; i++ ) {
+      #pragma omp for private(i)
+      for( i = 0 ; i < LCU ; i++ ) {
 	size_t mu ;
 	//put temp into the previous time-slice 
 	if( likely( t != 0 ) ) { 
@@ -287,7 +294,7 @@ HYsmearND( struct site *__restrict lat ,
     ////////////////////////////////////////////
     const size_t slice = LCU * t ;    
     const size_t behind = lat[ slice ].back[ ND - 1 ] ;
-    #pragma omp parallel for private(i) 
+    #pragma omp for private(i) 
     PFOR( i = 0 ; i < LCU ; i++ ) {
       register size_t mu ;
       register const size_t back = behind + i ; 
@@ -300,25 +307,33 @@ HYsmearND( struct site *__restrict lat ,
 
     // breaks on convergence
     #ifdef TOP_VALUE
-    if( count > TOP_VALUE ) {
+    if( count > TOP_VALUE && count%5 == 0 ) {
       if( gauge_topological_meas( lat , &qtop_new , &qtop_old , count-1 ) 
-	  == GLU_SUCCESS ) { break ; }
+	  == GLU_SUCCESS ) {
+	found_top = GLU_TRUE ;
+      }
     }
     #endif
-
+    
     #ifdef verbose
     print_smearing_obs( lat , count ) ;
     #endif
+    }
+
+#ifndef verbose
+    print_smearing_obs( lat , count ) ;
+#endif 
   }
 
-  #ifndef verbose
-  print_smearing_obs( lat , count ) ;
-  #endif 
-
   // FREE STUFF !! //
+ memfree :
+
+  if( red != NULL ) {
+    free( red ) ;
+  }
   free_s_site( lat2 , LCU , ND , NCNC ) ;
   free_s_site( lat3 , LCU , ND , NCNC ) ;
   free_s_site( lat4 , LCU , ND , NCNC ) ;
 
-  return GLU_SUCCESS ;
+  return FLAG ;
 }

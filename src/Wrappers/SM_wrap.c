@@ -226,7 +226,18 @@ SM_wrap_struct( struct site *__restrict lat ,
   // are we looking for an integer value for the topological charge?
 #ifdef TOP_VALUE
   fprintf( stdout , "[SMEAR] Iterating a search for the topological"
-	   "charge commencing after %d iterations \n\n" , TOP_VALUE ) ;
+	   " charge commencing after %d iterations\n" , TOP_VALUE ) ;
+  // tell us about the clover definition
+  #ifdef CLOVER_IMPROVE
+  fprintf( stdout , "[SMEAR] O(a^4) Clover Term being used ... \n" ) ;
+    #ifndef NK5
+    fprintf( stdout , "[SMEAR] k5 value :: %f \n" , k5 ) ; 
+    #endif
+  #elif defined PLAQUETTE_FMUNU
+  fprintf( stdout , "[SMEAR] Plaquette O(a) Clover Term being used ... \n" ) ;
+  #else
+  fprintf( stdout , "[SMEAR] O(a^2) Clover Term being used ... \n" ) ;
+  #endif
 #endif
   start_timer( ) ;
   print_smearinfo( SMINFO ) ;

@@ -25,6 +25,7 @@
 #include "draughtboard.h"  // draughtboarding
 #include "GLUlib_wrap.h"   // write out a configuration
 #include "GLU_timer.h"     // print_time()
+#include "gramschmidt.h"   // gram_reunit()
 #include "hb.h"            // heat-bath
 #include "par_rng.h"       // parallel rngs
 #include "plaqs_links.h"   // av_plaquette()
@@ -41,7 +42,7 @@ update_lattice( struct site *lat ,
 {
   // do a Nhb heat baths
   hb_lattice( lat , inverse_beta , db ) ;
-
+  
   // and some number of over-relaxations
   // this keeps the action the same while increasing tunneling into 
   // different topological sectors
@@ -50,10 +51,23 @@ update_lattice( struct site *lat ,
     // perform over-relaxation 
     OR_lattice( lat , db ) ;
   }
-
+    
   // reunitarise the gauge field? If NC gets large this can be a problem
-  latt_reunitU( lat ) ;
-
+  size_t i ;
+#pragma omp for private(i)
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    #if ND == 4
+    gram_reunit( lat[i].O[0] ) ;
+    gram_reunit( lat[i].O[1] ) ;
+    gram_reunit( lat[i].O[2] ) ;
+    gram_reunit( lat[i].O[3] ) ; 
+    #else
+    size_t mu ;
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      gram_reunit( lat[i].O[mu] ) ; 
+    }
+    #endif
+  }
   return ;
 }
 
@@ -63,20 +77,14 @@ hb_update( struct site *lat ,
 	   const struct hb_info HBINFO ,
 	   const char *traj_name ,
 	   const GLU_output storage , 
-	   const char *output_details ,
-	   const GLU_bool continuation )
+	   const char *output_details )
 {
-  // counters
-  size_t i ;
-
-  // seed the parallel RNG
-  char str[ 256 ] ;
-
   // strip the number in the infile if it has one
   char *pch = strtok( (char*)traj_name , "." ) ;
-
+  char str[ 256 ] ;
   sprintf( str , "%s.%zu.rand" , pch , Latt.flow ) ;
-  if( continuation == GLU_FALSE ) {
+  
+  if( HBINFO.continuation == GLU_FALSE ) {
     fprintf( stdout , "[UPDATE] initialising par_rng from pool\n" ) ;
     if( initialise_par_rng( NULL ) == GLU_FAILURE ) {
       return GLU_FAILURE ;
@@ -108,52 +116,112 @@ hb_update( struct site *lat ,
 	   HBINFO.Nsave ) ;
   fprintf( stdout , "[UPDATE] Using beta = %1.12f \n" , HBINFO.beta ) ;
 
+  double *PLAQred = calloc( CLINE*Latt.Nthreads , sizeof( double ) ) ;
+  double *POLYred = calloc( CLINE*Latt.Nthreads , sizeof( double ) ) ;
+  
   // thermalise
   start_timer( ) ;
-
-  for( i = 0 ; i < HBINFO.therm ; i++ ) {
-    update_lattice( lat , inverse_beta , db , HBINFO.Nor ) ;
-    if( !(i&15) ) {
-      fprintf( stdout , "\n[UPDATE] config %zu done \n" , i ) ;
-      print_time() ;
-    }
-  }
-  print_time( ) ;
-
-  // iterate the number of runs
-  const size_t start = Latt.flow ;
-  for( i = Latt.flow ; i < HBINFO.iterations ; i++ ) {
-
-    // perform a hb-OR step
-    update_lattice( lat , inverse_beta , db , HBINFO.Nor ) ;
-
-    // set the lattice flow
-    // if we are saving the data print out the plaquette and write a file
-    if( i%HBINFO.Nmeasure == 0 ) {
-      // write out the plaquette
-      fprintf( stdout , "[UPDATE] %zu :: {P} %1.12f \n" , 
-	       i , av_plaquette( lat ) ) ;
-      // write the temporal polyakov loop, (re,im) |L|
-      size_t mu ;
-      for( mu = 0 ; mu < ND ; mu++ ) {
-	const double complex L = poly( lat , mu ) ;
-	fprintf( stdout , "[UPDATE] {L_%zu} ( %1.12e , %1.12e ) %1.12e \n" ,
-		 mu , creal( L ) , cimag( L ) , cabs( L ) ) ;
+  
+#pragma omp parallel
+  {   
+    size_t i , k ;
+    for( i = 0 ; i < HBINFO.therm ; i++ ) {
+      update_lattice( lat , inverse_beta , db , HBINFO.Nor ) ;
+      if( !(i&15) ) {
+        #pragma omp master
+	{
+	  fprintf( stdout , "\n[UPDATE] config %zu done \n" , i ) ;
+	  print_time() ;
+	}
       }
-      fflush( stdout ) ;
     }
 
-    // if we hit a save point we write out the configuration
-    if( i%HBINFO.Nsave == 0 && i != start ) {
-      // write a configuration
-      sprintf( str , "%s.%zu" , traj_name , i ) ;
-      write_configuration( lat , str , storage , output_details ) ;
-      // write out the rng state
-      sprintf( str , "%s.rand" , str ) ;
-      write_par_rng_state( str ) ;
+    #pragma omp master
+    {
+      if( HBINFO.therm != 0 ) {
+	fprintf( stdout , "\n[UPDATE] Trajectory Thermalised \n" ) ;
+	print_time( ) ;
+      }
     }
-    Latt.flow = i + 1 ;
+    
+    // iterate the number of runs
+    const size_t start = Latt.flow ;
+    for( i = Latt.flow ; i < HBINFO.iterations ; i++ ) {
+      
+      // perform a hb-OR step
+      update_lattice( lat , inverse_beta , db , HBINFO.Nor ) ;
+
+      // set the lattice flow
+      // if we are saving the data print out the plaquette and write a file
+      if( i%HBINFO.Nmeasure == 0 ) {
+
+        #pragma omp for private(k)
+        for( k = 0 ; k < Latt.Nthreads*CLINE ; k++ ) {
+           PLAQred[ k ] = 0.0 ;
+        }
+	
+        av_plaquette_th( PLAQred , lat ) ;
+      
+        double pl = 0.0 ;
+        for( k = 0 ; k < Latt.Nthreads ; k++ ) {
+           pl += PLAQred[ 3 + CLINE*k ] ;
+        }
+	
+        #pragma omp master
+	{
+	  // write out the plaquette
+	  fprintf( stdout , "[UPDATE] %zu :: {P} %1.12f \n" , 
+		   i , pl/( NC*(ND-1)*(ND-2)*LVOLUME ) ) ;
+        }
+
+	#pragma omp for private(i)
+	for( i = 0 ; i < CLINE*Latt.Nthreads ; i++ ) {
+	  POLYred[ i ] = 0.0 ;
+	}
+	
+	// write the polyakov loops, (re,im) |L|
+        size_t mu ; 
+	for( mu = 0 ; mu < ND ; mu++ ) {
+	  poly2( POLYred , lat , mu ) ;
+	}
+	
+        #pragma omp master
+	{
+	  for( mu = 0 ; mu < ND ; mu++ ) {
+	    double re = 0.0 , im = 0.0 ;
+	    for( k = 0 ; k < Latt.Nthreads ; k++ ) {
+	      re += POLYred[ 2*mu + k*CLINE ] ;
+	      im += POLYred[ 2*mu + 1 + k*CLINE ] ;
+	    }
+	    fprintf( stdout , "[UPDATE] {L_%zu} ( %1.12e , %1.12e ) %1.12e \n" ,
+		     mu , re , im , sqrt( re*re + im*im ) ) ;
+	  }
+	  fflush( stdout ) ;
+	}
+      }
+
+      // if we hit a save point we write out the configuration
+      if( i%HBINFO.Nsave == 0 && i != start ) {
+	#pragma omp single
+	{
+	  char file_str[ 256 ] ;
+	  // write a configuration
+	  sprintf( file_str , "%s.%zu" , traj_name , i ) ;
+	  if( write_configuration( lat , file_str , storage , output_details )
+	      != GLU_FAILURE ) {
+	    // write out the rng state
+	    sprintf( file_str , "%s.rand" , file_str ) ;
+	    write_par_rng_state( file_str ) ;
+	  }
+	}
+      }
+      Latt.flow = i + 1 ; 
+    }
   }
+
+  // free the reduction array
+  free( PLAQred ) ;
+  free( POLYred ) ;
 
   // free the draughtboard
   free_cb( &db ) ;

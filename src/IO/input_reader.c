@@ -22,7 +22,6 @@
 
    This file is too long, I should split it up
 */
-
 #include "Mainfile.h"
 
 #include <errno.h>
@@ -251,48 +250,42 @@ header_type( header_mode *HEADINFO )
   {
     const int header_idx = tag_search( "HEADER" ) ;
     if( header_idx == GLU_FAILURE ) { return tag_failure( "HEADER" ) ; }
+    Latt.flow = confno( ) ;
     if( are_equal( INPUT[header_idx].VALUE , "NERSC" ) ) {
       fprintf( stdout , "[IO] Attempting to read a NERSC file \n" ) ;
       *HEADINFO = NERSC_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "HIREP" ) ) {
-      if( ( Latt.flow = confno( ) ) == 0 ) return GLU_FAILURE ;
       fprintf( stdout , "[IO] Attempting to read a HIREP file \n" ) ;
       fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       *HEADINFO = HIREP_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "CERN" ) ) {
-      if( ( Latt.flow = confno( ) ) == 0 ) return GLU_FAILURE ;
       fprintf( stdout , "[IO] Attempting to read a CERN file \n" ) ;
       fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       *HEADINFO = CERN_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "MILC" ) ) {
-      if( ( Latt.flow = confno( ) ) == 0 ) return GLU_FAILURE ;
       fprintf( stdout , "[IO] Attempting to read a MILC file \n" ) ;
       fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       *HEADINFO = MILC_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "SCIDAC" ) ) {
-      if( ( Latt.flow = confno( ) ) == 0 ) return GLU_FAILURE ;
       fprintf( stdout , "[IO] Attempting to read a SCIDAC file \n" ) ;
       fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       *HEADINFO = SCIDAC_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "LIME" ) ) {
-      if( ( Latt.flow = confno( ) ) == 0 ) return GLU_FAILURE ;
       fprintf( stdout , "[IO] Attempting to read an LIME file \n" ) ;
       fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       fprintf( stdout , "[IO] WARNING!! NOT CHECKING ANY CHECKSUMS!! \n" ) ;
       *HEADINFO = LIME_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "ILDG_SCIDAC" ) ) {
-      if( ( Latt.flow = confno( ) ) == 0 ) return GLU_FAILURE ;
       fprintf( stdout , "[IO] Attempting to read an ILDG (Scidac) file \n" ) ;
       fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       *HEADINFO = ILDG_SCIDAC_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "ILDG_BQCD" ) ) {
-      if( ( Latt.flow = confno( ) ) == 0 ) return GLU_FAILURE ;
       fprintf( stdout , "[IO] Attempting to read an ILDG (BQCD) file \n" ) ;
       fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
@@ -639,6 +632,18 @@ get_input_data( struct infile_data *INFILE ,
 
   // put the config info 
   config_information( INFILE -> output_details ) ;
+
+  // poke in some heatbath related things
+  if( !( Latt.head == UNIT_GAUGE || Latt.head == RANDOM_CONFIG ) ) {
+    INFILE -> HBINFO.continuation = GLU_TRUE ;
+    fprintf( stdout , "[UPDATE] Heatbath continuation run not"
+	     " performing thermalisation\n" ) ;
+    INFILE -> HBINFO.therm = 0 ;
+  } else {
+    fprintf( stdout , "[UPDATE] initialising trajectory number to 0 for "
+	     "this new run\n" ) ;
+    Latt.flow = 0 ;
+  }
 
   // close the file and deallocate the buffer
   fclose( infile ) ;

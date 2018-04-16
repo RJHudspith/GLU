@@ -175,12 +175,12 @@ gen_p_sq( const size_t i ,
   GLU_real kcos = 0. ; 
   size_t mu ;
   //mapped between 0 to 2Pi -> Quicker and for cos does not matter p^2 symmetric
-  get_mom_2piBZ( n , i , DIMS ) ; 
+  get_mom_2piBZ( n , i , DIMS ) ;
   for( mu = 0 ; mu < DIMS ; mu++ ) {
     kcos += cos( n[mu] * Latt.twiddles[mu] ) ; 
   }
   if( unlikely( kcos == (GLU_real)DIMS ) ) {
-    return 1.0 ; 
+    return 9.0 ; 
   } else {
     return 2.0 * ( (GLU_real)DIMS - kcos ) ;
   }

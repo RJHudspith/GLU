@@ -131,9 +131,7 @@ create_plans_DFT( struct fftw_stuff *FFTW ,
 
 #ifndef CONDOR_MODE
   if( planflag == NOPLAN )  {
-    FILE *wizzard = fopen( str , "w" ) ; 
-    fftw_export_wisdom_to_file( wizzard ) ; 
-    fclose( wizzard ) ; 
+    fftw_export_wisdom_to_filename( str ) ; 
   }
 #endif
   free( str ) ;
@@ -182,9 +180,7 @@ small_create_plans_DFT( struct fftw_small_stuff *FFTW ,
 
 #ifndef CONDOR_MODE
   if( planflag == NOPLAN ) {
-    FILE *wizzard = fopen( str , "w" ) ; 
-    fftw_export_wisdom_to_file( wizzard ) ; 
-    fclose( wizzard ) ; 
+    fftw_export_wisdom_to_filename( str ) ; 
   }
 #endif
   free( str ) ;

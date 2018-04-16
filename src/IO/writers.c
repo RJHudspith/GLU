@@ -112,6 +112,7 @@ grab_sitedata( GLU_real *__restrict chunk ,
 	       const GLU_output checktype )
 {
   GLU_real tmp[ LOOP_VAR ] ;
+  //GLU_real *plat = (GLU_real*)lat.O ;
   size_t j , val = 0 , mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     switch( checktype ) {
@@ -171,8 +172,7 @@ compute_checksum( uint32_t *nersc_cksum ,
   size_t i ;
   uint32_t k = 0 , sum29 = 0 , sum31 = 0 , CRCsum29 = 0 , CRCsum31 = 0 ;
 
-  // loop some arbitrary length
-  #pragma omp parallel for private(i) reduction(+:k) reduction(^:sum29) reduction(^:sum31) reduction(^:CRCsum29) reduction(^:CRCsum31) 
+  //#pragma omp parallel for private(i) reduction(+:k) reduction(^:sum29) reduction(^:sum31) reduction(^:CRCsum29) reduction(^:CRCsum31) 
   for( i = 0 ; i < LVOLUME ; i++ ) { 
 
     // usual allocations
@@ -246,7 +246,7 @@ copy_data( GLU_real *uout ,
 	   const GLU_output checktype )
 {
   size_t i ;
-#pragma omp parallel for private(i)
+  //#pragma omp parallel for private(i)
   for( i = START ; i < END ; i++ ) { 
     // temporary
     GLU_real site[ ND * LOOP_VAR ] ;

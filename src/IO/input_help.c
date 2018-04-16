@@ -20,7 +20,6 @@
    @file input_help.c
    @brief provides some help about the input file
  */
-
 #include "Mainfile.h"
 
 // shortcut for equivalent strings
@@ -187,7 +186,9 @@ gftype_types( void )
 static void
 header_types( void )
 {
-  fprintf( stdout , "HEADER = HIREP       - Attempts to read a file "
+  fprintf( stdout , "HEADER = CERN       - Attempts to read a file "
+	   "in CERN format \n" ) ; 
+  fprintf( stdout , "       = HIREP       - Attempts to read a file "
 	   "in HiREP format \n" ) ; 
   fprintf( stdout , "       = ILDG_SCIDAC - Attempts to read an ILDG "
 	   "configuration in SCIDAC form and compares checksums \n" ) ;
@@ -203,6 +204,8 @@ header_types( void )
 	   "configuration\n" ) ;
   fprintf( stdout , "       = RANDOM      - Generates a random configuration "
 	   "with dimensions specified by DIM_ array\n" ) ;
+  fprintf( stdout , "       = SCIDAC   - Attempts to read an SCIDAC "
+	   "configuration in BQCD's format and compares checksums \n" ) ;
   fprintf( stdout , "       = UNIT        - Generates an identity-matrix "
 	   "configuration with dimensions specified by DIM_ array\n" ) ;
   fprintf( stdout , "\nAll of these configuration types have been "
@@ -327,14 +330,17 @@ smeartype_types( void )
 static void
 storage_types( void )
 {
-  fprintf( stdout , "STORAGE = HIREP       - Writes out a HiREP "
+  fprintf( stdout , "STORAGE = CERN        - Writes out a CERN "
 	   "format file\n" ) ;
-  fprintf( stdout , "        = ILDG        - Writes a SCIDAC_ILDG "
+  fprintf( stdout , "        = HIREP       - Writes out a HiREP "
+	   "format file\n" ) ;
+  fprintf( stdout , "        = ILDG        - Writes a ILDG_SCIDAC "
 	   "configuration file\n" ) ;
   fprintf( stdout , "        = MILC        - Writes a MILC "
 	   "configuration file\n" ) ;
-  fprintf( stdout , "        = NERSC_SMALL - (Only for NC < 4! ) writes the"
-	   "smallest possible configuration -- less stable than others\n" ) ;
+  fprintf( stdout , "        = NERSC_SMALL - (Only for NC < 4! ) writes the "
+	   "smallest possible configuration -- less stable than others "
+	   "I wouldn't recommend using it!\n" ) ;
   fprintf( stdout , "        = NERSC_GAUGE - Writes out the top NC-1 rows "
 	   "of the link matrices\n" ) ;
   fprintf( stdout , "        = NERSC_NCxNC - Writes out the full "

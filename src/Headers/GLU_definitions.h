@@ -592,7 +592,11 @@ Defines for the gauge fixing routines ( Landau/{}.c )
    @def CLINE
    @brief spacing between reduction array for CG coulomb routines
  */
-#define CLINE (8)
+#if (2*ND>8)
+  #define CLINE (2*ND)
+#else
+  #define CLINE (8)
+#endif
 
 /***********************************************
 

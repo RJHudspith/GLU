@@ -50,6 +50,7 @@ free_par_MWC_1038( void )
   for( i = 0 ; i < Latt.Nthreads ; i++ ) {
     free( table[i] ) ;
   }
+  free( table ) ;
   if( mcwc_i != NULL ) {
     free( mcwc_i ) ;
   }

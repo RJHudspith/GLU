@@ -151,26 +151,43 @@ read_file( struct head_data *HEAD_DATA ,
   return lat ;
 }
 
+static GLU_bool
+file_exists( const char *outfile )
+{
+  FILE *out_config = fopen( outfile , "r" ) ;
+  GLU_bool FLAG = GLU_FALSE ;
+  if( out_config != NULL ) {
+    FLAG = GLU_TRUE ;
+    fclose( out_config ) ;
+  }
+  return FLAG ;
+}
+
 // write out lat
-void
+int
 write_configuration( struct site *lat , 
 		     const char *outfile , 
 		     const GLU_output storage , 
 		     const char *output_details )
 {
   //attempt to open a file
-  FILE *out_config = fopen( outfile , "w" ) ;
-  write_lat( lat , out_config , storage , output_details ) ;
-  fprintf( stdout , "[IO] Configuration written to %s \n", outfile ) ; 
-  fclose( out_config ) ;
-  return ;
+  if( file_exists( outfile ) == GLU_TRUE ) {
+    fprintf( stderr , "\n[IO] WARNING :: attempting to overwrite a non-empty "
+	     "file %s .. I will not do this!\n" , outfile ) ;
+    return GLU_FAILURE ;
+  } else {
+    FILE *out_config = fopen( outfile , "w" ) ;
+    write_lat( lat , out_config , storage , output_details ) ;
+    fprintf( stdout , "[IO] Configuration written to %s \n", outfile ) ; 
+    fclose( out_config ) ;
+  }
+  return GLU_SUCCESS ;
 }
 
 // performs heat-bath updates
 int
 heatbath( const char *infile ,
 	  const struct hb_info HBINFO ,
-	  const header_mode head , 
 	  const char *outfile , 
 	  const GLU_output storage , 
 	  const char *output_details )
@@ -182,8 +199,7 @@ heatbath( const char *infile ,
   if( lat == NULL ) return GLU_FAILURE ;
 
   // heatbath updates
-  hb_update( lat , HBINFO , infile , storage , 
-	     output_details , !(head == UNIT_GAUGE || head == RANDOM_CONFIG) ) ;
+  hb_update( lat , HBINFO , infile , storage , output_details ) ;
   
   // free the gauge fields
   free_lat( lat ) ;
@@ -201,7 +217,8 @@ read_and_check( const char *infile ,
 {
   struct head_data HEAD_DATA ;
   struct site *lat = read_file( &HEAD_DATA , infile ) ;
-
+  int FLAG = GLU_SUCCESS ;
+  
   // should print out a warning
   if( lat == NULL ) return GLU_FAILURE ;
 
@@ -211,12 +228,12 @@ read_and_check( const char *infile ,
   gauge( lat ) ;
 
   if( (Latt.argc-1) == WRITE ) {
-    write_configuration( lat , outfile , storage , output_details ) ;
+    FLAG = write_configuration( lat , outfile , storage , output_details ) ;
   }
 
   free_lat( lat ) ;
 
-  return GLU_SUCCESS ;
+  return FLAG ;
 }
 
 // for the cutting
@@ -250,7 +267,8 @@ read_and_fix( const char *infile ,
 {
   struct head_data HEAD_DATA ;
   struct site *lat = read_file( &HEAD_DATA , infile ) ;
-
+  int FLAG = GLU_SUCCESS ;
+  
   if( lat == NULL ) return GLU_FAILURE ;
 
   // if we want a random transform then here is where we do it
@@ -259,12 +277,12 @@ read_and_fix( const char *infile ,
   GF_wrap( infile , lat , GFINFO , SMINFO , HEAD_DATA ) ;
 
   if( (Latt.argc-1) == WRITE ) {
-    write_configuration( lat , outfile , storage , output_details ) ;
+    FLAG = write_configuration( lat , outfile , storage , output_details ) ;
   }
 
   free_lat( lat ) ;
 
-  return GLU_SUCCESS ;
+  return FLAG ;
 }
 
 // smearing 
@@ -278,7 +296,8 @@ read_and_smear( const char *infile ,
 {
   struct head_data HEAD_DATA ;
   struct site *lat = read_file( &HEAD_DATA , infile ) ;
-
+  int FLAG = GLU_SUCCESS ;
+  
   if( lat == NULL ) return GLU_FAILURE ;
 
   // if we want a random transform then here is where we do it
@@ -287,12 +306,12 @@ read_and_smear( const char *infile ,
   SM_wrap_struct( lat , SMINFO ) ;
 
   if( (Latt.argc-1) == WRITE ) {
-    write_configuration( lat , outfile , storage , output_details ) ;
+    FLAG = write_configuration( lat , outfile , storage , output_details ) ;
   }
 
   free_lat( lat ) ;
 
-  return GLU_SUCCESS ;
+  return FLAG ;
 }
 
 // U1 the links
@@ -306,7 +325,8 @@ read_and_U1( const char *infile ,
 {
   struct head_data HEAD_DATA ;
   struct site *lat = read_file( &HEAD_DATA , infile ) ;
-
+  int FLAG = GLU_SUCCESS ;
+  
   if( lat == NULL ) return GLU_FAILURE ;
 
   // if we want a random transform then here is where we do it
@@ -315,12 +335,12 @@ read_and_U1( const char *infile ,
   suNC_cross_u1( lat , U1INFO ) ;
 
   if( (Latt.argc-1) == WRITE ) {
-    write_configuration( lat , outfile , storage , output_details ) ;
+    FLAG = write_configuration( lat , outfile , storage , output_details ) ;
   }
 
   free_lat( lat ) ;
 
-  return GLU_SUCCESS ;
+  return FLAG ;
 }
 
 // free whatever memory we have allocated

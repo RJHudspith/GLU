@@ -25,7 +25,6 @@
    
    @warning only implemented for ND=4
  */
-
 #include "Mainfile.h"
 #include "plaqs_links.h"
 #include "projectors.h"
@@ -230,8 +229,13 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
     return GLU_FAILURE ; 
   }
 
+  struct s_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
+  struct s_site *lev1 = NULL , *lev2 = NULL ;
+  double *red = NULL ;
+  int FLAG = GLU_SUCCESS ;
+  
 #ifdef TOP_VALUE
-  double qtop_new , qtop_old = 0. ;
+  red = malloc( CLINE * Latt.Nthreads * sizeof( double ) ) ;
 #endif
 
   // callback for the projections
@@ -253,31 +257,33 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
     break ;
   default :
     printf( "[SMEAR] HYPSLsmear4D unrecognised type %d\n" , type ) ;
-    return GLU_FAILURE ;
+    FLAG = GLU_FAILURE ; goto memfree ;
   }
 
   // allocate temporary lattices ...
-  struct s_site *lat2 = NULL , *lat3 = NULL , *lat4 = NULL ;
   if( ( lat2 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ||
       ( lat3 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ||
       ( lat4 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ) {
     fprintf( stderr , "[SMEARING] field allocation failure\n" ) ;
-    return GLU_FAILURE ;
+    FLAG = GLU_FAILURE ; goto memfree ;
   }
 
   // allocate levels
-  struct s_site *lev1 = NULL , *lev2 = NULL ;
   if( ( lev1 = allocate_s_site( LVOLUME , ND*(ND-1) , NCNC ) ) == NULL ||
       ( lev2 = allocate_s_site( LVOLUME , ND*(ND-1) , NCNC ) ) == NULL ) {
     fprintf( stderr , "[SMEARING] field allocation failure\n" ) ;
-    return GLU_FAILURE ;
+    FLAG = GLU_FAILURE ; goto memfree ;
   }
 
   // do the smearing
 #pragma omp parallel
   {
+    GLU_bool top_found = GLU_FALSE ;
+    #ifdef TOP_VALUE
+    double qtop_new , qtop_old = 0.0 ;
+    #endif
     size_t count = 0 ; 
-    for( count = 1 ; count <= smiters ; count++ ) {
+    for( count = 1 ; count <= smiters && top_found != GLU_TRUE ; count++ ) {
 
       #pragma omp barrier
       
@@ -346,8 +352,15 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
       // breaks on convergence
       #ifdef TOP_VALUE
       if( count > TOP_VALUE && count%5 == 0 ) {
-	//if( gauge_topological_meas( lat , &qtop_new , &qtop_old , count-1 ) 
-	//    == GLU_SUCCESS ) { break ; }
+        #pragma omp for private(i)
+	for( i = 0 ; i < CLINE*Latt.Nthreads ; i++ ) {
+	  red[ i ] = 0.0 ;
+	}
+	if( gauge_topological_meas_th( red , lat ,
+				       &qtop_new , &qtop_old , count-1 ) 
+	    == GLU_SUCCESS ) {
+	  top_found = GLU_TRUE ;
+	}
       }
       #endif
 
@@ -355,10 +368,16 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
       print_smearing_obs( lat , count ) ;
       #endif
     }
+#ifndef verbose
+    print_smearing_obs( lat , count ) ;
+#endif
   }
-  #ifndef verbose
-  print_smearing_obs( lat , smiters ) ;
-  #endif
+
+ memfree :
+
+  if( red != NULL ) {
+    free( red ) ;
+  }
   
   // free that memory //
   free_s_site( lat2 , LCU , ND , NCNC ) ;
@@ -367,7 +386,7 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
   free_s_site( lev1 , LVOLUME , ND*(ND-1) , NCNC ) ;
   free_s_site( lev2 , LVOLUME , ND*(ND-1) , NCNC ) ;
 
-  return GLU_SUCCESS ;
+  return FLAG ;
 #endif
 }
 

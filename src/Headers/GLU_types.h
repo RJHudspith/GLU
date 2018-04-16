@@ -192,6 +192,7 @@ struct hb_info {
   size_t Nor ;
   size_t Nsave ;
   size_t therm ;
+  GLU_bool continuation ;
 } ;
 
 /**

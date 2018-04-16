@@ -136,6 +136,13 @@ gauge_topological_meas( const struct site *__restrict lat ,
 			double *qtop_old ,
 			const int iter ) ;
 
+int
+gauge_topological_meas_th( double *red ,
+			   const struct site *__restrict lat ,
+			   double *qtop_new ,
+			   double *qtop_old ,
+			   const int iter ) ;
+
 /**
    @fn double all_links( const struct site *__restrict lat , double *__restrict sp_link , double *__restrict t_link ) 
    @brief computes the lattice average trace of all directions of links
