@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (Mainfile.h) is part of GLU.
 
@@ -32,12 +32,6 @@
   #undef HAVE_GSL // lapacke routines are much faster!
 #endif
 
-// stop having a mixture of omp and cilk routines default
-// to openmp routines because of better documentation
-#if (defined _OPENMP ) && (defined HAVE_OMP_H ) && (defined HAVE_CILK_H)
-  #undef HAVE_CILK_H
-#endif
-
 // wrap these openmp functions
 #if (defined _OPENMP ) && (defined HAVE_OMP_H )
   #include <omp.h>
@@ -62,18 +56,6 @@
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
 #endif
-
-/**
-   @def likely( x )
-   @brief a gcc builtin expect tries harder in ifs when this is triggered
-
-   @def unlikely( x )
-   @brief a gcc builtin expect, not expecting the if to return true in this case
- */
-// some gcc-oonly macros should guard these?
-// #if ( __GNUC__ > 3 ) or something ? Well, xlc for the q and icc gets these
-  #define likely( x )    __builtin_expect( ( x ) , 1 )
-  #define unlikely( x )  __builtin_expect( ( x ) , 0 )
 
 // include the definitions
 #include "GLU_definitions.h"

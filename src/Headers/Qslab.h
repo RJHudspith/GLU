@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2017 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (Qslab.h) is part of GLU.
 

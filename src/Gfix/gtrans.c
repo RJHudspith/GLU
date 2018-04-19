@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (gtrans.c) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file gtrans.c
    @brief gauge transformations overwriting the lattice field
 */
-
 #include "Mainfile.h"
 
 #if (defined HAVE_IMMINTRIN_H) && !(defined SINGLE_PREC)
@@ -146,7 +145,7 @@ gtransform( struct site *__restrict lat ,
 {
   size_t i ;
 #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+  for( i = 0 ; i < LVOLUME ; i++ ) {
     #if ND == 4
     inline_gtransform_local( gauge[i] , lat[i].O[0] , gauge[lat[i].neighbor[0]] ) ;
     inline_gtransform_local( gauge[i] , lat[i].O[1] , gauge[lat[i].neighbor[1]] ) ;
@@ -164,12 +163,12 @@ gtransform( struct site *__restrict lat ,
 
 //gauge_transform lattice-wide
 void 
-gtransform2( struct site *__restrict lat ,
-	     const GLU_complex *__restrict *__restrict gauge )
+gtransform_th( struct site *__restrict lat ,
+	       const GLU_complex *__restrict *__restrict gauge )
 {
   size_t i ;
 #pragma omp for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+  for( i = 0 ; i < LVOLUME ; i++ ) {
     #if ND == 4
     inline_gtransform_local( gauge[i] , lat[i].O[0] , gauge[lat[i].neighbor[0]] ) ;
     inline_gtransform_local( gauge[i] , lat[i].O[1] , gauge[lat[i].neighbor[1]] ) ;
@@ -195,7 +194,7 @@ gtransform_slice( const GLU_complex *__restrict *__restrict gauge ,
   size_t i ;
   const size_t slice = LCU  *  t ; 
 #pragma omp parallel for private(i)
-  PFOR(  i = 0  ;  i < LCU  ;  i ++ ) {
+  for(  i = 0  ;  i < LCU  ;  i ++ ) {
     const size_t j = slice + i ;
     #if ND == 4   
     inline_gtransform_local( gauge[i] , lat[j].O[0] , gauge[lat[i].neighbor[0]] ) ;
@@ -214,15 +213,15 @@ gtransform_slice( const GLU_complex *__restrict *__restrict gauge ,
 
 // gauge_transform for the Coulomb definition 
 void
-gtransform_slice2( const GLU_complex *__restrict *__restrict gauge , 
-		   struct site *__restrict lat , 
-		   const GLU_complex *__restrict *__restrict gauge_up ,
-		   const size_t t )
+gtransform_slice_th( const GLU_complex *__restrict *__restrict gauge , 
+		     struct site *__restrict lat , 
+		     const GLU_complex *__restrict *__restrict gauge_up ,
+		     const size_t t )
 {
   size_t i ;
   const size_t slice = LCU  *  t ; 
 #pragma omp for private(i)
-  PFOR(  i = 0  ;  i < LCU  ;  i ++ ) {
+  for(  i = 0  ;  i < LCU  ;  i ++ ) {
     const size_t j = slice + i ;
     #if ND == 4   
     inline_gtransform_local( gauge[i] , lat[j].O[0] , gauge[lat[i].neighbor[0]] ) ;

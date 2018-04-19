@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (U1_top.c) is part of GLU.
 
@@ -20,8 +20,8 @@
    @file U1_top.c
    @brief topological measurements using the non-compact U(1) code
  */
-
 #include "Mainfile.h"
+
 #include "geometry.h"
 
 // compute the dirac current
@@ -102,7 +102,7 @@ dirac( int *__restrict *__restrict M ,
 {
   size_t i ;
 #pragma omp parallel for private(i) 
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {// is this OK?
+  for( i = 0 ; i < LVOLUME ; i++ ) {// is this OK?
     size_t mu , nu , rho , sigma;
     for( mu = 0 ; mu < ND ; mu++ ) {
       for( nu = 0 ; nu < ND ; nu++ ) {

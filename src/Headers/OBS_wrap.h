@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (OBS_wrap.h) is part of GLU.
 
@@ -24,14 +24,6 @@
 #define GLU_OBS_WRAP_H
 
 /**
-   @fn void gf_check( const struct site *__restrict lat ) ;
-   @brief Checks wheteher we are gauge fixed 
-   @param lat :: Lattice fields
- */
-void
-gf_check( const struct site *__restrict lat ) ;
-
-/**
    @fn void gauge( const struct site *__restrict lat )
    @brief compute gauge observables
    @param lat :: lattice gauge field
@@ -40,5 +32,13 @@ gf_check( const struct site *__restrict lat ) ;
  */
 void 
 gauge( const struct site *__restrict lat ) ;
+
+/**
+   @fn void gf_check( const struct site *__restrict lat ) ;
+   @brief Checks wheteher we are gauge fixed 
+   @param lat :: Lattice fields
+ */
+void
+gf_check( const struct site *__restrict lat ) ;
 
 #endif

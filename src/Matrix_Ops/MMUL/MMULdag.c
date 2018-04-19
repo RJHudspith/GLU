@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (MMULdag.c) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file MMULdag.c
    @brief computes \f$ a = b^{\dagger}\times c \f$
  */
-
 #include "Mainfile.h"
 
 #if !( defined HAVE_IMMINTRIN_H ) || ( defined SINGLE_PREC )

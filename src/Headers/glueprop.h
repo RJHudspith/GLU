@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (glueprop.h) is part of GLU.
 
@@ -21,7 +21,6 @@
    @brief prototype function def for gluon propagator measurements
    @ingroup Cuts
  */
-
 #ifndef GLU_GLUEPROP_H
 #define GLU_GLUEPROP_H
 

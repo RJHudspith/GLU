@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (HIREP.c) is part of GLU.
 
@@ -20,11 +20,10 @@
    @file HIREP.c
    @brief code to read and write HIREP configurations
 
-  bizarrely their geometry is
-  t,x,y,z which makes little sense to me. I imagine there is a very good reason
-  for this.... Probably.
+   bizarrely their geometry is
+   t,x,y,z which makes little sense to me. I imagine there is a very good reason
+   for this.... Probably.
  */
-
 #include "Mainfile.h"
 
 #include "geometry.h"    // for changing to our geometry 

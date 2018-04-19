@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (POLY.c) is part of GLU.
 
@@ -79,9 +79,9 @@ poly( const struct site *__restrict lat ,
 
 // computes a polyakov line, looping around the dimension "dir"
 void
-poly2( double *red ,
-       const struct site *__restrict lat , 
-       size_t dir )
+poly_th( double *red ,
+	 const struct site *__restrict lat , 
+	 size_t dir )
 {
   // if you have stupidly set the dimension to something unreasonable
   // default the direction to ND
@@ -125,21 +125,21 @@ compute_trtr( double complex *__restrict trtr ,
 {
   size_t i ;
   #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LCU ; i++ ) {
+  for( i = 0 ; i < LCU ; i++ ) {
     FFTW.in[ i ] = trace( poly[ i + LCU*t ] ) ;
   }
   // FFT
   fftw_execute( FFTW.forward ) ;
   // convolve
   #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LCU ; i++ ) {
+  for( i = 0 ; i < LCU ; i++ ) {
     FFTW.out[i] *= conj( FFTW.out[i] ) ;
   }
   // FFT
   fftw_execute( FFTW.backward ) ;
   // and set the trace-trace
   #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < rsq_count ; i++ ) {
+  for( i = 0 ; i < rsq_count ; i++ ) {
     trtr[ i ] += FFTW.in[ list[i].idx ] ;
   }
   return ;
@@ -167,25 +167,25 @@ compute_tr( double complex *__restrict tr ,
   for( j = 0 ; j < NCNC ; j++ ) {
     // set in 
     #pragma omp parallel for private(i)
-    PFOR( i = 0 ; i < LCU ; i++ ) {
+    for( i = 0 ; i < LCU ; i++ ) {
       FFTW.in[ i ] = slice_poly[ i ][ j ] ;
     }
     fftw_execute( FFTW.forward ) ;
     // store the result in slice_poly again
     #pragma omp parallel for private(i)
-    PFOR( i = 0 ; i < LCU ; i++ ) {
+    for( i = 0 ; i < LCU ; i++ ) {
       slice_poly[ i ][ j ] = FFTW.out[ i ] ;
     }
   }
   // now we can contract
   #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LCU ; i++ ) {
+  for( i = 0 ; i < LCU ; i++ ) {
     trace_ab_dag( &FFTW.out[ i ] , slice_poly[ i ] , slice_poly[ i ] ) ;
   }
   fftw_execute( FFTW.backward ) ;
   // and set tr
   #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < rsq_count ; i++ ) {
+  for( i = 0 ; i < rsq_count ; i++ ) {
     tr[ i ] += FFTW.in[ list[ i ].idx ] ;
   }
   return ;
@@ -228,7 +228,7 @@ static_quark_correlator( double complex *__restrict result ,
   const double NORM = 1.0 / ( (double)LCU * Latt.dims[ ND-1 ] ) ;
 
   #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < rsq_count ; i++ ) {
+  for( i = 0 ; i < rsq_count ; i++ ) {
     result[ i ] *= NORM ;
     trtr[ i ] *= NORM ;
   }
@@ -262,7 +262,7 @@ static_quark_correlator( double complex *__restrict result ,
   size_t i ;
   // now we can loop the triplet computing the correlators ...
   #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < rsq_count ; i++ ) {
+  for( i = 0 ; i < rsq_count ; i++ ) {
 
     // COOL, can now contract these over the volume
     GLU_complex res ;
@@ -335,7 +335,7 @@ Coul_staticpot( struct site *__restrict lat ,
 
   size_t i ;
   #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) { 
+  for( i = 0 ; i < LVOLUME ; i++ ) { 
     GLU_malloc( (void**)&poly[i] , 16 , NCNC * sizeof( GLU_complex ) ) ;
     identity( poly[i] ) ;
   }
@@ -372,14 +372,14 @@ Coul_staticpot( struct site *__restrict lat ,
 
     // initialise results 
     #pragma omp parallel for private(i)
-    PFOR( i = 0 ; i < size[0] ; i++ ) {
+    for( i = 0 ; i < size[0] ; i++ ) {
       result[i] = trtr[i] = 0.0 ;
     }
 
     // atomically multiply link matrix at posit (i,t)
     // into the array of matrices poly
     #pragma omp parallel for private(i)
-    PFOR( i = 0 ; i < LVOLUME ; i++ ) { 
+    for( i = 0 ; i < LVOLUME ; i++ ) { 
       multab_atomic_right( poly[i] , lat[( i + t * LCU ) % LVOLUME].O[ND-1] ) ;
     }
     

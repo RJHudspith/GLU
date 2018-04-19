@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (smearing_param.c) is part of GLU.
 
@@ -23,7 +23,6 @@
    @ingroup Cuts
    writes the unsmeared gluon propagator and the smeared one
  */
-
 #include "Mainfile.h"
 
 #include "cut_routines.h"  // momentum cuts
@@ -58,7 +57,7 @@ mom_gauge( struct site *__restrict A ,
 
   size_t i ;
 #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) { 
+  for( i = 0 ; i < LVOLUME ; i++ ) { 
     GLU_complex temp[ NCNC ] GLUalign ;
     size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
@@ -78,23 +77,23 @@ mom_gauge( struct site *__restrict A ,
       // forwards transform
       #ifdef CUT_FORWARD
       #pragma omp parallel for private(i)
-      PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+      for( i = 0 ; i < LVOLUME ; i++ ) {
 	FFTW.in[i] = A[i].O[mu][j] ;
       }
       fftw_execute( FFTW.forward ) ;
       #pragma omp parallel for private(i)
-      PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+      for( i = 0 ; i < LVOLUME ; i++ ) {
 	A[i].O[mu][j] = FFTW.out[i] ;
       }
       #else
       // backwards transform
       #pragma omp parallel for private(i)
-      PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+      for( i = 0 ; i < LVOLUME ; i++ ) {
 	FFTW.out[i] = A[i].O[mu][j] ;
       }
       fftw_execute( FFTW.backward ) ;
       #pragma omp parallel for private(i)
-      PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+      for( i = 0 ; i < LVOLUME ; i++ ) {
 	A[i].O[mu][j] = FFTW.in[i] ;
       }
       #endif
@@ -263,7 +262,7 @@ cuts_struct_smeared( struct site *__restrict A ,
 
   size_t i ;
 #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < in[0] ; i++ ) {
+  for( i = 0 ; i < in[0] ; i++ ) {
     // these require that this list is p -> -p symmetric, it is
     const size_t posit = list[i].idx ;
     const size_t conj  = list[ in[0] - i - 1 ].idx ;

@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (draughtboard.c) is part of GLU.
 
@@ -21,7 +21,8 @@
    @brief draught-boarding routines
  */
 #include "Mainfile.h"
-#include "geometry.h"
+
+#include "geometry.h" //   get_mom_2piBZ()
 
 // free the draughtboard
 void

@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (Scidac.c) is part of GLU.
 
@@ -20,24 +20,22 @@
    @file Scidac.c
    @brief Scidac and ILDG configuration header readers and writers
  */
-
 #include "Mainfile.h"
 
 #include "GLU_bswap.h" // for the byteswaps
 #include "GLU_timer.h" // for the date
 #include "XML_info.h"  // gets the important info from the xml header info
 
-// again, define the debug if you would like to look at the header info
-//#define DEBUG
-
-/**< Message Begin Mask (Internal) */
+// < Message Begin Mask (Internal) 
 #define MB_MASK ((unsigned char)0x80)
 
-/**< Message End Mask (Internal) */
+// < Message End Mask (Internal)
 #define ME_MASK ((unsigned char)0x40)
 
+// maximum header elements
 #define MAX_HDR64 18
 
+// end of file flag
 #define GLU_EOF 1 // GLU_SUCCESS is 0, GLU_FAILURE is -1
 
 // this contains all the header data

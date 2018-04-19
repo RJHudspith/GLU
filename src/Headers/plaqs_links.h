@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (plaqs_links.h) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file plaqs_links.h
    @brief function definitions for the gauge-fixing tests
  */
-
 #ifndef GLU_PLAQS_LINKS_H
 #define GLU_PLAQS_LINKS_H
 
@@ -60,7 +59,15 @@ all_plaquettes( const struct site *__restrict lat ,
 double 
 av_plaquette( const struct site *__restrict lat ) ;
 
-double 
+/**
+   @fn double av_plaquette( const struct site *__restrict lat ) 
+   @brief computes the average plaquette for all directions
+   @param red :: reduction array. Sums into element 3 + #CLINE*Latt.Nthreads
+   @param lat :: gauge field
+   does not require fields to be SU(N) uses an identity for the specific trace of four matrices of the pattern \f$ U.U.U^{\dagger}.U^{\dagger}\f$
+   @warning expected to be called in a parallel environment
+ */
+void 
 av_plaquette_th( double *red ,
 		 const struct site *__restrict lat ) ;
 
@@ -96,52 +103,21 @@ double
 t_plaq( const struct site *__restrict lat ) ;
 
 /**
-   @fn double lattice_gmunu( const struct site *__restrict lat , double *__restrict qtop , double *__restrict avplaq )
-   @brief Wrapper for the clover calculations of the field strength tensor
-
-   @param lat :: gauge field
-   @param qtop :: Naive topological charge 
-   @param avplaq :: The average plaquette
-
-   calls either compute_Gmunu_imp( ) or compute_Gmunu( ) from clover.c
-   
-   Computes qtop = \f[
-   \frac{1}{64\pi^2} \sum_x \epsilon_{\mu\nu\rho\delta}G_{\mu\nu}(x)G_{\rho\delta}(x)
-   \f]
-
-   @return 
-   \f[
-   \frac{1}{16 \times LVOLUME} \sum_{x} \Re\left(tr\left[G_{\mu\nu}(x)G_{\mu\nu}(x)\right]\right)
-   \f]
-
- */
-double
-lattice_gmunu( const struct site *__restrict lat ,
-	       double *__restrict qtop ,
-	       double *__restrict avplaq ) ;
-
-/**
    @fn int gauge_topological_meas( const struct site *__restrict lat , double *qtop_new , double *qtop_old , const int iter ) ;
    @brief computes the lattice topological charge
+   @param red :: reduction array (GT in element 0 and Qtop in element 1)
    @param lat :: lattice fields
    @param qtop_new :: the new measurement of the topological charge
    @param qtop_old :: the old measurement of the topological charge
    @param iter :: iteration number
-   @return #GLU_SUCCESS or #GLU_FAILURE as to whether we have met convergence criteria
-   @warning prints to stdout
+   @return #GLU_SUCCESS or #GLU_FAILURE as to whether we have met convergence criteria for finding an integer topological charge
 */
-int
-gauge_topological_meas( const struct site *__restrict lat ,
-			double *qtop_new ,
-			double *qtop_old ,
-			const int iter ) ;
-
 int
 gauge_topological_meas_th( double *red ,
 			   const struct site *__restrict lat ,
 			   double *qtop_new ,
 			   double *qtop_old ,
-			   const int iter ) ;
+			   const size_t iter ) ;
 
 /**
    @fn double all_links( const struct site *__restrict lat , double *__restrict sp_link , double *__restrict t_link ) 

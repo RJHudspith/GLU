@@ -1,5 +1,5 @@
 /*
-    Copyright 2013 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (4D_fast.c) is part of GLU.
 
@@ -45,37 +45,36 @@ get_lv1( struct s_site *__restrict lev1 ,
   size_t i ; 
   //do the whole lattice
 #pragma omp for private(i) SCHED
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+  for( i = 0 ; i < LVOLUME ; i++ ) {
     GLU_complex a[ NCNC ] GLUalign , b[ NCNC ] GLUalign ;
     GLU_complex c[ NCNC ] GLUalign ;
     size_t j = 0 , mu , nu ;
     //calculate the level1 staples
     for( mu = 0  ;  mu < ND  ;  mu++  ) {
       for( nu = 0  ;  nu < ND  ;  nu++ ) {
-	if( likely( nu != mu ) ) {	
-	  size_t temp = lat[i].neighbor[nu] ; 
-	  multab_suNC( a , lat[i].O[nu] , lat[temp].O[mu] ) ; 
-	  temp = lat[i].neighbor[mu] ; 
-	  multab_dag_suNC( b , a , lat[temp].O[nu] ) ;	
-	  if( type == SM_LOG ) {
-	    multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-	    exact_log_slow( b , a ) ; 
-	  }
-	  //bottom staple
-	  temp = lat[i].back[nu] ; 
-	  multabdag_suNC( a , lat[temp].O[nu] , lat[temp].O[mu] ) ; 
-	  temp = lat[temp].neighbor[mu] ; 
-	  multab_suNC( c , a , lat[temp].O[nu] ) ; 
-	  if( type == SM_LOG ) {
-	    multab_dag_suNC( a , c , lat[i].O[mu] ) ; 
-	    exact_log_slow( c , a ) ; 
-	  }
-	  a_plus_b( b , c ) ; 
-	  project( lev1[i].O[j] , b , lat[i].O[mu] , 
-		   alpha3 , one_min_a3 ) ; 
-	  // j is our staple counter
-	  j++ ; 
+	if( nu == mu ) continue ;	
+	size_t temp = lat[i].neighbor[nu] ; 
+	multab_suNC( a , lat[i].O[nu] , lat[temp].O[mu] ) ; 
+	temp = lat[i].neighbor[mu] ; 
+	multab_dag_suNC( b , a , lat[temp].O[nu] ) ;	
+	if( type == SM_LOG ) {
+	  multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
+	  exact_log_slow( b , a ) ; 
 	}
+	//bottom staple
+	temp = lat[i].back[nu] ; 
+	multabdag_suNC( a , lat[temp].O[nu] , lat[temp].O[mu] ) ; 
+	temp = lat[temp].neighbor[mu] ; 
+	multab_suNC( c , a , lat[temp].O[nu] ) ; 
+	if( type == SM_LOG ) {
+	  multab_dag_suNC( a , c , lat[i].O[mu] ) ; 
+	  exact_log_slow( c , a ) ; 
+	}
+	a_plus_b( b , c ) ; 
+	project( lev1[i].O[j] , b , lat[i].O[mu] , 
+		 alpha3 , one_min_a3 ) ; 
+	// j is our staple counter
+	j++ ; 
       }
     }
   }
@@ -96,7 +95,7 @@ get_lv2( struct s_site *__restrict lev2 ,
 {
   size_t i ;
 #pragma omp for private(i) SCHED
-  PFOR( i = 0  ;  i < LVOLUME  ;  i++ ) {
+  for( i = 0  ;  i < LVOLUME  ;  i++ ) {
     size_t rho = 0 , sigma = 0 ;
     size_t ii = 0 , mu , nu ;
     GLU_complex b[ NCNC ] GLUalign , a[ NCNC ] GLUalign ;
@@ -105,7 +104,7 @@ get_lv2( struct s_site *__restrict lev2 ,
     for( mu = 0  ;  mu < ND  ;  mu++  ) {
       //calculate the staples using the dressed links
       for( nu = 0 ;  nu < ND ;  ++nu )  {
-	if( unlikely( nu == mu ) ) { continue ; } 
+	if( nu == mu ) { continue ; } 
 	zero_mat( stap ) ;
 
 	for( rho = 0 ; rho < ND ; rho++ ) {
@@ -173,36 +172,35 @@ gen_staples_4D( GLU_complex *__restrict stap ,
   size_t nu ;
   //calculate the staples using the dressed links
   for( nu = 0 ;  nu < ND ;  ++nu ) {
-    if( likely( mu != nu ) ) {
-      size_t jj = ( ND - 1 ) * mu + nu ; 
-      if( nu > mu  ) { jj-- ; } 
-
-      size_t kk = ( ND - 1 )*nu + mu ; 
-      if( mu > nu  ) { kk-- ; } 
-
-      //kk , jj , kk are the correct steps for the staples nu-mu plane
-      size_t temp = lat[i].neighbor[nu] ; 
-      multab_suNC( a , lev2[i].O[kk] , lev2[temp].O[jj]  ) ; 
-      temp = lat[i].neighbor[mu] ; 
-      multab_dag_suNC( b , a , lev2[temp].O[kk] ) ; 
-
-      if( type == SM_LOG ) {
-	multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-	exact_log_slow( b , a ) ; 
-      }
-      a_plus_b( stap , b ) ; 
-
-      temp = lat[i].back[nu] ; 
-      multabdag_suNC( a , lev2[temp].O[kk] , lev2[temp].O[jj] ) ; 
-      temp = lat[temp].neighbor[mu] ; 
-      multab_suNC( b , a , lev2[temp].O[kk] ) ; 
-
-      if( type == SM_LOG ) {
-	multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-	exact_log_slow( b , a ) ; 
-      }
-      a_plus_b( stap , b ) ; 
+    if( mu == nu ) continue ;
+    size_t jj = ( ND - 1 ) * mu + nu ; 
+    if( nu > mu  ) { jj-- ; } 
+    
+    size_t kk = ( ND - 1 )*nu + mu ; 
+    if( mu > nu  ) { kk-- ; } 
+    
+    //kk , jj , kk are the correct steps for the staples nu-mu plane
+    size_t temp = lat[i].neighbor[nu] ; 
+    multab_suNC( a , lev2[i].O[kk] , lev2[temp].O[jj]  ) ; 
+    temp = lat[i].neighbor[mu] ; 
+    multab_dag_suNC( b , a , lev2[temp].O[kk] ) ; 
+    
+    if( type == SM_LOG ) {
+      multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
+      exact_log_slow( b , a ) ; 
     }
+    a_plus_b( stap , b ) ; 
+    
+    temp = lat[i].back[nu] ; 
+    multabdag_suNC( a , lev2[temp].O[kk] , lev2[temp].O[jj] ) ; 
+    temp = lat[temp].neighbor[mu] ; 
+    multab_suNC( b , a , lev2[temp].O[kk] ) ; 
+    
+    if( type == SM_LOG ) {
+      multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
+      exact_log_slow( b , a ) ; 
+    }
+    a_plus_b( stap , b ) ; 
   }
   return ;
 }

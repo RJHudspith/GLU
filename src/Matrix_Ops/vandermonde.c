@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (vandermonde.c) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file vandermonde.c 
    @brief Iterative solution to the vandermonde system Va=f, which overwrites f with a
  */
-
 #include "Mainfile.h"
 
 // this code computes the solutions of a Vandermonde system overwritten in c[]//

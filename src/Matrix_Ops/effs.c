@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (effs.c) is part of GLU.
 
@@ -22,7 +22,6 @@
 
    The paper for this is the well-cited <a href="linkURL"> http://arxiv.org/abs/hep-lat/0311018 </a>
  */
-
 #include "Mainfile.h"
 
 #include "vandermonde.h" // golub and van loan generic VDM solver is pretty unstable
@@ -102,4 +101,3 @@ f_hermitian_log_suNC( double complex f[ NC ] ,
 #endif
   return ;
 }
-

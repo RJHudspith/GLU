@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (MAG.c) is part of GLU.
 
@@ -24,10 +24,7 @@
   the \f$ A^{\mu} = 0 \f$ partial axial gauge fixing.
 
   MAG performs a lattice-wide reunitarisation step first.
-
-  TODO :: Implicitly do the rotation and set to identity
  */
-
 #include "Mainfile.h"
 
 #include "geometry.h"      // get site 
@@ -46,6 +43,7 @@ gauge_set( GLU_complex *__restrict *__restrict gauge ,
   size_t left = i ; 
   size_t next = lat[i].neighbor[mu] ; 
   // set origin to identity
+  // I guess I could just equate this with lat to save on a multiply
   identity( gauge[i] ) ; 
   //loop along the lattice
   size_t j ; 
@@ -65,13 +63,13 @@ MAG_fix( struct site *__restrict lat ,
   // just in case set gauge to identity //
   size_t i ;
   #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+  for( i = 0 ; i < LVOLUME ; i++ ) {
     identity( gauge[i] ) ; 
   }
   size_t subvol = 1 , mu ;
   for( mu = 0 ; mu < ND ; mu ++ ) {
     #pragma omp parallel for private(i)
-    PFOR( i =  0 ; i < subvol ; i++ ) {
+    for( i =  0 ; i < subvol ; i++ ) {
       gauge_set( gauge , lat , mu , i ) ;
     } 
     gtransform( lat , ( const GLU_complex ** )gauge ) ;
@@ -91,7 +89,7 @@ axial_gauge( struct site *__restrict lat ,
     subvolume *= (i!=DIR) ? Latt.dims[i] : 1 ;
   }
 #pragma omp parallel for private(i)
-  PFOR( i =  0 ; i < subvolume ; i++ ) {// loop the ND-1, subvolume
+  for( i =  0 ; i < subvolume ; i++ ) {// loop the ND-1, subvolume
     // x is the ND dimensional vector describing the position
     int x[ ND ] ;
     get_mom_2piBZ( x , i , DIR ) ;

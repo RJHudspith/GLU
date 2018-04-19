@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (exactQ.c) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file exactQ.c
    @brief logarithm routines and methods to compute the lie-fields of our link matrices
  */
-
 #include "Mainfile.h"
 
 #include "effs.h"     // computation of the f-constants
@@ -32,6 +31,11 @@
 #else
 // taylor approximation logs are pretty slow
   #include "taylor_logs.h"
+#endif
+
+#if (defined HAVE_IMMINTRIN_H) && !(defined SINGLE_PREC)
+  #include <immintrin.h>
+  #include "SSE2_OPS.h"
 #endif
 
 // compute eigenvectors from s ,  put into v ,  need eigenvalues z//
@@ -76,7 +80,7 @@ vectors( GLU_complex *__restrict v ,
 }
 
 // returns the ( A - A^{dag} ) * 0.5 of a matrix ( Antihermitian proj )
-INLINE_VOID
+void
 AntiHermitian_proj( GLU_complex Q[ NCNC ] , 
 		    const GLU_complex U[ NCNC ] )
 {
@@ -112,7 +116,7 @@ AntiHermitian_proj( GLU_complex Q[ NCNC ] ,
 }
 
 // Same as above but puts into the shortened hermitian form
-INLINE_VOID
+void
 AntiHermitian_proj_short( GLU_complex Q[ HERMSIZE ] , 
 			  const GLU_complex U[ NCNC ] ) 
 {
@@ -120,10 +124,10 @@ AntiHermitian_proj_short( GLU_complex Q[ HERMSIZE ] ,
   register const GLU_real cimU0 = cimag( *( U + 0 ) ) ;
   register const GLU_real cimU4 = cimag( *( U + 4 ) ) ;
   register const GLU_real cimU8 = cimag( *( U + 8 ) ) ;
-  *( Q + 0 ) = I * OneO3 * ( 2. * cimU0 - cimU4 - cimU8 ) ; 
+  *( Q + 0 ) = I * ( 2. * cimU0 - cimU4 - cimU8 )/3. ; 
   *( Q + 1 ) = 0.5 * ( U[1] - conj( U[3] ) ) ;  
   *( Q + 2 ) = 0.5 * ( U[2] - conj( U[6] ) ) ; 
-  *( Q + 3 ) = I * OneO3 * ( 2. * cimU4 - cimU0 - cimU8 ) ;
+  *( Q + 3 ) = I * ( 2. * cimU4 - cimU0 - cimU8 )/3. ;
   *( Q + 4 ) = 0.5 * ( U[5] - conj( U[7] ) ) ; 
 #elif NC == 2
   register const GLU_real cimU0 = cimag( *( U + 0 ) ) ;
@@ -147,53 +151,9 @@ AntiHermitian_proj_short( GLU_complex Q[ HERMSIZE ] ,
   return ;
 }
 
-// compute the exact value of Q from principal log of e^( iQ ) from stefan
-// durr's paper
-void 
-get_iQ( GLU_complex Q[ NCNC ] ,
-	const GLU_complex U[ NCNC ] )
-{
-  size_t i , j ;
-  double complex z[ NC ] ; 
-  GLU_complex v[ NCNC ] GLUalign , delta[ NCNC ] GLUalign ; 
-  Eigenvalues_suNC( z , U ) ; 
-  vectors( v , U , z ) ; 
-  // Finally compute V.Delta.V^{\dagger} //
-  for( i = 0 ; i < NC ; i++ ) {
-    register const double Z = carg( z[i] ) ;
-    for( j = 0 ; j < NC ; j++ ) {
-      delta[ j + i*NC ] = Z * conj( v[ i + j*NC ] ) ;
-    }
-  }
-  multab( Q , v , delta ) ; 
-  // test for problems with the trace being off by 2Pi
-  #if NC == 3
-  const GLU_real tr = creal( Q[0] ) + creal( Q[4] ) + creal( Q[8] ) ; 
-  #elif NC == 2
-  const GLU_real tr = creal( Q[0] ) + creal( Q[3] ) ; 
-  #else
-  const GLU_real tr = creal( trace ( Q ) ) ;
-  #endif
-  // recompute with a shifted evalue
-  if( tr > PREC_TOL ) { // this one has tr = +2Pi
-    register const double Z = carg( z[0] ) - TWOPI ;
-    for( i = 0 ; i < NC ; i++ ) {
-      delta[ i ] = Z * conj( v[ i*NC ] ) ;
-    }
-    multab( Q , v , delta ) ; 
-  } else if ( creal( tr ) < -PREC_TOL  ) { // this one has tr = -2Pi
-    register const double Z = carg( z[0] ) + TWOPI ;
-    for( i = 0 ; i < NC ; i++ ) {
-      delta[ i ] = Z * conj( v[ i*NC ] ) ;
-    }
-    multab( Q , v , delta ) ; 
-  }
-  return ;
-}
-
 // this code is called literally all the time, computes 
 // Q in e^{iQ} up to roughly numerical precision and fairly quickly too
-INLINE_VOID
+void
 exact_log_slow( GLU_complex Q[ NCNC ] , 
 		const GLU_complex U[ NCNC ] ) 
 {
@@ -205,7 +165,7 @@ exact_log_slow( GLU_complex Q[ NCNC ] ,
   // This is now "numerically stable", just as the MP prescription
   // logically the log of these gives the hermitian z's
   z[2] = -( z[0] - z[1] ) ; 
-  if( unlikely( z[0] == z[1] ) && unlikely( z[1] == z[2] ) ) {
+  if( ( z[0] == z[1] ) && ( z[1] == z[2] ) ) {
     return ;
   }
   f_hermitian_log_suNC( f , z ) ;
@@ -216,7 +176,7 @@ exact_log_slow( GLU_complex Q[ NCNC ] ,
 			     creal( f[1] ) * cimag( f[2] ) ) ;
   const double imf = ( cimag( f[0] ) * creal( f[2] ) -
 		       creal( f[0] ) * cimag( f[2] ) ) * mod ;
-  const double complex trce = mod * OneOI2 ; 
+  const double complex trce = -I * mod/2. ; 
 
   // complete the resulting hermitian matrix, 
   // "forcing" it slightly to be hermitian
@@ -279,7 +239,7 @@ exact_log_slow( GLU_complex Q[ NCNC ] ,
 }
 
 // performs that of above but for the shortened Hermitian matrix form
-INLINE_VOID
+void
 exact_log_slow_short( GLU_complex Q[ HERMSIZE ] , 
 		      const GLU_complex U[ NCNC ] )
 {
@@ -320,7 +280,7 @@ exact_log_slow_short( GLU_complex Q[ HERMSIZE ] ,
   const double complex con = conj( f[2] ) ;
   const double mod = 1.0 / cimag( f[1] * con ) ;
   const double imf = cimag( f[0] * con ) * mod ; 
-  const double complex trce = mod * OneOI2 ; 
+  const double complex trce = -I * mod/2. ; 
   // complete the resulting hermitian matrix, 
   // "forcing" it slightly to be hermitian
   // to alleviate any resulting round-off errors.
@@ -349,8 +309,52 @@ exact_log_slow_short( GLU_complex Q[ HERMSIZE ] ,
   return ;
 }
 
+// compute the exact value of Q from principal log of e^( iQ ) from stefan
+// durr's paper
+void 
+get_iQ( GLU_complex Q[ NCNC ] ,
+	const GLU_complex U[ NCNC ] )
+{
+  size_t i , j ;
+  double complex z[ NC ] ; 
+  GLU_complex v[ NCNC ] GLUalign , delta[ NCNC ] GLUalign ; 
+  Eigenvalues_suNC( z , U ) ; 
+  vectors( v , U , z ) ; 
+  // Finally compute V.Delta.V^{\dagger} //
+  for( i = 0 ; i < NC ; i++ ) {
+    register const double Z = carg( z[i] ) ;
+    for( j = 0 ; j < NC ; j++ ) {
+      delta[ j + i*NC ] = Z * conj( v[ i + j*NC ] ) ;
+    }
+  }
+  multab( Q , v , delta ) ; 
+  // test for problems with the trace being off by 2Pi
+  #if NC == 3
+  const GLU_real tr = creal( Q[0] ) + creal( Q[4] ) + creal( Q[8] ) ; 
+  #elif NC == 2
+  const GLU_real tr = creal( Q[0] ) + creal( Q[3] ) ; 
+  #else
+  const GLU_real tr = creal( trace ( Q ) ) ;
+  #endif
+  // recompute with a shifted evalue
+  if( tr > PREC_TOL ) { // this one has tr = +2Pi
+    register const double Z = carg( z[0] ) - TWOPI ;
+    for( i = 0 ; i < NC ; i++ ) {
+      delta[ i ] = Z * conj( v[ i*NC ] ) ;
+    }
+    multab( Q , v , delta ) ; 
+  } else if ( creal( tr ) < -PREC_TOL  ) { // this one has tr = -2Pi
+    register const double Z = carg( z[0] ) + TWOPI ;
+    for( i = 0 ; i < NC ; i++ ) {
+      delta[ i ] = Z * conj( v[ i*NC ] ) ;
+    }
+    multab( Q , v , delta ) ; 
+  }
+  return ;
+}
+
 // the hermitian projection of the logarithm
-INLINE_VOID
+void
 Hermitian_proj( GLU_complex Q[ NCNC ] , 
 		const GLU_complex U[ NCNC ] )
 {
@@ -358,12 +362,12 @@ Hermitian_proj( GLU_complex Q[ NCNC ] ,
   register const GLU_real cimU0 = cimag( *( U + 0 ) ) ;
   register const GLU_real cimU4 = cimag( *( U + 4 ) ) ;
   register const GLU_real cimU8 = cimag( *( U + 8 ) ) ;
-  *( Q + 0 ) = OneO3 * ( 2 * cimU0 - cimU4 - cimU8 ) ; 
-  *( Q + 1 ) = OneOI2 * ( U[1] - conj( U[3] ) ) ;  
-  *( Q + 2 ) = OneOI2 * ( U[2] - conj( U[6] ) ) ; 
+  *( Q + 0 ) = ( 2 * cimU0 - cimU4 - cimU8 ) / 3. ; 
+  *( Q + 1 ) = -I * ( U[1] - conj( U[3] ) ) / 2. ;  
+  *( Q + 2 ) = -I * ( U[2] - conj( U[6] ) ) / 2. ; 
   *( Q + 3 ) = conj( Q[1] ) ; 
-  *( Q + 4 ) = OneO3 * ( 2 * cimU4 - cimU0 - cimU8 ) ;
-  *( Q + 5 ) = OneOI2 * ( U[5] - conj( U[7] ) ) ; 
+  *( Q + 4 ) = ( 2 * cimU4 - cimU0 - cimU8 ) / 3. ;
+  *( Q + 5 ) = -I * ( U[5] - conj( U[7] ) ) / 2. ; 
   *( Q + 6 ) = conj( Q[2] ) ;  
   *( Q + 7 ) = conj( Q[5] ) ;  
   *( Q + 8 ) = -creal( Q[0] ) - creal( Q[4] ) ; 
@@ -379,7 +383,7 @@ Hermitian_proj( GLU_complex Q[ NCNC ] ,
     Q[ i*(NC+1) ] = cimag( U[ i*(NC+1) ] ) ;
     tr += creal( Q[ i*(NC+1) ] ) ; 
     for( j = i+1 ; j < NC ; j++ ) {
-      Q[ j+i*NC ] = ( U[ j+i*NC ] - conj( U[ i+j*NC ] ) ) * OneOI2 ;
+      Q[ j+i*NC ] = -I * ( U[ j+i*NC ] - conj( U[ i+j*NC ] ) ) / 2. ;
       Q[ i+j*NC ] = conj( Q[ j+i*NC ] ) ;
     }
   }
@@ -392,7 +396,7 @@ Hermitian_proj( GLU_complex Q[ NCNC ] ,
 }
 
 // Same as above but puts into the shortened hermitian form
-INLINE_VOID
+void
 Hermitian_proj_short( GLU_complex Q[ HERMSIZE ] , 
 		      const GLU_complex U[ NCNC ] )
 {
@@ -400,11 +404,28 @@ Hermitian_proj_short( GLU_complex Q[ HERMSIZE ] ,
   register const GLU_real cimU0 = cimag( *( U + 0 ) ) ;
   register const GLU_real cimU4 = cimag( *( U + 4 ) ) ;
   register const GLU_real cimU8 = cimag( *( U + 8 ) ) ;
-  *( Q + 0 ) = OneO3 * ( 2. * cimU0 - cimU4 - cimU8 ) ; 
-  *( Q + 1 ) = OneOI2 * ( U[1] - conj( U[3] ) ) ;  
-  *( Q + 2 ) = OneOI2 * ( U[2] - conj( U[6] ) ) ; 
-  *( Q + 3 ) = OneO3 * ( 2. * cimU4 - cimU0 - cimU8 ) ;
-  *( Q + 4 ) = OneOI2 * ( U[5] - conj( U[7] ) ) ; 
+  #ifdef HAVE_IMMINTRIN_H
+  const __m128d *pU = (const __m128d*)U ;
+  __m128d *pQ = (__m128d*)Q ;
+  const __m128d half = _mm_set_pd( 0.5 , 0.5 ) ;
+  pQ[0] = _mm_setr_pd( ( 2. * cimU0 - cimU4 - cimU8 )/3. , 0 ) ;
+  pQ[1] = SSE2_iMUL( _mm_mul_pd( half ,
+				 _mm_sub_pd( SSE2_CONJ( pU[3] ) ,
+					     pU[1] ) ) ) ;
+  pQ[2] = SSE2_iMUL( _mm_mul_pd( half ,
+				  _mm_sub_pd( SSE2_CONJ( pU[6] ) ,
+					      pU[2] ) ) ) ;
+  pQ[3] = _mm_setr_pd( ( 2. * cimU4 - cimU0 - cimU8 )/3. , 0 ) ;
+  pQ[4] = SSE2_iMUL( _mm_mul_pd( half ,
+				 _mm_sub_pd( SSE2_CONJ( pU[7] ) ,
+					     pU[5] ) ) ) ;
+  #else
+  *( Q + 0 ) = ( 2. * cimU0 - cimU4 - cimU8 ) / 3. ;
+  *( Q + 1 ) = I * 0.5 * ( conj( U[3] ) - U[1] ) ;  
+  *( Q + 2 ) = I * 0.5 * ( conj( U[6] ) - U[2] ) ; 
+  *( Q + 3 ) = ( 2. * cimU4 - cimU0 - cimU8 ) / 3. ;
+  *( Q + 4 ) = I * 0.5 * ( conj( U[7] ) - U[5] ) ;
+  #endif
 #elif NC == 2
   *( Q + 0 ) = cimag( U[0] ) ;
   *( Q + 1 ) = -I * U[1] ; //OneOI2 * ( U[1] - conj( U[2] ) ) ;  
@@ -421,7 +442,7 @@ Hermitian_proj_short( GLU_complex Q[ HERMSIZE ] ,
     Q[idx] = cimag( U[ i*(NC+1) ] ) - tr ;
     idx++ ;
     for( j = i+1 ; j < NC ; j++ ) { 
-      Q[idx] = ( U[ j + NC * i ] - conj( U[ i + NC * j ] ) ) * OneOI2 ;
+      Q[idx] = -I * ( U[ j + NC * i ] - conj( U[ i + NC * j ] ) ) / 2. ;
       idx++ ;
     }
   }
@@ -430,7 +451,7 @@ Hermitian_proj_short( GLU_complex Q[ HERMSIZE ] ,
 }
 
 // returns the traceless ( A - A^{dag} ) * 0.5 of a matrix ( Antihermitian proj )
-INLINE_VOID
+void
 trf_AntiHermitian_proj( GLU_complex Q[ NCNC ] , 
 			const GLU_complex U[ NCNC ] )
 {
@@ -438,11 +459,11 @@ trf_AntiHermitian_proj( GLU_complex Q[ NCNC ] ,
   register GLU_real cimU0 = cimag( *( U + 0 ) ) ;
   register GLU_real cimU4 = cimag( *( U + 4 ) ) ;
   register GLU_real cimU8 = cimag( *( U + 8 ) ) ;
-  *( Q + 0 ) = I * OneO3 * ( 2. * cimU0 - cimU4 - cimU8 ) ;
+  *( Q + 0 ) = I * ( 2. * cimU0 - cimU4 - cimU8 ) / 3. ;
   *( Q + 1 ) = 0.5 * ( U[1] - conj( U[3] ) ) ;  
   *( Q + 2 ) = 0.5 * ( U[2] - conj( U[6] ) ) ; 
   *( Q + 3 ) = -conj( Q[1] ) ; 
-  *( Q + 4 ) = I * OneO3 * ( 2. * cimU4 - cimU0 - cimU8 ) ;
+  *( Q + 4 ) = I * ( 2. * cimU4 - cimU0 - cimU8 ) / 3. ;
   *( Q + 5 ) = 0.5 * ( U[5] - conj( U[7] ) ) ; 
   *( Q + 6 ) = -conj( Q[2] ) ;  
   *( Q + 7 ) = -conj( Q[5] ) ;  

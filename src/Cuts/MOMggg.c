@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (MOMggg.c) is part of GLU.
 
@@ -71,7 +71,7 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
 
   size_t i ;
 #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < num_mom[0] ; i++ ) {
+  for( i = 0 ; i < num_mom[0] ; i++ ) {
     momentum[ i ] = ( int * )malloc( ND * sizeof ( int ) ) ;
     size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
@@ -113,7 +113,7 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
   proj = malloc( count * sizeof( double* ) ) ;
 
 #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < count ; i++ ) {
+  for( i = 0 ; i < count ; i++ ) {
     proj[i] = ( double* )malloc( ND * ND * ND *  sizeof ( double ) ) ;
     triplet[i] = ( int* )malloc( 3 *  sizeof( int ) ) ;
   }

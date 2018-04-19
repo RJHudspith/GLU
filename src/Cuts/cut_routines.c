@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (cut_routines.c) is part of GLU.
 
@@ -29,11 +29,11 @@
   I have three different cylinder cutting routines, they all agree. AS is the
   strictest. CJD and DF are the same.
  */
-
 #include "Mainfile.h"
+
 #include "geometry.h"
 
-// Andre's cylinder cut procedure
+// cylinder cut procedure
 //#define CYLINDER_AS
 
 /**
@@ -410,7 +410,7 @@ get_mom_veclist( struct veclist *__restrict kept ,
   
   // test the list in the shifted bz .. passes unless too many momenta are used
 #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < in ; i++ ) {
+  for( i = 0 ; i < in ; i++ ) {
     int k[ ND ] , sum[ ND ] ; 
     get_mom_pipi( k , kept[ i ].idx , DIMS ) ; 
     get_mom_pipi( sum , kept[ in - i - 1 ].idx , DIMS ) ; 
@@ -441,7 +441,7 @@ get_mom_veclist( struct veclist *__restrict kept ,
 //  We rewrite "kept" with the FFTW BZ position of the momenta hence we can just
 //  call A[kept[i]].O[mu] will be a cut momenta.
 #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < in ; i++ ) {
+  for( i = 0 ; i < in ; i++ ) {
     get_mom_pipi( kept[i].MOM , kept[i].idx , DIMS ) ; 
     kept[i].idx = get_site_pipiBZ( kept[i].MOM , DIMS ) ;
   }
@@ -533,7 +533,7 @@ compute_veclist( size_t *__restrict list_size ,
   }
 
   // if we can't find the file we create one ...
-  if( unlikely( flag == NO_MOMENTUM_CONFIG ) ) {
+  if( flag == NO_MOMENTUM_CONFIG ) {
 
     fprintf( stdout , "[CUTS] Storing Momentum list @@@ ...\n%s\n" , str ) ;
 
@@ -560,7 +560,7 @@ compute_veclist( size_t *__restrict list_size ,
      
     list = malloc( in[0] * sizeof( struct veclist) ) ;
     #pragma omp parallel for private(i)
-    PFOR( i = 0 ; i < in[0] ; i ++  ) {
+    for( i = 0 ; i < in[0] ; i ++  ) {
       memcpy( &list[i] , &kept[i] , sizeof( struct veclist ) )  ;
     }
 
@@ -585,7 +585,7 @@ compute_veclist( size_t *__restrict list_size ,
     list = ( struct veclist* )malloc( in[0] * sizeof( struct veclist ) ) ;
   }
   check = fread( list , sizeof(struct veclist) , in[0] , config ) ;
-  if( unlikely( check == 0 ) ) {
+  if( check == 0 ) {
     fprintf( stderr , "[CUTS] Empty Momentum list ... Leaving\n" ) ;
     fclose( config ) ;
     *list_size = 0 ;
@@ -611,7 +611,7 @@ compute_veclist( size_t *__restrict list_size ,
   }
   list = malloc( in[0] * sizeof(struct veclist) );
 #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < in[0] ; i ++  ) {
+  for( i = 0 ; i < in[0] ; i ++  ) {
     memcpy( &list[i] , &kept[i] , sizeof( struct veclist ) )  ;
   }
   free( kept ) ;

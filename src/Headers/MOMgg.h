@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (MOMgg.h) is part of GLU.
 
@@ -22,7 +22,6 @@
    @ingroup Cuts
    The projection is taken from <a href="http://arXiv:hep-ph/abs/0007088v1"> paper </a>
 */
-
 #ifndef GLU_MOMGG_H
 #define GLU_MOMGG_H
 

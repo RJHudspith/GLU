@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (expMat.c) is part of GLU.
 
@@ -170,11 +170,11 @@ exponentiate( GLU_complex U[ NCNC ] ,
   const double c1 = ( REQ0 * REQ0 + REQ0 * REQ4 + REQ4 * REQ4		\
 		      + REQ1 * REQ1 + IMQ1 * IMQ1			\
 		      + REQ2 * REQ2 + IMQ2 * IMQ2			\
-		      + REQ5 * REQ5 + IMQ5 * IMQ5 ) * OneO3 ; 
+		      + REQ5 * REQ5 + IMQ5 * IMQ5 ) / 3. ; 
  
   //Iff c0_max < ( smallest representable double) the matrix Q is zero and its
   //exponential is the identity matrix ..
-  if( unlikely( c1 < DBL_MIN ) ) {
+  if( c1 < DBL_MIN ) {
     *( U + 0 ) = 1. ; 
     *( U + 1 ) = 0. ; 
     *( U + 2 ) = 0. ; 
@@ -210,7 +210,7 @@ exponentiate( GLU_complex U[ NCNC ] ,
   // compute the constants c0_max and the root of c1 ...
   const double rc1 = sqrt( c1 ) ;
   const double c0_max = 2. * rc1 * c1 ; 
-  const double theta = acos( c0 / c0_max ) * OneO3 ; 
+  const double theta = acos( c0 / c0_max ) / 3. ; 
   const double ctheta = cos( theta ) ;
   register const double u = rc1 * ctheta ; 
   register const double w = r3 * rc1 * sin( theta ) ;
@@ -385,11 +385,11 @@ exponentiate_short( GLU_complex U[ NCNC ] ,
   const double c1 = ( REQ0 * -REQ8 + REQ4 * REQ4			\
 		      + REQ1 * REQ1 + IMQ1 * IMQ1			\
 		      + REQ2 * REQ2 + IMQ2 * IMQ2			\
-		      + REQ5 * REQ5 + IMQ5 * IMQ5 ) * OneO3 ;
+		      + REQ5 * REQ5 + IMQ5 * IMQ5 ) / 3. ;
   
   //  Iff c0_max < ( smallest representable double) the matrix Q is zero and its
   //  exponential is the identity matrix .
-  if( unlikely( c1 < DBL_MIN ) ) {
+  if( c1 < DBL_MIN ) {
     *( U + 0 ) = 1. ; 
     *( U + 1 ) = 0. ; 
     *( U + 2 ) = 0. ; 
@@ -426,7 +426,7 @@ exponentiate_short( GLU_complex U[ NCNC ] ,
   // compute the constants c0_max and the root of c1 ...
   const double rc1 = sqrt( c1 ) ;
   const double c0_max = 2. * rc1 * c1 ; 
-  const double theta = acos( c0 / c0_max ) * OneO3 ; 
+  const double theta = acos( c0 / c0_max ) / 3. ; 
   const double ctheta = cos( theta ) ;
   register const double u = rc1 * ctheta ; 
   register const double w = r3 * rc1 * sin( theta ) ; 

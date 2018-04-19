@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (geometry.h) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file geometry.h
    @brief function definitions concerning the lattice geometry
  */
-
 #ifndef GLU_GEOMETRY_H
 #define GLU_GEOMETRY_H
 

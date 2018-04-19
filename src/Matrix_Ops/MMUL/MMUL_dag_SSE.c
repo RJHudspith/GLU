@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (MMUL_dag_SSE.c) is part of GLU.
 
@@ -17,10 +17,9 @@
     along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
-   @file MMUL_dag.c
+   @file MMUL_dag_SSE.c
    @brief matrix multiply \f$ a = b \times c^{\dagger}\f$ , where \f$ a,b,c \in NCxNC \f$ GLU_complex matrices 
  */
-
 #include "Mainfile.h"
 
 #if ( defined HAVE_IMMINTRIN_H ) && !( defined SINGLE_PREC )

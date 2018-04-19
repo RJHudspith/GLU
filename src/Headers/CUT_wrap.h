@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (CUT_wrap.h) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file CUT_wrap.h
    @brief Wrapper for the cutting procedure
  */
-
 #ifndef GLU_CUT_WRAP
 #define GLU_CUT_WRAP
 

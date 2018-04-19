@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (triplet_gen.h) is part of GLU.
 
@@ -21,7 +21,6 @@
    @brief prototype functions for generating triplets of external momenta for the non-exceptional scheme
    @ingroup Cuts
  */
-
 #ifndef GLU_TRIPLET_GEN_H
 #define GLU_TRIPLET_GEN_H
 

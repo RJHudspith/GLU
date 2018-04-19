@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2017 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (Qmoments.c) is part of GLU.
 
@@ -191,7 +191,7 @@ compute_Q2_moments( struct Qmoments *Qmom ,
 
   // is a convolution, Volume norm is for the FFT
   #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+  for( i = 0 ; i < LVOLUME ; i++ ) {
     FFTW.out[ i ] *= conj( FFTW.out[ i ] ) ;
   }
 

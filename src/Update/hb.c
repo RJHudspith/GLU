@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (hb.c) is part of GLU.
 
@@ -17,7 +17,7 @@ a    GLU is distributed in the hope that it will be useful,
     along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
-   @file HB.c
+   @file hb.c
    @brief heatbath code
 
    Notes :: s0 and s1 are the top row of the SU(2) matrix, this is all we need
@@ -34,7 +34,7 @@ a    GLU is distributed in the hope that it will be useful,
 #include "par_rng.h"    // parallel rng
 #include "staples.h"    // all_staples()
 #include "SU2_rotate.h" // rotation
-#include "relax.h" // OR
+#include "relax.h"      // OR
 
 // just update the diagonal
 //#define DIAGONAL_UPDATE

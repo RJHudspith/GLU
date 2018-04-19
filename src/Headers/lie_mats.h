@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (lie_mats.h) is part of GLU.
 
@@ -55,18 +55,18 @@ dabc_ABC( const GLU_complex A[ NCNC ] ,
 	  const GLU_complex C[ NCNC ] ) ;
 
 /**
-   @fn void free_generators( void )
-   @brief frees the allocated generator matrices
- */
-void
-free_generators( void ) ;
-
-/**
    @fn void free_f_and_d( void )
    @brief frees the memory of the computed f and d structure functions
  */
 void
 free_f_and_d( void ) ;
+
+/**
+   @fn void free_generators( void )
+   @brief frees the allocated generator matrices
+ */
+void
+free_generators( void ) ;
 
 /**
    @fn double complex ifabc_ABC( const GLU_complex A[ NCNC ] , const GLU_complex B[ NCNC ] , const GLU_complex C[ NCNC ] )

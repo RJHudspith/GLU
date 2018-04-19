@@ -1,7 +1,7 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
-    This file (MMULdag.c) is part of GLU.
+    This file (MMULdag_SUNC_SSE.c) is part of GLU.
 
     GLU is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,10 +17,9 @@
     along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
-   @file MMULdag.c
+   @file MMULdag_SUNC_SSE.c
    @brief computes \f$ a = b^{\dagger}\times c \f$
  */
-
 #include "Mainfile.h"
 
 #if (defined HAVE_IMMINTRIN_H) && !( defined SINGLE_PREC )

@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (gtrans.h) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file gtrans.h
    @brief function definitions for computing the gauge transformation and fourier accelerated landau gauge fixing routines.
  */
-
 #ifndef GLU_GTRANS_H
 #define GLU_GTRANS_H
 
@@ -56,9 +55,15 @@ void
 gtransform( struct site *__restrict lat ,
 	    const GLU_complex *__restrict *__restrict gauge ) ;
 
+/**
+   @fn void gtransform_th( struct site *__restrict lat , const GLU_complex *__restrict *__restrict gauge )
+   @brief gauge transformation meant to be called in parallel environment
+   @param lat :: lattice gauge links
+   @param gauge :: gauge transformation matrices
+ */
 void 
-gtransform2( struct site *__restrict lat ,
-	     const GLU_complex *__restrict *__restrict gauge ) ;
+gtransform_th( struct site *__restrict lat ,
+	       const GLU_complex *__restrict *__restrict gauge ) ;
 
 /**
    @fn void gtransform_slice( const GLU_complex *__restrict *__restrict gauge , struct site *__restrict lat , const GLU_complex *__restrict *__restrict gauge_up , const size_t t )
@@ -88,17 +93,17 @@ gtransform_slice( const GLU_complex *__restrict *__restrict gauge ,
 
 /**
    @fn void gtransform_slice2( const GLU_complex *__restrict *__restrict gauge , struct site *__restrict lat , const GLU_complex *__restrict *__restrict gauge_up , const size_t t )
-   @brief The gauge transform routine used in the coulomb gauge fixing routine
+   @brief The gauge transform routine used in the coulomb gauge fixing routine called in a parallel environment
    @param gauge :: gauge transformation matrices for this timeslice
    @param lat :: lattice gauge field
    @param gauge_up :: gauge transformation matrices for the timeslice above
    @param t :: timeslice index
  **/
 void
-gtransform_slice2( const GLU_complex **gauge , 
-		   struct site *lat , 
-		   const GLU_complex **gauge_up ,
-		   const size_t t ) ;
+gtransform_slice_th( const GLU_complex **gauge , 
+		     struct site *lat , 
+		     const GLU_complex **gauge_up ,
+		     const size_t t ) ;
 
 
 #endif

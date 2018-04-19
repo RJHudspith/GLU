@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (lie_mats.c) is part of GLU.
 
@@ -240,7 +240,7 @@ actually_compute_fs_and_ds( void )
 }
 
 // computes the lie-elements
-static INLINE_VOID
+static void
 lie_data( GLU_complex a[ NCNC - 1 ]  ,
 	  const GLU_complex A[ NCNC ] )
 {

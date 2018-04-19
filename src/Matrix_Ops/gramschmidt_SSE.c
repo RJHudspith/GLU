@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (gramschmidt_SSE.c) is part of GLU.
 
@@ -17,12 +17,9 @@
     along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
-   @file gramschmidt.c
+   @file gramschmidt_SSE.c
    @brief reunitarisation procedures SSEd for SU(3) and SU(2)
-
-   TODO :: speed up NC-generic gram-schmidt
  */
-
 #include "Mainfile.h"
 
 #include "par_rng.h"    // par_generate_NCxNC() is called

@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (readers.c) is part of GLU.
 
@@ -19,11 +19,7 @@
 /**
    @file readers.c
    @brief binary data file reader supports #config_size outputs
-
-   TODO :: should probably stop computing the CRCs if they aren't used
-   @warning some of this is done in parallel using OpenMP
  */
-
 #include "Mainfile.h"
 
 #include "crc.h"           // for the scidac circular checksum

@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (GLUlib_wrap.c) is part of GLU.
 
@@ -16,7 +16,6 @@
     You should have received a copy of the GNU General Public License
     along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 /**
    @file GLUlib_wrap.c
    @brief wrappers for the general functionality of the code

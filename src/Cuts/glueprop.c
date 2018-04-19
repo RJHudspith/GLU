@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (glueprop.c) is part of GLU.
 
@@ -24,7 +24,6 @@
 
    @warning uses momentum list p,-p symmetry
  */
-
 #include "Mainfile.h"
 
 #include "cut_output.h" // output file formatting
@@ -115,7 +114,7 @@ compute_gluon_prop( FILE *__restrict Ap ,
   // obviously only need to compute num_mom[0]/2 of these due to symmetry
   size_t i ;
   #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < zero_pos ; i++ ) {
+  for( i = 0 ; i < zero_pos ; i++ ) {
     // uses p of list -p contrib IS the hermitian conjugate.
     const int posit = list[i].idx ;
     
@@ -136,7 +135,7 @@ compute_gluon_prop( FILE *__restrict Ap ,
 
   // fill up the rest using p, -p symmetry
   #pragma omp parallel for private(i)
-  PFOR( i = zero_pos+1 ; i < num_mom[0] ; i++ ) {
+  for( i = zero_pos+1 ; i < num_mom[0] ; i++ ) {
     transverse[i] = transverse[ num_mom[0] - i - 1 ] ;
     longitudinal[i] = longitudinal[ num_mom[0] - i - 1 ] ;
   }

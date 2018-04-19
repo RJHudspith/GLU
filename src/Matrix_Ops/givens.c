@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (givens.c) is part of GLU.
 
@@ -28,7 +28,6 @@
 
    @warning single precision code with gcc-4.7.2 cannot compile this, I have no idea why: is known bug in gcc
  */
-
 #include "Mainfile.h"
 
 #include "givens.h"     // alphabetising
@@ -47,6 +46,177 @@
 
 #if NC == 3
 
+#if (defined HAVE_IMMINTRIN_H) && !(defined SINGLE_PREC)
+
+#include <immintrin.h>
+#include "SSE2_OPS.h"
+
+static inline void
+rotation1( GLU_complex *U , 
+	   GLU_complex *w )
+{
+  __m128d *pU = (__m128d*)U ;
+  __m128d *pw = (__m128d*)w ;
+  register __m128d s0 = _mm_add_pd( *(pU + 0) , SSE2_CONJ( *(pU + 4) ) ) ;
+  register __m128d s1 = _mm_sub_pd( *(pU + 1) , SSE2_CONJ( *(pU + 3) ) ) ;
+  register __m128d sum = _mm_add_pd( _mm_mul_pd( s0 , s0 ) ,
+				     _mm_mul_pd( s1 , s1 ) ) ;
+  sum = _mm_add_pd( sum , _mm_shuffle_pd( sum , sum , 1 ) ) ;
+  sum = _mm_sqrt_pd( sum ) ;
+  s0  = _mm_div_pd( s0 , sum ) ;
+  s1  = _mm_div_pd( s1 , sum ) ;  
+  // compute the overwritten matrix "w -> su(2)_1 * w"
+  __m128d tmp0 = _mm_add_pd( SSE2_MUL( s0 , *(pw + 0) ) ,
+			     SSE2_MUL( s1 , *(pw + 3) ) ) ;
+  __m128d tmp1 = _mm_add_pd( SSE2_MUL( s0 , *(pw + 1) ) ,
+			     SSE2_MUL( s1 , *(pw + 4) ) ) ;
+  __m128d tmp2 = _mm_add_pd( SSE2_MUL( s0 , *(pw + 2) ) ,
+			     SSE2_MUL( s1 , *(pw + 5) ) ) ;
+  __m128d tmp3 = _mm_sub_pd( SSE2_MULCONJ( s0 , *(pw + 3) ) ,
+			     SSE2_MULCONJ( s1 , *(pw + 0) ) ) ;
+  __m128d tmp4 = _mm_sub_pd( SSE2_MULCONJ( s0 , *(pw + 4) ) ,
+			     SSE2_MULCONJ( s1 , *(pw + 1) ) ) ;
+  __m128d tmp5 = _mm_sub_pd( SSE2_MULCONJ( s0 , *(pw + 5) ) ,
+			     SSE2_MULCONJ( s1 , *(pw + 2) ) ) ;	     
+  *( pw + 0 ) = tmp0 ;
+  *( pw + 1 ) = tmp1 ;
+  *( pw + 2 ) = tmp2 ;
+  *( pw + 3 ) = tmp3 ;
+  *( pw + 4 ) = tmp4 ;
+  *( pw + 5 ) = tmp5 ;
+  // compute the new matrix "U -> U * su(2)_1" these are columnal!
+  tmp0 = _mm_add_pd( SSE2_MULCONJ( s0 , *(pU + 0) ) ,
+		     SSE2_MULCONJ( s1 , *(pU + 1) ) ) ;
+  tmp1 = _mm_sub_pd( SSE2_MUL( s0 , *(pU + 1) ) ,
+		     SSE2_MUL( s1 , *(pU + 0) ) ) ;
+  tmp2 = _mm_add_pd( SSE2_MULCONJ( s0 , *(pU + 3) ) ,
+		     SSE2_MULCONJ( s1 , *(pU + 4) ) ) ;
+  tmp3 = _mm_sub_pd( SSE2_MUL( s0 , *(pU + 4) ) ,
+		     SSE2_MUL( s1 , *(pU + 3) ) ) ;
+  tmp4 = _mm_add_pd( SSE2_MULCONJ( s0 , *(pU + 6) ) ,
+		     SSE2_MULCONJ( s1 , *(pU + 7) ) ) ;
+  tmp5 = _mm_sub_pd( SSE2_MUL( s0 , *(pU + 7) ) ,
+		     SSE2_MUL( s1 , *(pU + 6) ) ) ;
+  *( pU + 0 ) = tmp0 ;
+  *( pU + 1 ) = tmp1 ;
+  *( pU + 3 ) = tmp2 ;
+  *( pU + 4 ) = tmp3 ;
+  *( pU + 6 ) = tmp4 ;
+  *( pU + 7 ) = tmp5 ;
+  return ;
+}
+
+static inline void
+rotation2( GLU_complex *U , 
+	   GLU_complex *w )
+{
+  __m128d *pU = (__m128d*)U ;
+  __m128d *pw = (__m128d*)w ;
+  register __m128d s0 = _mm_add_pd( *(pU + 4) , SSE2_CONJ( *(pU + 8) ) ) ;
+  register __m128d s1 = _mm_sub_pd( *(pU + 5) , SSE2_CONJ( *(pU + 7) ) ) ;
+  register __m128d sum = _mm_add_pd( _mm_mul_pd( s0 , s0 ) ,
+				     _mm_mul_pd( s1 , s1 ) ) ;
+  sum = _mm_add_pd( sum , _mm_shuffle_pd( sum , sum , 1 ) ) ;
+  sum = _mm_sqrt_pd( sum ) ;
+  s0  = _mm_div_pd( s0 , sum ) ;
+  s1  = _mm_div_pd( s1 , sum ) ;  
+  // compute the overwritten matrix "w -> su(2)_1 * w"
+  __m128d tmp0 = _mm_add_pd( SSE2_MUL( s0 , *(pw + 3) ) ,
+			     SSE2_MUL( s1 , *(pw + 6) ) ) ;
+  __m128d tmp1 = _mm_add_pd( SSE2_MUL( s0 , *(pw + 4) ) ,
+			     SSE2_MUL( s1 , *(pw + 7) ) ) ;
+  __m128d tmp2 = _mm_add_pd( SSE2_MUL( s0 , *(pw + 5) ) ,
+			     SSE2_MUL( s1 , *(pw + 8) ) ) ;
+  __m128d tmp3 = _mm_sub_pd( SSE2_MULCONJ( s0 , *(pw + 6) ) ,
+			     SSE2_MULCONJ( s1 , *(pw + 3) ) ) ;
+  __m128d tmp4 = _mm_sub_pd( SSE2_MULCONJ( s0 , *(pw + 7) ) ,
+			     SSE2_MULCONJ( s1 , *(pw + 4) ) ) ;
+  __m128d tmp5 = _mm_sub_pd( SSE2_MULCONJ( s0 , *(pw + 8) ) ,
+			     SSE2_MULCONJ( s1 , *(pw + 5) ) ) ;	     
+  *( pw + 3 ) = tmp0 ;
+  *( pw + 4 ) = tmp1 ;
+  *( pw + 5 ) = tmp2 ;
+  *( pw + 6 ) = tmp3 ;
+  *( pw + 7 ) = tmp4 ;
+  *( pw + 8 ) = tmp5 ;
+  // compute the new matrix "U -> U * su(2)_1" these are columnal!
+  tmp0 = _mm_add_pd( SSE2_MULCONJ( s0 , *(pU + 1) ) ,
+		     SSE2_MULCONJ( s1 , *(pU + 2) ) ) ;
+  tmp1 = _mm_sub_pd( SSE2_MUL( s0 , *(pU + 2) ) ,
+		     SSE2_MUL( s1 , *(pU + 1) ) ) ;
+  tmp2 = _mm_add_pd( SSE2_MULCONJ( s0 , *(pU + 4) ) ,
+		     SSE2_MULCONJ( s1 , *(pU + 5) ) ) ;
+  tmp3 = _mm_sub_pd( SSE2_MUL( s0 , *(pU + 5) ) ,
+		     SSE2_MUL( s1 , *(pU + 4) ) ) ;
+  tmp4 = _mm_add_pd( SSE2_MULCONJ( s0 , *(pU + 7) ) ,
+		     SSE2_MULCONJ( s1 , *(pU + 8) ) ) ;
+  tmp5 = _mm_sub_pd( SSE2_MUL( s0 , *(pU + 8) ) ,
+		     SSE2_MUL( s1 , *(pU + 7) ) ) ;
+  *( pU + 1 ) = tmp0 ;
+  *( pU + 2 ) = tmp1 ;
+  *( pU + 4 ) = tmp2 ;
+  *( pU + 5 ) = tmp3 ;
+  *( pU + 7 ) = tmp4 ;
+  *( pU + 8 ) = tmp5 ;
+  return ;
+}
+
+static inline void
+rotation3( GLU_complex *U , 
+	   GLU_complex *w )
+{
+  __m128d *pU = (__m128d*)U ;
+  __m128d *pw = (__m128d*)w ;
+  register __m128d s0 = _mm_add_pd( *(pU + 8) , SSE2_CONJ( *(pU + 0) ) ) ;
+  register __m128d s1 = _mm_sub_pd( *(pU + 6) , SSE2_CONJ( *(pU + 2) ) ) ;
+  register __m128d sum = _mm_add_pd( _mm_mul_pd( s0 , s0 ) ,
+				     _mm_mul_pd( s1 , s1 ) ) ;
+  sum = _mm_add_pd( sum , _mm_shuffle_pd( sum , sum , 1 ) ) ;
+  sum = _mm_sqrt_pd( sum ) ;
+  s0  = _mm_div_pd( s0 , sum ) ;
+  s1  = _mm_div_pd( s1 , sum ) ;
+  __m128d tmp0 = _mm_sub_pd( SSE2_MULCONJ( s0 , *(pw + 0) ) ,
+			     SSE2_MULCONJ( s1 , *(pw + 6) ) ) ;
+  __m128d tmp1 = _mm_sub_pd( SSE2_MULCONJ( s0 , *(pw + 1) ) ,
+			     SSE2_MULCONJ( s1 , *(pw + 7) ) ) ;
+  __m128d tmp2 = _mm_sub_pd( SSE2_MULCONJ( s0 , *(pw + 2) ) ,
+			     SSE2_MULCONJ( s1 , *(pw + 8) ) ) ;	
+  __m128d tmp3 = _mm_add_pd( SSE2_MUL( s0 , *(pw + 6) ) ,
+			     SSE2_MUL( s1 , *(pw + 0) ) ) ;
+  __m128d tmp4 = _mm_add_pd( SSE2_MUL( s0 , *(pw + 7) ) ,
+			     SSE2_MUL( s1 , *(pw + 1) ) ) ;
+  __m128d tmp5 = _mm_add_pd( SSE2_MUL( s0 , *(pw + 8) ) ,
+			     SSE2_MUL( s1 , *(pw + 2) ) ) ;
+  *( pw + 0 ) = tmp0 ;
+  *( pw + 1 ) = tmp1 ;
+  *( pw + 2 ) = tmp2 ;
+  *( pw + 6 ) = tmp3 ;
+  *( pw + 7 ) = tmp4 ;
+  *( pw + 8 ) = tmp5 ;
+  // compute the new matrix "U -> U * su(2)_1" these are columnal!
+  tmp0 = _mm_sub_pd( SSE2_MUL( s0 , *(pU + 0) ) ,
+		     SSE2_MUL( s1 , *(pU + 2) ) ) ;
+  tmp1 = _mm_add_pd( SSE2_MULCONJ( s0 , *(pU + 2) ) ,
+		     SSE2_MULCONJ( s1 , *(pU + 0) ) ) ;
+  tmp2 = _mm_sub_pd( SSE2_MUL( s0 , *(pU + 3) ) ,
+		     SSE2_MUL( s1 , *(pU + 5) ) ) ;
+  tmp3 = _mm_add_pd( SSE2_MULCONJ( s0 , *(pU + 5) ) ,
+		     SSE2_MULCONJ( s1 , *(pU + 3) ) ) ;
+  tmp4 = _mm_sub_pd( SSE2_MUL( s0 , *(pU + 6) ) ,
+		     SSE2_MUL( s1 , *(pU + 8) ) ) ;
+  tmp5 = _mm_add_pd( SSE2_MULCONJ( s0 , *(pU + 8) ) ,
+		     SSE2_MULCONJ( s1 , *(pU + 6) ) ) ;
+  *( pU + 0 ) = tmp0 ;
+  *( pU + 2 ) = tmp1 ;
+  *( pU + 3 ) = tmp2 ;
+  *( pU + 5 ) = tmp3 ;
+  *( pU + 6 ) = tmp4 ;
+  *( pU + 8 ) = tmp5 ;
+  return ;
+}
+
+#else
+
 //  The first of the su(2) subgroups for su(3) is
 //
 //  |  s0   s1  0 |
@@ -60,10 +230,9 @@ rotation1( GLU_complex U[ NCNC ] ,
   register GLU_complex s0 = U[0] + conj( U[4] ) ;
   register GLU_complex s1 = U[1] - conj( U[3] ) ;
   const double scale = 1.0 / sqrt( creal(s0)*creal(s0) + cimag(s0)*cimag(s0) + \
-				   creal(s1)*creal(s1) + cimag(s1)*cimag(s1) ) ;
+				   creal(s1)*creal(s1) + cimag(s1)*cimag(s1) ) ;  
   s0 *= scale ;
   s1 *= scale ;
-
   // complex conjugates
   register GLU_complex s0_star = conj( s0 ) ;
   register GLU_complex s1_star = conj( s1 ) ;
@@ -191,6 +360,7 @@ rotation3( GLU_complex U[ NCNC ] ,
   *( U + 8 ) = tmp5 ;
   return ;
 }
+#endif
 
 #elif NC > 3
 
@@ -258,11 +428,11 @@ givens_reunit( GLU_complex U[ NCNC ] )
   for( i = 0 ; i < 75 ; i++ ) {
 
     #if NC == 3
-
-    rotation1( U , w ) ;
+    
+    rotation1( U , w ) ;    
     rotation2( U , w ) ;
     rotation3( U , w ) ;
-
+    
     trace_new = (double)creal( U[0] ) 
               + (double)creal( U[4] ) 
               + (double)creal( U[8] ) ;

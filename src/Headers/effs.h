@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (effs.h) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file effs.h
    @brief Function definitions for the exact exponentiation of lie fields
  */
-
 #ifndef GLU_EFFS_H
 #define GLU_EFFS_H
 
@@ -51,7 +50,7 @@ calculate_effs_VDM_suNC( double complex *__restrict f ,
 
 /**
    @fn void f_hermitian_log_suNC( double complex f[NC] , const double complex z[NC] )
-   @param f :: The three f's
+   @param f :: The fs
    @param z :: The eigenvalues of the U matrix
 
    SU3 only. Function for taking the log of an SU(#NC) matrix by calculating its
@@ -62,10 +61,23 @@ calculate_effs_VDM_suNC( double complex *__restrict f ,
    @warning SU(NC) ONLY!
  */
 #if NC == 2
+/**
+   @fn void f_hermitian_log_suNC( double complex f[NC] , const double z )
+   @param f :: The fs
+   @param z :: The eigenvalue of the U matrix, su2 so +/-
+   @warning I provide a cut off at the ulp of GLU_real precision to limit numerical instability
 void 
+*/
+void
 f_hermitian_log_suNC( double complex f[NC] , 
 		      const double z ) ;
 #else
+/**
+   @fn void f_hermitian_log_suNC( double complex f[NC] , const double complex z[NC] )
+   @param f :: The fs
+   @param z :: The eigenvalues of the U matrix
+   @warning I provide a cut off at the ulp of GLU_real precision to limit numerical instability
+ */
 void 
 f_hermitian_log_suNC( double complex f[NC] , 
 		      const double complex z[NC] ) ;

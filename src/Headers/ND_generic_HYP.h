@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (ND_generic_HYP.h) is part of GLU.
 
@@ -21,7 +21,6 @@
    @brief prototype functions for the generic HYP code
    @ingroup Smear
  */
-
 #ifndef GLU_ND_GENERIC_HYP_H
 #define GLU_ND_GENERIC_HYP_H
 

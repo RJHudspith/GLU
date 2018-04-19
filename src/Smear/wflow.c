@@ -1,5 +1,5 @@
 /*
-    Copyright 2013 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (wflow.c) is part of GLU.
 
@@ -34,13 +34,13 @@
 #include "staples.h"
 #include "wflowfuncs.h"
 
-// 4D wilson flow algorithm ...
+// fixed stepsize wilson flow algorithm ...
 int
-flow4d_RK( struct site *__restrict lat , 
-	   const size_t smiters ,
-	   const int SIGN ,
-	   const smearing_types SM_TYPE ,
-	   const GLU_bool memcheap )
+flow_RK3( struct site *__restrict lat , 
+	  const size_t smiters ,
+	  const int SIGN ,
+	  const smearing_types SM_TYPE ,
+	  const GLU_bool memcheap )
 {
   /////// Initial information //////////
   print_GG_info( ) ;
@@ -115,6 +115,14 @@ flow4d_RK( struct site *__restrict lat ,
     // update the linked list
     if( t >= WFLOW_MEAS_START ) {
       curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
+      // compute plaquette
+      av_plaquette_th( WF.red , lat ) ;
+      size_t k ;
+      new_plaq = 0.0 ;
+      for( k = 0 ; k < Latt.Nthreads ; k++ ) {
+	new_plaq += WF.red[ 3 + CLINE*k ] ;
+      }
+      new_plaq /= ( NC * ( ND-1 ) * ( ND - 2 ) * LVOLUME ) ;
       update_meas_list( head , curr , WF.red ,
 			new_plaq , t , delta_t ,
 			err_est , lat ) ;
@@ -171,4 +179,3 @@ flow4d_RK( struct site *__restrict lat ,
    
   return GLU_SUCCESS ;
 }
-

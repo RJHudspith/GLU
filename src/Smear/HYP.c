@@ -49,7 +49,7 @@ get_spatial_lv1( struct s_site *__restrict lev1 ,
   const size_t slice = LCU * t ; 
   //do a slice
 #pragma omp for private(it) SCHED
-  PFOR( it = 0  ;  it < LCU  ;  it++ )  {
+  for( it = 0  ;  it < LCU  ;  it++ )  {
     GLU_complex a[ NCNC ] GLUalign , b[ NCNC ] GLUalign , 
       c[ NCNC ] GLUalign ;
     const size_t i = slice + it ;
@@ -57,31 +57,30 @@ get_spatial_lv1( struct s_site *__restrict lev1 ,
     //calculate the level1 staples
     for( mu = 0 ; mu < ND - 1 ; mu++ ) {
       for( nu = 0 ; nu < ND - 1 ; nu++ ) {
-	if( likely( nu != mu ) ) {
-	  // b is our staple
-	  // j is our staple counter	    
-	  size_t temp = lat[i].neighbor[nu] ; 
-	  multab_suNC( a , lat[i].O[nu] , lat[temp].O[mu] ) ; 
-	  temp = lat[i].neighbor[mu] ; 
-	  multab_dag_suNC( b , a , lat[temp].O[nu] ) ; 
-	  if( type == SM_LOG ) {
-	    multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
-	    exact_log_slow( b , a ) ; 
-	  }
-	  // put the bottom staple in "c"
-	  //bottom staple
-	  temp = lat[i].back[nu] ; 
-	  multabdag_suNC( a , lat[temp].O[nu] , lat[temp].O[mu] ) ; 
-	  temp = lat[temp].neighbor[mu] ; 
-	  multab_suNC( c , a , lat[temp].O[nu] ) ; 
-	  if( type == SM_LOG ) {
-	    multab_dag_suNC( a , c , lat[i].O[mu] ) ; 
-	    exact_log_slow( c , a ) ; 	      
-	  }
-	  a_plus_b( b , c ) ; 
-	  project( lev1[it].O[j] , b , lat[i].O[mu] , alpha2 , one_min_a2 ) ; 
-	  j++ ; 
+	if( nu == mu ) continue ;
+	// b is our staple
+	// j is our staple counter	    
+	size_t temp = lat[i].neighbor[nu] ; 
+	multab_suNC( a , lat[i].O[nu] , lat[temp].O[mu] ) ; 
+	temp = lat[i].neighbor[mu] ; 
+	multab_dag_suNC( b , a , lat[temp].O[nu] ) ; 
+	if( type == SM_LOG ) {
+	  multab_dag_suNC( a , b , lat[i].O[mu] ) ; 
+	  exact_log_slow( b , a ) ; 
 	}
+	// put the bottom staple in "c"
+	//bottom staple
+	temp = lat[i].back[nu] ; 
+	multabdag_suNC( a , lat[temp].O[nu] , lat[temp].O[mu] ) ; 
+	temp = lat[temp].neighbor[mu] ; 
+	multab_suNC( c , a , lat[temp].O[nu] ) ; 
+	if( type == SM_LOG ) {
+	  multab_dag_suNC( a , c , lat[i].O[mu] ) ; 
+	  exact_log_slow( c , a ) ; 	      
+	}
+	a_plus_b( b , c ) ; 
+	project( lev1[it].O[j] , b , lat[i].O[mu] , alpha2 , one_min_a2 ) ; 
+	j++ ; 
       }
     }
   }
@@ -103,41 +102,40 @@ staples3D( GLU_complex stap[ NCNC ] ,
 
   //calculate the staples using the dressed links
   for( nu = 0 ;  nu < ND - 1 ;  ++nu ) {
-    if ( likely( nu != mu ) ) {		   
-      size_t jj = 0 , rho = 0 ;
-      // 3rd orthogonal direction: rho 
-      for( jj = 0 ;  jj < ND - 1 ;  ++jj ) {
-	if( jj != mu && jj != nu ) {
-	  rho = jj ; 
-	}
+    if( nu == mu ) continue ;		   
+    size_t jj = 0 , rho = 0 ;
+    // 3rd orthogonal direction: rho 
+    for( jj = 0 ;  jj < ND - 1 ;  ++jj ) {
+      if( jj != mu && jj != nu ) {
+	rho = jj ; 
       }
-	
-      jj = ( ND - 2 ) * mu + rho ; 
-      if( rho > mu  ) { jj-- ; } 
-
-      size_t kk = ( ND - 2 ) * nu + rho ; 
-      if( rho > nu  ) { kk-- ; }
-      //kk , jj , kk are the correct steps for the staples
-      size_t temp = lat[i].neighbor[nu] ; 
-      multab_suNC( a , lev1[i].O[kk] , lev1[temp].O[jj] ) ; 
-      temp = lat[i].neighbor[mu] ; 
-      multab_dag_suNC( b , a , lev1[temp].O[kk] ) ; 
-      if( type == SM_LOG ) {
-	multab_dag_suNC( a , b , lat[it].O[mu] ) ; 
-	exact_log_slow( b , a ) ; 
-      }
-      a_plus_b( stap , b ) ;
-      //bottom staple
-      temp = lat[i].back[nu] ; 
-      multabdag_suNC( a , lev1[temp].O[kk] , lev1[temp].O[jj] ) ;
-      temp = lat[temp].neighbor[mu] ; 
-      multab_suNC( b , a , lev1[temp].O[kk] ) ; 
-      if( type == SM_LOG ) {
-	multab_dag_suNC( a , b , lat[it].O[mu] ) ; 
-	exact_log_slow( b , a ) ; 
-      }
-      a_plus_b( stap , b ) ; 
     }
+    
+    jj = ( ND - 2 ) * mu + rho ; 
+    if( rho > mu  ) { jj-- ; } 
+    
+    size_t kk = ( ND - 2 ) * nu + rho ; 
+    if( rho > nu  ) { kk-- ; }
+    //kk , jj , kk are the correct steps for the staples
+    size_t temp = lat[i].neighbor[nu] ; 
+    multab_suNC( a , lev1[i].O[kk] , lev1[temp].O[jj] ) ; 
+    temp = lat[i].neighbor[mu] ; 
+    multab_dag_suNC( b , a , lev1[temp].O[kk] ) ; 
+    if( type == SM_LOG ) {
+      multab_dag_suNC( a , b , lat[it].O[mu] ) ; 
+      exact_log_slow( b , a ) ; 
+    }
+    a_plus_b( stap , b ) ;
+    //bottom staple
+    temp = lat[i].back[nu] ; 
+    multabdag_suNC( a , lev1[temp].O[kk] , lev1[temp].O[jj] ) ;
+    temp = lat[temp].neighbor[mu] ; 
+    multab_suNC( b , a , lev1[temp].O[kk] ) ; 
+    if( type == SM_LOG ) {
+      multab_dag_suNC( a , b , lat[it].O[mu] ) ; 
+      exact_log_slow( b , a ) ; 
+    }
+    a_plus_b( stap , b ) ; 
   }
   return ;
 }

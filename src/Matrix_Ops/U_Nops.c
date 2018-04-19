@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (U_Nops.c) is part of GLU.
 
@@ -20,9 +20,9 @@
    @file U_Nops.c
    @brief matrix operations
  */
-
 #include "Mainfile.h"
-#include "LU.h"
+
+#include "LU.h" // determinant
 
 // add constant diagonal matrix to a
 inline void
@@ -46,7 +46,7 @@ add_constant( GLU_complex a[ NCNC ] ,
 }
 
 // (atomic) a += b //
-INLINE_VOID
+void
 a_plus_b( GLU_complex a[ NCNC ] , 
 	  const GLU_complex b[ NCNC ] )
 {
@@ -67,7 +67,7 @@ a_plus_b( GLU_complex a[ NCNC ] ,
 }
 
 // a += S.b where S is complex //
-INLINE_VOID
+void
 a_plus_CSxb( GLU_complex a[ NCNC ] , 
 	     const GLU_complex b[ NCNC ] ,
 	     const GLU_complex S )
@@ -89,7 +89,7 @@ a_plus_CSxb( GLU_complex a[ NCNC ] ,
 }
 
 // (atomic) a += S.b //
-INLINE_VOID
+void
 a_plus_Sxb( GLU_complex a[ NCNC ] , 
 	    const GLU_complex b[ NCNC ] ,
 	    const GLU_real S )
@@ -111,7 +111,7 @@ a_plus_Sxb( GLU_complex a[ NCNC ] ,
 }
 
 // atomically add short matrices A += S * ( B - C )
-INLINE_VOID
+void
 a_plus_Sxbminc_short( GLU_complex a[ HERMSIZE ] ,
 		      const GLU_real S ,
 		      const GLU_complex B[ HERMSIZE ] ,
@@ -135,9 +135,8 @@ a_plus_Sxbminc_short( GLU_complex a[ HERMSIZE ] ,
   return ;
 }
 
-
 // matrix a = b - c //
-INLINE_VOID 
+void
 b_min_c( GLU_complex a[ NCNC ] , 
 	 const GLU_complex b[ NCNC ] ,
 	 const GLU_complex c[ NCNC ] )
@@ -210,7 +209,7 @@ cofactor_transpose( GLU_complex a[ NCNC ] ,
 }
 
 //computes the transpose and conjugate of the matrix a put into b //
-INLINE_VOID
+void
 dagger( GLU_complex b[ NCNC ] , 
 	const GLU_complex a[ NCNC ] )
 {
@@ -233,7 +232,7 @@ dagger( GLU_complex b[ NCNC ] ,
 }
 
 // Determinant //
-INLINE_GLU_COMPLEX
+GLU_complex
 det( const GLU_complex U[ NCNC ] ) 
 {
 #if NC == 3
@@ -248,7 +247,7 @@ det( const GLU_complex U[ NCNC ] )
 }
 
 // diagonal matrix of some value "c" //
-INLINE_VOID
+void
 diag( GLU_complex M[ NCNC ] ,
       const GLU_complex c )
 {
@@ -271,7 +270,7 @@ diag( GLU_complex M[ NCNC ] ,
 }
 
 // matrix with an NC-vector on the diagonal //
-INLINE_VOID
+void
 diag_vect( GLU_complex M[ NCNC ] ,
 	   const GLU_complex c[ NC ] )
 {
@@ -295,7 +294,7 @@ diag_vect( GLU_complex M[ NCNC ] ,
 }
 
 //equivalence set a equal to b//
-INLINE_VOID
+void
 equiv( GLU_complex a[ NCNC ] , 
        const GLU_complex b[ NCNC ] )
 {
@@ -316,7 +315,7 @@ equiv( GLU_complex a[ NCNC ] ,
 }
 
 // NCxNC identity matrix in complex //
-INLINE_VOID
+void
 identity( GLU_complex ident[ NCNC ] )
 {
 #if NC == 3
@@ -408,7 +407,7 @@ is_unitary( const GLU_complex U[ NCNC ] )
 }
 
 // matrix times a vector ( vector )vect=( matrix )S.( vector )v //
-INLINE_VOID
+void
 mat_mult_vec( GLU_complex vect[ NC ] , 
 	      const GLU_complex S[ NCNC ] , 
 	      const GLU_complex v[ NC ] ) 
@@ -433,7 +432,7 @@ mat_mult_vec( GLU_complex vect[ NC ] ,
 }
 
 // ( M )atrix multiplied by a constant //
-INLINE_VOID
+void
 M_times_c( GLU_complex M[ NCNC ] , 
 	   const GLU_complex c ) 
 {
@@ -465,9 +464,9 @@ matrix_power( GLU_complex a[ NCNC ] ,
 	      const GLU_complex b[ NCNC ] , 
 	      const int n )
 {
-  if( unlikely( n == 0 ) ) { identity( a ) ; return ; } 
-  else if( unlikely( n == 1 ) ) { equiv( a , b ) ; return ; } 
-  else if( unlikely( n == 2 ) ) { multab( a , b , b ) ; return ; } 
+  if( n == 0 ) { identity( a ) ; return ; } 
+  else if( n == 1 ) { equiv( a , b ) ; return ; } 
+  else if( n == 2 ) { multab( a , b , b ) ; return ; } 
   else {
     // generate our linked list
     struct node *head = NULL , *curr ;
@@ -509,7 +508,7 @@ matrix_power( GLU_complex a[ NCNC ] ,
 }
 
 // computes a[NC]*b[NC]^{dagger} puts into Q[NCNC] ( OuterProduct ) //
-INLINE_VOID
+void
 outerproduct( GLU_complex Q[ NCNC ] , 
 	      const GLU_complex a[ NC ] , 
 	      const GLU_complex b[ NC ] )
@@ -549,7 +548,7 @@ pack_hermitian( GLU_complex a[ HERMSIZE ] ,
 }
 
 // print complex function
-INLINE_VOID
+void
 printcomplex( const GLU_complex a ) 
 {
   fprintf( stdout , " ( %1.7e  ,  %1.7e )\n" , creal( a ) , cimag( a ) ) ; 
@@ -691,7 +690,7 @@ rebuild_hermitian( GLU_complex a[ NCNC ] ,
 }
 
 // shortening of the gauge matrices
-INLINE_VOID 
+void
 shorten( GLU_real *__restrict a ,
 	 const GLU_complex b[ NCNC ] )
 {
@@ -713,7 +712,7 @@ shorten( GLU_real *__restrict a ,
 }
 
 // Determinant passed by reference
-INLINE_VOID
+void
 speed_det( GLU_complex *__restrict dt ,
 	   const GLU_complex U[ NCNC ] )
 {
@@ -730,7 +729,7 @@ speed_det( GLU_complex *__restrict dt ,
 }
 
 // Trace 
-INLINE_VOID
+void
 speed_trace( GLU_complex *res ,
 	     const GLU_complex U[ NCNC ] ) 
 {
@@ -753,7 +752,7 @@ speed_trace( GLU_complex *res ,
 }
 
 // real part of the trace by reference in *res
-INLINE_VOID
+void
 speed_trace_Re( double *__restrict res ,
 		const GLU_complex U[ NCNC ] ) 
 {
@@ -776,7 +775,7 @@ speed_trace_Re( double *__restrict res ,
 }
 
 // Trace //
-INLINE_GLU_COMPLEX
+GLU_complex
 trace( const GLU_complex U[ NCNC ] )
 {
 #if NC == 3
@@ -797,7 +796,7 @@ trace( const GLU_complex U[ NCNC ] )
 }
 
 // Trace of the product of two matrices //
-INLINE_VOID
+void
 trace_ab( GLU_complex *__restrict tr , 
 	  const GLU_complex a[ NCNC ] , 
 	  const GLU_complex b[ NCNC ] )
@@ -826,7 +825,7 @@ trace_ab( GLU_complex *__restrict tr ,
 }
 
 // Trace of the product of two matrices ( b being daggered ) //
-INLINE_VOID
+void
 trace_ab_dag( GLU_complex *__restrict tr , 
 	      const GLU_complex a[ NCNC ] , 
 	      const GLU_complex b[ NCNC ] )
@@ -860,7 +859,7 @@ trace_ab_dag( GLU_complex *__restrict tr ,
 }
 
 // Trace of the product of two matrices ( b being daggered ) //
-INLINE_VOID
+void
 trace_ab_dag_Re( GLU_real*__restrict tr , 
 		 const GLU_complex a[ NCNC ] , 
 		 const GLU_complex b[ NCNC ] )
@@ -899,7 +898,7 @@ trace_ab_dag_Re( GLU_real*__restrict tr ,
 }
 
 // Trace of the product of two (different!) hermitian matrices is always real //
-INLINE_VOID
+void
 trace_ab_herm( GLU_real *__restrict tr , 
 	       const GLU_complex a[ NCNC ] , 
 	       const GLU_complex b[ NCNC ] )
@@ -931,7 +930,7 @@ trace_ab_herm( GLU_real *__restrict tr ,
 }
 
 // Trace of the product of two shortened Hermitian matrices //
-INLINE_VOID
+void
 trace_ab_herm_short( GLU_real *__restrict tr , 
 		     const GLU_complex a[ HERMSIZE ] , 
 		     const GLU_complex b[ HERMSIZE ] )
@@ -966,7 +965,7 @@ trace_ab_herm_short( GLU_real *__restrict tr ,
 }
 
 //Trace of the product of the square of two ( hermitian ) matrices //
-INLINE_VOID
+void
 trace_prod_herm( GLU_real *__restrict tr ,
 		 const GLU_complex a[ NCNC ] )
 {  
@@ -1002,7 +1001,7 @@ trace_prod_herm( GLU_real *__restrict tr ,
 }
 
 // transpose some matrix b into a //
-INLINE_VOID
+void
 transpose( GLU_complex a[ NCNC ] , 
 	   const GLU_complex b[ NCNC ] )
 {
@@ -1075,7 +1074,7 @@ write_matrix_mathematica( const GLU_complex U[ NCNC ] )
 }
 
 // zero a matrix //
-INLINE_VOID
+void
 zero_mat( GLU_complex a[ NCNC ] ) 
 {
   // should probably just be a call to memset

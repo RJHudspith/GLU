@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (gftests.h) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file gftests.h
    @brief function definitions for the gauge-fixing tests
  */
-
 #ifndef GLU_GFTESTS_H
 #define GLU_GFTESTS_H
 

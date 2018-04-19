@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (su3xu1_config.c) is part of GLU.
 
@@ -87,11 +87,11 @@ periodic_dft( GLU_complex *__restrict *__restrict fields )
 #pragma omp parallel for private(i)
   for( i = 0 ; i < SYMM_POINT ; i++ ) {
     const uint32_t thread = get_GLU_thread( ) ;
-    if( likely( count[i] == CONJUGATE_NOT_IN_LIST ) ) {
+    if( count[i] == CONJUGATE_NOT_IN_LIST ) {
       count[i] = CONJUGATE_IN_LIST; // set the element of the list to 1
       const size_t b = conjugate_site( i ) ;
       size_t mu ;
-      if( unlikely( i == b ) ) {
+      if( i == b ) {
         #if ND%2 == 0
 	for( mu = 0 ; mu < ND ; mu+=2 ) {
 	  register const GLU_complex cache = par_polar_box( thread ) ;
@@ -159,7 +159,7 @@ create_u1( GLU_real *__restrict *__restrict U ,
 
   // set up the distribution with the lattice mom
 #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+  for( i = 0 ; i < LVOLUME ; i++ ) {
     int flag = 0 ;
     const GLU_real f = 1.0 / (GLU_real)sqrt( gen_p_sq_feyn( i , &flag ) ) ;
 
@@ -198,7 +198,7 @@ create_u1( GLU_real *__restrict *__restrict U ,
 
   const GLU_real rbeta = 1.0 / (GLU_real)sqrt( Nbeta ) ;
 #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ )  {
+  for( i = 0 ; i < LVOLUME ; i++ )  {
     size_t nu ;
     for( nu = 0 ; nu < ND ; nu ++ ) {
       U[ nu ][ i ] = FFTW.out[ nu ][ i ] * rbeta ;
@@ -238,7 +238,7 @@ suNC_cross_u1( struct site *__restrict lat ,
 
   // multiply the < exponentiated > fields
 #pragma omp parallel for private(i) 
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+  for( i = 0 ; i < LVOLUME ; i++ ) {
     size_t mu ;
     for( mu = 0 ; mu < ND ; mu ++ ) {
       // call to cexp is expensive

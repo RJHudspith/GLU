@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (cut_output.c) is part of GLU.
 
@@ -337,7 +337,7 @@ write_lattice_fields( FILE *Ap ,
   for( i = 0 ; i < num_mom[0] ; i++ ) {
     size_t mu ;
     #pragma omp parallel for private(mu)
-    PFOR( mu = 0 ; mu < ND ; mu++ ) {
+    for( mu = 0 ; mu < ND ; mu++ ) {
       size_t a , b ;
       for( a = 0 ; a < NCNC ; a++ ) {
 	b = 2 * ( a + mu * NCNC ) ;
@@ -367,7 +367,7 @@ write_mom_veclist( FILE *Ap ,
   size_t i ;
   //write momenta
 #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < num_mom[0] ; i++ ) {
+  for( i = 0 ; i < num_mom[0] ; i++ ) {
     size_t n = i * ( DIR + 1 ) ;
     kall[ n ] = DIR ; 
     n++ ; 
@@ -480,7 +480,7 @@ write_triplet_mom_list( FILE *Ap ,
   // start writing the momenta to the list, we just write the first momentum of the triplet...
   size_t i ;
 #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < num_mom[0] ; i++ ) {
+  for( i = 0 ; i < num_mom[0] ; i++ ) {
     size_t n = i * ( ND + 1 ) , mu ;
     kall[ n ] = ND ; 
     n++ ; 

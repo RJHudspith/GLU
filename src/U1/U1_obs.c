@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (U1_obs.c) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file U1_obs.c
    @brief U1 observable measurements 
  */
-
 #include "Mainfile.h"
 
 #include "geometry.h"

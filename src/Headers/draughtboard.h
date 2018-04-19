@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (draughtboard.h) is part of GLU.
 
@@ -44,6 +44,12 @@ init_cb( struct draughtboard *db ,
 	 const size_t LENGTH ,
 	 const size_t DIR ) ;
 
+/**
+   @fn test_db( struct site *lat , const struct draughtboard db )
+   @brief sanity test the draughtboard
+   @param lat :: lattice gauge links
+   @param db :: draughtboard
+ */
 int
 test_db( struct site *lat ,
 	 const struct draughtboard db ) ;

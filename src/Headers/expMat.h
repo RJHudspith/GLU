@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (expMat.h) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file expMat.h
    @brief prototype functions for expMat.c
  */
-
 #ifndef GLU_EXPMAT_H
 #define GLU_EXPMAT_H
 

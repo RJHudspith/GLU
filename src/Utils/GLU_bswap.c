@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (GLU_bswap.c) is part of GLU.
 
@@ -22,7 +22,6 @@
    
    All of the external routines require an array to be swapped
  */
-
 #include <stdint.h>
 
 // These three functions are from LLVM, credit to them, I didn't know

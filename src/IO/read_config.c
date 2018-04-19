@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (read_config.c) is part of GLU.
 
@@ -19,10 +19,7 @@
 /**
    @file read_config.c 
    @brief gets the information about our configs from the header
-
-   @warning only HiRep and NERSC and MILC? supported atm.
  */
-
 #include "Mainfile.h"
 
 #include "CERN.h"          // openQCD config reader/writer
@@ -99,7 +96,7 @@ check_sums( const double plaq ,
     fprintf( stdout , "[IO] Header     Trace :: %f           || Plaq :: %f \n" 
 	     , HEAD_DATA.trace , HEAD_DATA.plaquette ) ; 
     // if everything is wrong we leave
-    if( unlikely( error == DISASTER ) ) {
+    if( error == DISASTER ) {
       fprintf( stdout , "[IO] NONE of the NERSC Checksums match, "
 	       "this is a problem .. Leaving \n") ; 
       return GLU_FAILURE ;

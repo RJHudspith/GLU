@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (taylor_logs.h) is part of GLU.
 
@@ -18,7 +18,7 @@
 */
 /**
    @file taylor_logs.h
-   @brief Taylor series approximations to the logarithm of a link matrix.
+   @brief Taylor series approximations to the logarithm of an SU(#NC) matrix.
  */
 #ifndef GLU_TAYLOR_LOGS_H
 #define GLU_TAYLOR_LOGS_H

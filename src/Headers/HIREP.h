@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (HIREP.h) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file HIREP.h
    @brief function defs for IO with HiRep configuration files
  */
-
 #ifndef GLU_HIREP_H
 #define GLU_HIREP_H
 

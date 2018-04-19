@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (taylor_logs.c) is part of GLU.
 
@@ -22,8 +22,8 @@
 
    these are all pretty bad and I would steer clear of them if at all possible
  */
-
 #include "Mainfile.h"
+
 #include "invert.h"
 
 #define ADHOC_PRINCIPAL
@@ -157,7 +157,7 @@ static void
 precompute_taylor_factors( void ) 
 {
   // make sure this isn't getting overwritten by different threads
-#pragma omp critical
+#pragma omp single
   {
     fact = malloc( NMAX * sizeof( double ) ) ;
     size_t n ;

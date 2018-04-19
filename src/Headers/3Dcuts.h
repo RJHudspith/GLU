@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (3Dcuts.h) is part of GLU.
 
@@ -21,7 +21,6 @@
    @brief Instantaneous temporal and spatial gluon propagator measurements
    @ingroup Cuts
  */
-
 #ifndef GLU_CUTS_SPATIAL
 #define GLU_CUTS_SPATIAL
 

@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (GLU_memcheck.h) is part of GLU.
 
@@ -22,7 +22,6 @@
 
    @warning requires unistd.h so LINUX only for now
  */
-
 #ifndef GLU_MEMCHECK_H
 #define GLU_MEMCHECK_H
 

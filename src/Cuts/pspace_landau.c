@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (pspace_landau.c) is part of GLU.
 
@@ -20,8 +20,8 @@
    @file pspace_landau.c
    @brief momentum space landau condition corrections
  */
-
 #include "Mainfile.h"
+
 #include "geometry.h" // for the 0 -> 2Pi to -Pi -> Pi BZ calc
 
 // momentum space landau factor
@@ -35,7 +35,7 @@ correct_pspace_landau( struct site *__restrict A ,
   double ave_err = 0. ;
   size_t i ;
   #pragma omp parallel for private(i) reduction(+:ave_err)
-  PFOR( i = 0 ; i < in[0] ; i++ ) {
+  for( i = 0 ; i < in[0] ; i++ ) {
 
     const size_t list_idx = list[ i ].idx ;
 

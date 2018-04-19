@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (SUNCxU1_config.h) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file SUNCxU1_config.h
    @brief prototye declarations for the U(1)-ing of gauge links
  */
-
 #ifndef GLU_SUNCxU1_CONFIG_H
 #define GLU_SUNCxU1_CONFIG_H
 

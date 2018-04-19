@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (CG.c) is part of GLU.
 
@@ -30,7 +30,7 @@
 // this is the point where the gram-schmidt loses out
 // to the n-ape det-rescaled projection
 #if NC > 18
-  #include "taylor_logs.h"
+#include "taylor_logs.h"
 #endif
 
 // for the polyak-ribiere
@@ -40,7 +40,9 @@ PRfmax( const double a , const double b )
   return ( b < a ? a : b ) ;
 }
 
-// this is the same between Landau and Coulomb so I put it here 
+// this is the same between Landau and Coulomb so I put it here
+// I know that this probably cache misses really badly, the difficulty is
+// that fftw wants the "in" matrix to be ordered this way
 void
 set_gauge_matrix( GLU_complex *gx ,
 		  const GLU_complex **in ,

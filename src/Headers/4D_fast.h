@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (4D_fast.h) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file 4D_fast.h
    @brief protoype functions for the most memory-expensive and usually fastest Hypercubic-blocking code.
  */
-
 #ifndef GLU_FOURD_FAST_H
 #define GLU_FOURD_FAST_H
 

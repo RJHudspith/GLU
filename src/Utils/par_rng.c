@@ -1,7 +1,25 @@
+/*
+    Copyright 2013-2018 Renwick James Hudspith
+
+    This file (par_rng.c) is part of GLU.
+
+    GLU is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    GLU is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with GLU.  If not, see <http://www.gnu.org/licenses/>.
+*/
 /**
    @file par_rng.c
    @brief parallel RNG codes live here
-   @warning these are parallelised the stupid way
+   @warning these are parallelised inthe stupid way
    @warning changed the default behaviour such that if the rng state 
             has changed we just re-initialise the pool instead of 
 	    failing
@@ -10,8 +28,8 @@
 
 #include "chklat_stuff.h" // reading a NERSC header
 #include "GLU_bswap.h"    // for byte swapping
-#include "par_rng.h"
-#include "par_KISS.h" // parallel KISS generator
+#include "par_rng.h"      // alphabetising
+#include "par_KISS.h"     // parallel KISS generator
 #include "par_MWC_1038.h" // parallel MWC generator
 #include "par_MWC_4096.h" // parallel MWC generator
 #include "par_XOR_1024.h" // parallel XOR generator
@@ -64,17 +82,13 @@ initialise_par_rng( const char *rng_file )
 	}
 	fclose( urandom ) ;
       } else {
-	//
 	for( i = 0 ; i < Latt.Nthreads ; i++ ) {
 	  Seeds[ i ] = Latt.Seed[0] + i ;
 	}
-	//
       }
 
-      fprintf( stdout , "[PAR_RNG] Entropy read \n" ) ;
-      for( i = 0 ; i < Latt.Nthreads ; i++ ) {
-	fprintf( stdout , "[PAR_RNG] Seed_%zu %u \n" , i , Seeds[i] ) ;
-      }
+      // Other seeds are just 1+ this one
+      fprintf( stdout , "[PAR_RNG] Entropy read Seed %u\n" , Seeds[0] ) ;
 
       // do the seeding
       #if (defined KISS_RNG)

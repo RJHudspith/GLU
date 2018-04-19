@@ -1,5 +1,5 @@
-/*
-    Copyright 2013-2016 Renwick James Hudspith
+/**
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (CFACG.c) is part of GLU.
 
@@ -32,6 +32,11 @@
 #include "plaqs_links.h"   // plaquette routine might be called
 #include "random_config.h" // for the random transformed gauge slices
 
+#if (defined HAVE_IMMINTRIN_H) && !(defined SINGLE_PREC)
+  #include <immintrin.h>
+  #include "SSE2_OPS.h"
+#endif
+
 // prints out some relevant information ...
 static void 
 get_info( const size_t t ,
@@ -60,6 +65,29 @@ get_info( const size_t t ,
   return ;
 }
 
+
+// is the same for Landau and Coulomb just with different LENGTHS
+void
+FOURIER_ACCELERATE2( struct fftw_stuff *FFTW ) 
+{
+#ifdef HAVE_FFTW3_H
+  const fftw_plan *forw = ( const fftw_plan* )FFTW -> forward ;
+  const fftw_plan *back = ( const fftw_plan* )FFTW -> backward ;
+  // single core FFT's
+  size_t mu ;
+#pragma omp for private(mu) schedule(dynamic)
+  for( mu = 0 ; mu < TRUE_HERM ; mu++ ) {
+    fftw_execute( forw[mu] ) ; 
+    size_t i ;
+    for( i = 0 ; i < LCU ; i++ ) {
+      FFTW -> out[ mu ][ i ] *= FFTW -> psq[i] ;
+    }
+    fftw_execute( back[mu] ) ; 
+  }
+#endif
+  return ;
+}
+
 // bit that calculates the steepest descent with fourier acceleration
 static void
 steep_deriv_CG( GLU_complex **in ,
@@ -70,7 +98,7 @@ steep_deriv_CG( GLU_complex **in ,
 {
   size_t i ;
   #pragma omp for private(i)
-  PFOR( i = 0 ; i < LCU ; i ++ ) {
+  for( i = 0 ; i < LCU ; i ++ ) {
     const size_t j = i + LCU * t ;
     size_t mu ;
     for( mu = 0 ; mu < ND-1 ; mu++ ) {
@@ -116,15 +144,16 @@ steep_deriv_CG( GLU_complex **in ,
     // for SU(3) I pack the first FFT with the two explicitly
     // real diagonal elements
     // to save on a Fourier transform ..
-    in[0][i] = I * sum[0] - sum[3] ;
-    in[1][i] = I * sum[1] ;
-    in[2][i] = I * sum[2] ;
-    in[3][i] = I * sum[4] ;
+    in[0][i] = I * creal( sum[0] ) - creal( sum[3] ) ;
+    in[1][i] = I * creal( sum[1] ) - cimag( sum[1] ) ;
+    in[2][i] = I * creal( sum[2] ) - cimag( sum[2] ) ;
+    in[3][i] = I * creal( sum[4] ) - cimag( sum[4] ) ;
     #elif NC == 2
-    in[0][i] = I * sum[0] ; in[1][i] = I * sum[1] ;
+    in[0][i] = I * creal( sum[0] ) ;
+    in[1][i] = I * creal( sum[1] ) - cimag( sum[1] ) ;
     #else
     for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
-      in[mu][i] = I * sum[mu] ;
+      in[mu][i] = I * creal( sum[mu] ) - cimag( sum[mu] ) ;
     }
     #endif
   }
@@ -132,70 +161,6 @@ steep_deriv_CG( GLU_complex **in ,
   return ;
 }
 
-// is the same for Landau and Coulomb just with different LENGTHS
-void
-FOURIER_ACCELERATE2( struct fftw_stuff *FFTW ) 
-{
-#ifdef HAVE_FFTW3_H
-  const fftw_plan *forw = ( const fftw_plan* )FFTW -> forward ;
-  const fftw_plan *back = ( const fftw_plan* )FFTW -> backward ;
-  // single core FFT's
-  size_t mu ;
-#pragma omp for private(mu) schedule(dynamic)
-  for( mu = 0 ; mu < TRUE_HERM ; mu++ ) {
-    fftw_execute( forw[mu] ) ; 
-    size_t i ;
-    for( i = 0 ; i < LCU ; i++ ) {
-      FFTW -> out[ mu ][ i ] *= FFTW -> psq[i] ;
-    }
-    fftw_execute( back[mu] ) ; 
-  }
-#endif
-  return ;
-}
-
-static void
-sum_PR( double *red ,
-	const GLU_complex **in , 
-	const GLU_complex **in_old )
-{
-  double c[2] = { 0. , 0. } ;
-  size_t i ;
-  #pragma omp for private(i)
-  for( i = 0 ; i < LCU ; i++ ) {
-    double loc_sum1 = 0.0 , loc_sum2 = 0.0 ;
-    loc_sum1 += creal(in[0][i]) * creal(in[0][i]) + cimag(in[0][i])*cimag(in[0][i]) 
-      + creal(in[0][i]) * cimag( in[0][i] ) ;
-    loc_sum1 += creal(in[1][i]) * creal(in[1][i]) + cimag(in[1][i])*cimag(in[1][i]) ; 
-    loc_sum1 += creal(in[2][i]) * creal(in[2][i]) + cimag(in[2][i])*cimag(in[2][i]) ; 
-    loc_sum1 += creal(in[3][i]) * creal(in[3][i]) + cimag(in[3][i])*cimag(in[3][i]) ; 
-	
-    register GLU_complex temp = in[0][i] - in_old[0][i] ;
-    loc_sum2 += 2.0 * ( creal( in[0][i] ) * creal( temp ) + cimag( in[0][i] ) * cimag( temp ) ) ;
-    loc_sum2 += creal( in[0][i] ) * cimag( temp ) + cimag( in[0][i] ) * creal( temp ) ;
-    temp = in[1][i] - in_old[1][i] ;
-    loc_sum2 += 2.0 * ( creal( in[1][i] ) * creal( temp ) + cimag( in[1][i] ) * cimag( temp ) ) ;
-    temp = in[2][i] - in_old[2][i] ;
-    loc_sum2 += 2.0 * ( creal( in[2][i] ) * creal( temp ) + cimag( in[2][i] ) * cimag( temp ) ) ;
-    temp = in[3][i] - in_old[3][i] ;
-    loc_sum2 += 2.0 * ( creal( in[3][i] ) * creal( temp ) + cimag( in[3][i] ) * cimag( temp ) ) ;
-    
-    const size_t th = get_GLU_thread() ;
-
-    // kahan summations
-    const double y = 2*loc_sum1 - c[0] ;
-    const double t = red[ LINE_NSTEPS + th * CLINE ] + y ;
-    c[0] = ( t - red[ LINE_NSTEPS + th * CLINE ] ) - y ;
-    red[ LINE_NSTEPS + th * CLINE ] = t ;
-
-    const double y2 = loc_sum2 - c[1] ;
-    const double t2 = red[ LINE_NSTEPS + 1 + th * CLINE ] + y2 ;
-    c[1] = ( t2 - red[ LINE_NSTEPS + 1 + th * CLINE ] ) - y2 ;
-    red[ LINE_NSTEPS + 1 + th * CLINE ] = t2 ;
-  }
-
-  return ;
-}
 
 static void
 sum_DER2( double *red ,
@@ -233,6 +198,62 @@ sum_DER2( double *red ,
     c[0] = ( t - red[ LINE_NSTEPS + th * CLINE ] ) - y ;
     red[ LINE_NSTEPS + th * CLINE ] = t ;
   }
+  return ;
+}
+
+static void
+sum_PR( double *red ,
+	const GLU_complex **in , 
+	const GLU_complex **in_old )
+{
+  double c[2] = { 0. , 0. } ;
+  size_t i ;
+#pragma omp for private(i)
+  for( i = 0 ; i < LCU ; i++ ) {
+    double loc_sum1 = 0.0 , loc_sum2 = 0.0 ;
+#if NC == 3
+    loc_sum1 += creal(in[0][i]) * creal(in[0][i]) + cimag(in[0][i])*cimag(in[0][i]) 
+      + creal(in[0][i]) * cimag( in[0][i] ) ;
+    loc_sum1 += creal(in[1][i]) * creal(in[1][i]) + cimag(in[1][i])*cimag(in[1][i]) ; 
+    loc_sum1 += creal(in[2][i]) * creal(in[2][i]) + cimag(in[2][i])*cimag(in[2][i]) ; 
+    loc_sum1 += creal(in[3][i]) * creal(in[3][i]) + cimag(in[3][i])*cimag(in[3][i]) ; 
+	
+    register GLU_complex temp = in[0][i] - in_old[0][i] ;
+    loc_sum2 += 2.0 * ( creal( in[0][i] ) * creal( temp ) + cimag( in[0][i] ) * cimag( temp ) ) ;
+    loc_sum2 += creal( in[0][i] ) * cimag( temp ) + cimag( in[0][i] ) * creal( temp ) ;
+    temp = in[1][i] - in_old[1][i] ;
+    loc_sum2 += 2.0 * ( creal( in[1][i] ) * creal( temp ) + cimag( in[1][i] ) * cimag( temp ) ) ;
+    temp = in[2][i] - in_old[2][i] ;
+    loc_sum2 += 2.0 * ( creal( in[2][i] ) * creal( temp ) + cimag( in[2][i] ) * cimag( temp ) ) ;
+    temp = in[3][i] - in_old[3][i] ;
+    loc_sum2 += 2.0 * ( creal( in[3][i] ) * creal( temp ) + cimag( in[3][i] ) * cimag( temp ) ) ;
+#else
+    GLU_complex temp1[ HERMSIZE ] , temp2[ HERMSIZE ] ;
+    size_t mu ;
+    for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
+      temp1[mu] = in[mu][i] ;
+      temp2[mu] = in[mu][i] - in_old[mu][i] ;
+    }
+    GLU_real tr1 , tr2 ;
+    trace_ab_herm_short( &tr1 , temp1 , temp1 ) ;
+    trace_ab_herm_short( &tr2 , temp1 , temp2 ) ;
+    loc_sum1 = 0.5 * (double)tr1 ;
+    loc_sum2 = 0.5 * (double)tr2 ;
+#endif
+    const size_t th = get_GLU_thread() ;
+
+    // kahan summations
+    const double y = 2*loc_sum1 - c[0] ;
+    const double t = red[ LINE_NSTEPS + th * CLINE ] + y ;
+    c[0] = ( t - red[ LINE_NSTEPS + th * CLINE ] ) - y ;
+    red[ LINE_NSTEPS + th * CLINE ] = t ;
+
+    const double y2 = loc_sum2 - c[1] ;
+    const double t2 = red[ LINE_NSTEPS + 1 + th * CLINE ] + y2 ;
+    c[1] = ( t2 - red[ LINE_NSTEPS + 1 + th * CLINE ] ) - y2 ;
+    red[ LINE_NSTEPS + 1 + th * CLINE ] = t2 ;
+  }
+
   return ;
 }
 
@@ -555,20 +576,20 @@ Coulomb_FA( struct site  *__restrict lat ,
     
     // reunitarise the gauges to counteract the accumulated round-off error
     #pragma omp for nowait private(i)
-    PFOR( i = 0 ; i < LCU ; i++ ) { 
+    for( i = 0 ; i < LCU ; i++ ) { 
       gram_reunit( G.g_end[i] ) ; 
       gram_reunit( G.g[i] ) ; 
     }
     
     //gauge transform the links at x and set slice_gauge_up to be slice_gauge
-    gtransform_slice2( (const GLU_complex **)G.g_end , lat , 
-    		       (const GLU_complex **)G.g , 0 ) ;
+    gtransform_slice_th( (const GLU_complex **)G.g_end , lat , 
+			 (const GLU_complex **)G.g , 0 ) ;
     
     //now we do the same for all time slices
     for( t = 2 ; t < Latt.dims[ ND - 1 ] ; t++ ) {
 
       #pragma omp for nowait private(i) 
-      PFOR( i = 0 ; i < LCU ; i++ ) { identity( G.g_up[i] ) ; }
+      for( i = 0 ; i < LCU ; i++ ) { identity( G.g_up[i] ) ; }
 
       // gauge fix on this slice
       thread_its += steep_fix( G.g_up , CG , FFTW , lat ,
@@ -576,11 +597,11 @@ Coulomb_FA( struct site  *__restrict lat ,
       
       // reunitarise to counteract the accumulated round-off error
       #pragma omp for nowait private(i) 
-      PFOR( i = 0 ; i < LCU ; i++ ) { gram_reunit( G.g_up[i] ) ; }
+      for( i = 0 ; i < LCU ; i++ ) { gram_reunit( G.g_up[i] ) ; }
       
       //gauge transform the links for this slice "g"
-      gtransform_slice2( (const GLU_complex **)G.g , lat , 
-			 (const GLU_complex **)G.g_up , t - 1 ) ;
+      gtransform_slice_th( (const GLU_complex **)G.g , lat , 
+			   (const GLU_complex **)G.g_up , t - 1 ) ;
     
       // and copy "g_up" (the working transformation matrices) into "g"
       #pragma omp single
@@ -593,8 +614,8 @@ Coulomb_FA( struct site  *__restrict lat ,
     
     // no need for a reunitarisation step as it has already been done
     // gauge transform the very final slice
-    gtransform_slice2( (const GLU_complex **)G.g , lat , 
-		       (const GLU_complex **)G.g_end , t - 1 ) ;
+    gtransform_slice_th( (const GLU_complex **)G.g , lat , 
+			 (const GLU_complex **)G.g_end , t - 1 ) ;
 
 #pragma omp master
     {
@@ -612,4 +633,3 @@ Coulomb_FA( struct site  *__restrict lat ,
   // and return the total iterations
   return tot_its ;
 }
-

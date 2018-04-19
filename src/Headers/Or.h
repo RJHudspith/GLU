@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (OrLandau.h) is part of GLU.
 
@@ -18,10 +18,10 @@
 */
 /**
    @file OrLandau.h
-   @brief protype functions for Over-relaxed gauge fixing routines
+   @brief protype functions for Over-relaxed gauge fixing routines, too relaxed in my opinion!
  */
-#ifndef ORLANDAU_H
-#define ORLANDAU_H
+#ifndef GLU_ORLANDAU_H
+#define GLU_ORLANDAU_H
 
 /**
    @fn size_t OrCoulomb( struct site *__restrict lat , double *theta , const size_t MAX_ITERS , const double ACC , const double OrParam )

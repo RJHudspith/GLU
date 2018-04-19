@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2017 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (Qcorr.c) is part of GLU.
 
@@ -151,7 +151,7 @@ compute_Qcorr( struct site *__restrict lat ,
 
   // is a convolution, Volume norm is for the FFT
   #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+  for( i = 0 ; i < LVOLUME ; i++ ) {
     FFTW.out[ i ] *= conj( FFTW.out[ i ] ) * mulfac ;
   }
 
@@ -163,7 +163,7 @@ compute_Qcorr( struct site *__restrict lat ,
 
   // loop the possible rsqs
   #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < size[0] ; i++ ) {
+  for( i = 0 ; i < size[0] ; i++ ) {
     qcorr[i] = (double)creal( FFTW.in[ list[i].idx ] ) ;
   }
 
@@ -173,7 +173,7 @@ compute_Qcorr( struct site *__restrict lat ,
 
   // loop the possible rsqs
   #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < size[0] ; i++ ) {
+  for( i = 0 ; i < size[0] ; i++ ) {
     // some storage for the traces
     register double sumqq = 0.0 ;
 

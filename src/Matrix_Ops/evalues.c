@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (solver.c) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file solver.c
    @brief solves the characteristic equations for SU(2) and SU(3) matrices
  */
-
 #include "Mainfile.h"
 #include "invert.h"
 
@@ -43,7 +42,7 @@ cubert( double complex *__restrict res ,
 	const double complex z )
 {
   register const double real = cabs( z ) ;
-  register const double angle = carg( z ) * OneO3 ; 
+  register const double angle = carg( z ) / 3. ; 
   *res = cbrt( real ) * ( cos( angle ) + I * sin( angle ) ) ; 
   return ;
 }
@@ -186,10 +185,10 @@ static void
 Eigenvalues_su3_stab( double complex z[ NC ] , 
 		      const GLU_complex U[ NCNC ] ) 
 { 
-  const double complex a = 1.0 - (double complex)trace( U ) * OneO3 ;
+  const double complex a = 1.0 - (double complex)trace( U ) / 3. ;
   const double complex b = -conj( a ) ;
   const double complex p = ( b + a * ( 2.0 - a ) ) ;
-  const double complex q = ( a * ( 1.0 - b - a * 2.0 * ( 1.0 - a * OneO3 ) ) + b ) * 1.5 ;
+  const double complex q = ( a * ( 1.0 - b - a * 2.0 * ( 1.0 - a / 3. ) ) + b ) * 1.5 ;
   double complex u1 ;
   double complex res = squarert( q*q + p*p*p , p ) ;
   cubert( &u1 , res - q ) ;
@@ -318,11 +317,11 @@ Eigenvalues_suNC( double complex z[ NC ] ,
 		 const GLU_complex U[ NCNC ] ) 
 {
 #if NC == 3
-  if( 1.0 - OneO3 * ( creal( U[0] ) + creal( U[4] ) + creal( U[8] ) )  < 1E-12 ) { 
+  if( 1.0 - ( creal( U[0] ) + creal( U[4] ) + creal( U[8] ) )/3.  < 1E-12 ) { 
     Eigenvalues_su3_stab( z , U ) ; 
     return ;
   }
-  const double complex a = -(double complex)( U[0] + U[4] + U[8] ) * OneO3 ; 
+  const double complex a = -(double complex)( U[0] + U[4] + U[8] ) / 3. ;
   register const double complex conjA = conj( a ) ;
   const double complex Q = ( a * a ) + conjA ;
   const double complex R = a * ( Q + conjA * 0.5 ) - 0.5 ; 

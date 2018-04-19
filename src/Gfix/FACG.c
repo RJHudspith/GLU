@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (FACG.c) is part of GLU.
 
@@ -54,14 +54,17 @@ FA_deriv( double *red ,
     #if NC == 3
     // for SU(3) I pack the first FFT with the two explicitly real diagonal elements
     // to save on a Fourier transform ..
-    in[0][i] = I * sum[0] - sum[3] ;
-    in[1][i] = I * sum[1] ;
-    in[2][i] = I * sum[2] ;
-    in[3][i] = I * sum[4] ;
+    in[0][i] = I * creal( sum[0] ) - creal( sum[3] ) ;
+    in[1][i] = I * creal( sum[1] ) - cimag( sum[1] ) ;
+    in[2][i] = I * creal( sum[2] ) - cimag( sum[2] ) ;
+    in[3][i] = I * creal( sum[4] ) - cimag( sum[4] ) ;
+    #elif NC == 2
+    in[0][i] = I * creal( sum[0] ) ;
+    in[1][i] = I * creal( sum[1] ) - cimag( sum[1] ) ;
     #else
     size_t mu ;
     for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
-      in[mu][i] = I * sum[mu] ;
+      in[mu][i] = I * creal( sum[mu] ) - cimag( sum[mu] ) ;
     }
     #endif
   }
@@ -80,14 +83,13 @@ FOURIER_ACCELERATE3( struct fftw_stuff FFTW )
   size_t mu ;
   #pragma omp for private(mu) schedule(dynamic)
   for( mu = 0 ; mu < TRUE_HERM ; mu++ ) {
-    PSPAWN fftw_execute( forw[mu] ) ; 
+    fftw_execute( forw[mu] ) ; 
     size_t i ;
-    PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+    for( i = 0 ; i < LVOLUME ; i++ ) {
       FFTW.out[ mu ][ i ] *= FFTW.psq[i] ;
     }
-    PSPAWN fftw_execute( back[mu] ) ; 
+    fftw_execute( back[mu] ) ; 
   }
-  PSYNC ;
 #endif
   return ;
 }
@@ -130,7 +132,7 @@ sum_DER3( double *red ,
 {
   size_t i ;
 #pragma omp for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+  for( i = 0 ; i < LVOLUME ; i++ ) {
     register double loc_sum = 0.0 ;
 #if NC == 3
     loc_sum += creal(in[0][i]) * creal(in[0][i]) + cimag(in[0][i])*cimag(in[0][i]) 
@@ -177,7 +179,7 @@ steep_Landau_FA( double *red ,
 #endif
   
   // do the gauge transform here
-  gtransform2( lat , ( const GLU_complex **)gauge ) ;
+  gtransform_th( lat , ( const GLU_complex **)gauge ) ;
   
   return ;
 }
@@ -311,7 +313,7 @@ steep_Landau_FACG( GLU_complex **gauge ,
     egauge_Landau( gauge , (const GLU_complex**)CG.sn , Latt.gf_alpha ) ;
   }
 
-  gtransform2( lat , ( const GLU_complex **)gauge ) ;
+  gtransform_th( lat , ( const GLU_complex **)gauge ) ;
 
   loc_iters++ ;
   
@@ -454,7 +456,7 @@ FASD_SMEAR( struct site *lat ,
   }
 
   #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+  for( i = 0 ; i < LVOLUME ; i++ ) {
     GLU_malloc( (void**)&gauge2[i] , ALIGNMENT , NCNC * sizeof( GLU_complex ) ) ;
     identity( gauge2[i] ) ;
   }
@@ -471,7 +473,7 @@ FASD_SMEAR( struct site *lat ,
     steep_Landau_FA( red , gauge , lat , FFTW ) ; 
     // multiply through 
     #pragma omp parallel for private(i) 
-    PFOR(  i = 0 ; i < LVOLUME ; i++  ) {
+    for(  i = 0 ; i < LVOLUME ; i++  ) {
       GLU_complex temp[ NCNC ] GLUalign ;
       memcpy( temp , gauge2[i] , NCNC * sizeof( GLU_complex ) ) ;
       multab_suNC( gauge2[i] , gauge[i] , temp ) ; 
@@ -489,7 +491,3 @@ FASD_SMEAR( struct site *lat ,
   return iters ; 
 }
 
-// tells us the probes we are using
-void
-query_probes_Landau( void ) {
-}

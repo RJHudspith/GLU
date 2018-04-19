@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (Coulomb.h) is part of GLU.
 
@@ -23,7 +23,6 @@
    Uses either the fourier-accelerated code or the normal steepest descent.
    Performs its iterations on a slice-by-slice basis.
  */
-
 #ifndef GLU_COULOMB_H
 #define GLU_COULOMB_H
 

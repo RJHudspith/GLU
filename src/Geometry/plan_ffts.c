@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (plan_ffts.c) is part of GLU.
 
@@ -77,6 +77,29 @@ obtain_wisdom( int *planflag ,
   return str ;
 }
 
+// clean up the allocations by create_plans_DFT
+void
+clean_up_fftw( struct fftw_stuff FFTW ,
+	       const int ARR_SIZE )
+{
+  size_t i ;
+  for( i = 0 ; i < ARR_SIZE; i++ ) {
+    fftw_destroy_plan( FFTW.forward[i] ) ;   
+    fftw_destroy_plan( FFTW.backward[i] ) ;  
+    fftw_free( FFTW.out[i] ) ; 
+    fftw_free( FFTW.in[i] ) ; 
+  }
+  fftw_free( FFTW.out ) ; 
+  fftw_free( FFTW.in ) ; 
+  free( FFTW.forward ) ; 
+  free( FFTW.backward ) ; 
+  fftw_cleanup( ) ;
+  if( FFTW.psq != NULL ) {
+    free( FFTW.psq ) ; 
+  }
+  return ;
+}
+
 // record both the forward and backward
 void
 create_plans_DFT( struct fftw_stuff *FFTW ,
@@ -139,6 +162,19 @@ create_plans_DFT( struct fftw_stuff *FFTW ,
   return ;
 }
 
+// clean up the arrays allocated by small_create_plans_DFT
+void
+small_clean_up_fftw( struct fftw_small_stuff FFTW )
+{
+  fftw_free( FFTW.out ) ; 
+  fftw_free( FFTW.in ) ; 
+  fftw_cleanup( ) ;
+  if( FFTW.psq != NULL ) {
+    free( FFTW.psq ) ; 
+  }
+  return ;
+}
+
 /// Small plan does not care about the NC unlike the above
 void
 small_create_plans_DFT( struct fftw_small_stuff *FFTW ,
@@ -185,40 +221,6 @@ small_create_plans_DFT( struct fftw_small_stuff *FFTW ,
 #endif
   free( str ) ;
 
-  return ;
-}
-
-void
-clean_up_fftw( struct fftw_stuff FFTW ,
-	       const int ARR_SIZE )
-{
-  size_t i ;
-  for( i = 0 ; i < ARR_SIZE; i++ ) {
-    fftw_destroy_plan( FFTW.forward[i] ) ;   
-    fftw_destroy_plan( FFTW.backward[i] ) ;  
-    fftw_free( FFTW.out[i] ) ; 
-    fftw_free( FFTW.in[i] ) ; 
-  }
-  fftw_free( FFTW.out ) ; 
-  fftw_free( FFTW.in ) ; 
-  free( FFTW.forward ) ; 
-  free( FFTW.backward ) ; 
-  fftw_cleanup( ) ;
-  if( FFTW.psq != NULL ) {
-    free( FFTW.psq ) ; 
-  }
-  return ;
-}
-
-void
-small_clean_up_fftw( struct fftw_small_stuff FFTW )
-{
-  fftw_free( FFTW.out ) ; 
-  fftw_free( FFTW.in ) ; 
-  fftw_cleanup( ) ;
-  if( FFTW.psq != NULL ) {
-    free( FFTW.psq ) ; 
-  }
   return ;
 }
 

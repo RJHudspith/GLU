@@ -1,7 +1,7 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
-    This file (solver.h) is part of GLU.
+    This file (evalues.h) is part of GLU.
 
     GLU is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

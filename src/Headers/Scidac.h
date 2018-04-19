@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (Scidac.h) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file Scidac.h
    @brief function prototypes for the reading of SCIDAC files
  */
-
 #ifndef GLU_SCIDAC_H
 #define GLU_SCIDAC_H
 

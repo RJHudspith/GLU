@@ -2,7 +2,6 @@
    @file crc.c
    @brief computation of the CRC checksum
  */
-
 /* Taken from the GNU CVS distribution and
 modified for SciDAC use C. DeTar 10/11/2003 */
 

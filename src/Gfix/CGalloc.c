@@ -1,7 +1,7 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2018 Renwick James Hudspith
 
-    This file (CFACG.c) is part of GLU.
+    This file (CGalloc.c) is part of GLU.
 
     GLU is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@ allocate_temp_cg( struct gauges *G ,
   {
     if( FACG == GLU_TRUE ) {
       #pragma omp for private(i)
-      PFOR( i = 0 ; i < TRUE_HERM ; i ++  ) {
+      for( i = 0 ; i < TRUE_HERM ; i ++  ) {
 	if( GLU_malloc( (void**)&CG -> sn[i] , ALIGNMENT , LCU * sizeof( GLU_complex ) ) != 0 ||
 	    GLU_malloc( (void**)&CG -> in_old[i] , ALIGNMENT , LCU * sizeof( GLU_complex ) ) != 0 ) {
 	  FLAG = GLU_TRUE ;
@@ -73,7 +73,7 @@ allocate_temp_cg( struct gauges *G ,
       }
     }
     #pragma omp for private(i)
-    PFOR( i = 0 ; i < LCU ; i++ ) {
+    for( i = 0 ; i < LCU ; i++ ) {
       // allocations
       if( GLU_malloc( (void**)&G->g[i]     , ALIGNMENT , NCNC * sizeof( GLU_complex ) ) != 0 ||
 	  GLU_malloc( (void**)&G->g_up[i]  , ALIGNMENT , NCNC * sizeof( GLU_complex ) ) != 0 ||
@@ -164,19 +164,19 @@ free_temp_cg( struct gauges G ,
   // free temporary gauge transformation matrices
   if( G.g != NULL ) {
 #pragma omp parallel for private(i)
-    PFOR( i = 0 ; i < LCU ; i ++  ) {
+    for( i = 0 ; i < LCU ; i ++  ) {
       free( G.g[i]     ) ; 
     }
   }
   if( G.g_up != NULL ) {
 #pragma omp parallel for private(i)
-    PFOR( i = 0 ; i < LCU ; i ++  ) {
+    for( i = 0 ; i < LCU ; i ++  ) {
       free( G.g_up[i]  ) ; 
     }
   }
   if( G.g_end != NULL ) {
 #pragma omp parallel for private(i)
-    PFOR( i = 0 ; i < LCU ; i ++  ) {
+    for( i = 0 ; i < LCU ; i ++  ) {
       free( G.g_end[i] ) ; 
     }
   }

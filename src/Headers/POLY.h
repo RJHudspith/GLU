@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (POLY.h) is part of GLU.
 
@@ -51,10 +51,16 @@ double complex
 poly( const struct site *__restrict lat , 
       int dir ) ;
 
-// threaded reduced version
+/**
+   @fn void poly_th( double *red , const struct site *__restrict lat , size_t dir ) ;
+   @brief threaded polyakov loop evaluation
+   @param red :: reduction array
+   @param lat :: lattice gauge links
+   @param dir :: direction to measure in between 0 and ND-1
+ */
 void
-poly2( double *red ,
-       const struct site *__restrict lat , 
-       int dir ) ;
+poly_th( double *red ,
+	 const struct site *__restrict lat , 
+	 size_t dir ) ;
 
 #endif

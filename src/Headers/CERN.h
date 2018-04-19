@@ -21,6 +21,9 @@
 
 /**
    @fn int read_CLS_field( struct site *lat , FILE *in , uint32_t *chksum )
+   @param lat :: lattice gauge links
+   @param in :: infile to be read
+   @param chksum :: dummy parameter not used
    @brief read in a CERN gauge field
  */
 int
@@ -30,6 +33,8 @@ read_CLS_field( struct site *lat ,
 
 /**
    @fn void write_CLS_field( const struct site *lat ,  FILE *outfile )
+   @param lat :: lattice gauge field
+   @param outfile :: string we are writing out to
    @brief write a CERN gauge field
  */
 void

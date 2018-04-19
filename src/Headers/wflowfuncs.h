@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (wflowfuncs.h) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file wflowfuncs.h
    @brief prototype functions for the wilson flow routines
  */
-
 #ifndef GLU_WFLOWFUNCS_H
 #define GLU_WFLOWFUNCS_H
 
@@ -35,6 +34,19 @@ extern const double W0_STOP ;
    @brief what flow value do we decide to (roughly) perform measurements at
  */
 extern const double T0_STOP ;
+
+/**
+   @fn int allocate_WF( struct wflow_temps *WF , const GLU_bool memcheap , const GLU_bool adaptive )
+   @brief allocate the temporary arrays for the Wilson flow
+   @param WF :: struct with the temporary array pointers
+   @param memcheap :: whether we are allocating the memory-cheaper routines
+   @param adaptive :: whether we are calling the adaptive routine, requires more memory
+   @return #GLU_SUCCESS or #GLU_FAILURE
+ */
+int
+allocate_WF( struct wflow_temps *WF ,
+	     const GLU_bool memcheap ,
+	     const GLU_bool adaptive ) ;
 
 /**
    @fn const double evaluate_scale( double *der , const double *x , const double *meas , const size_t Nmeas , const double scale ,	const char *message )
@@ -54,6 +66,18 @@ evaluate_scale( double *der ,
 		const size_t Nmeas ,
 		const double scale ,
 		const char *message ) ;
+
+/**
+   @fn void free_WF( struct wflow_temps *WF , const GLU_bool memcheap , const GLU_bool adaptive )
+   @brief free the temporary arrays allocated in WF
+   @param WF :: struct with the temporary array pointers
+   @param memcheap :: whether we are allocating the memory-cheaper routines
+   @param adaptive :: whether we are calling the adaptive routine, requires more memory
+ */
+void
+free_WF( struct wflow_temps *WF ,
+         const GLU_bool memcheap ,
+	 const GLU_bool adaptive ) ;
 
 /**
    @fn void print_flow( const struct wfmeas *curr , const double err , const double delta_t)
@@ -158,16 +182,18 @@ step_distance_memcheap( struct site *__restrict lat ,
 					 const GLU_complex link[ NCNC ] , 
 					 const double smear_alpha ) ) ;
 
-int
-allocate_WF( struct wflow_temps *WF ,
-	     const GLU_bool memcheap ,
-	     const GLU_bool adaptive ) ;
-
-void
-free_WF( struct wflow_temps *WF ,
-         const GLU_bool memcheap ,
-	 const GLU_bool adaptive ) ;
-
+/**
+   @fn void update_meas_list( struct wfmeas *head , struct wfmeas *curr , double *red , const double new_plaq , const double t , const double delta_t , const double errmax , const struct site *lat )
+   @brief updates the measurement linked list with various gradient flow measurements
+   @param head :: the head of the list
+   @param curr :: the current node of the list that we will write into
+   @param red :: reduction array
+   @param new_plaq :: new value of the plaquette
+   @param t :: flow time
+   @param delta_t :: flow increment
+   @param errmax :: maximum error for this step
+   @param lat :: lattice gauge fields
+ */
 void
 update_meas_list( struct wfmeas *head ,
 		  struct wfmeas *curr ,

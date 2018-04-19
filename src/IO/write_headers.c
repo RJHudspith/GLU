@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (write_headers.c) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file write_headers.c
    @brief allows for the writing out of header files   
  */
-
 #include "Mainfile.h"
 
 #include "GLU_bswap.h"   // byteswaps

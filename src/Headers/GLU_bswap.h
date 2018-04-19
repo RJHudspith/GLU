@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (GLU_bswap.h) is part of GLU.
 
@@ -19,10 +19,8 @@
 /**
    @file GLU_bswap.h
    @brief prototype functions for byte-swapping of different size objects
-
-   The byte swapping routines use OpenMP/CILK, be warned
+   @warning The byte swapping routines use OpenMP be warned
  */
-
 #ifndef GLU_BSWAP_H
 #define GLU_BSWAP_H
 

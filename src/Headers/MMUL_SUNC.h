@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (MMUL_SUNC.h) is part of GLU.
 
@@ -25,7 +25,7 @@
 
 #ifndef GLU_BGQ // turns on the inline matrix multiplies
 
-  #if NC < 4
+#if NC < 4
 /**
    @fn void multab_suNC( GLU_complex a[ NCNC ] , const GLU_complex b[ NCNC ] , const GLU_complex c[ NCNC ] )
    @brief SU(Nc)- tuned matrix multiply 

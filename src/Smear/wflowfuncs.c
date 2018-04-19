@@ -1,5 +1,5 @@
 /*
-    Copyright 2013 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (wflowfuncs.c) is part of GLU.
 
@@ -26,7 +26,7 @@
 #include "GLU_splines.h" // spline evaluations
 #include "plaqs_links.h" // clover discretisation
 #include "projectors.h"  // stout projection
-#include "staples.h"     // computes standard staples
+#include "staples.h"     // computes staples
 
 // controls for the wilson flow these get externed!
 const double W0_STOP    = NC*0.1 ; // BMW's choice for the W_0 parameter
@@ -34,7 +34,7 @@ const double T0_STOP    = NC*0.1 ; // Martin's choice for the t_0 scale
 
 // shortening function needs to be out of alphabetical order because
 // it is called by flow directions
-static INLINE_VOID
+static inline void
 make_short_log( GLU_complex short_staple[ HERMSIZE ] , 
 		const GLU_complex staple[ NCNC ] )
 {
@@ -140,7 +140,7 @@ RK3step( struct wflow_temps WF ,
 {
   size_t i ;
 #pragma omp for private(i) SCHED
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+  for( i = 0 ; i < LVOLUME ; i++ ) {
     GLU_complex staple[ NCNC ] GLUalign , temp[ NCNC ] GLUalign ;
     GLU_complex short_staple[ HERMSIZE ] GLUalign ;
     size_t mu ;
@@ -229,7 +229,7 @@ RK3step_memcheap( struct wflow_temps WF ,
     const size_t slice = LCU * t ;
     // perform the wilson flow for a point on the slice
     #pragma omp for private(i) SCHED
-    PFOR( i = 0 ; i < LCU ; i++ ) {
+    for( i = 0 ; i < LCU ; i++ ) {
       const size_t it = slice + i ;
       size_t mu ;
       for( mu = 0 ; mu < ND ; mu++ ) {
@@ -244,7 +244,7 @@ RK3step_memcheap( struct wflow_temps WF ,
     const size_t bck = lat[ slice ].back[ ND -1 ] ;
 #endif
 #pragma omp for private(i)
-    PFOR( i = 0 ; i < LCU ; i++ ) {
+    for( i = 0 ; i < LCU ; i++ ) {
       //put temp into the previous time-slice
       register size_t mu ;
       for( mu = 0 ; mu < ND ; mu++ ) {
@@ -276,7 +276,7 @@ RK3step_memcheap( struct wflow_temps WF ,
   const size_t behind2 = lat[ behind ].back[ ND-1 ] ;
 #endif
 #pragma omp for private(i)
-  PFOR( i = 0 ; i < LCU ; i++ ) {
+  for( i = 0 ; i < LCU ; i++ ) {
     register const size_t back = behind + i ;
     register const size_t it = slice + i ; 
     register size_t mu ;
@@ -328,6 +328,78 @@ evaluate_scale( double *der ,
   #endif
   // evaluate at "scale" error flag is -1
   return solve_spline( x , meas , der , scale , change_up ) ;
+}
+
+// allocate WF temporaries
+int
+allocate_WF( struct wflow_temps *WF ,
+	     const GLU_bool memcheap ,
+	     const GLU_bool adaptive )
+{
+  WF->lat2 = NULL ; WF->lat3 = NULL ; WF->lat4 = NULL ; WF->Z = NULL ;
+  WF->lat_two = NULL ; WF->red = NULL ;
+  int FLAG = GLU_SUCCESS ;
+  if( adaptive == GLU_TRUE ) {
+    if( ( WF->lat_two = allocate_lat( ) ) == NULL ) {
+      fprintf( stderr , "[WFLOW] adaptive allocation failure \n" ) ;
+      FLAG = GLU_FAILURE ;
+    }
+  }
+  if( memcheap == GLU_TRUE ) {
+    if( ( WF->lat2 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ||
+	( WF->Z    = allocate_s_site( LVOLUME , ND , TRUE_HERM ) ) == NULL ||
+        #ifdef IMPROVED_SMEARING
+	( WF->lat3 = allocate_s_site( 2*LCU , ND , NCNC ) ) == NULL ||
+	( WF->lat4 = allocate_s_site( 2*LCU , ND , NCNC ) ) == NULL ||
+        #else
+	( WF->lat3 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ||
+	( WF->lat4 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ||
+        #endif
+	( WF->red = malloc( CLINE*Latt.Nthreads*sizeof(double)) ) == NULL ) {
+      fprintf( stderr , "[WFLOW] allocation failure \n" ) ;
+      FLAG = GLU_FAILURE ;
+    }
+  } else {
+    if( ( WF -> lat2 = allocate_s_site( LVOLUME , ND , NCNC ) ) == NULL ||
+	( WF -> Z    = allocate_s_site( LVOLUME , ND , TRUE_HERM ) ) == NULL ||
+	( WF->red = malloc( CLINE*Latt.Nthreads*sizeof(double)) ) == NULL ) {
+      fprintf( stderr , "[WFLOW] temporary field allocation failure\n" ) ;
+      FLAG = GLU_FAILURE ;
+    }
+  }
+  return FLAG ;
+}
+
+// free the WF temporaries
+void
+free_WF( struct wflow_temps *WF ,
+         const GLU_bool memcheap ,
+	 const GLU_bool adaptive )
+{
+  if( adaptive == GLU_TRUE ) {
+    free_lat( WF->lat_two ) ;
+  }
+  if( WF -> red != NULL ) {
+    free( WF->red ) ;
+  }
+  if( memcheap == GLU_TRUE ) {
+    // free our fields
+    free_s_site( WF->Z , LVOLUME , ND , TRUE_HERM ) ;
+#if IMPROVED_SMEARING
+    free_s_site( WF->lat2 , 2*LCU , ND , NCNC ) ;
+    free_s_site( WF->lat3 , 2*LCU , ND , NCNC ) ;
+    free_s_site( WF->lat4 , 2*LCU , ND , NCNC ) ;
+#else
+    free_s_site( WF->lat2 , LCU , ND , NCNC ) ;
+    free_s_site( WF->lat3 , LCU , ND , NCNC ) ;
+    free_s_site( WF->lat4 , LCU , ND , NCNC ) ;
+#endif
+  } else {
+    // free our fields
+    free_s_site( WF->lat2 , LVOLUME , ND , NCNC ) ;
+    free_s_site( WF->Z , LVOLUME , ND , TRUE_HERM ) ;
+  }
+  return ;
 }
 
 // print out the general flow measurements
@@ -495,76 +567,7 @@ step_distance_memcheap( struct site *__restrict lat ,
   return ;
 }
 
-int
-allocate_WF( struct wflow_temps *WF ,
-	     const GLU_bool memcheap ,
-	     const GLU_bool adaptive )
-{
-  WF->lat2 = NULL ; WF->lat3 = NULL ; WF->lat4 = NULL ; WF->Z = NULL ;
-  WF->lat_two = NULL ; WF->red = NULL ;
-  int FLAG = GLU_SUCCESS ;
-  if( adaptive == GLU_TRUE ) {
-    if( ( WF->lat_two = allocate_lat( ) ) == NULL ) {
-      fprintf( stderr , "[WFLOW] adaptive allocation failure \n" ) ;
-      FLAG = GLU_FAILURE ;
-    }
-  }
-  if( memcheap == GLU_TRUE ) {
-    if( ( WF->lat2 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ||
-	( WF->Z    = allocate_s_site( LVOLUME , ND , TRUE_HERM ) ) == NULL ||
-#ifdef IMPROVED_SMEARING
-	( WF->lat3 = allocate_s_site( 2*LCU , ND , NCNC ) ) == NULL ||
-	( WF->lat4 = allocate_s_site( 2*LCU , ND , NCNC ) ) == NULL ||
-#else
-	( WF->lat3 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ||
-	( WF->lat4 = allocate_s_site( LCU , ND , NCNC ) ) == NULL ||
-#endif
-	( WF->red = malloc( CLINE*Latt.Nthreads*sizeof(double)) ) == NULL ) {
-      fprintf( stderr , "[WFLOW] allocation failure \n" ) ;
-      FLAG = GLU_FAILURE ;
-    }
-  } else {
-    if( ( WF -> lat2 = allocate_s_site( LVOLUME , ND , NCNC ) ) == NULL ||
-	( WF -> Z    = allocate_s_site( LVOLUME , ND , TRUE_HERM ) ) == NULL ||
-	( WF->red = malloc( CLINE*Latt.Nthreads*sizeof(double)) ) == NULL ) {
-      fprintf( stderr , "[WFLOW] temporary field allocation failure\n" ) ;
-      FLAG = GLU_FAILURE ;
-    }
-  }
-  return FLAG ;
-}
-
-void
-free_WF( struct wflow_temps *WF ,
-         const GLU_bool memcheap ,
-	 const GLU_bool adaptive )
-{
-  if( adaptive == GLU_TRUE ) {
-    free_lat( WF->lat_two ) ;
-  }
-  if( WF -> red != NULL ) {
-    free( WF->red ) ;
-  }
-  if( memcheap == GLU_TRUE ) {
-    // free our fields
-    free_s_site( WF->Z , LVOLUME , ND , TRUE_HERM ) ;
-#if IMPROVED_SMEARING
-    free_s_site( WF->lat2 , 2*LCU , ND , NCNC ) ;
-    free_s_site( WF->lat3 , 2*LCU , ND , NCNC ) ;
-    free_s_site( WF->lat4 , 2*LCU , ND , NCNC ) ;
-#else
-    free_s_site( WF->lat2 , LCU , ND , NCNC ) ;
-    free_s_site( WF->lat3 , LCU , ND , NCNC ) ;
-    free_s_site( WF->lat4 , LCU , ND , NCNC ) ;
-#endif
-  } else {
-    // free our fields
-    free_s_site( WF->lat2 , LVOLUME , ND , NCNC ) ;
-    free_s_site( WF->Z , LVOLUME , ND , TRUE_HERM ) ;
-  }
-  return ;
-}
-
+// updates the measurement linked list
 void
 update_meas_list( struct wfmeas *head ,
 		  struct wfmeas *curr ,

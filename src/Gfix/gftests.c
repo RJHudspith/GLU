@@ -1,5 +1,5 @@
 /*
-v    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (gftests.c) is part of GLU.
 
@@ -20,10 +20,8 @@ v    Copyright 2013-2016 Renwick James Hudspith
    @file gftests.c
    @brief has all of the gauge tests i.e. Plaquettes , Links , Gauge fixing tests
  */
-
 #include "Mainfile.h"
 
-#include "clover.h"     // field strength tensor
 #include "lin_derivs.h" // Hermitian approximation derivatives
 #include "log_derivs.h" // Logarithmic field definition derivatives
 
@@ -140,9 +138,7 @@ gauge_functional( const struct site *__restrict lat )
   #pragma omp parallel for private(i) reduction(+:trAA)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     // removes unused variable warning ...
-    #if ( defined deriv_full ) || ( defined deriv_fulln ) || ( defined deriv_fullnn ) 
     GLU_complex A[ NCNC ] GLUalign ;
-    #endif
     GLU_real tr ;
     register double loc_tr = 0.0 ;
     size_t mu ;
@@ -207,7 +203,7 @@ gtrans_functional( const struct site *__restrict lat ,
   #pragma omp parallel for private(i) reduction(+:tr)
   for( i = 0 ; i < LCU ; i++ ) {
     GLU_complex A[ NCNC ] GLUalign , temp[ NCNC ] GLUalign , 
-      temp2[ NCNC ] GLU_align ;
+      temp2[ NCNC ] GLUalign ;
     GLU_real trAA ;
     double loc_tr = 0. ;
     const size_t j = slice_idx + i ;
@@ -251,13 +247,13 @@ theta_test_lin( const struct site *__restrict lat ,
 							 i , MAX_DIR ) ; 
     tr = tr + (double)res ; 
     #ifdef GLU_OMP_MEAS
-    if( unlikely( res > *max ) ) { 
+    if( res > *max ) { 
       omp_set_lock( &writelock ) ;
       *max = res ;
       omp_unset_lock( &writelock ) ;
     } 
     #else
-    if( unlikely( res > *max ) ) { *max = res ; } 
+    if( res > *max ) { *max = res ; } 
     #endif
   }
   #ifdef GLU_OMP_MEAS
@@ -291,13 +287,13 @@ theta_test_log( const struct site *__restrict lat ,
 					   i , MAX_DIR ) ; 
     tr = tr + (double)res ; 
     #ifdef GLU_OMP_MEAS
-    if( unlikely( res > *max ) ) { 
+    if( res > *max ) { 
       omp_set_lock( &writelock ) ;
       *max = res ;
       omp_unset_lock( &writelock ) ;
     } 
     #else
-    if( unlikely( res > *max ) ) { *max = res ; } 
+    if( res > *max ) { *max = res ; } 
     #endif
   }
   #ifdef GLU_OMP_MEAS

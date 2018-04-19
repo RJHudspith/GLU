@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (MOMggg.h) is part of GLU.
 
@@ -22,7 +22,6 @@
    @ingroup Cuts
    non-exceptional scheme from <a href="http://arXiv.org/abs/1108.4806v1"> paper </a>
  */
-
 #ifndef GLU_MOMGGG_h
 #define GLU_MOMGGG_h
 

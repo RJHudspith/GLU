@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (Coulomb.c) is part of GLU.
 
@@ -50,7 +50,7 @@ Coulomb( struct site *__restrict lat ,
   
   // we calculate the lattice p-squared here and pass it to the FFT-accelerator
 #pragma omp parallel for private(i) 
-  PFOR( i = 0 ; i < LCU ; i ++ ) {
+  for( i = 0 ; i < LCU ; i ++ ) {
     FFTW.psq[i] = MAX_COULOMB / ( gen_p_sq( i , ND - 1 ) ) ;
   }
 
@@ -62,7 +62,7 @@ Coulomb( struct site *__restrict lat ,
   
   FFTW.in = malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
   #pragma omp parallel for private(i)
-  PFOR(  i = 0 ; i < TRUE_HERM ; i++  ) {
+  for(  i = 0 ; i < TRUE_HERM ; i++  ) {
     FFTW.in[i] = ( GLU_complex* )malloc( LCU * sizeof( GLU_complex ) ) ; 
   }
   // these are dummy arrays
@@ -85,7 +85,7 @@ Coulomb( struct site *__restrict lat ,
 #else
   
   #pragma omp parallel for private(i) 
-  PFOR( i = 0 ; i < TRUE_HERM ; i ++  ) {
+  for( i = 0 ; i < TRUE_HERM ; i ++  ) {
     free( FFTW.in[i] ) ;
   }
   free( FFTW.in ) ;
@@ -100,4 +100,3 @@ Coulomb( struct site *__restrict lat ,
 
   return iters ; 
 }
-

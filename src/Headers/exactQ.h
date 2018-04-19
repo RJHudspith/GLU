@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (exactQ.h) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file exactQ.h
    @brief Function definitions for calculating the lie-matrices from links.
  */
-
 #ifndef GLU_EXACTQ_H
 #define GLU_EXACTQ_H
 
@@ -60,6 +59,40 @@ AntiHermitian_proj_short( GLU_complex Q[ HERMSIZE ] ,
 	      const GLU_complex U[ NCNC ] ) ;
 
 /**
+   @fn void exact_log_slow( GLU_complex Q[ NCNC ] , const GLU_complex U[ NCNC ] )
+   @brief Slow exact logarithm
+   @param Q [out] :: The exact lie-field
+   @param U [in] :: The field we are taking the exact logarithm of
+   @warning overwrites a
+   uses exact exponentiation methods in effs.h
+ **/
+void 
+exact_log_slow( GLU_complex Q[ NCNC ] , 
+		const GLU_complex U[ NCNC ] ) ;
+
+/**
+    @fn void exact_log_slow_short( GLU_complex Q[ HERMSIZE ] , const GLU_complex U[ NCNC ] )
+   @brief Slow exact logarithm shortened output
+   @param Q :: The exact lie-field
+   @param U :: The field we are taking the exact logarithm of
+   @warning overwrites a
+   Returns the upper diagonal of the matrix. uses exact exponentiation methods in effs.h
+ **/
+void 
+exact_log_slow_short( GLU_complex Q[ HERMSIZE ] , 
+		      const GLU_complex U[ NCNC ] ) ;
+
+/**
+   @fn void get_iQ( GLU_complex Q[ NCNC ] , const GLU_complex U[ NCNC ] )
+   @brief Uses "v^{\dagger}U v" to diagonalise U. Takes log of this and multiplies through again by "v, v^{\dagger}" to get the log Q
+   @param U :: Matrix we are taking the log of
+   @param Q :: The log of U
+ */
+void 
+get_iQ( GLU_complex Q[ NCNC ] ,
+	const GLU_complex U[ NCNC ] ) ;
+
+/**
    @fn void Hermitian_proj( GLU_complex Q[ NCNC ] , const GLU_complex U[ NCNC ] )
    @brief Projection of an 3x3 matrix to its traceless hermitian part...
    @param Q [out] :: The lie matrix calculated
@@ -95,40 +128,6 @@ Hermitian_proj( GLU_complex Q[ NCNC ] ,
 void 
 Hermitian_proj_short( GLU_complex Q[ HERMSIZE ] , 
 		      const GLU_complex U[ NCNC ] ) ;
-
-/**
-   @fn void exact_log_slow( GLU_complex Q[ NCNC ] , const GLU_complex U[ NCNC ] )
-   @brief Slow exact logarithm
-   @param Q [out] :: The exact lie-field
-   @param U [in] :: The field we are taking the exact logarithm of
-   @warning overwrites a
-   uses exact exponentiation methods in effs.h
- **/
-void 
-exact_log_slow( GLU_complex Q[ NCNC ] , 
-		const GLU_complex U[ NCNC ] ) ;
-
-/**
-    @fn void exact_log_slow_short( GLU_complex Q[ HERMSIZE ] , const GLU_complex U[ NCNC ] )
-   @brief Slow exact logarithm shortened output
-   @param Q :: The exact lie-field
-   @param U :: The field we are taking the exact logarithm of
-   @warning overwrites a
-   Returns the upper diagonal of the matrix. uses exact exponentiation methods in effs.h
- **/
-void 
-exact_log_slow_short( GLU_complex Q[ HERMSIZE ] , 
-		      const GLU_complex U[ NCNC ] ) ;
-
-/**
-   @fn void get_iQ( GLU_complex Q[ NCNC ] , const GLU_complex U[ NCNC ] )
-   @brief Uses "v^{\dagger}U v" to diagonalise U. Takes log of this and multiplies through again by "v, v^{\dagger}" to get the log Q
-   @param U :: Matrix we are taking the log of
-   @param Q :: The log of U
- */
-void 
-get_iQ( GLU_complex Q[ NCNC ] ,
-	const GLU_complex U[ NCNC ] ) ;
 
 /**
    @fn void trf_AntiHermitian_proj( GLU_complex Q[ NCNC ] , const GLU_complex U[ NCNC ] )

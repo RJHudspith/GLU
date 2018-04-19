@@ -1,5 +1,6 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
+    
     This file (triplet_gen.c) is part of GLU.
     GLU is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -486,7 +487,7 @@ read_trip( int *__restrict trip ,
     fclose( tripfile ) ; 
   }
   // calculate and write out to a file
-  if( unlikely( flag == 1 ) ) {
+  if( flag == 1 ) {
 
     // get the triplet
     get_trip( trip , nnmax ) ;
@@ -545,7 +546,7 @@ read_triplet_and_proj( int *__restrict *__restrict triplet ,
   }
 
   // create a file
-  if( unlikely( flag == 1 ) ) {
+  if( flag == 1 ) {
     init_delta( ) ;
     // open a temporary file
     FILE *config2 = fopen( str , "wb" ) ;
@@ -555,7 +556,7 @@ read_triplet_and_proj( int *__restrict *__restrict triplet ,
     // allocate our triplet 
     int **triple = ( int **)malloc( count * sizeof( int* ) ) ;
     #pragma omp parallel for private(i)
-    PFOR( i = 0 ; i < count ; i++ ) {
+    for( i = 0 ; i < count ; i++ ) {
       triple[i] = (int*)malloc( 3 *  sizeof (int ) ) ;
     }
     printf( "[CUTS] Precomputing triplet \n" ) ;
@@ -577,7 +578,7 @@ read_triplet_and_proj( int *__restrict *__restrict triplet ,
     free_delta( ) ;
     // free the temporary triplet "triple"
     #pragma omp parallel for private(i)
-    PFOR( i = 0 ; i < count ; i++ ) {
+    for( i = 0 ; i < count ; i++ ) {
       free( triple[i] ) ;
     }
     free( triple ) ; 

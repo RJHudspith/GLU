@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (CFACG.h) is part of GLU.
 
@@ -39,12 +39,5 @@ Coulomb_FA( struct site  *__restrict lat ,
 	    const double accuracy ,
 	    const size_t max_iter ,
 	    const GLU_bool FACG ) ;
-
-/**
-   @fn void query_probes_Coulomb( void )
-   @brief prints to stdout the probe alphas we use
- */
-void
-query_probes_Coulomb( void ) ;
 
 #endif

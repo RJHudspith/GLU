@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (KPHB.c) is part of GLU.
 
@@ -182,7 +182,7 @@ hb_update( struct site *lat ,
 	// write the polyakov loops, (re,im) |L|
         size_t mu ; 
 	for( mu = 0 ; mu < ND ; mu++ ) {
-	  poly2( POLYred , lat , mu ) ;
+	  poly_th( POLYred , lat , mu ) ;
 	}
 	
         #pragma omp master

@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (U_Nops.h) is part of GLU.
 
@@ -353,60 +353,6 @@ void
 trace_ab( GLU_complex *__restrict tr , 
 	  const GLU_complex a[ NCNC ] , 
 	  const GLU_complex b[ NCNC] ) ;
-
-/**
-   @fn void trace_abc( GLU_complex *__restrict tr , const GLU_complex a[ NCNC ] , const GLU_complex b[ NCNC] , const GLU_complex c[ NCNC ] )
-   @brief computes the trace of the product of three matrices \f$ tr[ abc^{\dagger} ] \f$
-   @param tr :: result passed by reference
-   @param a :: arbitrary NC x NC matrix
-   @param b :: arbitrary NC x NC matrix
-   @param c :: arbitrary NC x NC matrix
-
-   does not care about the type of matrix. Used for computing the trace of a gauge transformation.
-
-   @warning a,b and c should be NC-square matrices
- */
-void
-trace_abc( GLU_complex *__restrict tr , 
-	   const GLU_complex a[ NCNC ] , 
-	   const GLU_complex b[ NCNC ] , 
-	   const GLU_complex c[ NCNC ] ) ;
-
-/**
-   @fn void trace_abc_dag( GLU_complex *__restrict tr , const GLU_complex a[ NCNC ] , const GLU_complex b[ NCNC] , const GLU_complex c[ NCNC ] )
-   @brief computes the trace of the product of three matrices tr[ abc ] where c is daggered
-   @param tr :: result passed by reference
-   @param a :: arbitrary NC x NC matrix
-   @param b :: arbitrary NC x NC matrix
-   @param c :: arbitrary NC x NC matrix
-
-   does not care about the type of matrix
-
-   @warning a,b and c should be NC-square matrices
- */
-void
-trace_abc_dag( GLU_complex *__restrict tr , 
-	       const GLU_complex a[ NCNC ] , 
-	       const GLU_complex b[ NCNC ] , 
-	       const GLU_complex c[ NCNC ] ) ;
-
-/**
-   @fn void trace_abc_dag_Re( GLU_real *__restrict tr , const GLU_complex a[ NCNC ] , const GLU_complex b[ NCNC] , const GLU_complex c[ NCNC ] )
-   @brief computes the trace of the product of three matrices tr[ abc ] where c is daggered
-   @param tr :: real part of the result passed by reference
-   @param a :: arbitrary NC x NC matrix
-   @param b :: arbitrary NC x NC matrix
-   @param c :: arbitrary NC x NC matrix
-
-   does not care about the type of matrix
-
-   @warning a,b and c should be NC-square matrices
- */
-void
-trace_abc_dag_Re( GLU_real *__restrict tr , 
-		  const GLU_complex a[ NCNC ] , 
-		  const GLU_complex b[ NCNC ] , 
-		  const GLU_complex c[ NCNC ] ) ;
 
 /**
    @fn void trace_ab_dag( GLU_complex *__restrict tr , const GLU_complex a[ NCNC ] , const GLU_complex b[ NCNC] )

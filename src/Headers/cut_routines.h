@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (cut_routines.h) is part of GLU.
 
@@ -21,7 +21,6 @@
    @brief Cutting of extreme momenta from our data
    @ingroup Cuts
  */
-
 #ifndef GLU_CUT_ROUTINES_H
 #define GLU_CUT_ROUTINES_H
 

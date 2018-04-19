@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (plaqs_links.c) is part of GLU.
 
@@ -21,13 +21,8 @@
    @brief has all of the plaquette based measurements including gauge field strength tensor
  */
 #include "Mainfile.h"
-#include "clover.h"
 
-// the one with the openmp locks, just an excuse to try this out to be honest
-#if ( defined HAVE_OMP_H ) && ( defined _OPENMP )
-  #define GLU_OMP_MEAS
-  #include <omp.h>
-#endif
+#include "clover.h"   // compute_Gmunu_th()
 
 #if (defined HAVE_IMMINTRIN_H) && !(defined SINGLE_PREC)
 #include <immintrin.h>
@@ -253,7 +248,6 @@ av_plaquette( const struct site *__restrict lat )
 {
   double plaq = 0. ;
   size_t i ; 
-  //#pragma omp parallel for private(i) reduction(+:plaq) 
   for( i = 0 ; i < LVOLUME ; i++ ) {
     register double p = 0. , face ;
     size_t mu , nu , t , s ;
@@ -273,12 +267,16 @@ av_plaquette( const struct site *__restrict lat )
   return 2.0 * plaq /(double)( NC * ND * ( ND - 1 ) * LVOLUME ) ; 
 }
 
-// average plaquette
+// average plaquette code called in a parallel region
 void
 av_plaquette_th( double *red ,
 		 const struct site *__restrict lat )
 {
-  size_t i ; 
+  size_t i ;
+#pragma omp for private(i)
+  for( i = 0 ; i < Latt.Nthreads ; i++ ) {
+    red[ 3 + CLINE*i ] = 0.0 ;
+  }
 #pragma omp for private(i) 
   for( i = 0 ; i < LVOLUME ; i++ ) {
     register double p = 0. , face ;
@@ -306,7 +304,6 @@ s_plaq( const struct site *__restrict lat )
 {
   double plaq = 0. ;
   size_t i ; 
-  //#pragma omp parallel for private(i) reduction(+:plaq) 
   for( i = 0 ; i < LVOLUME ; i++ ) {
     register double p = 0. , face ;
     size_t mu , nu , t , s ;
@@ -326,14 +323,13 @@ s_plaq( const struct site *__restrict lat )
   return 2.0 * plaq / (double)( ( ND - 1 ) * ( ND - 2 ) * NC * LVOLUME ) ; 
 }
 
-// just the temporal plaquettes ..
+// temporal plaquettes
 double 
 t_plaq( const struct site *__restrict lat )
 {
   double plaq = 0. ;
   size_t i ; 
   const size_t mu = ND - 1 ;
-  //#pragma omp parallel for private(i) reduction(+:plaq) 
   for( i = 0 ; i < LVOLUME ; i++ ) {
     register double p = 0. , face ;
     size_t nu , t = lat[i].neighbor[mu] , s ; 
@@ -350,59 +346,8 @@ t_plaq( const struct site *__restrict lat )
   return 2.0 * ( plaq ) / (double)( ( ND - 1 ) * ( ND - 2 ) * NC * LVOLUME ) ; 
 }
 
-/// Compute the lattice F_\mu\nu term here.
-double
-lattice_gmunu( const struct site *__restrict lat ,
-	       double *__restrict qtop ,
-	       double *__restrict avplaq )
-{
-  *avplaq = av_plaquette( lat ) ;
-#if ND == 4
-  const double QTOP_DENOM = -0.001583143494411527678811 ; // 1.0/(64*Pi*Pi)
-  double GG = 0. ;
-  // compute G_munu in clover.c
-  compute_Gmunu( &GG , qtop , lat ) ;
-  // return the usual suspects, topological charge average plaq and F^2
-  *qtop *= QTOP_DENOM ;
-  return ( GG ) / ( 16. * LVOLUME ) ;
-#else
-  // don't have anything for this
-  *qtop = -1.0 ;
-  return -1.0 ;
-#endif
-}
-
-// sexy wrapper for the topological charge measurements
-int
-gauge_topological_meas( const struct site *__restrict lat , 
-			   double *qtop_new , 
-			   double *qtop_old , 
-			   const int iter )
-{
-  // set up a tolerance for how close to an integer we wish to be
-  const double QTOP_TOL = 5.0E-3 ;
-  double avplaq ;
-  const double plaq = lattice_gmunu( lat , qtop_new , &avplaq ) ;
-  fprintf( stdout , "[QTOP] {iter} %d {w} %g {GG} %g {q} %g {diff} %g \n" ,
-	   iter , avplaq , plaq , *qtop_new , fabs( *qtop_old - *qtop_new ) ) ;
-  // rounded integer value for the topological charge
-  const int qint = (int)( *qtop_new > 0. ? *qtop_new + 0.5 : *qtop_new - 0.5 ) ;
-  // The two tests are the difference between the newest topological charge and
-  // the previous, suggesting convergence.
-  // And the more stringent test of "closeness to an integer" which is allowed 
-  // to be off by a little bit more. This is certainly a heuristic measure!
-  if( fabs( *qtop_old - *qtop_new ) < QTOP_TOL &&
-      // +/- 0.10 seems ok to define integer?
-      fabs( qint - *qtop_new ) < 0.10 ) { 
-    fprintf( stdout , "\n[QTOP] {CONFIG} %zu {QTOP} %d \n\n" , 
-	     Latt.flow , qint ) ;
-    return GLU_SUCCESS ;
-  }
-  *qtop_old = *qtop_new ;
-  return GLU_FAILURE ;
-}
-
-// sexy wrapper for the topological charge measurements
+// sexy wrapper for the topological charge measurements to be called in parallel
+// region
 int
 gauge_topological_meas_th( double *red , 
 			   const struct site *__restrict lat , 
@@ -461,7 +406,6 @@ all_links( const struct site *__restrict lat ,
 {
   double splink = 0.0 , tlink = 0.0 ; 
   size_t i ; 
-  //#pragma omp parallel for private(i) reduction(+:splink) reduction(+:tlink)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     double p = 0. , res ;
     size_t mu ;
@@ -486,34 +430,21 @@ indivlinks( const struct site *__restrict lat , GLU_real *max )
   double link = 0.0 ;
   *max = 0.0 ;
   size_t i ; 
-  #ifdef GLU_OMP_MEAS
-  omp_lock_t writelock ;
-  omp_init_lock( &writelock ) ;
-  #endif
 
-  //#pragma omp parallel for private(i) reduction(+:link)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     double loc_link = 0. , res ;
     size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       speed_trace_Re( &res , lat[i].O[mu] ) ;
       loc_link += res ; 
-      #ifdef GLU_OMP_MEAS
-      if( unlikely( (GLU_real)res > *max ) ) { 
-	omp_set_lock( &writelock ) ;
+      if( (GLU_real)res > *max ) { 
 	*max = (GLU_real)res ;
-	omp_unset_lock( &writelock ) ;
       } 
-      #else
-      if( unlikely( res > *max ) ) { *max = (GLU_real)res ; } 
-      #endif
+      if( res > *max ) { *max = (GLU_real)res ; } 
     } 
     // reduction 
     link = link + (double)loc_link ;
   }
-  #ifdef GLU_OMP_MEAS
-  omp_destroy_lock( &writelock ) ;
-  #endif
 
   return ( link ) / (double)( ND * NC * LVOLUME ) ; 
 }
@@ -524,7 +455,6 @@ links( const struct site *__restrict lat )
 {
   double link = 0.0 ; 
   size_t i ; 
-  //#pragma omp parallel for private(i) reduction(+:link)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     double p = 0. , res ;
     size_t mu ;
@@ -542,8 +472,7 @@ double
 s_links( const struct site *__restrict lat )
 {
   double link = 0.0 ; 
-  size_t i ; 
-  //#pragma omp parallel for private(i) reduction(+:link)
+  size_t i ;
   for( i = 0 ; i < LVOLUME ; i++ ) {
     double p = 0. , res ;
     int mu ;
@@ -562,7 +491,6 @@ t_links( const struct site *__restrict lat )
 {    
   double link = 0.0 ; 
   size_t i ; 
-  //#pragma omp parallel for private(i) reduction(+:link)
   for( i = 0 ; i < LVOLUME ; i++ ) { 
     double res = 0. ; 
     speed_trace_Re( &res , lat[i].O[ ND - 1 ] ) ; 
@@ -570,8 +498,3 @@ t_links( const struct site *__restrict lat )
   }
   return link /(double)( LVOLUME * NC ) ; 
 }
-
-// undefine this if it has been set
-#ifdef GLU_OMP_MEAS
-  #undef GLU_OMP_MEAS
-#endif

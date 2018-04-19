@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (KPHB.h) is part of GLU.
 
@@ -20,8 +20,8 @@
    @file KPHB.h
    @brief prototype functions for quenched heat bath updates
  */
-#ifndef KPHB_H
-#define KPHB_H
+#ifndef GLU_KPHB_H
+#define GLU_KPHB_H
 
 /**
    @fn int hb_update( struct site *lat , const struct hb_info HBINFO , const char *traj_name , const GLU_output storage , const char *output_details )

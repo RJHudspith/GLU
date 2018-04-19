@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (cuts.c) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file cuts.c
    @brief file for calculating the lie fields from our gauge links, fourier transforming them and discarding the unwanted momenta from a cutting procedure
  */
-
 #include "Mainfile.h"
 
 #include "cut_output.h"    // output file
@@ -50,7 +49,7 @@ mom_gauge( struct site *__restrict A ,
 
   size_t i ;
   #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) { 
+  for( i = 0 ; i < LVOLUME ; i++ ) { 
     GLU_complex temp[ NCNC ] GLUalign ;
     size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
@@ -70,23 +69,23 @@ mom_gauge( struct site *__restrict A ,
       // FORWARD ONE
       #ifdef CUT_FORWARD
       #pragma omp parallel for private(i)
-      PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+      for( i = 0 ; i < LVOLUME ; i++ ) {
 	FFTW.in[i] = A[i].O[mu][j] ;
       }
       fftw_execute( FFTW.forward ) ;
       #pragma omp parallel for private(i)
-      PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+      for( i = 0 ; i < LVOLUME ; i++ ) {
 	A[i].O[mu][j] = FFTW.out[i] ;
       }
       #else
       // BACKWARD TRANSFORM
       #pragma omp parallel for private(i)
-      PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+      for( i = 0 ; i < LVOLUME ; i++ ) {
 	FFTW.out[i] = A[i].O[mu][j] ;
       }
       fftw_execute( FFTW.backward ) ;
       #pragma omp parallel for private(i)
-      PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+      for( i = 0 ; i < LVOLUME ; i++ ) {
 	A[i].O[mu][j] = FFTW.in[i] ;
       }
       #endif

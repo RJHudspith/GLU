@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (GLU_rng.h) is part of GLU.
 
@@ -57,6 +57,13 @@ GLU_complex
 polar_box( void ) ;
 
 /**
+   @fn double rng_dbl( void )
+   @brief return a double in [0,1)
+ */
+double
+rng_dbl( void ) ;
+
+/**
    @fn void rng_free( void )
    @brief free the RNG
 
@@ -82,13 +89,6 @@ rng_free( void ) ;
  **/
 void 
 rng_init( void ) ;
-
-/**
-   @fn double rng_dbl( void )
-   @brief return a double in [0,1)
- */
-double
-rng_dbl( void ) ;
 
 /**
    @fn unsigned int rng_int( void )

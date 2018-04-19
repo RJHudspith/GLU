@@ -1,7 +1,7 @@
 /*
     Copyright 2013-2016 Renwick James Hudspith
 
-    This file (MMULdagdag.c) is part of GLU.
+    This file (MMULdagdag_SUNC.c) is part of GLU.
 
     GLU is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,10 +17,9 @@
     along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
-   @file MMULdagdag.c
-   @brief computes \f$ a = b^{\dagger} c^{\dagger} \f$ matrix multiplication
+   @file MMULdagdag_SUNC.c
+   @brief computes \f$ a = b^{\dagger} c^{\dagger} \f$ matrix multiplication for specifically SU(#NC) matrices
  */
-
 #include "Mainfile.h"
 
 #if !( defined HAVE_IMMINTRIN_H ) || ( defined SINGLE_PREC )

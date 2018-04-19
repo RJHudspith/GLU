@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (GLU_timer.c) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file GLU_timer.c
    @brief timing functions
  */
-
 #include "Mainfile.h"
 
 #ifdef HAVE_TIME_H
@@ -44,7 +43,7 @@
 static struct timeval GLUtimer ;
 static double t1 ;
 
-// print to stdout the time elapsed in seconds, minutes or hours
+// print to stdout the time elapsed in seconds
 double
 print_time( void )
 {

@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (GLU_memcheck.c) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file GLU_memcheck.c
    @brief memory checking functions, but at least it is nice to know how much memory our functions will use
  */
-
 #include "Mainfile.h"
 
 // defined in the autoconf procedure

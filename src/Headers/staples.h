@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (staples.h) is part of GLU.
 
@@ -18,9 +18,8 @@
 */
 /**
    @file staples.h
-   @brief staple calculations get their own header
+   @brief prototype declarations for staple calculations 
  */
-
 #ifndef GLU_STAPLES_H
 #define GLU_STAPLES_H
 

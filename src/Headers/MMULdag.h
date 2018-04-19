@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (MMULdag.h) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file MMULdag.h
    @brief prototype functions for multiplication for \f$ a = b^{\dagger}\times c\f$ 
  */
-
 #ifndef GLU_MMULDAG_H
 #define GLU_MMULDAG_H
 

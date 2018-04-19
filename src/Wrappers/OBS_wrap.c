@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (OBS_wrap.c) is part of GLU.
 
@@ -22,7 +22,6 @@
 
    calls av_plaquette() is_unitary() poly() s_plaq() t_plaq() links() s_links() t_links()
  */
-
 #include "Mainfile.h"
 
 #include "clover.h"
@@ -51,7 +50,7 @@ check_links( const struct site *__restrict lat )
   for( i = 0 ; i < LVOLUME ; i++ ) {
     size_t mu ; 
     for( mu = 0 ; mu < ND ; mu++ ) {
-      if( unlikely( is_unitary( lat[i].O[mu] ) == FUCKED ) ) {
+      if( is_unitary( lat[i].O[mu] ) == FUCKED ) {
 	fprintf( stderr , "BAD LINK site :: %zu mu:: %zu \n", i , mu ) ;
 	fprintf( stderr , "Determinant :: " ) ;
 	printcomplex( det( lat[i].O[mu] ) ) ;

@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (BPST_config.c) is part of GLU.
 
@@ -21,7 +21,8 @@
    @brief creates a BPST instanton configuration
  */
 #include "Mainfile.h"
-#include "geometry.h"
+
+#include "geometry.h" // get_mom_2piBZ()
 
 // numbers that seem to work rho = 4.0 (singular) rho = 1.0 (regular)
 #define SINGULAR

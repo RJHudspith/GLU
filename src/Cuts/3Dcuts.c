@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (3Dcuts.c) is part of GLU.
 
@@ -60,7 +60,7 @@ mom_gauge_spatial( struct site *__restrict A ,
   }
 
 #pragma omp parallel for private(i) shared(A)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+  for( i = 0 ; i < LVOLUME ; i++ ) {
     GLU_complex temp[ NCNC ] ;
     size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
@@ -188,7 +188,7 @@ g( p ) =   ----------    >    Tr < A_( ND - 1 )( p ) . A_( ND - 1 )( -p ) >
 
   size_t i ;
 #pragma omp parallel for private(i) 
-  PFOR( i = 0  ;  i < num_mom[0]  ;  i++  ) {
+  for( i = 0  ;  i < num_mom[0]  ;  i++  ) {
     double sum_spatial = 0. ; 
     double sum_temporal = 0. ;
     GLU_complex tr ;
@@ -205,7 +205,7 @@ g( p ) =   ----------    >    Tr < A_( ND - 1 )( p ) . A_( ND - 1 )( -p ) >
       sum_temporal += (double)creal( tr ) ;
     }
       
-    if( likely( i != midpoint ) ) {
+    if( i != midpoint ) {
       sum_spatial *= g2_norm ; 
       sum_temporal *= g2_norm ; 
     } else {	  

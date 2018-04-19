@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (plan_ffts.h) is part of GLU.
 
@@ -25,23 +25,49 @@
 
 #ifdef HAVE_FFTW3_H
 
+/**
+   @fn void clean_up_fftw( struct fftw_stuff FFTW , const int ARR_SIZE ) 
+   @brief memory deallocations for fftw_stuff struct allocated in create_plans_DFT()
+   @param FFTW :: collection of temporary arrays
+   @param ARR_SIZE :: corresponds to ARR_SIZE in create_plans_DFT
+ */
+void
+clean_up_fftw( struct fftw_stuff FFTW ,
+	       const int ARR_SIZE ) ;
+
+/**
+   @fn void create_plans_DFT( struct fftw_stuff *FFTW , const size_t dims[ ND ] , const int ARR_SIZE , const int DIR )
+   @brief create the plans and allocate arrays for the DFT
+   @param FFTW :: temporary arrays
+   @param dims :: dimensions of the fft
+   @param ARR_SIZE :: first index length of FFTW.**in and FFTW.**out
+   @param DIR :: number of dimensions of the FFT, need not be #ND
+ */
 void
 create_plans_DFT( struct fftw_stuff *FFTW ,
 		  const size_t dims[ ND ] ,
 		  const int ARR_SIZE ,
 		  const int DIR ) ;
 
+/**
+   @fn void small_clean_up_fftw( struct fftw_small_stuff FFTW ) 
+   @brief deallocate memory and free plans created by small_create_plans_DFT()
+   @param FFTW :: temporary array allocations
+*/
+void
+small_clean_up_fftw( struct fftw_small_stuff FFTW ) ;
+
+/**
+   @fn void small_create_plans_DFT( struct fftw_small_stuff *FFTW , const size_t dims[ ND ] , const int DIR )
+   @brief create plans and allocate arrays of FFTW.*in etc
+   @param FFTW :: temporary fft arrays
+   @param dims :: dimensions of the FFT in GLU order
+   @param DIR :: dimensionality of the FFT, need not be #ND
+ */
 void
 small_create_plans_DFT( struct fftw_small_stuff *FFTW ,
 			const size_t dims[ ND ] ,
 			const int DIR ) ;
-
-void
-clean_up_fftw( struct fftw_stuff FFTW ,
-	       const int ARR_SIZE ) ;
-
-void
-small_clean_up_fftw( struct fftw_small_stuff FFTW ) ;
 
 #endif // HAVE_FFTW_H
 #endif

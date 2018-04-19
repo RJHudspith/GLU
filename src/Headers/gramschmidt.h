@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (gramschmidt.h) is part of GLU.
 
@@ -41,14 +41,6 @@ void
 reunit_latt( GLU_complex *__restrict *__restrict U ) ;
 
 /**
-   @fn void unitary_gen( GLU_complex Z[ NCNC ] )
-   @brief generate a random unitary matrix "Z"
-   @param Z :: (pseudo) random unitary matrix Z
- */
-void 
-unitary_gen( GLU_complex Z[ NCNC ] ) ;
-
-/**
    @fn void Sunitary_gen( GLU_complex Z[ NCNC ] , const uint32_t thread )
    @brief generate a random special-unitary matrix "Z"
    @param Z :: (pseudo) random special-unitary matrix Z
@@ -56,5 +48,13 @@ unitary_gen( GLU_complex Z[ NCNC ] ) ;
 void 
 Sunitary_gen( GLU_complex Z[ NCNC ] , 
 	      const uint32_t thread ) ;
+
+/**
+   @fn void unitary_gen( GLU_complex Z[ NCNC ] )
+   @brief generate a random unitary matrix "Z"
+   @param Z :: (pseudo) random unitary matrix Z
+ */
+void 
+unitary_gen( GLU_complex Z[ NCNC ] ) ;
 
 #endif

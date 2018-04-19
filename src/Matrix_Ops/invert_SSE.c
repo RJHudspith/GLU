@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (invert_SSE.c) is part of GLU.
 
@@ -18,7 +18,7 @@
 */
 /**
    @file invert_SSE.c
-   @brief gauss-jordan elimination with partial row pivoting
+   @brief gauss-jordan elimination with partial row pivoting, vectorised
  */
 #include "Mainfile.h"
 
@@ -177,7 +177,7 @@ inverse( GLU_complex M_1[ NCNC ] ,
   GLU_complex adjunct[ NCNC ] GLUalign ; 
   register GLU_complex deter = cofactor_transpose( adjunct , M ) ;
   // here we worry about numerical stability //
-  if( unlikely( cabs( deter ) < NC * PREC_TOL ) ) {
+  if( cabs( deter ) < NC * PREC_TOL ) {
     fprintf( stderr , "[INVERSE] Matrix is singular !!! "
 	     "deter=%1.14e %1.14e \n" , creal( deter ) , cimag( deter ) ) ; 
     write_matrix( M ) ; 

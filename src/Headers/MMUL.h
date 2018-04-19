@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (MMUL.h) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file MMUL.h
    @brief prototype functions for matrix multiplication routines
  */
-
 #ifndef GLU_MMUL_H
 #define GLU_MMUL_H
 

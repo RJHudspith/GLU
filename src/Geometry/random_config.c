@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (random_config.c) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file random_config.c
    @brief create a few either random or trivial configurations or reunitarise some of our matrices
  */
-
 #include "Mainfile.h"
 
 #include "par_rng.h"      // for generate_NCxNC()
@@ -33,7 +32,7 @@ latt_reunitg( GLU_complex *__restrict *__restrict gauge )
 {
   size_t i ; 
 #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+  for( i = 0 ; i < LVOLUME ; i++ ) {
     gram_reunit( gauge[i] ) ; 
   }
   return ;
@@ -45,7 +44,7 @@ latt_reunitU( struct site *__restrict lat )
 {
   size_t i ; 
 #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+  for( i = 0 ; i < LVOLUME ; i++ ) {
     size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       gram_reunit( lat[i].O[mu] ) ; 
@@ -78,7 +77,7 @@ random_gtrans( struct site *__restrict lat )
   gtransform( lat , (const GLU_complex **)gauge ) ; 
 
 #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) { 
+  for( i = 0 ; i < LVOLUME ; i++ ) { 
     free( gauge[i] ) ;
   }
   free( gauge ) ;
@@ -110,7 +109,7 @@ random_transform( struct site *__restrict lat ,
 
   size_t i ; 
   #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+  for( i = 0 ; i < LVOLUME ; i++ ) {
     Sunitary_gen( gauge[i] , get_GLU_thread( ) ) ;
   }
   gtransform( lat , (const GLU_complex **)gauge ) ; 
@@ -158,7 +157,7 @@ trivial( struct site *__restrict lat )
   fprintf( stdout , "\n[UNIT] Creating identity SU(%d) lattice fields \n" , 
 	   NC ) ; 
 #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
+  for( i = 0 ; i < LVOLUME ; i++ ) {
     size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) { identity( lat[i].O[mu] ) ; } 
   }    

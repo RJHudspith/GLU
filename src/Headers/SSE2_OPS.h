@@ -1,3 +1,25 @@
+/*
+    Copyright 2013-2018 Renwick James Hudspith
+
+    This file (SSE2_OPS.h) is part of GLU.
+
+    GLU is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    GLU is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with GLU.  If not, see <http://www.gnu.org/licenses/>.
+*/
+/**
+   @file SSE2_OPS.h
+   @brief macro definitions for the SSE2 -> SSE4.2 operations we use
+ */
 #ifndef SSE2_OPS_H
 #define SSE2_OPS_H
 

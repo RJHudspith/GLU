@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (init.h) is part of GLU.
 
@@ -24,6 +24,21 @@
 #define GLU_INIT_H
 
 /**
+   @fn void free_latt( void )
+   @brief free the lattice struct information
+ */
+void
+free_latt( void ) ;
+
+/**
+   @fn void init_latt( void )
+   @brief initialise vital constants
+   Inits the constants #LSQ, #LCU and #LVOLUME
+ */
+void
+init_latt( void ) ;
+
+/**
    @fn void init_navig( struct site *__restrict lat )
    @brief Function for generically initialising the lattice navigation
    
@@ -35,20 +50,5 @@
  **/
 void 
 init_navig( struct site *__restrict lat ) ;
-
-/**
-   @fn void init_latt( void )
-   @brief initialise vital constants
-   Inits the constants #LSQ, #LCU and #LVOLUME
- */
-void
-init_latt( void ) ;
-
-/**
-   @fn void free_latt( void )
-   @brief free the lattice struct information
- */
-void
-free_latt( void ) ;
 
 #endif

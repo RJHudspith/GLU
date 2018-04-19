@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (XML_info.c) is part of GLU.
 
@@ -16,18 +16,13 @@
     You should have received a copy of the GNU General Public License
     along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 /**
    @file XML_info.c
    @brief dirty parser for the xml information in Scidac and ILDG config files
  */
-
 #include "Mainfile.h"
 
 #include <errno.h>
-
-// this prints to stdout all of the header information ...
-//#define DEBUG
 
 // slightly clearer (for me) string equality function
 static int

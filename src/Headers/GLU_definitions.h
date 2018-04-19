@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (GLU_definitions.h) is part of GLU.
 
@@ -67,19 +67,6 @@
 #define M_REPEAT_(N, X) M_REPEAT__(N, X)
 #define M_REPEAT(N, X) M_REPEAT_(M_EXPAND(N), X)
 
-/**
-   @param OMP_FFTW
-   @brief uses the openmp'd FFT routines
-   Instead of performing the element by element naive parallelism that
-   I originally implemented this uses FFTW's own openMP'd routines
-   This is of great benefit at large volumes!
- */
-#ifdef OMP_FFTW
-  #ifndef HAVE_OMP_H
-    #undef OMP_FFTW
-  #endif
-#endif
-
 #ifdef SINGLE_PREC
 /**
    @typedef GLU_complex
@@ -97,9 +84,6 @@
    #define fftw_execute fftwf_execute
    #define fftw_init_threads fftwf_init_threads
    #define fftw_cleanup_threads fftwf_cleanup_threads
-#ifdef OMP_FFTW
-   #define fftw_plan_with_nthreads fftwf_plan_with_nthreads 
-#endif
    #define fftw_import_wisdom_from_file fftwf_import_wisdom_from_file
    #define fftw_export_wisdom_to_file fftwf_export_wisdom_to_file
    #define fftw_plan_dft fftwf_plan_dft
@@ -142,10 +126,6 @@
  */
 #define GLU_FAILURE -1
 #define GLU_SUCCESS !GLU_FAILURE
-
-// some generic constants I use all over the place
-#define OneOI2 (-0.5 * I)
-#define OneO3 (0.3333333333333333)
 
 /**
    @def MPI
@@ -253,51 +233,6 @@
 #endif
 
 /**
-   @def INLINE_VOID
-   @brief tell the compiler to inline specific functions if they have been loop unrolled by hand 
-   @def INLINE_STATIC_VOID
-   @brief synactical sugar 
-   @def INLINE_DOUBLE_COMPLEX
-   @brief synactical sugar
-   only inline stuff I have loop unrolled... NC < 4 at the moment
- */
-#if NC < 4
-  #define INLINE_VOID inline void
-  #define INLINE_STATIC_VOID inline static void
-  #define INLINE_GLU_COMPLEX inline GLU_complex 
-#else
-  #define INLINE_VOID void
-  #define INLINE_STATIC_VOID static void
-  #define INLINE_GLU_COMPLEX GLU_complex 
-#endif
-
-/**
-   @def HAVE_CILK_H
-   @brief if we want to use the cilk shared memory parallelism we create these
-   names.
-   @warning I do not have the same control with reductions as with openMP
-   @def PFOR
-   @brief CILK parallel form, or not
-   @def PSPAWN
-   @brief CILK spawns a thread, or not
-   @def PSYNC
-   @brief CILK collects the threads together, or not
-
-   set up a parallel for, and spawn if we have the cilk library
-   This is essentially redundant as we now have OpenMP bindings.
-   need to control this behaviour if using OMP ...
- */
-#ifdef HAVE_CILK_H
-  #define PFOR cilk_for
-  #define PSPAWN cilk_spawn
-  #define PSYNC cilk_sync
-#else
-  #define PFOR for
-  #define PSPAWN
-  #define PSYNC
-#endif
-
-/**
    @def LVOLUME
    @brief macro-ises the lattice volume
    set up the lattice volume ...
@@ -332,15 +267,17 @@
 
 /**
    @def MAX_LINE_LENGTH
-   @brief 128 bytes is quite long for a file
-   @def MAX_TOKENS
-   @brief maximum number of tokens in the header I only output 21
-   stuff from chklat.c for reading the QCDheader 
+   @brief 128 bytes is quite long for a line
  */
 #ifndef MAX_LINE_LENGTH
   #define MAX_LINE_LENGTH 128
 #endif
-#define MAX_TOKENS 36
+
+/**
+   @def MAX_TOKENS
+   @brief maximum number of tokens allowed in the header
+ */
+#define MAX_TOKENS 48
 
 /**
    @var typedef unsigned int uint32_t
@@ -432,34 +369,6 @@ typedef unsigned long int uint64_t ;
  **********************************/
  
 /**
-   @def deriv_fullnn
-   @brief log_def of the fields for gauge fixing with a next-neares stencil improved derivative
-   @def deriv_fulln
-   @brief log_def of the fields for gauge fixing with a stencil derivative
-   @def deriv_full
-   @brief log_def of the fields for gauge fixing with a normal derivative
-   @def deriv_linn
-   @brief log_def of the fields for gauge fixing with a stencil derivative
-   @def deriv_lin
-   @brief log_def of the fields for gauge fixing with a normal derivative
-   @def deriv_MLG
-   @brief for SU(2) we can stereographically project our fields to create the
-   maximal landau gauge (MLG).
-
-   default to the usual fast AntiHermitian_proj deriv/
- */
-#if !( defined deriv_fulln) && !(defined deriv_full) && !(defined deriv_linn) && !(defined deriv_fullnn) 
-  // lin def is the default behaviour
-  #define deriv_lin 
-#endif
-
-#if ( defined deriv_full ) || ( defined deriv_fulln )
-  // default behaviour ... hmm, if we really want we should define APPROX_LOG 
-  // somewhere else
-  #define WARMUP_DERIV
-#endif
-
-/**
    defs for the exponentiation used in the steepest descents
    @def exp_exact 
    @brief exact exponentiation in the gauge fixing
@@ -479,22 +388,6 @@ Defines for the gauge fixing routines ( Landau/{}.c )
 ******************************************************/
 
 /**
-   @def SLOW_GF
-   @brief default is that this is off. Uses slightly less memory only used in Landau.h
- */
-#ifndef SLOW_GF
-  #define FAST_GF
-#endif
-
-/**
-   @def FA
-   @brief default is that this is off and FA is defined. Steepest descent gauge fixing used in Coulomb.h and Landau.h
- */
-#ifndef SD
-  #define FA
-#endif
-
-/**
    @def SMACC
    @brief slightly smaller GF accuracy for the smearing-prec because it doesn't matter that much used in Landau.h
  */
@@ -511,9 +404,6 @@ Defines for the gauge fixing routines ( Landau/{}.c )
 /**
    @def MAX_LANDAU
    @brief \f$ p^2 \f$ max in our FA code
-   @def MAX_COULOMB
-   @brief \f$ p^2 \f$ max for one dim less
-
    The factor of ND in #MAX_LANDAU and #MAX_COULOMB comes from from our measurement of \f$ p^2 \f$ <br>
    \f[
 
@@ -522,43 +412,25 @@ Defines for the gauge fixing routines ( Landau/{}.c )
        \f]
  */
 #define MAX_LANDAU ( 4. * ND / (double)LVOLUME )
+
+/**
+   @def MAX_COULOMB
+   @brief \f$ p^2 \f$ max for one dim less
+ */
 #define MAX_COULOMB ( 4. * ( ND - 1 ) / (double)LCU ) 
 
 /**
    @def GFNORM_LANDAU
    @brief normalisation factor for the GF accuracy
+   normalisation factors for our gauge fixing, factor of two from the cheating used in the calculation of the trace same in #GFNORM_LANDAU #GF_COULOMB
+*/
+#define GFNORM_LANDAU ( 1. / (double)( NC * LVOLUME ) )
+
+/**
    @def GFNORM_COULOMB
    @brief normalisation factor for the GF accuracy
-
-   normalisation factors for our gauge fixing, factor of two from the cheating used in the calculation of the trace same in #GFNORM_LANDAU #GF_COULOMB
  */
-#define GFNORM_LANDAU ( 1. / (double)( NC * LVOLUME ) )
 #define GFNORM_COULOMB ( 1. / (double)( NC * LCU ) )
-
-/**
-   @def nn1 
-   @breief correction term for the standard finite difference
-   @def nn2
-   @breief correction term for the finite difference from the next nearest neighbour
- */
-#ifndef nn1
-  #define nn1 1.125     // BOWMAN == 4.0 / 3.0 
-#endif
-#ifndef nn2
-  #define nn2 -1.0/24.0 // BOWMAN == -1.0/12.0
-#endif
-
-/**
-   @def nnn1 
-   @breief correction term for the standard finite difference
-   @def nnn2
-   @breief correction term for the finite difference from the next nearest neighbour
-   @def nnn3
-   @breief correction term for the finite difference from the next-next nearest neighbour
- */
-#define nnn1 75.0/64.0 // BOWMAN == 49./36.0
-#define nnn2 -25.0/384.0 // BOWMAN == -5.0/36.0
-#define nnn3 3.0/640.0 // BOWMAN == 1.0/90.0
 
 /**
    @def WORST_COPY
@@ -651,14 +523,6 @@ Defines for the gauge fixing routines ( Landau/{}.c )
   #define alpha2 ( Latt.sm_alpha[1] / 4.0 )
   #define alpha3 ( Latt.sm_alpha[2] * 0.5 )
  #endif
-#endif
-
-/**
-   @def SLOW_SMEAR
-   @brief the default, does not use the approximate exponentiation or anything untoward.
- */
-#ifndef FAST_SMEAR
-  #define SLOW_SMEAR
 #endif
 
 /**
@@ -793,9 +657,6 @@ Defines for the gauge fixing routines ( Landau/{}.c )
  #define OUT_DOUBLE
 #endif
 
-/////
-// Control for the RNG
-/////
 /**
    @def UINT_MAX
    @brief maximum unsigned integer
@@ -820,7 +681,7 @@ Defines for the gauge fixing routines ( Landau/{}.c )
 
    @warning defaults to the WELL_RNG
  */
-// Default to the WELL RNG if gsl is specified but no header found
+// Default to the MWC_4096 RNG if gsl is specified but no header found
 #if ( defined GSL_RNG ) && ( defined HAVE_GSL )  
   #include <gsl/gsl_rng.h>
   #define RNG_TABLE 1
@@ -838,10 +699,6 @@ Defines for the gauge fixing routines ( Landau/{}.c )
   #define MWC_4096_RNG
   #define RNG_TABLE 4096
 #endif
-
-/////
-// Control for the U(1) code
-/////
 
 /**
    @def U1_DFT

@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (cuts.h) is part of GLU.
 
@@ -21,7 +21,6 @@
    @brief prototype function def for the cutting procedures
    @ingroup Cuts
  */
-
 #ifndef GLU_CUTS_H
 #define GLU_CUTS_H
 

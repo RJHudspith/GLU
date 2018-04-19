@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (line_search.c) is part of GLU.
 
@@ -21,6 +21,7 @@
    @brief Line search routines
  */
 #include "Mainfile.h"
+
 #include "CG.h"          // set gauge matrix
 #include "GLU_splines.h" // GLUbic spline interpolation code
 
@@ -28,26 +29,10 @@
 #define PC1 (0.17)
 #define PC2 (0.34)
 
+// line search probes for the Landau gauge fixing
 #define PL1 (0.15)
 #define PL2 (0.30)
 static const double alphas[ 3 ] = { 0.0 , PL1 , PL2 } ;
-
-void
-exponentiate_gauge_CG( GLU_complex **gauge , 
-		       const GLU_complex **in ,
-		       const double alpha )
-{
-  size_t i ;
-  // the derivative in this form is antihermitian i.e -> i.dA
-#pragma omp for private(i)
-  PFOR( i = 0 ; i < LCU ; i++ ) {
-    GLU_complex temp[ NCNC ] GLUalign , temp2[ NCNC ] GLUalign ;
-    set_gauge_matrix( temp , in , alpha , i ) ;
-    equiv( temp2 , gauge[i] ) ;
-    multab_suNC( gauge[i] , temp , temp2 ) ;
-  }
-  return ;
-}
 
 // could have several different searches here
 double
@@ -91,8 +76,6 @@ approx_minimum( const size_t nmeas ,
     #ifdef verbose
     fprintf( stdout , "[GF] der[%zu] %e \n" , i , derivative[i] ) ;
     #endif
-
-    //if( derivative[i] > 0.0 ) break ;
   }
 
   #ifdef verbose
@@ -126,6 +109,37 @@ approx_minimum( const size_t nmeas ,
     }
   }
   return 0.0 ;
+}
+
+void
+egauge_Landau( GLU_complex **gauge , 
+	       const GLU_complex **in ,
+	       const double alpha )
+{
+  size_t i ;
+  // the derivative in this form is antihermitian i.e -> i.dA
+#pragma omp for private(i)
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    set_gauge_matrix( gauge[i] , in , alpha , i ) ;
+  }
+  return ;
+}
+
+void
+exponentiate_gauge_CG( GLU_complex **gauge , 
+		       const GLU_complex **in ,
+		       const double alpha )
+{
+  size_t i ;
+  // the derivative in this form is antihermitian i.e -> i.dA
+#pragma omp for private(i)
+  for( i = 0 ; i < LCU ; i++ ) {
+    GLU_complex temp[ NCNC ] GLUalign , temp2[ NCNC ] GLUalign ;
+    set_gauge_matrix( temp , in , alpha , i ) ;
+    equiv( temp2 , gauge[i] ) ;
+    multab_suNC( gauge[i] , temp , temp2 ) ;
+  }
+  return ;
 }
 
 // perform a line search using GLUbic splines for approximately the best alpha
@@ -201,20 +215,6 @@ line_search_Coulomb( double *red ,
  
   exponentiate_gauge_CG( gauge , in , min ) ;
 
-  return ;
-}
-
-void
-egauge_Landau( GLU_complex **gauge , 
-	       const GLU_complex **in ,
-	       const double alpha )
-{
-  size_t i ;
-  // the derivative in this form is antihermitian i.e -> i.dA
-#pragma omp for private(i)
-  PFOR( i = 0 ; i < LVOLUME ; i++ ) {
-    set_gauge_matrix( gauge[i] , in , alpha , i ) ;
-  }
   return ;
 }
 

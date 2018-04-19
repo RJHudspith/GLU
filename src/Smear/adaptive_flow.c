@@ -1,5 +1,5 @@
 /*
-    Copyright 2013 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (adaptive_flow.c) is part of GLU.
 
@@ -23,7 +23,6 @@
    Slows down, performing fine measurements at ~t_0 and ~w_0
    W0_STOP and T0_STOP are defined in wflowfuncs.h
  */
-
 #include "Mainfile.h"
 
 #include "init.h"         // init_navig is called for the temporary
@@ -172,10 +171,10 @@ twostep_adaptive( struct site *lat ,
 
 // Adaptive stepsize version 
 int 
-flow4d_adaptive_RK( struct site *__restrict lat , 
-		    const size_t smiters ,
-		    const int SIGN ,
-		    const smearing_types SM_TYPE )
+flow_adaptive_RK3( struct site *__restrict lat , 
+		   const size_t smiters ,
+		   const int SIGN ,
+		   const smearing_types SM_TYPE )
 {  
   ////// USUAL STARTUP INFORMATION /////////
   print_GG_info( ) ;

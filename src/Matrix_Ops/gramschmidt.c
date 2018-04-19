@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (gramschmidt.c) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file gramschmidt.c
    @brief reunitarisation procedures
  */
-
 #include "Mainfile.h"
 
 #include "par_rng.h"  // par_generate_NCxNC( ) is called

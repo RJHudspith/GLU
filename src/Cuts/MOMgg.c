@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (MOMgg.c) is part of GLU.
 
@@ -170,7 +170,7 @@ write_exceptional_g2g3_MOMgg( FILE *__restrict Ap ,
 
   size_t i ;
   #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < num_mom[0] ; i++ ) {
+  for( i = 0 ; i < num_mom[0] ; i++ ) {
     const size_t posit = list[i].idx ;
     const size_t conj =  list[ num_mom[0] - i - 1].idx ;
     
@@ -183,7 +183,7 @@ write_exceptional_g2g3_MOMgg( FILE *__restrict Ap ,
       g2[i] += (double)creal( t ) ;
     }
 
-    if( likely( i != posit_zero_mat ) ) {
+    if( i != posit_zero_mat ) {
       g2[i] *= g2_norm ;
     } else {
       g2[i] *= g0_norm ;

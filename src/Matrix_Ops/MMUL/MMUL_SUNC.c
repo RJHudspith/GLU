@@ -1,7 +1,7 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
-    This file (MMUL.c) is part of GLU.
+    This file (MMUL_SUNC.c) is part of GLU.
 
     GLU is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,8 +19,7 @@
 /**
    @file MMUL_SUNC.c
    @brief matrix-matrix multiply
- */
-
+*/
 #include "Mainfile.h"
 
 #if !( defined HAVE_IMMINTRIN_H ) || ( defined SINGLE_PREC )

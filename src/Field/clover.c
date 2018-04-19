@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (clover.c) is part of GLU.
 
@@ -27,9 +27,7 @@
   I have also included the improved  gauge force term of Bilson-Thompson and Leinweber.
 
   @warning NOTE :: the improved clover term is turned on by the CLOVER_IMPROVE define
-*/
-
-/*                          
+                          
   Ascii picture :: G_{\mu\nu}  - - > ( mu ) ::  | ( -nu ) 
                                                 v         
  · ----<----- · · -----<-----  
@@ -48,13 +46,12 @@
  · ---->----- · · ----->---- · 
 
  */
+#include "Mainfile.h"
 
 // can test the versions of the projection here ....
 //#define TRF_ANTIHERMITIAN
 //#define ANTIHERMITIAN
 //#define CLOVER_LOG_DEF
-
-#include "Mainfile.h"
 
 // improvement factors from the bilson-thompson paper ...
 #ifndef NK5
@@ -186,11 +183,11 @@ compute_clover_s1( GLU_complex *__restrict sum ,
 		   const size_t nu )
 {
   // 1x1 contribution
-  if( likely( fClover_k1 > CL_TOL ) ) {
+  if( fClover_k1 > CL_TOL ) {
     compute_s1( sum , u , v , lat , i , mu , nu , Clover_k1 ) ;
   }
   // 2x2 contribution
-  if( likely( fClover_k2 > CL_TOL ) ) {
+  if( fClover_k2 > CL_TOL ) {
     const size_t s1 = lat[i].neighbor[mu] ;
     const size_t s2 = lat[s1].neighbor[mu] ;
     const size_t s3 = lat[s2].neighbor[nu] ;
@@ -214,7 +211,7 @@ compute_clover_s1( GLU_complex *__restrict sum ,
     #endif 
   }
   // 1x2 contribution(s)
-  if( likely( fClover_k3 > CL_TOL ) ) {
+  if( fClover_k3 > CL_TOL ) {
     // the 1x2 contrib
     const size_t s1 = lat[i].neighbor[mu] ;
     const size_t s2 = lat[s1].neighbor[nu] ;
@@ -249,7 +246,7 @@ compute_clover_s1( GLU_complex *__restrict sum ,
     #endif
   }
   // 1x3 contribution(s)
-  if( likely( fClover_k4 > CL_TOL ) ) {
+  if( fClover_k4 > CL_TOL ) {
     // 1x3
     const size_t s1 = lat[i].neighbor[mu] ;
     const size_t s2 = lat[s1].neighbor[nu] ;
@@ -343,11 +340,11 @@ compute_clover_s2( GLU_complex *__restrict sum ,
 		   const size_t nu )
 {
   // 1x1 contribution
-  if( likely( fClover_k1 > CL_TOL ) ) {
+  if( fClover_k1 > CL_TOL ) {
     compute_s2( sum , u , v , lat , i , mu , nu , Clover_k1 ) ;
   }
   // 2x2 contrib
-  if( likely( fClover_k2 > CL_TOL ) ) {
+  if( fClover_k2 > CL_TOL ) {
     const size_t s1 = lat[i].back[nu] ;
     const size_t s2 = lat[s1].back[nu] ;
     const size_t s3 = lat[s2].neighbor[mu] ;
@@ -370,7 +367,7 @@ compute_clover_s2( GLU_complex *__restrict sum ,
 #endif
   }
   // 1x2 contrib
-  if( likely( fClover_k3 > CL_TOL ) ) {
+  if( fClover_k3 > CL_TOL ) {
     // 1x2
     const size_t s1 = lat[i].back[nu] ;
     const size_t s2 = lat[s1].back[nu] ;
@@ -404,9 +401,9 @@ compute_clover_s2( GLU_complex *__restrict sum ,
 #else
     a_plus_Sxb( sum , u , Clover_k3 ) ;
 #endif
-    }
+  }
   // 1x3 contribution
-  if( likely( fClover_k4 > CL_TOL ) ) {
+  if( fClover_k4 > CL_TOL ) {
     // 1x3
     const size_t s1 = lat[i].back[nu] ;
     const size_t s2 = lat[s1].back[nu] ;
@@ -500,11 +497,11 @@ compute_clover_s3( GLU_complex *__restrict sum ,
 		   const size_t nu )
 {
   // 1x1 contribution
-  if( likely( fClover_k1 > CL_TOL ) ) {
+  if( fClover_k1 > CL_TOL ) {
     compute_s3( sum , u , v , lat , i , mu , nu , Clover_k1 ) ;
   }
   // 2x2 contrib
-  if( likely( fClover_k2 > CL_TOL ) ) {
+  if( fClover_k2 > CL_TOL ) {
     const size_t s1 = lat[i].back[mu] ;
     const size_t s2 = lat[s1].back[mu] ;
     const size_t s3 = lat[s2].back[nu] ;
@@ -527,7 +524,7 @@ compute_clover_s3( GLU_complex *__restrict sum ,
 #endif
   }
   // 1x2 contrib
-  if( likely( fClover_k3 > CL_TOL ) ) {
+  if( fClover_k3 > CL_TOL ) {
     const size_t s1 = lat[i].back[mu] ;
     const size_t s2 = lat[s1].back[nu] ;
     const size_t s3 = lat[s2].back[nu] ;
@@ -563,7 +560,7 @@ compute_clover_s3( GLU_complex *__restrict sum ,
 #endif
   }
   // 1x3 contrib
-  if( likely( fClover_k4 > CL_TOL ) ) {
+  if( fClover_k4 > CL_TOL ) {
     // 1x3
     const size_t s1 = lat[i].back[mu] ;
     const size_t s2 = lat[s1].back[nu] ;
@@ -657,11 +654,11 @@ compute_clover_s4( GLU_complex *__restrict sum ,
 		   const size_t nu )
 {
   // 1x1 contribution
-  if( likely( fClover_k1 > CL_TOL ) ) {
+  if( fClover_k1 > CL_TOL ) {
     compute_s4( sum , u , v , lat , i , mu , nu , Clover_k1 ) ;
   }
   // 2x2 contrib
-  if( likely( fClover_k2 > CL_TOL ) ) {
+  if( fClover_k2 > CL_TOL ) {
     const size_t s1 = lat[i].neighbor[nu] ;
     const size_t s2 = lat[s1].neighbor[nu] ;
     const size_t s3 = lat[s2].back[mu] ;
@@ -684,7 +681,7 @@ compute_clover_s4( GLU_complex *__restrict sum ,
 #endif
   }
   // 1x2 contrib
-  if( likely( fClover_k3 > CL_TOL ) ) {
+  if( fClover_k3 > CL_TOL ) {
     const size_t s1 = lat[i].neighbor[nu] ;
     const size_t s2 = lat[s1].neighbor[nu] ;
     const size_t s3 = lat[s2].back[mu] ;
@@ -720,7 +717,7 @@ compute_clover_s4( GLU_complex *__restrict sum ,
 #endif
   }
   // 1x3 contrib
-  if( likely( fClover_k4 > CL_TOL ) ) {
+  if( fClover_k4 > CL_TOL ) {
     // 1x3
     const size_t s1 = lat[i].neighbor[nu] ;
     const size_t s2 = lat[s1].neighbor[nu] ;
@@ -1054,8 +1051,9 @@ compute_Gmunu_th( double *red ,
 
   // set reduction array to zero
 #pragma omp for private(i)
-  for( i = 0 ; i < CLINE*Latt.Nthreads ; i++ ) {
-    red[ i ] = 0.0 ;
+  for( i = 0 ; i < Latt.Nthreads ; i++ ) {
+    red[ 0 + i*CLINE ] = 0.0 ;
+    red[ 1 + i*CLINE ] = 0.0 ;
   }
   
 #pragma omp for private(i)

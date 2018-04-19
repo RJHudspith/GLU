@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (GF_wrap.c) is part of GLU.
 
@@ -20,8 +20,6 @@
    @file GF_wrap.c
    @brief rappers for the gauge fixing aspects of the code.
  */
-
-// is special
 #include "Mainfile.h"
 
 #include "chklat_stuff.h" // wanted for the skip_hdr function ...
@@ -31,7 +29,7 @@
 #include "GLU_memcheck.h" // to tell us if we have the memory
 #include "Landau.h"       // Landau fixing
 #include "MAG.h"          // Maximal Axial Gauge
-#include "Or.h"     // Landau fixing
+#include "Or.h"           // Landau fixing
 #include "plaqs_links.h"  // for the plaquettes and links
 #include "read_config.h"  // read the config back in
 #include "read_headers.h" // for rereading the header

@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (invert.h) is part of GLU.
 
@@ -21,7 +21,6 @@
    @brief function definition for taking the naive numerical inverse of a matrix
    Uses Gauss-Jordan with pivoting unless specified otherwise or lapacke.h is used
 */
-
 #ifndef GLU_INVERT_H
 #define GLU_INVERT_H
 
@@ -37,7 +36,12 @@ int
 inverse( GLU_complex M_1[ NCNC ] , 
 	 const GLU_complex M[ NCNC ] ) ;
 
-/////
+/**
+   @fn void newton_approx_inverse( GLU_complex Zinv[ NCNC ] , const GLU_complex Z[ NCNC ] )
+   @brief computes a newton iteration for the inverse, it is not very good
+   @param Zinv :: the matrix inverse
+   @param Z :: the matrix that is having its inverse taken
+ */
 void
 newton_approx_inverse( GLU_complex Zinv[ NCNC ] ,
 		       const GLU_complex Z[ NCNC ] ) ;

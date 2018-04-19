@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (GLU_timer.h) is part of GLU.
 
@@ -21,9 +21,15 @@
    @brief function prototypes for the timing of functions
    @warning requires sys/time.h
  */
-
 #ifndef GLU_TIMER_H
 #define GLU_TIMER_H
+
+/**
+   @fn char* get_date( void )
+   @brief returns the current date if time.h exists, otherwise returns nonsense
+ **/
+char*
+get_date( void ) ;
 
 /**
    @fn double print_time( void )
@@ -42,12 +48,5 @@ print_time( void ) ;
  **/
 void 
 start_timer( void ) ;
-
-/**
-   @fn char* get_date( void )
-   @brief returns the current date if time.h exists, otherwise returns nonsense
- **/
-char*
-get_date( void ) ;
 
 #endif

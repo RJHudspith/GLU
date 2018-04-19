@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (Mainfile.c) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file Mainfile.c
    @brief the driver for the rest of the code
  */
-// Usual dependencies
 #include "Mainfile.h"
 
 #include "GLUlib_wrap.h"    // wrappers for general code functionality

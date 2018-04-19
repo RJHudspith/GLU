@@ -1,5 +1,5 @@
 /*
-    Copyright 2013 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (ND_generic_HYP.c) is part of GLU.
 
@@ -26,6 +26,7 @@
    Computes the links when needed rather than precomputation
  */
 #include "Mainfile.h"
+
 #include "plaqs_links.h"
 #include "projectors.h"
 
@@ -278,7 +279,7 @@ HYsmearND( struct site *__restrict lat ,
       for( i = 0 ; i < LCU ; i++ ) {
 	size_t mu ;
 	//put temp into the previous time-slice 
-	if( likely( t != 0 ) ) { 
+	if( t != 0 ) { 
 	  register const size_t back = bck + i ;
 	  for( mu = 0 ; mu < directions ; mu++ ) {
 	    equiv( lat[back].O[mu] , lat3[i].O[mu] ) ;
@@ -295,7 +296,7 @@ HYsmearND( struct site *__restrict lat ,
     const size_t slice = LCU * t ;    
     const size_t behind = lat[ slice ].back[ ND - 1 ] ;
     #pragma omp for private(i) 
-    PFOR( i = 0 ; i < LCU ; i++ ) {
+    for( i = 0 ; i < LCU ; i++ ) {
       register size_t mu ;
       register const size_t back = behind + i ; 
       register const size_t it = slice + i ; 
@@ -308,7 +309,12 @@ HYsmearND( struct site *__restrict lat ,
     // breaks on convergence
     #ifdef TOP_VALUE
     if( count > TOP_VALUE && count%5 == 0 ) {
-      if( gauge_topological_meas( lat , &qtop_new , &qtop_old , count-1 ) 
+      #pragma omp for private(i)
+      for( i = 0 ; i < CLINE*Latt.Nthreads ; i++ ) {
+	red[ i ] = 0.0 ;
+      }
+      if( gauge_topological_meas_th( red , lat ,
+				     &qtop_new , &qtop_old , count-1 ) 
 	  == GLU_SUCCESS ) {
 	found_top = GLU_TRUE ;
       }

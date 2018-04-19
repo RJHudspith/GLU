@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (wflow.h) is part of GLU.
 
@@ -20,12 +20,11 @@
    @file wflow.h
    @brief prototype functions for the integration of gauge fields with a fictitious flow time
  */
-
 #ifndef GLU_WFLOW_H
 #define GLU_WFLOW_H
 
 /**
-   @fn int flow4d_RK_fast( struct site *__restrict lat , const size_t smiters , const int SIGN , const smearing_types SM_TYPE , const GLU_bool memcheap )
+   @fn int flow_RK3( struct site *__restrict lat , const size_t smiters , const int SIGN , const smearing_types SM_TYPE , const GLU_bool memcheap )
    @brief wilson flow using the Runge-Kutta used in Luescher's follow up paper and by BMW.
    @param lat :: lattice gauge field
    @param smiters :: number of smearing iterations
@@ -34,10 +33,10 @@
    @warning this one is the fastest but also the most memory expensive this is checked in the functions defined in GLU_memcheck.h
  **/
 int
-flow4d_RK( struct site *__restrict lat , 
-	   const size_t smiters ,
-	   const int SIGN ,
-	   const smearing_types SM_TYPE ,
-	   const GLU_bool memcheap ) ;
+flow_RK3( struct site *__restrict lat , 
+	  const size_t smiters ,
+	  const int SIGN ,
+	  const smearing_types SM_TYPE ,
+	  const GLU_bool memcheap ) ;
 
 #endif

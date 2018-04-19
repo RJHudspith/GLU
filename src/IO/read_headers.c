@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (read_headers.c) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file read_headers.c
    @brief strips the ensemble information such as dimensions and checksums
  */
-
 #include "Mainfile.h"
 
 #include "chklat_stuff.h"  // for the get_* routines
@@ -276,7 +275,7 @@ get_header_data_NERSC( FILE *__restrict CONFIG ,
   
   // What precision and type of storage are we reading? Don't recognise we leave
   int flag = get_string( "FLOATING_POINT" , hdr , &str ) ; 
-  if( unlikely( flag == GLU_FAILURE ) ) {
+  if( flag == GLU_FAILURE ) {
     fprintf( stderr , "[IO] FP precision not recognised in file"
 	     "... leaving \n ") ; 
     return GLU_FAILURE ;

@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (SM_wrap.c) is part of GLU.
 
@@ -28,7 +28,6 @@
  */
 #include "Mainfile.h"
 
-// The smearing headers ...
 #include "4D_fast.h"        // excessively uses temporaries for precomuputation
 #include "adaptive_flow.h"  // adaptive wilson flow routine
 #include "GLU_memcheck.h"   // memory checking
@@ -51,8 +50,8 @@ hyp_chooser( struct site *__restrict lat ,
     if( SMINFO.type == SM_ADAPTWFLOW_LOG ) {
       GENTYPE = SM_LOG ;
     }
-    flow4d_adaptive_RK( lat , SMINFO.smiters , 
-			GLU_FORWARD , GENTYPE ) ;
+    flow_adaptive_RK3( lat , SMINFO.smiters , 
+		      GLU_FORWARD , GENTYPE ) ;
     return ;
   }
   // RK4 method of integrating the flow equation
@@ -64,12 +63,12 @@ hyp_chooser( struct site *__restrict lat ,
     }
     switch( meminfo ){
     case FAST :
-      flow4d_RK( lat , SMINFO.smiters , 
-		 GLU_FORWARD , GENTYPE , GLU_FALSE ) ;
+      flow_RK3( lat , SMINFO.smiters , 
+		GLU_FORWARD , GENTYPE , GLU_FALSE ) ;
       return ;
     case MODERATE :
-      flow4d_RK( lat , SMINFO.smiters , 
-		 GLU_FORWARD , GENTYPE , GLU_TRUE ) ;
+      flow_RK3( lat , SMINFO.smiters , 
+		GLU_FORWARD , GENTYPE , GLU_TRUE ) ;
       return ;
     }
   }

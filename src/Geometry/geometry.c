@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (geometry.c) is part of GLU.
 
@@ -20,7 +20,6 @@
    @file geometry.c
    @brief lattice geometry functions for both configuration and momentum space
  */
-
 #include "Mainfile.h"
 
 // computes the lexicographical site index from the position vector in x
@@ -179,36 +178,11 @@ gen_p_sq( const size_t i ,
   for( mu = 0 ; mu < DIMS ; mu++ ) {
     kcos += cos( n[mu] * Latt.twiddles[mu] ) ; 
   }
-  if( unlikely( kcos == (GLU_real)DIMS ) ) {
-    return 9.0 ; 
+  if( kcos == (GLU_real)DIMS ) {
+    return 1.0 ; 
   } else {
     return 2.0 * ( (GLU_real)DIMS - kcos ) ;
   }
-}
-
-// Uses this definition .. That I derived from the derivative
-// p_mu = 2.0 * ( nn1 * sin( p_mu / 2.0 ) + nn2 * sin( 3.0*p_mu/2.0 ) )
-// if we defined fullnn then I use the three-derivative improved version
-GLU_real 
-gen_p_sq_imp( const size_t i , 
-	      const size_t DIMS )
-{
-  int n[ ND ] ;
-  //mapped between 0 to 2Pi
-  get_mom_2piBZ( n , i , DIMS ) ; 
-  GLU_real psq = 0.0 ;
-  register GLU_real twiddle ;
-  size_t mu ;
-  for( mu = 0 ; mu < ND ; mu++ ) {
-    twiddle = 0.5 * n[mu] * Latt.twiddles[mu] ; 
-    #ifdef deriv_fullnn
-    const GLU_real sin_mu = 2.0 * ( nnn1 * sin( twiddle ) + nnn2 * sin( 3.0 * twiddle ) + nnn3 * sin( 5.0 * twiddle ) ) ;
-    #else
-    const GLU_real sin_mu = 2.0 * ( nn1 * sin( twiddle ) + nn2 * sin( 3.0 * twiddle ) ) ;
-    #endif
-    psq += sin_mu * sin_mu ;
-  }
-  return psq == 0.0 ? 1.0 : psq ;
 }
 
 // feynman gauge psq thing
@@ -229,7 +203,7 @@ gen_p_sq_feyn( const size_t i ,
       *flag = ( abs( n[mu] ) > 0 ) ? 0 : 1 ; 
     }
   }
-  if( unlikely( kcos == (GLU_real)ND ) ) {
+  if( kcos == (GLU_real)ND ) {
     return 1.0 ;
   } else {
     return 2.0 * ( (GLU_real)ND - kcos ) ;

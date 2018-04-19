@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2016 Renwick James Hudspith
+    Copyright 2013-2018 Renwick James Hudspith
 
     This file (GLU_splines.h) is part of GLU.
 
@@ -22,22 +22,6 @@
  */
 #ifndef GLU_SPLINES_H
 #define GLU_SPLINES_H
-
-/**
-   @fn void spline_derivative( double *__restrict der , const double *__restrict x , const double *__restrict y , const int N )
-   @brief computes dy/dx at each x-point
-   @param der :: the derivative; must have workspace of length N
-   @param x :: the x-data
-   @param y :: y-data
-   @param N :: length of the x and y data
-
-   @warning If N is less than 5 we use lower (than 4th) order finite difference defs
- */
-void
-spline_derivative( double *__restrict der ,
-		   const double *__restrict x ,
-		   const double *__restrict y ,
-		   const size_t N ) ;
 
 /**
    @fn double cubic_eval( const double *__restrict x , const double *__restrict y , const double *__restrict der , const double mu , const size_t datalength )
@@ -72,15 +56,20 @@ cubic_min( const double *__restrict x ,
 	   const size_t change_up ) ;
 
 /**
-   @fn double solve_spline( const double *__restrict x , const double *__restrict y , const double *__restrict der , const double mu , const size_t datalength )
-   @brief solve the cubic spline y(x) = mu
+   @fn void spline_derivative( double *__restrict der , const double *__restrict x , const double *__restrict y , const int N )
+   @brief computes dy/dx at each x-point
+   @param der :: the derivative; must have workspace of length N
+   @param x :: the x-data
+   @param y :: y-data
+   @param N :: length of the x and y data
+
+   @warning If N is less than 5 we use lower (than 4th) order finite difference defs
  */
-double
-solve_spline( const double *__restrict x ,
-	      const double *__restrict y ,
-	      const double *__restrict der ,
-	      const double mu ,
-	      const size_t change_up ) ;
+void
+spline_derivative( double *__restrict der ,
+		   const double *__restrict x ,
+		   const double *__restrict y ,
+		   const size_t N ) ;
 
 /**
    @fn double solve_spline( const double *__restrict x , const double *__restrict y , const double *__restrict der , const double mu , const size_t datalength )
@@ -92,5 +81,16 @@ solve_derspline( const double *__restrict x ,
 		 const double *__restrict der ,
 		 const double mu ,
 		 const size_t change_up ) ;
+
+/**
+   @fn double solve_spline( const double *__restrict x , const double *__restrict y , const double *__restrict der , const double mu , const size_t datalength )
+   @brief solve the cubic spline y(x) = mu
+ */
+double
+solve_spline( const double *__restrict x ,
+	      const double *__restrict y ,
+	      const double *__restrict der ,
+	      const double mu ,
+	      const size_t change_up ) ;
 
 #endif
