@@ -100,35 +100,39 @@ int
 OR_lattice( struct site *lat ,
 	    const struct draughtboard db )
 {
-  size_t mu , i ;
-  for( mu = 0 ; mu < ND ; mu++ ) {
     // single node until I get the coloring correct
 #ifdef IMPROVED_SMEARING
-#pragma omp single
+    #pragma omp single
     {
-      for( i = 0 ; i < LVOLUME ; i++ ) {
-	GLU_complex stap[ NCNC ] GLUalign ;
-	zero_mat( stap ) ;
-	all_staples_improve( stap , lat , i , mu , ND , SM_APE ) ;
-	overrelax( lat[ i ].O[mu] , stap , get_GLU_thread() ) ;
+      size_t mu , i ;
+      for( mu = 0 ; mu < ND ; mu++ ) {
+	
+	for( i = 0 ; i < LVOLUME ; i++ ) {
+	  GLU_complex stap[ NCNC ] GLUalign ;
+	  zero_mat( stap ) ;
+	  all_staples_improve( stap , lat , i , mu , ND , SM_APE ) ;
+	  overrelax( lat[ i ].O[mu] , stap , 0 ) ;
+	}
       }
     }
 #else
-    // loop draughtboard coloring
-    size_t c ;
-    for( c = 0 ; c < db.Ncolors ; c++ ) {
-#pragma omp for private(i)
-      for( i = 0 ; i < db.Nsquare[c] ; i++ ) {
-	const size_t it = db.square[c][i] ;
-	GLU_complex stap[ NCNC ] GLUalign ;
-	zero_mat( stap ) ;
-	all_staples( stap , lat , it , mu , ND , SM_APE ) ;
-	overrelax( lat[ it ].O[mu] , stap , get_GLU_thread() ) ;
+    size_t mu , i ;
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      // loop draughtboard coloring
+      size_t c ;
+      for( c = 0 ; c < db.Ncolors ; c++ ) {
+        #pragma omp for private(i)
+	for( i = 0 ; i < db.Nsquare[c] ; i++ ) {
+	  const size_t it = db.square[c][i] ;
+	  GLU_complex stap[ NCNC ] GLUalign ;
+	  zero_mat( stap ) ;
+	  all_staples( stap , lat , it , mu , ND , SM_APE ) ;
+	  overrelax( lat[ it ].O[mu] , stap , get_GLU_thread() ) ;
+	}
+	// and that is it
       }
-      // and that is it
     }
 #endif
-  }
   return GLU_SUCCESS ;
 }
 

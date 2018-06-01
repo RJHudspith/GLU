@@ -147,7 +147,6 @@ hb( GLU_complex U[ NCNC ] ,
   GLU_complex s0 GLUalign , s1 GLUalign ;
   double scale GLUalign ;
   size_t i ;
-
 #ifdef DIAGONAL_UPDATE
   for( i = 0 ; i < NC-1 ; i++ ) {
     only_subgroup( &s0 , &s1 , &scale , U , staple , i ) ;
@@ -182,36 +181,39 @@ int
 hb_lattice( struct site *lat ,
 	    const double invbeta ,
 	    const struct draughtboard db )
-{
-  size_t mu , i ;
-  for( mu = 0 ; mu < ND ; mu++ ) {
-    // single node until I figure out the coloring
+{    // single node until I figure out the coloring
 #ifdef IMPROVED_SMEARING
-#pragma omp single
+    #pragma omp single
     {
-      for( i = 0 ; i < LVOLUME ; i++ ) {
-	GLU_complex stap[ NCNC ] GLUalign ;
-	zero_mat( stap ) ;
-	all_staples_improve( stap , lat , i , mu , ND , SM_APE ) ;
-	hb( lat[ i ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
+      size_t mu , i ;
+      for( mu = 0 ; mu < ND ; mu++ ) {
+	for( i = 0 ; i < LVOLUME ; i++ ) {
+	  GLU_complex stap[ NCNC ] GLUalign ;
+	  zero_mat( stap ) ;
+	  all_staples_improve( stap , lat , i , mu , ND , SM_APE ) ;
+	  hb( lat[ i ].O[mu] , stap , invbeta , 0 ) ;
+	}
       }
     }
 #else
-    size_t c ;
-    // loop draughtboard coloring
-    for( c = 0 ; c < db.Ncolors ; c++ ) {
-      // parallel loop over all sites with this coloring
-#pragma omp for private(i) //schedule(dynamic)
-      for( i = 0 ; i < db.Nsquare[c] ; i++ ) {
+    size_t mu , i ;
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      
+      size_t c ;
+      // loop draughtboard coloring
+      for( c = 0 ; c < db.Ncolors ; c++ ) {
+	// parallel loop over all sites with this coloring
+        #pragma omp for private(i) //schedule(dynamic)
+	for( i = 0 ; i < db.Nsquare[c] ; i++ ) {
 	const size_t it = db.square[c][i] ;
 	GLU_complex stap[ NCNC ] GLUalign ;
 	zero_mat( stap ) ;
 	all_staples( stap , lat , it , mu , ND , SM_APE ) ;
 	hb( lat[ it ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
       }
-      // and that is it
+	// and that is it
     }
-  }
+}
 #endif
   return GLU_SUCCESS ;
 }

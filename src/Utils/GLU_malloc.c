@@ -74,8 +74,10 @@ allocate_lat( void )
 void
 free_lat( struct site *lat )
 {
-  size_t i , mu ;
+  size_t i ;
+  #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
+    size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       if( lat[i].O[mu] != NULL ) {
 	free( lat[i].O[mu] ) ;
@@ -127,8 +129,10 @@ free_s_site( struct s_site *lat ,
 	     const size_t LENGTH3 )
 {
 
-  size_t i , mu ;
+  size_t i ;
+#pragma omp parallel for private(i)
   for( i = 0 ; i < LENGTH1 ; i++ ) {
+    size_t mu ;
     for( mu = 0 ; mu < LENGTH2 ; mu++ ) {
       if( lat[i].O[mu] != NULL ) {
 	free( lat[i].O[mu] ) ;

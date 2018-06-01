@@ -385,7 +385,7 @@ free_WF( struct wflow_temps *WF ,
   if( memcheap == GLU_TRUE ) {
     // free our fields
     free_s_site( WF->Z , LVOLUME , ND , TRUE_HERM ) ;
-#if IMPROVED_SMEARING
+#ifdef IMPROVED_SMEARING
     free_s_site( WF->lat2 , 2*LCU , ND , NCNC ) ;
     free_s_site( WF->lat3 , 2*LCU , ND , NCNC ) ;
     free_s_site( WF->lat4 , 2*LCU , ND , NCNC ) ;
