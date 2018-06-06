@@ -24,6 +24,7 @@
 
 #include "CG.h"          // set gauge matrix
 #include "GLU_splines.h" // GLUbic spline interpolation code
+#include "gtrans.h"
 
 // line search probes for the Coulomb CG-gauge fixing
 #define PC1 (0.17)
@@ -146,19 +147,21 @@ exponentiate_gauge_CG( GLU_complex **gauge ,
 void
 line_search_Coulomb( double *red ,
 		     GLU_complex **gauge ,
-		     const struct s_site *rotato ,
 		     const struct draughtboard db ,
 		     const struct site *lat ,
 		     const GLU_complex **in ,
 		     const size_t t )
 {
   double c[ 3 ] = { 0. , 0. , 0. } ;
-  size_t i , j ;
-  #pragma omp for private(i)
+  size_t i ;
+#pragma omp for private(i)
   for( i = 0 ; i < db.Nsquare[0] ; i++ ) {
     GLU_complex A1[ NCNC ] GLUalign ;
     GLU_complex A2[ NCNC ] GLUalign ;
     GLU_complex B[ NCNC ] GLUalign ;
+    GLU_complex C[ NCNC ] GLUalign ;
+    GLU_complex D[ NCNC ] GLUalign ;
+    
     double loc_v[ LINE_NSTEPS ] ;
     size_t mu , n ;
     for( mu = 0 ; mu < LINE_NSTEPS ; mu++ ) {
@@ -166,30 +169,34 @@ line_search_Coulomb( double *red ,
     }
     const size_t idx = db.square[0][i] ;
     size_t bck ;
-    for( mu = 0 ; mu < ND-1 ; mu++ ) {
-      bck = lat[idx].back[mu] ;
-      loc_v[0] += creal( trace( rotato[idx].O[mu] ) ) ;
-      loc_v[0] += creal( trace( rotato[bck].O[mu] ) ) ;
-    }
     // evaluate for probes -> We are still calling set_gauge_matrix
     // wayyy too often!
-    //    for( n = 1 ; n < LINE_NSTEPS ; n++ ) {
     set_gauge_matrix( A1 , in , PC1 , idx ) ;
     set_gauge_matrix( A2 , in , PC2 , idx ) ;
     for( mu = 0 ; mu < ND-1 ; mu++ ) {
       bck = lat[idx].back[mu] ;
+
+      equiv( C , lat[idx+LCU*t].O[mu] ) ;
+      gtransform_local( gauge[idx] , C , gauge[lat[idx].neighbor[mu]] ) ;
+
+      equiv( D , lat[bck+LCU*t].O[mu] ) ;
+      gtransform_local( gauge[bck] , D , gauge[lat[bck].neighbor[mu]] ) ;
+
+      loc_v[0] += creal( trace( C ) ) ;
+      loc_v[0] += creal( trace( D ) ) ;
+
       // positive ones
       set_gauge_matrix( B , in , PC1 , lat[idx].neighbor[mu] ) ;
-      loc_v[1] += Re_trace_abc_dag_suNC( A1 , rotato[idx].O[mu] , B ) ;
+      loc_v[1] += Re_trace_abc_dag_suNC( A1 , C , B ) ;
       // negative ones
       set_gauge_matrix( B , in , PC1 , bck ) ;
-      loc_v[1] += Re_trace_abc_dag_suNC( B , rotato[bck].O[mu] , A1 ) ;
+      loc_v[1] += Re_trace_abc_dag_suNC( B , D , A1 ) ;
       // positive ones
       set_gauge_matrix( B , in , PC2 , lat[idx].neighbor[mu] ) ;
-      loc_v[2] += Re_trace_abc_dag_suNC( A2 , rotato[idx].O[mu] , B ) ;
+      loc_v[2] += Re_trace_abc_dag_suNC( A2 , C , B ) ;
       // negative ones
       set_gauge_matrix( B , in , PC2 , bck ) ;
-      loc_v[2] += Re_trace_abc_dag_suNC( B , rotato[bck].O[mu] , A2 ) ;
+      loc_v[2] += Re_trace_abc_dag_suNC( B , D , A2 ) ;
     }
     const size_t th = get_GLU_thread() ;
     // reductions
@@ -202,6 +209,7 @@ line_search_Coulomb( double *red ,
   }
   // compute the vals
   double val[ LINE_NSTEPS ] ;
+  size_t j ;
   for( j = 0 ; j < LINE_NSTEPS ; j++ ) {
     val[j] = 0.0 ;
     for( i = 0 ; i < Latt.Nthreads ; i++ ) {

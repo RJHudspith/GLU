@@ -35,10 +35,6 @@ allocate_temp_cg( struct gauges *G ,
   if( ( CG -> red = calloc( CLINE * Latt.Nthreads , sizeof( double ) ) ) == NULL ) {
     FLAG = GLU_TRUE ;  goto end ;
   }
-  // allocate rotato
-  if( ( CG -> rotato = allocate_s_site( LCU , ND-1 , NCNC ) ) == NULL ) {
-    FLAG = GLU_TRUE ;  goto end ;
-  }
   // checkerboard for the line search
   if( init_cb( &CG -> db , LCU , ND-1 ) == GLU_FAILURE ) {
     FLAG = GLU_TRUE ;  goto end ;
@@ -101,8 +97,7 @@ int
 allocate_temp_lg( struct CGtemps *CG ,
 		  const GLU_bool FACG )
 {
-  CG -> sn = NULL ; CG -> in_old = NULL ;
-  CG -> rotato = NULL ; CG -> red = NULL ;
+  CG -> sn = NULL ; CG -> in_old = NULL ; CG -> red = NULL ;
   size_t i ;
   GLU_bool FLAG = GLU_FALSE ;
   if( ( CG -> red = calloc( CLINE * Latt.Nthreads , sizeof( double ) ) ) == NULL ) {
@@ -140,7 +135,6 @@ free_temp_cg( struct gauges G ,
 {
   size_t i ;
   // free the rotated temporary
-  free_s_site( CG.rotato , LCU , ND-1 , NCNC ) ;
   if( CG.red != NULL ) {
     free( CG.red ) ;
   }

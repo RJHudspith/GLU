@@ -76,7 +76,6 @@ struct CGtemps {
   double *red ;
   GLU_complex **sn ;
   GLU_complex **in_old ;
-  struct s_site *rotato ;
   struct draughtboard db ;
 } ;
 

@@ -63,11 +63,10 @@ exponentiate_gauge_CG( GLU_complex **gauge ,
 
 
 /**
-   @fn void line_search_Coulomb( double *red , GLU_complex **gauge , const struct s_site *rotato , const struct draughtboard db , const struct site *lat , const GLU_complex **in , const size_t t )
+   @fn void line_search_Coulomb( double *red , GLU_complex **gauge , const struct draughtboard db , const struct site *lat , const GLU_complex **in , const size_t t )
    @brief perform the line search for the Coulomb gauge fixing routines
    @param red :: reduction array
    @param gauge :: accumulated gauge transform matrices
-   @param rotato :: gauge rotated linke ( g(x)U(x)g(x+u)^{\dagger}
    @param db :: draughtboard
    @param lat :: lattice links
    @param in :: derivative of the gauge fields
@@ -76,7 +75,6 @@ exponentiate_gauge_CG( GLU_complex **gauge ,
 void
 line_search_Coulomb( double *red ,
 		     GLU_complex **gauge ,
-		     const struct s_site *rotato ,
 		     const struct draughtboard db ,
 		     const struct site *lat ,
 		     const GLU_complex **in ,

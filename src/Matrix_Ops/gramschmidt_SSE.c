@@ -43,10 +43,16 @@ gram_reunit( GLU_complex *__restrict U )
   register __m128d sum ;
 
   // orthogonalise first row
+  #ifdef __FMA__
+  sum = _mm_fmadd_pd( *( u + 0 ) , *( u + 0 ) ,
+		      _mm_fmadd_pd( *( u + 3 ) , *( u + 3 ) ,
+				    _mm_mul_pd( *( u + 6 ) , *( u + 6 ) ) ) ) ;
+  #else
   sum = _mm_add_pd( _mm_mul_pd( *( u + 0 ) , *( u + 0 ) ) ,
 		    _mm_add_pd( _mm_mul_pd( *( u + 3 ) , *( u + 3 ) ) ,
 				_mm_mul_pd( *( u + 6 ) , *( u + 6 ) ) ) ) ;
-
+  #endif
+  
   sum = _mm_add_pd( sum , _mm_shuffle_pd( sum , sum , 1 ) ) ;
   sum = _mm_div_pd( _mm_setr_pd( 1. , 1. ) , _mm_sqrt_pd( sum ) ) ; // has the norm
  
@@ -64,10 +70,16 @@ gram_reunit( GLU_complex *__restrict U )
   *( u + 7 ) = _mm_sub_pd( *( u + 7 ) , SSE2_MUL( sum , *( u + 6 ) ) ) ;
 
   // normalise
+  #ifdef __FMA__
+  sum = _mm_fmadd_pd( *( u + 1 ) , *( u + 1 ) ,
+		      _mm_fmadd_pd( *( u + 4 ) , *( u + 4 ) ,
+				    _mm_mul_pd( *( u + 7 ) , *( u + 7 ) ) ) ) ;
+  #else
   sum = _mm_add_pd( _mm_mul_pd( *( u + 1 ) , *( u + 1 ) ) ,
 		    _mm_add_pd( _mm_mul_pd( *( u + 4 ) , *( u + 4 ) ) ,
 				_mm_mul_pd( *( u + 7 ) , *( u + 7 ) ) ) ) ;
-
+  #endif
+  
   sum = _mm_add_pd( sum , _mm_shuffle_pd( sum , sum , 1 ) ) ;
   sum = _mm_div_pd( _mm_setr_pd( 1. , 1. ) , _mm_sqrt_pd( sum ) ) ; // has the norm
 

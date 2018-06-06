@@ -91,37 +91,39 @@ FOURIER_ACCELERATE2( struct fftw_stuff *FFTW )
 // bit that calculates the steepest descent with fourier acceleration
 static void
 steep_deriv_CG( GLU_complex **in ,
-		struct s_site *rotato ,
+		const struct draughtboard db ,
 		const struct site *lat , 
 		const GLU_complex **slice_gauge , 
 		const size_t t )
 {
   size_t i ;
-  #pragma omp for private(i)
-  for( i = 0 ; i < LCU ; i ++ ) {
-    const size_t j = i + LCU * t ;
-    size_t mu ;
-    for( mu = 0 ; mu < ND-1 ; mu++ ) {
-      const size_t it = lat[i].neighbor[mu] ;
-      equiv( rotato[i].O[mu] , lat[j].O[mu] ) ;
-      gtransform_local( slice_gauge[i] , rotato[i].O[mu] , slice_gauge[it] ) ;
-    }
-  }
-
-  #pragma omp for private(i)
+#pragma omp for private(i)
   for( i = 0 ; i < LCU ; i ++ ) {
     // compute gauge rotated derivatives
     GLU_complex sum[ HERMSIZE ] GLUalign ;
     GLU_complex A[ HERMSIZE ] GLUalign ;
     GLU_complex B[ HERMSIZE ] GLUalign ;
+
+    GLU_complex C[ NCNC ] GLUalign ;
+    GLU_complex D[ NCNC ] GLUalign ;
+    
     size_t mu ;
     for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
       A[ mu ] = B[ mu ] = sum[ mu ] = 0.0 ;
     }
     for( mu = 0 ; mu < ND-1 ; mu++ ) {
-      const size_t back = lat[i].back[mu] ;
-      Hermitian_proj_short( B , rotato[i].O[mu] ) ;
-      Hermitian_proj_short( A , rotato[back].O[mu] ) ;
+      const size_t Uidx = i+LCU*t ;
+      const size_t Ubck = lat[Uidx].back[mu] ;
+      const size_t bck  = lat[i].back[mu] ;
+      const size_t it   = lat[i].neighbor[mu] ;
+
+      equiv( C , lat[Uidx].O[mu] ) ;
+      gtransform_local( slice_gauge[i] , C , slice_gauge[it] ) ;
+      equiv( D , lat[Ubck].O[mu] ) ;
+      gtransform_local( slice_gauge[bck] , D , slice_gauge[i] ) ;     
+      Hermitian_proj_short( B , C ) ;
+      Hermitian_proj_short( A , D ) ;
+          
       #if NC == 3
       sum[0] += A[0] - B[0] ;
       sum[1] += A[1] - B[1] ;
@@ -157,7 +159,6 @@ steep_deriv_CG( GLU_complex **in ,
     }
     #endif
   }
-
   return ;
 }
 
@@ -265,18 +266,20 @@ steep_step_SD( GLU_complex **slice_gauge ,
 	       const struct site *lat , 
 	       const size_t t )
 {
-  steep_deriv_CG( FFTW -> in , CG.rotato , lat ,
+  steep_deriv_CG( FFTW -> in , CG.db , lat ,
   		  (const GLU_complex**)slice_gauge , t ) ;
 
   // if we want to Fourier accelerate, we call this otherwise it is the SD
   FOURIER_ACCELERATE2( FFTW ) ;
   
 #if !(defined GLU_GFIX_SD) && !(defined GLU_FR_CG)
-  line_search_Coulomb( CG.red , slice_gauge , CG.rotato , CG.db , lat , 
+  line_search_Coulomb( CG.red , slice_gauge , CG.db , lat , 
 		       (const GLU_complex**)FFTW -> in , t ) ;
 #else
   // exponentiate this
-  exponentiate_gauge_CG( slice_gauge , (const GLU_complex**)FFTW -> in , Latt.gf_alpha ) ;
+  exponentiate_gauge_CG( slice_gauge ,
+			 (const GLU_complex**)FFTW -> in ,
+			 Latt.gf_alpha ) ;
 #endif
   return ;
 }
@@ -296,12 +299,12 @@ steep_step_FACG( GLU_complex **gauge ,
   double trAA = 0.0 ;
   
   // set everything to zero
-#pragma omp for private(k)
+  #pragma omp for private(k)
   for( k = 0 ; k < CLINE*Latt.Nthreads ; k++ ) {
     CG.red[ k ] = 0.0 ;
   }
 
-  steep_deriv_CG( FFTW -> in , CG.rotato , lat ,
+  steep_deriv_CG( FFTW -> in , CG.db , lat ,
   		  (const GLU_complex**)gauge , t ) ;
 
   // if we want to Fourier accelerate, we call this otherwise it is the SD
@@ -315,7 +318,7 @@ steep_step_FACG( GLU_complex **gauge ,
   }
   *tr = inold2 * GFNORM_COULOMB ;
   
-  line_search_Coulomb( CG.red , gauge , CG.rotato , CG.db , lat , 
+  line_search_Coulomb( CG.red , gauge , CG.db , lat , 
 		       (const GLU_complex**)FFTW -> in , t ) ;
     
 #pragma omp for private(i)
@@ -330,18 +333,14 @@ steep_step_FACG( GLU_complex **gauge ,
   
   // have a goto behaving like a while here
  top :
-  
-  // make sure all the threads are together
-  #pragma omp barrier
-    
+
   // set everything to zero
   insum2 = sum_conj2 =  trAA = 0.0 ;
-#pragma omp for private(k)
   for( k = 0 ; k < CLINE*Latt.Nthreads ; k++ ) {
     CG.red[ k ] = 0.0 ;
   }
   
-  steep_deriv_CG( FFTW -> in , CG.rotato , lat ,
+  steep_deriv_CG( FFTW -> in , CG.db , lat ,
 		  (const GLU_complex**)gauge ,  t ) ;
   
   FOURIER_ACCELERATE2( FFTW ) ;
@@ -367,7 +366,7 @@ steep_step_FACG( GLU_complex **gauge ,
   
   #pragma omp for private(i)
   for( i = 0 ; i < TRUE_HERM*LCU ; i++ ) {
-    size_t idx = i/LCU , j = i%LCU ;
+    const size_t idx = i/LCU , j = i%LCU ;
     GLU_complex *pin = FFTW -> in[idx] ;
     GLU_complex *pin_old = CG.in_old[idx] ;
     GLU_complex *psn = CG.sn[idx] ;
@@ -376,9 +375,11 @@ steep_step_FACG( GLU_complex **gauge ,
   }
 
   if( *tr > CG_TOL) {
-    line_search_Coulomb( CG.red , gauge , CG.rotato , CG.db , lat , (const GLU_complex**)CG.sn , t ) ;
+    line_search_Coulomb( CG.red , gauge , CG.db , lat ,
+			 (const GLU_complex**)CG.sn , t ) ;
   } else {
-    exponentiate_gauge_CG( gauge , (const GLU_complex**)CG.sn , Latt.gf_alpha ) ;
+    exponentiate_gauge_CG( gauge ,
+			   (const GLU_complex**)CG.sn , Latt.gf_alpha ) ;
   }
 
   loc_iters++ ;
@@ -549,7 +550,7 @@ Coulomb_FA( struct site  *__restrict lat ,
   
   // CG temporaries
   struct CGtemps CG ;
-  CG.sn = NULL ; CG.in_old = NULL ; CG.rotato = NULL ; CG.red = NULL ;
+  CG.sn = NULL ; CG.in_old = NULL ; CG.red = NULL ;
 
   // gauge allocations 
   struct gauges G ;
@@ -568,14 +569,14 @@ Coulomb_FA( struct site  *__restrict lat ,
     size_t t = 0 , i , thread_its = 0 ;
     // OK so we have set up the gauge transformation matrices
     thread_its = steep_fix( G.g_end , CG , FFTW ,
-			 lat , t , accuracy , max_iter , f ) ;
+			    lat , t , accuracy , max_iter , f ) ;
     
     // and t+1
     thread_its += steep_fix( G.g , CG , FFTW ,
-			  lat , t+1 , accuracy , max_iter , f ) ;
+			     lat , t+1 , accuracy , max_iter , f ) ;
     
     // reunitarise the gauges to counteract the accumulated round-off error
-    #pragma omp for nowait private(i)
+    #pragma omp for private(i)
     for( i = 0 ; i < LCU ; i++ ) { 
       gram_reunit( G.g_end[i] ) ; 
       gram_reunit( G.g[i] ) ; 
@@ -588,7 +589,7 @@ Coulomb_FA( struct site  *__restrict lat ,
     //now we do the same for all time slices
     for( t = 2 ; t < Latt.dims[ ND - 1 ] ; t++ ) {
 
-      #pragma omp for nowait private(i) 
+      #pragma omp for private(i) 
       for( i = 0 ; i < LCU ; i++ ) { identity( G.g_up[i] ) ; }
 
       // gauge fix on this slice
@@ -596,7 +597,7 @@ Coulomb_FA( struct site  *__restrict lat ,
 			    t , accuracy , max_iter , f ) ;
       
       // reunitarise to counteract the accumulated round-off error
-      #pragma omp for nowait private(i) 
+      #pragma omp for private(i) 
       for( i = 0 ; i < LCU ; i++ ) { gram_reunit( G.g_up[i] ) ; }
       
       //gauge transform the links for this slice "g"
