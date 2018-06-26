@@ -40,7 +40,8 @@ free_cb( struct draughtboard *db )
 // get the correct index
 static size_t
 get_midx( const size_t i ,
-	  const size_t DIR )
+	  const size_t DIR ,
+	  const size_t Ncolors )
 {
   int n[ ND ] ;
   get_mom_2piBZ( n , i , DIR ) ;
@@ -54,9 +55,9 @@ get_midx( const size_t i ,
   }
 #ifdef verbose
   fprintf( stdout , "(%zu) even :: %zu || odd %zu -> %zu \n" , 
-	   i , even_sum , odd_sum , ( even_sum%2 + odd_sum )%3 ) ;
+	   i , even_sum , odd_sum , ( even_sum%2 + odd_sum )%Ncolors ) ;
 #endif
-  return ( even_sum%2 + odd_sum )%3 ;
+  return ( even_sum%2 + odd_sum )%Ncolors ;
 }
 
 // initialise the draughtboarding
@@ -73,7 +74,7 @@ init_cb( struct draughtboard *db ,
   db -> Ncolors = 3 ;
   db -> square  = malloc( db -> Ncolors * sizeof( size_t* ) ) ;
   db -> Nsquare = malloc( db -> Ncolors * sizeof( size_t ) ) ;
-
+  
   // set the counters to zero
   for( i = 0 ; i < db -> Ncolors ; i++ ) {
     db -> Nsquare[i] = 0 ;
@@ -81,7 +82,7 @@ init_cb( struct draughtboard *db ,
 
   // get the coloring
   for( i = 0 ; i < LENGTH ; i++ ) {
-    db -> Nsquare[ get_midx( i , DIR ) ]++ ;
+    db -> Nsquare[ get_midx( i , DIR , db -> Ncolors ) ]++ ;
   }
 
   // if we don't have an odd dim we shorten this
@@ -91,21 +92,21 @@ init_cb( struct draughtboard *db ,
 
   // allocate the coloring and set the Nsquares to zero
   for( i = 0 ; i < db -> Ncolors ; i++ ) {
-    //#ifdef verbose
-    printf( "[DRAUGHTBOARD] COLOR_%zu :: %zu \n" , i , db -> Nsquare[i] ) ;
-    //#endif
+    #ifdef verbose
+    fprintf( stdout , "[DB] COLOR_%zu :: %zu \n" , i , db -> Nsquare[i] ) ;
+    #endif
     db -> square[i] = malloc( db -> Nsquare[i] * sizeof( size_t ) ) ;
     db -> Nsquare[i] = 0 ;
   }
 
   // set back to zero and redo recording the index of each
   for( i = 0 ; i < LENGTH ; i++ ) {
-    const size_t midx = get_midx( i , DIR ) ;
+    const size_t midx = get_midx( i , DIR , db -> Ncolors ) ;
     db -> square[ midx ][ db -> Nsquare[ midx ] ] = i ;
     db -> Nsquare[ midx ]++ ;
   }
 
-  printf( "\n[DRAUGHTBOARD] initialised\n\n" ) ;
+  fprintf( stdout , "\n[DB] initialised\n\n" ) ;
 
   return GLU_SUCCESS ;
 }

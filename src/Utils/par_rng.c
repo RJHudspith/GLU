@@ -193,8 +193,10 @@ par_rng_dbl( const uint32_t thread )
   return par_XOR_1024_dbl( thread ) ;
 #elif (defined MWC_1038_RNG)
   return par_MWC_1038_dbl( thread ) ;
+#elif (defined WELL_512_RNG)
+  return par_Well_512_dbl( thread ) ;
 #else
-  return par_WELL_512_dbl( thread ) ;
+  return par_MWC_4096_dbl( thread ) ;
 #endif
 }
 
@@ -324,7 +326,7 @@ write_par_rng_state( const char *outfile )
 #elif (defined MWC_1038_RNG)
   fprintf( out , "RNG = PAR_MWC_1038\n" ) ;
 #else
-  fprintf( out , "RNG = PAR_WELL_512\n" ) ;
+  fprintf( out , "RNG = PAR_MWC_4096\n" ) ;
 #endif
   // tell us how big the table is
   fprintf( out, "RNG_TABLE = %d\n" , RNG_TABLE ) ;
@@ -339,7 +341,7 @@ write_par_rng_state( const char *outfile )
 #elif (defined MWC_1038_RNG)
   write_par_MWC_1038_table( out ) ;
 #else
-  write_par_WELL_512_table( out ) ;
+  write_par_MWC_4096_table( out ) ;
 #endif
 
   fclose( out ) ;

@@ -75,6 +75,7 @@ approx_minimum( const size_t nmeas ,
     }
 
     #ifdef verbose
+    fprintf( stdout , "[GF] fun[%zu] %e\n" , i , functional[i] ) ;
     fprintf( stdout , "[GF] der[%zu] %e \n" , i , derivative[i] ) ;
     #endif
   }
@@ -137,7 +138,7 @@ exponentiate_gauge_CG( GLU_complex **gauge ,
   for( i = 0 ; i < LCU ; i++ ) {
     GLU_complex temp[ NCNC ] GLUalign , temp2[ NCNC ] GLUalign ;
     set_gauge_matrix( temp , in , alpha , i ) ;
-    equiv( temp2 , gauge[i] ) ;
+    memcpy( temp2 , gauge[i] , NCNC*sizeof( GLU_complex ) ) ;
     multab_suNC( gauge[i] , temp , temp2 ) ;
   }
   return ;
@@ -152,7 +153,7 @@ line_search_Coulomb( double *red ,
 		     const GLU_complex **in ,
 		     const size_t t )
 {
-  double c[ 3 ] = { 0. , 0. , 0. } ;
+  double c[ LINE_NSTEPS ] = { 0. , 0. , 0. } ;
   size_t i ;
 #pragma omp for private(i)
   for( i = 0 ; i < db.Nsquare[0] ; i++ ) {
@@ -176,11 +177,11 @@ line_search_Coulomb( double *red ,
     for( mu = 0 ; mu < ND-1 ; mu++ ) {
       bck = lat[idx].back[mu] ;
 
-      equiv( C , lat[idx+LCU*t].O[mu] ) ;
+      memcpy( C , lat[idx+LCU*t].O[mu] , NCNC*sizeof( GLU_complex ) ) ;
       gtransform_local( gauge[idx] , C , gauge[lat[idx].neighbor[mu]] ) ;
 
-      equiv( D , lat[bck+LCU*t].O[mu] ) ;
-      gtransform_local( gauge[bck] , D , gauge[lat[bck].neighbor[mu]] ) ;
+      memcpy( D , lat[bck+LCU*t].O[mu] , NCNC*sizeof( GLU_complex ) ) ;
+      gtransform_local( gauge[bck] , D , gauge[idx] ) ;
 
       loc_v[0] += creal( trace( C ) ) ;
       loc_v[0] += creal( trace( D ) ) ;
@@ -213,9 +214,8 @@ line_search_Coulomb( double *red ,
   for( j = 0 ; j < LINE_NSTEPS ; j++ ) {
     val[j] = 0.0 ;
     for( i = 0 ; i < Latt.Nthreads ; i++ ) {
-      val[ j ] += red[ j + CLINE*i ] ;
+      val[ j ] -= red[ j + CLINE*i ] ;
     }
-    val[ j ] = 1 - val[j] / ( (ND-1)*NC*LCU ) ;
   }
 
   const double Calcg[ LINE_NSTEPS ] = { 0.0 , PC1 , PC2 } ;

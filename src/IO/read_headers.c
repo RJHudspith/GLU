@@ -46,14 +46,12 @@ get_header_data_CERN( FILE *__restrict CONFIG ,
 
   // read the first bit - Navigation and such
   int NAV[ ND ] ;
-  
   if( !fread( NAV , ( ND ) * sizeof ( int ) , 1 , CONFIG ) ) {
     fprintf( stderr , "[IO] Cannot understand CERN navigation details"
 	     ".. Leaving \n" ) ;
     return GLU_FAILURE ;
   }
-  
-  if ( WORDS_BIGENDIAN ) { bswap_32( ND + 1 , NAV ) ; } 
+  if ( WORDS_BIGENDIAN ) { bswap_32( ND , NAV ) ; } 
 
   // convert to my dimensions , they have the time dim first, I have it last
   size_t mu ;
@@ -67,8 +65,6 @@ get_header_data_CERN( FILE *__restrict CONFIG ,
     printf( "[IO] Cannot understand plaquette details .. Leaving \n" ) ;
     return GLU_FAILURE ;
   }
-  
-  // we save this check to the end .. as a big finale!
   if ( WORDS_BIGENDIAN ) {
     bswap_64( 1 , plaq ) ;
   } 
@@ -371,6 +367,8 @@ read_header( FILE *__restrict infile ,
 {
   // switch on the header type
   switch( Latt.head ) {
+  case CERN_HEADER :
+    return get_header_data_CERN( infile , HEAD_DATA , VERB ) ;
   case NERSC_HEADER :
     return get_header_data_NERSC( infile , HEAD_DATA , VERB ) ;
   case HIREP_HEADER :
