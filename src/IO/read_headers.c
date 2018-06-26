@@ -380,8 +380,6 @@ read_header( FILE *__restrict infile ,
   case ILDG_SCIDAC_HEADER : // ILDG and SCIDAC are basically the same ...
   case ILDG_BQCD_HEADER : // ILDG and SCIDAC are basically the same ...
     return get_header_data_SCIDAC( infile , HEAD_DATA ) ; // in Scidac.c
-  case CERN_HEADER :
-    return get_header_data_CERN( infile , HEAD_DATA , VERB ) ;
   case RANDOM_CONFIG :
   case UNIT_GAUGE :
   case INSTANTON :
