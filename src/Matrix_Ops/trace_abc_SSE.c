@@ -27,6 +27,8 @@
 #include <immintrin.h>
 #include "SSE2_OPS.h"
 
+#define TEST
+
 // compute the real part of the product of 3 su(3) matrices
 double
 Re_trace_abc_dag_suNC( const GLU_complex a[ NCNC ] , 
@@ -67,15 +69,11 @@ Re_trace_abc_dag_suNC( const GLU_complex a[ NCNC ] ,
 					    SSE2_MUL( a1 , a3 ) ) ) ;
   // and compute the real part of the trace
   register __m128d sum ;
-  sum = _mm_add_pd( _mm_mul_pd( a0 , *( C + 0 ) ) ,
-		    _mm_add_pd( _mm_mul_pd( a1 , *( C + 1 ) ) ,
-				_mm_mul_pd( a2 , *( C + 2 ) ) ) ) ;
-  sum = _mm_add_pd( sum , _mm_add_pd( _mm_mul_pd( a3 , *( C + 3 ) ) ,
-				      _mm_mul_pd( a4 , *( C + 4 ) ) ) ) ;
-  sum = _mm_add_pd( sum , _mm_add_pd( _mm_mul_pd( a5 , *( C + 5 ) ) ,
-				      _mm_mul_pd( a6 , *( C + 6 ) ) ) ) ;
-  sum = _mm_add_pd( sum , _mm_add_pd( _mm_mul_pd( a7 , *( C + 7 ) ) ,
-				      _mm_mul_pd( a8 , *( C + 8 ) ) ) ) ;
+  sum = SSE2_FMA( a0 , *( C+0 ) , SSE2_FMA( a1 , *( C+1 ) , _mm_mul_pd( a2 , *( C + 2 ) ) ) ) ;
+  sum = SSE2_FMA( a3 , *( C + 3 ) , SSE2_FMA( a4 , *( C + 4 ) , sum ) ) ;
+  sum = SSE2_FMA( a5 , *( C + 5 ) , SSE2_FMA( a6 , *( C + 6 ) , sum ) ) ;
+  sum = SSE2_FMA( a7 , *( C + 7 ) , SSE2_FMA( a8 , *( C + 8 ) , sum ) ) ;
+  
   _mm_store_pd( (void*)&csum , sum ) ;
 #elif NC == 2
   // puts the four parts of the sum into the upper and lower parts of 

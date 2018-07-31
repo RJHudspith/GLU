@@ -38,14 +38,16 @@ approx_minimum( const size_t nmeas ,
 		const double functional[ nmeas ] ) ;
 
 /**
-   @fn void egauge_Landau( GLU_complex **gauge , const GLU_complex **in , const double alpha )
+   @fn void egauge_Landau( struct site *lat , GLU_complex **gauge , const GLU_complex **in , const double alpha )
    @brief exponentiate the derivative into the matrix gauge
+   @param lat :: lattice gauge fields
    @param gauge :: gauge rotation matrices for this iteration
    @param in :: derivative dA
    @param alpha :: step length for the SD/CG routines
  */
 void
-egauge_Landau( GLU_complex **gauge , 
+egauge_Landau( struct site *lat ,
+	       GLU_complex **gauge , 
 	       const GLU_complex **in ,
 	       const double alpha ) ;
 
@@ -91,7 +93,7 @@ line_search_Coulomb( double *red ,
 void
 line_search_Landau( double *red ,
 		    GLU_complex **gauge , 
-		    const struct site *lat ,
+		    struct site *lat ,
 		    const GLU_complex **in ) ;
 
 #endif

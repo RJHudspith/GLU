@@ -173,13 +173,10 @@ steep_Landau_FA( double *red ,
   
   // and step length gf_alpha provided from the input file
 #if (defined GLU_FR_CG) || (defined GLU_GFIX_SD)
-  egauge_Landau( gauge , (const GLU_complex**)FFTW.in , Latt.gf_alpha ) ;
+  egauge_Landau( lat , gauge , (const GLU_complex**)FFTW.in , Latt.gf_alpha ) ;
 #else
   line_search_Landau( red , gauge , lat , (const GLU_complex**)FFTW.in ) ;
 #endif
-  
-  // do the gauge transform here
-  gtransform_th( lat , ( const GLU_complex **)gauge ) ;
   
   return ;
 }
@@ -196,9 +193,8 @@ steep_Landau_FASD( GLU_complex **gauge ,
   size_t k , loc_iters = 0 ;
   
  top:
-#pragma omp barrier
 
-  #pragma omp for nowait private(k)
+  #pragma omp for private(k)
   for( k = 0 ; k < CLINE*Latt.Nthreads ; k++ ) {
     CG.red[k] = 0.0 ;
   }
@@ -227,8 +223,8 @@ steep_Landau_FACG( GLU_complex **gauge ,
 		   const double acc ,
 		   const size_t max_iters )
 {  
-  size_t k ;
-  double trAA = 0.0 ;
+  size_t k , loc_iters = 0  ;
+  double trAA = 0.0 , inold = 0.0 , insum = 0.0 , sum_conj = 0.0 ;
     
   // perform an SD start
   steep_Landau_FA( CG.red , gauge , lat , FFTW ) ;
@@ -239,7 +235,7 @@ steep_Landau_FACG( GLU_complex **gauge ,
   *tr = trAA * GFNORM_LANDAU ;
   
   size_t i ;
-#pragma omp for nowait private(i)
+#pragma omp for private(i)
   for( i = 0 ; i < TRUE_HERM*LVOLUME ; i++ ) {
     const size_t idx = i/LVOLUME , j = i%LVOLUME ;
     CG.sn[idx][j] = CG.in_old[idx][j] = FFTW.in[idx][j] ;
@@ -248,20 +244,14 @@ steep_Landau_FACG( GLU_complex **gauge ,
   // compute the quantity Tr( dA dA )
   sum_DER3( CG.red , (const GLU_complex**)FFTW.in ) ;
     
-  double inold2 = 0.0 ;
   for( k = 0 ; k < Latt.Nthreads ; k++ ) {
-    inold2 += CG.red[ LINE_NSTEPS + CLINE*k ] ;
+    inold += CG.red[ LINE_NSTEPS + CLINE*k ] ;
   }
   
-  size_t loc_iters = 0  ;
-  double insum2 = 0.0 , sum_conj2 = 0.0 ;
-  
  top :
-  // make sure the threads catch up
-  #pragma omp barrier
   
-  trAA = insum2 = sum_conj2 = 0.0 ;
-#pragma omp for nowait private(k)
+  trAA = insum = sum_conj = 0.0 ;
+#pragma omp for private(k)
   for( k = 0 ; k < CLINE*Latt.Nthreads ; k++ ) {
     CG.red[k] = 0.0 ;
   }
@@ -284,18 +274,18 @@ steep_Landau_FACG( GLU_complex **gauge ,
   
   // reduction happens for all threads
   for( k = 0 ; k < Latt.Nthreads ; k++ ) {
-    insum2    += CG.red[ LINE_NSTEPS + CLINE*k ] ;
-    sum_conj2 += CG.red[ LINE_NSTEPS + 1 + CLINE*k ] ;
+    insum    += CG.red[ LINE_NSTEPS + CLINE*k ] ;
+    sum_conj += CG.red[ LINE_NSTEPS + 1 + CLINE*k ] ;
   }
       
   // compute the beta value, who knows what value is best?
-  double beta = PRfmax( 0.0 , ( sum_conj2 ) / inold2 ) ;
+  double beta = PRfmax( 0.0 , ( sum_conj ) / inold ) ;
   
   // switch to the fletcher reeves
   if( *tr < CG_TOL ) {
-    beta = insum2 / inold2 ;
+    beta = insum / inold ;
   }
-  inold2 = insum2 ;
+  inold = insum ;
   
 #pragma omp for private(i)
   for( i = 0 ; i < TRUE_HERM*LVOLUME ; i++ ) {
@@ -310,10 +300,8 @@ steep_Landau_FACG( GLU_complex **gauge ,
   if( *tr > CG_TOL ) {
     line_search_Landau( CG.red , gauge , lat , (const GLU_complex**)CG.sn ) ;
   } else {
-    egauge_Landau( gauge , (const GLU_complex**)CG.sn , Latt.gf_alpha ) ;
+    egauge_Landau( lat , gauge , (const GLU_complex**)CG.sn , Latt.gf_alpha ) ;
   }
-
-  gtransform_th( lat , ( const GLU_complex **)gauge ) ;
 
   loc_iters++ ;
   

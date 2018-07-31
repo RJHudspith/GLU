@@ -30,6 +30,13 @@
   #define SSE_FLIP(a) ( _mm_xor_pd( a , _mm_set1_pd( -0.0 ) ) )
 #endif
 
+// SSE2 fma
+#ifdef __FMA__
+  #define SSE2_FMA(a,b,c) ( _mm_fmadd_pd( a , b , c ) )
+#else
+  #define SSE2_FMA(a,b,c) ( _mm_add_pd( _mm_mul_pd( a , b ) , c ) )
+#endif
+
 // performs conj(a) * b using intrinsics
 #ifdef __SSE3__
   #ifdef __FMA__

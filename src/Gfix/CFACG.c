@@ -91,7 +91,7 @@ FOURIER_ACCELERATE2( struct fftw_stuff *FFTW )
 // bit that calculates the steepest descent with fourier acceleration
 static void
 steep_deriv_CG( GLU_complex **in ,
-		const struct draughtboard db ,
+		const struct CGtemps CG ,
 		const struct site *lat , 
 		const GLU_complex **slice_gauge , 
 		const size_t t )
@@ -106,21 +106,23 @@ steep_deriv_CG( GLU_complex **in ,
 
     GLU_complex C[ NCNC ] GLUalign ;
     GLU_complex D[ NCNC ] GLUalign ;
-    
+
+    const size_t Uidx = i+LCU*t ;
     size_t mu ;
     for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
       A[ mu ] = B[ mu ] = sum[ mu ] = 0.0 ;
     }
     for( mu = 0 ; mu < ND-1 ; mu++ ) {
-      const size_t Uidx = i+LCU*t ;
       const size_t Ubck = lat[Uidx].back[mu] ;
       const size_t bck  = lat[i].back[mu] ;
       const size_t it   = lat[i].neighbor[mu] ;
 
-      equiv( C , lat[Uidx].O[mu] ) ;
+      memcpy( C , lat[Uidx].O[mu] , NCNC*sizeof(GLU_complex) ) ;
       gtransform_local( slice_gauge[i] , C , slice_gauge[it] ) ;
-      equiv( D , lat[Ubck].O[mu] ) ;
-      gtransform_local( slice_gauge[bck] , D , slice_gauge[i] ) ;     
+      
+      memcpy( D , lat[Ubck].O[mu] , NCNC*sizeof(GLU_complex) ) ;
+      gtransform_local( slice_gauge[bck] , D , slice_gauge[i] ) ;
+      
       Hermitian_proj_short( B , C ) ;
       Hermitian_proj_short( A , D ) ;
           
@@ -266,7 +268,7 @@ steep_step_SD( GLU_complex **slice_gauge ,
 	       const struct site *lat , 
 	       const size_t t )
 {
-  steep_deriv_CG( FFTW -> in , CG.db , lat ,
+  steep_deriv_CG( FFTW -> in , CG , lat ,
   		  (const GLU_complex**)slice_gauge , t ) ;
 
   // if we want to Fourier accelerate, we call this otherwise it is the SD
@@ -295,8 +297,9 @@ steep_step_FACG( GLU_complex **gauge ,
 		 const double accuracy , 
 		 const size_t max_iters )
 {
-  size_t k , i ;
-  double trAA = 0.0 ;
+  // loop a set number of CG-iterations
+  size_t k , i , loc_iters = 0 ;
+  double trAA = 0.0 , inold = 0.0 , insum = 0.0 , sum_conj = 0.0 ;
   
   // set everything to zero
   #pragma omp for private(k)
@@ -304,7 +307,7 @@ steep_step_FACG( GLU_complex **gauge ,
     CG.red[ k ] = 0.0 ;
   }
 
-  steep_deriv_CG( FFTW -> in , CG.db , lat ,
+  steep_deriv_CG( FFTW -> in , CG , lat ,
   		  (const GLU_complex**)gauge , t ) ;
 
   // if we want to Fourier accelerate, we call this otherwise it is the SD
@@ -312,11 +315,10 @@ steep_step_FACG( GLU_complex **gauge ,
 
   sum_DER2( CG.red , (const GLU_complex**)FFTW -> in ) ;
   
-  double inold2 = 0.0 ;
   for( k = 0 ; k < Latt.Nthreads ; k++ ) {
-    inold2 += CG.red[ LINE_NSTEPS + CLINE*k ] ;
+    inold += CG.red[ LINE_NSTEPS + CLINE*k ] ;
   }
-  *tr = inold2 * GFNORM_COULOMB ;
+  *tr = inold * GFNORM_COULOMB ;
   
   line_search_Coulomb( CG.red , gauge , CG.db , lat , 
 		       (const GLU_complex**)FFTW -> in , t ) ;
@@ -326,21 +328,17 @@ steep_step_FACG( GLU_complex **gauge ,
     const size_t idx = i/LCU , j = i%LCU ;
     CG.sn[idx][j] = CG.in_old[idx][j] = FFTW -> in[idx][j] ;
   }
-  
-  // loop a set number of CG-iterations
-  size_t loc_iters = 0 ;
-  double insum2 = 0.0 , sum_conj2 = 0.0 ;
-  
+    
   // have a goto behaving like a while here
  top :
 
   // set everything to zero
-  insum2 = sum_conj2 =  trAA = 0.0 ;
+  insum = sum_conj =  trAA = 0.0 ;
   for( k = 0 ; k < CLINE*Latt.Nthreads ; k++ ) {
     CG.red[ k ] = 0.0 ;
   }
   
-  steep_deriv_CG( FFTW -> in , CG.db , lat ,
+  steep_deriv_CG( FFTW -> in , CG , lat ,
 		  (const GLU_complex**)gauge ,  t ) ;
   
   FOURIER_ACCELERATE2( FFTW ) ;
@@ -350,19 +348,19 @@ steep_step_FACG( GLU_complex **gauge ,
 
   // reduction happens for all threads
   for( k = 0 ; k < Latt.Nthreads ; k++ ) {
-    insum2 += CG.red[ LINE_NSTEPS + CLINE*k ] ;
-    sum_conj2 += CG.red[ LINE_NSTEPS + 1 + CLINE*k ] ;
+    insum += CG.red[ LINE_NSTEPS + CLINE*k ] ;
+    sum_conj += CG.red[ LINE_NSTEPS + 1 + CLINE*k ] ;
   }
-  *tr = insum2 * GFNORM_COULOMB ;
+  *tr = insum * GFNORM_COULOMB ;
   
   // compute the beta value, who knows what value is best?
-  double beta = PRfmax( 0.0 , sum_conj2 / inold2 ) ;
+  double beta = PRfmax( 0.0 , sum_conj / inold ) ;
   
   // switch to the fletcher reeves
   if( *tr < CG_TOL ) {
-    beta = insum2 / inold2 ;
+    beta = insum / inold ;
   }
-  inold2 = insum2 ;
+  inold = insum ;
   
   #pragma omp for private(i)
   for( i = 0 ; i < TRUE_HERM*LCU ; i++ ) {
@@ -405,7 +403,6 @@ steep_step_FASD( GLU_complex **gauge ,
   size_t k ;
 
  top :
-#pragma omp barrier
   
   // perform a Fourier accelerated step
 #pragma omp for private(k)
@@ -579,7 +576,7 @@ Coulomb_FA( struct site  *__restrict lat ,
     #pragma omp for private(i)
     for( i = 0 ; i < LCU ; i++ ) { 
       gram_reunit( G.g_end[i] ) ; 
-      gram_reunit( G.g[i] ) ; 
+      gram_reunit( G.g[i] ) ;
     }
     
     //gauge transform the links at x and set slice_gauge_up to be slice_gauge
