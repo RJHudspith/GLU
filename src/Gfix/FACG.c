@@ -249,6 +249,9 @@ steep_Landau_FACG( GLU_complex **gauge ,
   }
   
  top :
+  // not totally sure why this needs to be here but result changes
+  // if it isn't
+#pragma omp barrier
   
   trAA = insum = sum_conj = 0.0 ;
 #pragma omp for private(k)

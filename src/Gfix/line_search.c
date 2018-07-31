@@ -316,7 +316,7 @@ line_search_Landau( double *red ,
     }
   }
 
-  const double Calcg[ LINE_NSTEPS ] = { 0.0 , PC1 , PC2 } ;
+  const double Calcg[ LINE_NSTEPS ] = { 0.0 , PL1 , PL2 } ;
   const double min = approx_minimum( LINE_NSTEPS , Calcg , val ) ;
 
   egauge_Landau( lat , gauge , in , min ) ;
