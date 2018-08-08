@@ -128,12 +128,12 @@ luxury_copy_fast( struct site *__restrict lat ,
     const double tempacc = 1E-6 ;
     const double max = 1000 ;
     #ifdef GLU_GFIX_SD
-    iters = FASD( lat_copy , gauge , 
+    iters = FASD( lat_copy ,  
 		  out , in ,
 		  forward , backward , 
 		  psq , tr , tempacc , max ) ; 
     #else
-    iters = FACG( lat_copy , gauge , 
+    iters = FACG( lat_copy ,
 		  out , in ,
 		  forward , backward , 
 		  psq , tr , tempacc , max ) ; 
@@ -165,13 +165,13 @@ luxury_copy_fast( struct site *__restrict lat ,
   }
   // final convergence run god I hope this one doesn't fail! Pretty unlikely
   #ifdef GLU_GFIX_SD
-  iters += FASD( lat , gauge , 
+  iters += FASD( lat , 
 		 out , in , 
 		 forward , backward , 
 		 psq , 
 		 tr , acc , max_iters ) ; 
   #else
-  iters += FACG( lat , gauge , 
+  iters += FACG( lat , 
 		 out , in , 
 		 forward , backward , 
 		 psq , 
@@ -190,7 +190,6 @@ luxury_copy_fast( struct site *__restrict lat ,
 // cute little callback
 static size_t
 ( *FA_callback ) ( struct site *__restrict lat ,
-		   GLU_complex *__restrict *__restrict gauge ,
 		   struct fftw_stuff FFTW ,
 		   double *tr ,
 		   const double acc ,
@@ -212,7 +211,9 @@ select_callback( const int improvement )
   }
   #else
   if( improvement == SMPREC_IMPROVE ) {
-    FA_callback = FASD_SMEAR ; 
+    // fix this!!!
+    //FA_callback = FASD_SMEAR ;
+    FA_callback = FASD ;
   } else {
     #ifdef GLU_GFIX_SD
     FA_callback = FASD ;
@@ -287,7 +288,7 @@ Landau( struct site *__restrict lat ,
   // set up the FA method callback
   select_callback( improvement )  ;
 
-  size_t iters = FA_callback( lat , gauge , FFTW , &theta , accuracy , iter ) ;
+  size_t iters = FA_callback( lat , FFTW , &theta , accuracy , iter ) ;
 
   // random restart portion of the code
   size_t failure = 0 ; 
@@ -305,7 +306,7 @@ Landau( struct site *__restrict lat ,
       if( improvement == MAG_IMPROVE ) { mag( lat , gauge ) ; }
       
       // and the callback
-      iters_loc = FA_callback( lat , gauge , FFTW ,
+      iters_loc = FA_callback( lat , FFTW ,
 			       &theta , accuracy , iter ) ;
 
       // if we succeed we break the loop

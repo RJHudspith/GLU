@@ -114,7 +114,6 @@ approx_minimum( const size_t nmeas ,
 
 void
 egauge_Landau( struct site *lat ,
-	       GLU_complex **gauge ,
 	       const GLU_complex **in ,
 	       const double alpha )
 {
@@ -255,7 +254,6 @@ line_search_Coulomb( double *red ,
 
 void
 line_search_Landau( double *red ,
-		    GLU_complex **gauge , 
 		    struct site *lat ,
 		    const GLU_complex **in )
 {
@@ -316,10 +314,10 @@ line_search_Landau( double *red ,
     }
   }
 
-  const double Calcg[ LINE_NSTEPS ] = { 0.0 , PL1 , PL2 } ;
-  const double min = approx_minimum( LINE_NSTEPS , Calcg , val ) ;
+  const double Lalcg[ LINE_NSTEPS ] = { 0.0 , PL1 , PL2 } ;
+  const double min = approx_minimum( LINE_NSTEPS , Lalcg , val ) ;
 
-  egauge_Landau( lat , gauge , in , min ) ;
+  egauge_Landau( lat , in , min ) ;
   
   return ; 
 }

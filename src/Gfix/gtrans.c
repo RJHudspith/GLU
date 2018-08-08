@@ -90,14 +90,14 @@ inline_gtransform_local( const __m128d *__restrict a ,
   // similar to above
   register const __m128d bp0 = _mm_add_pd( SSE2_MUL_CONJ( *(c+0) , *(b+0) ) ,
 		    SSE2_MUL_CONJ( *(c+1) , *(b+1) ) ) ;
-  register const __m128d bp1 = _mm_add_pd( SSE2_MUL_CONJ( *(C+0) , *(b+2) ) ,
+  register const __m128d bp1 = _mm_add_pd( SSE2_MUL_CONJ( *(c+0) , *(b+2) ) ,
 		    SSE2_MUL_CONJ( *(c+1) , *(b+3) ) ) ;
-  *(B+0) = _mm_add_pd( SSE2_MULCONJ( bp0 , *(a+0) ) ,
+  *(b+0) = _mm_add_pd( SSE2_MULCONJ( bp0 , *(a+0) ) ,
 		       SSE2_MULCONJ( bp1 , *(a+1) ) ) ; 
-  *(B+2) = _mm_add_pd( SSE2_MULCONJ( bp0 , *(a+2) ) ,
+  *(b+2) = _mm_add_pd( SSE2_MULCONJ( bp0 , *(a+2) ) ,
 		       SSE2_MULCONJ( bp1 , *(a+3) ) ) ; 
-  *(B+1) = SSE_FLIP( SSE2_CONJ( *( b + 2 ) ) ) ; 
-  *(B+3) = SSE2_CONJ( *( b + 0 ) ) ;
+  *(b+1) = SSE_FLIP( SSE2_CONJ( *( b + 2 ) ) ) ; 
+  *(b+3) = SSE2_CONJ( *( b + 0 ) ) ;
 #else
   // standard gauge transform
   GLU_complex temp[ NCNC ] GLUalign ;

@@ -24,7 +24,7 @@
 #define GLU_POLY_H
 
 /**
-   @fn int Coul_staticpot( struct site *__restrict lat , const struct cut_info CUTINFO , const struct sm_info SMINFO )
+   @fn int Coul_staticpot( struct site *lat , const struct cut_info CUTINFO , const struct sm_info SMINFO )
    @brief static potential calculator
    @param lat :: lattice gauge fields
    @param CUTINFO :: cutting information such as what type of cut to perform
@@ -33,12 +33,12 @@
    @return #GLU_SUCCESS or #GLU_FAILURE
  */
 int
-Coul_staticpot( struct site *__restrict lat , 
+Coul_staticpot( struct site *lat , 
 		const struct cut_info CUTINFO ,
 		const struct sm_info SMINFO ) ;
 
 /**
-   @fn double complex poly( const struct site *__restrict lat , int dir )
+   @fn double complex poly( const struct site *lat , int dir )
    @brief computes the polyakov loop in the direction "dir"
    @param lat :: lattice fields
    @param dir :: direction to measure in
@@ -48,11 +48,11 @@ Coul_staticpot( struct site *__restrict lat ,
    @warning prints results to stdout. changes dir if not suitable
  **/
 double complex 
-poly( const struct site *__restrict lat , 
+poly( const struct site *lat , 
       int dir ) ;
 
 /**
-   @fn void poly_th( double *red , const struct site *__restrict lat , size_t dir ) ;
+   @fn void poly_th( double *red , const struct site *lat , size_t dir ) ;
    @brief threaded polyakov loop evaluation
    @param red :: reduction array
    @param lat :: lattice gauge links
@@ -60,7 +60,7 @@ poly( const struct site *__restrict lat ,
  */
 void
 poly_th( double *red ,
-	 const struct site *__restrict lat , 
+	 const struct site *lat , 
 	 size_t dir ) ;
 
 #endif

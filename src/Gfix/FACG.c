@@ -161,7 +161,6 @@ sum_DER3( double *red ,
 
 static void
 steep_Landau_FA( double *red ,
-		 GLU_complex **gauge , 
 		 struct site *lat ,
 		 struct fftw_stuff FFTW )
 {
@@ -173,17 +172,16 @@ steep_Landau_FA( double *red ,
   
   // and step length gf_alpha provided from the input file
 #if (defined GLU_FR_CG) || (defined GLU_GFIX_SD)
-  egauge_Landau( lat , gauge , (const GLU_complex**)FFTW.in , Latt.gf_alpha ) ;
+  egauge_Landau( lat , (const GLU_complex**)FFTW.in , Latt.gf_alpha ) ;
 #else
-  line_search_Landau( red , gauge , lat , (const GLU_complex**)FFTW.in ) ;
+  line_search_Landau( red , lat , (const GLU_complex**)FFTW.in ) ;
 #endif
   
   return ;
 }
 
 static int
-steep_Landau_FASD( GLU_complex **gauge , 
-		   struct site *lat ,
+steep_Landau_FASD( struct site *lat ,
 		   struct fftw_stuff FFTW ,
 		   struct CGtemps CG ,
 		   double *tr ,
@@ -193,13 +191,14 @@ steep_Landau_FASD( GLU_complex **gauge ,
   size_t k , loc_iters = 0 ;
   
  top:
+  #pragma omp barrier
 
   #pragma omp for private(k)
   for( k = 0 ; k < CLINE*Latt.Nthreads ; k++ ) {
     CG.red[k] = 0.0 ;
   }
   
-  steep_Landau_FA( CG.red , gauge , lat , FFTW ) ;
+  steep_Landau_FA( CG.red , lat , FFTW ) ;
 
   double trAA = 0.0 ;
   for( k = 0 ; k < Latt.Nthreads ; k++ ) {
@@ -215,8 +214,7 @@ steep_Landau_FASD( GLU_complex **gauge ,
 }
 
 static int
-steep_Landau_FACG( GLU_complex **gauge , 
-		   struct site *lat ,
+steep_Landau_FACG( struct site *lat ,
 		   struct fftw_stuff FFTW ,
 		   struct CGtemps CG ,
 		   double *tr ,
@@ -227,7 +225,7 @@ steep_Landau_FACG( GLU_complex **gauge ,
   double trAA = 0.0 , inold = 0.0 , insum = 0.0 , sum_conj = 0.0 ;
     
   // perform an SD start
-  steep_Landau_FA( CG.red , gauge , lat , FFTW ) ;
+  steep_Landau_FA( CG.red , lat , FFTW ) ;
 
   for( k = 0 ; k < Latt.Nthreads ; k++ ) {
     trAA += CG.red[ LINE_NSTEPS + 2 + k*CLINE ] ;
@@ -301,9 +299,9 @@ steep_Landau_FACG( GLU_complex **gauge ,
   }
 
   if( *tr > CG_TOL ) {
-    line_search_Landau( CG.red , gauge , lat , (const GLU_complex**)CG.sn ) ;
+    line_search_Landau( CG.red , lat , (const GLU_complex**)CG.sn ) ;
   } else {
-    egauge_Landau( lat , gauge , (const GLU_complex**)CG.sn , Latt.gf_alpha ) ;
+    egauge_Landau( lat , (const GLU_complex**)CG.sn , Latt.gf_alpha ) ;
   }
 
   loc_iters++ ;
@@ -317,7 +315,6 @@ steep_Landau_FACG( GLU_complex **gauge ,
 // overwrites the lattice links in lat to Landau gauge fixed links using CG
 size_t
 FACG( struct site *lat , 
-      GLU_complex **gauge , 
       struct fftw_stuff FFTW ,
       double *th ,
       const double acc ,
@@ -341,7 +338,7 @@ FACG( struct site *lat ,
   {
     size_t loc_iters = 1 ;
   top :
-    loc_iters = steep_Landau_FACG( gauge , lat , FFTW , CG , th ,
+    loc_iters = steep_Landau_FACG( lat , FFTW , CG , th ,
 				   acc , max_iters ) ;
     
     if( loc_iters >= max_iters ) {
@@ -373,7 +370,6 @@ FACG( struct site *lat ,
 //returns the global gauge transform on lat
 size_t
 FASD( struct site *lat ,
-      GLU_complex **gauge ,
       struct fftw_stuff FFTW ,
       double *th ,
       const double acc ,
@@ -397,7 +393,7 @@ FASD( struct site *lat ,
   {
     size_t loc_iters = 1 ;    
   top :
-    loc_iters = steep_Landau_FASD( gauge , lat , FFTW , CG , th ,
+    loc_iters = steep_Landau_FASD( lat , FFTW , CG , th ,
 				   acc , max_iters ) ;
     
     if( loc_iters >= max_iters ) {
@@ -425,60 +421,3 @@ FASD( struct site *lat ,
 
   return iters ; 
 }
-
-// Fourier accelerated Steepest descents for the smeared fields
-size_t
-FASD_SMEAR( struct site *lat ,
-	    GLU_complex **gauge ,
-	    struct fftw_stuff FFTW ,
-	    double *th ,
-	    const double acc ,
-	    const size_t max_iters )
-{
-  GLU_real max = 0. ; 
-  *th = theta_test_lin( lat , &max , ND ) ; 
-  size_t iters = 0 , i ; 
-  
-  //malloc temporary gauge
-  GLU_complex **gauge2 = NULL ;
-  if( GLU_malloc( (void**)&gauge2 , ALIGNMENT , LVOLUME * sizeof( GLU_complex* ) ) != 0 ) {
-    fprintf( stderr , "[GF] FASD_SMEAR failed to allocate temporary gauge\n" ) ;
-    return GLU_FAILURE ;
-  }
-
-  #pragma omp parallel for private(i)
-  for( i = 0 ; i < LVOLUME ; i++ ) {
-    GLU_malloc( (void**)&gauge2[i] , ALIGNMENT , NCNC * sizeof( GLU_complex ) ) ;
-    identity( gauge2[i] ) ;
-  }
-
-  #ifdef CAREFUL
-  double newlink = 0. , link = 0. ; 
-  #endif
-  while( *th > acc && iters < max_iters) {
-    #ifdef CAREFUL
-    check_info1( lat , &link , newlink , *th , iters ) ;
-    #endif
-    iters++ ;
-    double red[ CLINE*Latt.Nthreads ] ;
-    steep_Landau_FA( red , gauge , lat , FFTW ) ; 
-    // multiply through 
-    #pragma omp parallel for private(i) 
-    for(  i = 0 ; i < LVOLUME ; i++  ) {
-      GLU_complex temp[ NCNC ] GLUalign ;
-      memcpy( temp , gauge2[i] , NCNC * sizeof( GLU_complex ) ) ;
-      multab_suNC( gauge2[i] , gauge[i] , temp ) ; 
-    }
-    #ifdef CAREFUL
-    check_info2( lat , ( const GLU_complex **)gauge , link , &newlink , *th , iters ) ;
-    #endif
-  }
-  #pragma omp parallel for private(i)
-  for(  i = 0 ; i < LVOLUME ; i++  ) {
-    equiv( gauge[i] , gauge2[i] ) ; 
-    free( gauge2[i] ) ; 
-  }
-  free( gauge2 ) ; 
-  return iters ; 
-}
-
