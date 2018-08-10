@@ -193,10 +193,10 @@ compute_tr( double complex *tr ,
 
 /// correlator
 static int
-static_quark_correlator( double complex *__restrict result ,
-			 double complex *__restrict trtr ,
-			 const GLU_complex *__restrict *__restrict poly ,
-			 const struct veclist *__restrict list ,
+static_quark_correlator( double complex *result ,
+			 double complex *trtr ,
+			 const GLU_complex **poly ,
+			 const struct veclist *list ,
 			 const size_t rsq_count )
 
 {

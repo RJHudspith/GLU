@@ -132,26 +132,14 @@ const_time( const struct site *__restrict lat ,
 double
 gauge_functional( const struct site *__restrict lat )
 {
-  // for the log defs the functional is actually Re(Tr(A*A)) so we do this
   size_t i ;
   double trAA = 0.0 ;
   #pragma omp parallel for private(i) reduction(+:trAA)
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    // removes unused variable warning ...
-    GLU_complex A[ NCNC ] GLUalign ;
-    GLU_real tr ;
     register double loc_tr = 0.0 ;
     size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
-      #if ( defined deriv_linn ) || ( defined deriv_lin ) 
-      tr = (GLU_real)creal( trace( lat[i].O[mu] ) ) ;
-      #else
-      exact_log_slow( A , lat[i].O[mu] ) ;
-      trace_ab_herm( &tr , A , A ) ;
-      // factor of 1/2 for consistency between the two defs
-      tr *= 0.5 ;
-      #endif
-      loc_tr += (double)tr ;
+      loc_tr += (double)creal( trace( lat[i].O[mu] ) ) ;
     }
     trAA = trAA + (double)loc_tr ;
   }
@@ -173,7 +161,6 @@ gauge_test( const GLU_complex *__restrict *__restrict gauge )
   return 1.0 - sum /(double)( NC * LVOLUME ) ; 
 }
   
-
 // gets the functional for a gauge transformation slice
 double
 gtrans_functional( const struct site *__restrict lat ,

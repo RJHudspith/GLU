@@ -33,45 +33,24 @@
    @return #GLU_SUCCESS or #GLU_FAILURE
  */
 int
-grab_file( struct site *__restrict lat , 
-	   GLU_complex *__restrict *__restrict gauge , 
-	   const char *__restrict infile ) ;
+grab_file( struct site *lat , 
+	   GLU_complex **gauge , 
+	   const char *infile ) ;
 
 /**
-   @fn size_t Landau_4smear( struct site *__restrict lat , GLU_complex *__restrict *__restrict gauge , const double accuracy , const size_t iter )
-   @brief landau gauge fixing of the smeared links
-   @param lat :: gauge field
-   @param gauge :: gauge transformation matrices
-   @param accuracy :: accuracy we wish to converge our algorithm to
-   @param iter :: maximum number of iterations before we restart
-   saves the transformation matrix gauge and uses this to precondition the gauge fixing
-   @warning only fixes up to the precision of #SMACC
-   @return the number of iterations the routine took
- **/
-size_t
-Landau_4smear( struct site *__restrict lat ,
-	       GLU_complex *__restrict *__restrict gauge , 
-	       const double accuracy , 
-	       const size_t iter ) ;
-
-/**
-   @fn size_t Landau( struct site *__restrict lat , GLU_complex *__restrict *__restrict gauge , const double accuracy , const size_t iter , FILE *__restrict infile , const GF_improvements improvement )
+   @fn size_t Landau( struct site *lat , const double accuracy , const size_t iter , FILE *infile )
    @brief fast landau gauge fixing
    @param lat :: gauge field
-   @param gauge :: gauge transformation matrices
    @param accuracy :: accuracy we wish to converge our algorithm to
    @param iter :: maximum number of iterations before we restart
    @param infile :: need the configuration file in case we have to start over
-   @param improvement :: specify the improvement type
    our fastest smearing routine, memory expensive
    @return the number of iterations the routine took
  **/
 size_t
-Landau( struct site *__restrict lat ,
-	GLU_complex *__restrict *__restrict gauge ,
+Landau( struct site *lat ,
 	const double accuracy ,
 	const size_t iter ,
-	const char *__restrict infile ,
-	const GF_improvements improvement ) ; 
+	const char *infile ) ;
 
 #endif

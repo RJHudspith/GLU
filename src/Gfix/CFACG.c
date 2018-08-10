@@ -500,7 +500,8 @@ steep_fix( GLU_complex **gauge ,
     if( ( control < 8 ) && ( trans_flag == GLU_TRUE ) ) {
       #pragma omp master
       {
-	fprintf( stdout , "[CG] random gauge transform %zu\n" , control ) ;
+	fprintf( stdout , "[CG] random gauge transform %zu :: %e\n" ,
+		 control , tr ) ;
       }
       size_t i ;
       #pragma omp for private(i)
@@ -510,6 +511,7 @@ steep_fix( GLU_complex **gauge ,
       tot_iters += loc_iters ;
       loc_iters = 0 ;
       control++ ;
+      trans_flag = GLU_FALSE ;
       goto top ;
     }
     tot_iters += loc_iters ;

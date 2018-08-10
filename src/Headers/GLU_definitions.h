@@ -478,7 +478,11 @@ Defines for the gauge fixing routines ( Landau/{}.c )
 
 // unless we explicitly want the givens rotation APE smearing
 #ifndef GIVENS_APE
-  #define N_APE //rescaled projection is the best projection 
+  #if (defined NC==2) || (defined NC==3)
+    #define GIVENS_APE
+  #else
+    #define N_APE //rescaled projection is the best projection 
+  #endif
 #endif
 
 // define this because we are using iterative methods in the exponential

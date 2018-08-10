@@ -62,7 +62,7 @@ main( const int argc ,
   // and the options
   switch( INFILE.mode ) {
   case MODE_GF :
-    read_and_fix( argv[ READ ] , INFILE.rtrans , INFILE.GFINFO , INFILE.SMINFO ,
+    read_and_fix( argv[ READ ] , INFILE.rtrans , INFILE.GFINFO ,
 		  argv[ WRITE ] , INFILE.storage , INFILE.output_details ) ;
     break ;
   case MODE_CUTS :

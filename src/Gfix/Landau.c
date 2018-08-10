@@ -30,6 +30,7 @@
 #include "FACG.h"          // Fourier-Accelerated Conjugate Gradient
 #include "geometry.h"      // lattice geometry, used for psq
 #include "gftests.h"       // derivative evaluations
+#include "GLU_malloc.h"    // malllocs
 #include "MAG.h"           // for randomly restarting the MAG
 #include "plan_ffts.h"     // FFTW wrappers
 #include "plaqs_links.h"   // average plaquette and link trace
@@ -39,7 +40,7 @@
 
 // output the data, pass lat for the plaquette
 static void
-output_fixing_info( struct site *__restrict lat ,
+output_fixing_info( struct site *lat ,
 		    const double theta ,
 		    const size_t iters )
 {
@@ -67,12 +68,13 @@ output_fixing_info( struct site *__restrict lat ,
 // printing helper ...
 static void
 print_failure_info( const size_t failure , 
-		    const size_t iters ) 
+		    const size_t iters ,
+		    const double theta ) 
 {
   if( failure < GF_GLU_FAILURES ) {
     fprintf( stderr , "\n[GF] Non-convergence ... Randomly-restarting \n"
-	     "\n[GF] Failure :: %zu || Iters :: %zu \n" 
-	     , failure , iters ) ; 
+	     "\n[GF] Failure :: %zu || Iters :: %zu || ACC :: %e \n" 
+	     , failure , iters , theta ) ;
   } else {
     fprintf( stderr , "\n[GF] Insufficient Convergence ......\n\n"
 	    "[GF] Failures :: %zu || Total iterations :: %zu \n\n"
@@ -87,13 +89,8 @@ print_failure_info( const size_t failure ,
 
 // fast routine used here
 static size_t
-luxury_copy_fast( struct site *__restrict lat ,
-		  GLU_complex *__restrict *__restrict gauge ,
-		  GLU_complex *__restrict *__restrict out ,
-		  GLU_complex *__restrict *__restrict in ,
-		  const void *forward ,
-		  const void *backward ,
-		  const GLU_real *__restrict psq ,
+luxury_copy_fast( struct site *lat ,
+		  struct fftw_stuff *FFTW ,
 		  double *tr ,
 		  const double acc ,
 		  const size_t max_iters ) 
@@ -101,14 +98,25 @@ luxury_copy_fast( struct site *__restrict lat ,
   size_t i , iters = 0 , copies ;
 
   struct site *lat_copy = NULL , *lat_best = NULL ;
-  if( GLU_malloc( (void**)&lat_copy , ALIGNMENT , LVOLUME * sizeof( struct site ) ) != 0 ||
-      GLU_malloc( (void**)&lat_best , ALIGNMENT , LVOLUME * sizeof( struct site ) ) != 0 ) {
-    fprintf( stderr , "[GF] luxury_copy_fast temporary lattice allocation failure\n" ) ;
-    return iters ;
-  }
+  GLU_complex **gauge = NULL ;
 
-  init_navig( lat_copy ) ;
-  init_navig( lat_best ) ;
+  // allocate new gauge field
+  if( GLU_malloc( (void**)&gauge , 16 , LVOLUME * sizeof( GLU_complex* ) ) != 0 ) {
+    fprintf( stderr , "[GF] luxury copy fast failed to allocate "
+	     "temporary gauge\n" ) ;
+    goto memfree ;
+  }
+#pragma omp parallel for private(i)
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    gauge[i] = ( GLU_complex* )malloc( NCNC * sizeof( GLU_complex ) ) ; 
+    identity( gauge[i] ) ;
+  }
+  
+  if( ( lat_copy = allocate_lat( ) ) == NULL ||
+      ( lat_best = allocate_lat( ) ) == NULL ) {
+    fprintf( stderr , "[GF] luxury gauge temporary allocation failure\n" ) ;
+    goto memfree ;
+  }
 
 #ifdef BEST_COPY
   double maxlink = 1.0 , newlink ;
@@ -117,26 +125,25 @@ luxury_copy_fast( struct site *__restrict lat ,
 #endif
   // loop over the number of gauge copies !
   for( copies = 0 ; copies < LUXURY_GAUGE ; copies++ ) {
+    
     // copy our lattice fields
-    #pragma omp parallel for private(i)
-    PFOR(  i = 0 ; i < LVOLUME ; i++  ) {
-      memcpy( &lat_copy[i] , &lat[i] , sizeof( struct site ) ) ;
+#pragma omp parallel for private(i)
+    for( i = 0 ; i < LVOLUME ; i++ ) {
+      size_t mu ;
+      for( mu = 0 ; mu < ND ; mu++ ) {
+	equiv( lat_copy[i].O[mu] , lat[i].O[mu] ) ;
+      }
     }
+
     // perform a random gauge transform
     random_transform( lat_copy , gauge ) ;
     // set the accuracy to be low
     const double tempacc = 1E-6 ;
     const double max = 1000 ;
     #ifdef GLU_GFIX_SD
-    iters = FASD( lat_copy ,  
-		  out , in ,
-		  forward , backward , 
-		  psq , tr , tempacc , max ) ; 
+    iters = FASD( lat_copy , FFTW , tr , tempacc , max ) ; 
     #else
-    iters = FACG( lat_copy ,
-		  out , in ,
-		  forward , backward , 
-		  psq , tr , tempacc , max ) ; 
+    iters = FACG( lat_copy , FFTW , tr , tempacc , max ) ; 
     #endif
     
     // compute the link , wrap this to the functional?
@@ -145,43 +152,61 @@ luxury_copy_fast( struct site *__restrict lat ,
 	     copies , newlink , iters ) ; 
     #ifdef BEST_COPY 
     // the best copy is defined as the effective minimisation of the Gauge-functional 
-    if( newlink < maxlink && iters != max ) 
+    if( newlink < maxlink && iters != max && iters != 123456789 ) 
     #else
-    if( newlink > maxlink && iters != max ) 
+    if( newlink > maxlink && iters != max && iters != 123456789 ) 
     #endif
       {
-	fprintf( stdout , " -> Copy accepted \n" ) ;
 	maxlink = newlink ;
+	fprintf( stdout , " -> Copy accepted\n" ) ;
+	// copy our lattice fields
         #pragma omp parallel for private(i)
-	PFOR(  i = 0 ; i < LVOLUME ; i++  ) {
-	  memcpy( &lat_best[i] , &lat_copy[i] , sizeof( struct site ) ) ;
+	for( i = 0 ; i < LVOLUME ; i++ ) {
+	  size_t mu ;
+	  for( mu = 0 ; mu < ND ; mu++ ) {
+	    equiv( lat_best[i].O[mu] , lat_copy[i].O[mu] ) ;
+	  }
 	}
-      } else { fprintf( stdout , " -> Copy rejected %e\n" , *tr ) ; }
+      } else {
+      double diff = newlink - maxlink ;
+      fprintf( stdout , " -> Copy rejected %e\n" , diff ) ;
+    }
   }
+
+ 
   // set our lattice to our chosen copy
-  #pragma omp parallel for private(i)
-  PFOR(  i = 0 ; i < LVOLUME ; i++  ) {
-    memcpy( &lat[i] , &lat_best[i] , sizeof( struct site ) ) ;
+#pragma omp parallel for private(i)
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    size_t mu ;
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      equiv( lat[i].O[mu] , lat_best[i].O[mu] ) ;
+    }
   }
+  
   // final convergence run god I hope this one doesn't fail! Pretty unlikely
   #ifdef GLU_GFIX_SD
-  iters += FASD( lat , 
-		 out , in , 
-		 forward , backward , 
-		 psq , 
-		 tr , acc , max_iters ) ; 
+  iters += FASD( lat , FFTW , tr , acc , max_iters ) ; 
   #else
-  iters += FACG( lat , 
-		 out , in , 
-		 forward , backward , 
-		 psq , 
-		 tr , acc , max_iters ) ; 
+  iters += FACG( lat , FFTW , tr , acc , max_iters ) ; 
   #endif
+  
+  printf( "FINISHED\n" ) ;
+
+ memfree :
+
+  // free the gauge transformation matrices
+  if( gauge != NULL ) {
+#pragma omp parallel for private(i)
+    for( i = 0 ; i < LVOLUME ; i++ ) {
+      free( gauge[i] ) ;   
+    }
+    free( gauge ) ;
+  }
 
   // free the lattice temporaries
-  free( lat_copy ) ;
-  free( lat_best ) ;
-
+  free_lat( lat_copy ) ;
+  free_lat( lat_best ) ;
+  
   return iters ;
 }
 
@@ -189,47 +214,33 @@ luxury_copy_fast( struct site *__restrict lat ,
 
 // cute little callback
 static size_t
-( *FA_callback ) ( struct site *__restrict lat ,
-		   struct fftw_stuff FFTW ,
+( *FA_callback ) ( struct site *lat ,
+		   struct fftw_stuff *FFTW ,
 		   double *tr ,
 		   const double acc ,
 		   const size_t max_iters ) ;
 
 // callback selector
 static void
-select_callback( const int improvement ) 
+select_callback( void ) 
 {
-  #ifdef LUXURY_GAUGE
-  if( improvement != SMPREC_IMPROVE ) {
-    FA_callback = luxury_copy_fast ; 
-  } else { 
-    #ifdef GLU_GFIX_SD
-    FA_callback = FASD ; 
-    #else
-    FA_callback = FACG ;
-    #endif
-  }
+#ifdef LUXURY_GAUGE
+  FA_callback = luxury_copy_fast ;
+#else
+  #ifdef GLU_GFIX_SD
+  FA_callback = FASD ;
   #else
-  if( improvement == SMPREC_IMPROVE ) {
-    // fix this!!!
-    //FA_callback = FASD_SMEAR ;
-    FA_callback = FASD ;
-  } else {
-    #ifdef GLU_GFIX_SD
-    FA_callback = FASD ;
-    #else
-    FA_callback = FACG ;
-    #endif
-  } 
+  FA_callback = FACG ;
   #endif
+#endif
   return ;
 }
 
 // should return failure if this really messes up
 int
-grab_file( struct site *__restrict lat , 
-	   GLU_complex *__restrict *__restrict gauge , 
-	   const char *__restrict infile )
+grab_file( struct site *lat , 
+	   GLU_complex **gauge , 
+	   const char *infile )
 {
   struct head_data HEAD_DATA ;
   FILE *config = fopen( infile , "rb" ) ;
@@ -247,21 +258,20 @@ grab_file( struct site *__restrict lat ,
 
 // Landau gauge fixing routine uses callbacks
 size_t 
-Landau( struct site *__restrict lat ,
-	GLU_complex *__restrict *__restrict gauge ,
+Landau( struct site *lat ,
 	const double accuracy ,
-	const size_t iter ,
-	const char *__restrict infile ,
-	const GF_improvements improvement )
+	const size_t max_iter ,
+	const char *infile )
 {
   double theta = 0. ; 
   size_t i ;
   
   struct fftw_stuff FFTW ;
-
+  GLU_complex **gauge = NULL ;
+  
 #ifdef HAVE_FFTW3_H
 
-  FFTW.psq      = malloc( LVOLUME * sizeof( GLU_real ) ) ; 
+  FFTW.psq = malloc( LVOLUME * sizeof( GLU_real ) ) ; 
   #pragma omp parallel
   {
     #pragma omp for private(i)
@@ -286,15 +296,27 @@ Landau( struct site *__restrict lat ,
 #endif
 
   // set up the FA method callback
-  select_callback( improvement )  ;
+  select_callback( )  ;
 
-  size_t iters = FA_callback( lat , FFTW , &theta , accuracy , iter ) ;
+  size_t iters = FA_callback( lat , &FFTW , &theta , accuracy , max_iter ) ;
 
   // random restart portion of the code
   size_t failure = 0 ; 
-  if( ( iters == 123456789 ) && ( improvement != SMPREC_IMPROVE ) ) {
+  if( ( iters == 123456789 ) ) {
 
-    print_failure_info( failure , iter ) ;
+    // allocate new gauge field
+    if( GLU_malloc( (void**)&gauge , 16 , LVOLUME * sizeof( GLU_complex* ) ) != 0 ) {
+      fprintf( stderr , "[GF] GF_wrap_landau failed to allocate "
+	       "temporary gauge\n" ) ;
+      return GLU_FAILURE ;
+    }
+#pragma omp parallel for private(i)
+    for( i = 0 ; i < LVOLUME ; i++ ) {
+      gauge[i] = ( GLU_complex* )malloc( NCNC * sizeof( GLU_complex ) ) ; 
+      identity( gauge[i] ) ;
+    }
+
+    print_failure_info( failure , max_iter , theta ) ;
     
     size_t iters_loc = 0 ;
     for( failure = 1 ; failure < GF_GLU_FAILURES ; failure++ ) {
@@ -303,27 +325,31 @@ Landau( struct site *__restrict lat ,
 	printf( "[IO] Something funky happened when trying to read in config again!\n" ) ;
 	goto MemFree ; 
       }
-      if( improvement == MAG_IMPROVE ) { mag( lat , gauge ) ; }
-      
       // and the callback
-      iters_loc = FA_callback( lat , FFTW ,
-			       &theta , accuracy , iter ) ;
+      iters_loc = FA_callback( lat , &FFTW , &theta , accuracy , max_iter ) ;
 
       // if we succeed we break the loop
       if( iters_loc != 123456789 ) {
 	iters += iters_loc ; 
 	break ;
       } else {// print information about the last failure
-	iters += iter ;	
-	print_failure_info( failure , iters_loc ) ;
-	printf( "\n[GF] Failure :: %zu || Accuracy %1.4e\n" , 
-		failure , theta ) ;
+	iters += max_iter ;	
+	print_failure_info( failure , iters_loc , theta ) ;
       }
     }
   }
   // end of random transform loop -> Usually not needed //
 
  MemFree :
+
+  // free the gauge transformation matrices
+  if( gauge != NULL ) {
+#pragma omp parallel for private(i)
+    for( i = 0 ; i < LVOLUME ; i++ ) {
+      free( gauge[i] ) ;   
+    }
+    free( gauge ) ;
+  }
   
 #ifdef HAVE_FFTW3_H
   // free mallocs

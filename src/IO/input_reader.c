@@ -445,27 +445,20 @@ read_gf_struct ( struct gf_info *GFINFO )
   {
     const int gf_idx = tag_search( "GFTYPE" ) ;
     if( gf_idx == GLU_FAILURE ) { return tag_failure( "GFTYPE" ) ; } 
-    if( are_equal( INPUT[gf_idx].VALUE , "LANDAU" ) ) { 
-      GFINFO -> type = GLU_LANDAU_FIX ;
+    if ( are_equal( INPUT[gf_idx].VALUE , "AXIALT" ) ) {
+      GFINFO -> type = GLU_AXIALT_FIX ;
     } else if ( are_equal( INPUT[gf_idx].VALUE , "COULOMB" ) ) {
       GFINFO -> type = GLU_COULOMB_FIX ;
+    } else if ( are_equal( INPUT[gf_idx].VALUE , "COULOMB_RESIDUAL" ) ) {
+      GFINFO -> type = GLU_COULOMB_RESIDUAL_FIX ;
+    } else if( are_equal( INPUT[gf_idx].VALUE , "LANDAU" ) ) { 
+      GFINFO -> type = GLU_LANDAU_FIX ;
+    } else if ( are_equal( INPUT[gf_idx].VALUE , "MAG" ) ) {
+      GFINFO -> type = GLU_MAG_FIX ;
     } else {
       fprintf( stderr , "[IO] unknown type [%s] : Defaulting to "
 	       "NO GAUGE FIXING \n" , INPUT[gf_idx].VALUE ) ; 
       GFINFO -> type = DEFAULT_NOFIX ; 
-    }
-  }
-  // have a look to see what "improvements" we would like
-  {
-    const int improve_idx = tag_search( "IMPROVEMENTS" ) ;
-    if( improve_idx == GLU_FAILURE ) { return tag_failure( "IMPROVEMENTS" ) ; } 
-    GFINFO -> improve = NO_IMPROVE ; // default is no "Improvements" 
-    if( are_equal( INPUT[improve_idx].VALUE , "MAG" ) ) {
-      GFINFO -> improve = MAG_IMPROVE ; 
-    } else if ( are_equal( INPUT[improve_idx].VALUE , "SMEAR" ) ) {
-      GFINFO -> improve = SMPREC_IMPROVE ; 
-    } else if(  are_equal( INPUT[improve_idx].VALUE , "RESIDUAL" ) ) {
-      GFINFO -> improve = RESIDUAL_IMPROVE ; 
     }
   }
   // set the accuracy is 10^{-ACCURACY}

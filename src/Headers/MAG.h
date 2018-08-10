@@ -24,36 +24,33 @@
 #define GLU_MAG_H
 
 /**
-   @fn void axial_gauge( struct site *__restrict lat , GLU_complex *__restrict *__restrict gauge , const size_t DIR )
+   @fn void axial_gauge( struct site *lat , const size_t DIR )
    @brief Fixes to the axial gauge i.e \f$ A_{DIR} = 0. \f$
    @param lat :: lattice fields
-   @param gauge :: gauge transformation matrices
    @param DIR :: direction to set fields to unity
 
    \f[
    A_{DIR}(x) = 0.
    \f]
+   @return #GLU_SUCCESS or #GLU_FAILURE
  **/
-void
-axial_gauge( struct site *__restrict lat , 
-	     GLU_complex *__restrict *__restrict gauge , 
+int
+axial_gauge( struct site *lat ,
 	     const size_t DIR ) ;
 
 /**
-   @fn void mag( struct site *__restrict lat , GLU_complex *__restrict *__restrict gauge )
+   @fn void mag( struct site *lat )
    @brief wrapper for the maximal axial gauge (MAG) fixing
-   @param lat :: lattice fields
-   @param gauge :: gauge transformation matrices
-   
+   @param lat :: lattice fields   
    @warning has a reunitarization method included, to sharpen the links a little.
+   @return #GLU_SUCCESS or #GLU_FAILURE
  **/
-void 
-mag( struct site *__restrict lat , 
-     GLU_complex *__restrict *__restrict gauge ) ;
+int 
+mag( struct site *lat ) ;
 
 
 /**
-   @fn void residual_fix( struct site *__restrict lat )
+   @fn void residual_fix( struct site *lat )
    @brief fixes the extra degree of freedom left from fixing to Coulomb gauge
    @param lat :: the lattice links
    This function computes
@@ -65,9 +62,10 @@ mag( struct site *__restrict lat ,
    \f[
    g(t) = g(t-1)\frac{1}{\prod_{i<ND-1}L_i}\textrm{Proj}_{SU(NC)}\left( \sum_x U_t(x,t) \right) \qquad g(0) = I
    \f]
-   @warning overwrites lat, can only be used by defining the #RESIDUAL_IMPROVE improvement in Coulomb gauge fixing procedure
+
+   @return #GLU_SUCCESS or #GLU_FAILURE
  */
-void
-residual_fix( struct site *__restrict lat ) ;
+int
+residual_fix( struct site *lat ) ;
 
 #endif

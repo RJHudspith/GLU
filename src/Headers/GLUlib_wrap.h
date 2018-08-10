@@ -109,12 +109,11 @@ read_and_cut( const char *infile ,
 	      const struct sm_info SMINFO ) ;
 
 /**
-   @fn int read_and_fix( const char *infile , const GLU_bool rtrans , const struct gf_info GFINFO , const struct sm_info SMINFO , const char *outfile , const GLU_output storage , const char *output_details ) 
+   @fn int read_and_fix( const char *infile , const GLU_bool rtrans , const struct gf_info GFINFO , const char *outfile , const GLU_output storage , const char *output_details ) 
    @brief reads a configuration file, gauge fixes and perhaps writes out a configuration too
    @param infile :: input configuration name
    @param rtrans :: do we want to randomly transform the initial configuration
    @param GFINGO :: gauge information of the form #gf_info
-   @param SMINFO :: smearing transformations can be used in smeared gauge fixing
    @param outfile :: output file configuration
    @param storage :: storage type (NO_STORAGE means we don't write it out)
    @param output_details :: often a header has a string describing it, this is that
@@ -124,7 +123,6 @@ int
 read_and_fix( const char *infile , 
 	      const GLU_bool rtrans , 
 	      const struct gf_info GFINFO , 
-	      const struct sm_info SMINFO ,
 	      const char *outfile , 
 	      const GLU_output storage , 
 	      const char *output_details ) ;

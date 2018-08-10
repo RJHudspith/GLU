@@ -74,11 +74,11 @@ FA_deriv( double *red ,
 
 // is the same for Landau and Coulomb just with different LENGTHS
 void
-FOURIER_ACCELERATE3( struct fftw_stuff FFTW ) 
+FOURIER_ACCELERATE3( struct fftw_stuff *FFTW ) 
 {
 #ifdef HAVE_FFTW3_H
-  const fftw_plan *forw = ( const fftw_plan* )FFTW.forward ;
-  const fftw_plan *back = ( const fftw_plan* )FFTW.backward ;
+  const fftw_plan *forw = ( const fftw_plan* )FFTW -> forward ;
+  const fftw_plan *back = ( const fftw_plan* )FFTW -> backward ;
   // single core FFT's
   size_t mu ;
   #pragma omp for private(mu) schedule(dynamic)
@@ -86,7 +86,7 @@ FOURIER_ACCELERATE3( struct fftw_stuff FFTW )
     fftw_execute( forw[mu] ) ; 
     size_t i ;
     for( i = 0 ; i < LVOLUME ; i++ ) {
-      FFTW.out[ mu ][ i ] *= FFTW.psq[i] ;
+      FFTW -> out[ mu ][ i ] *= FFTW -> psq[i] ;
     }
     fftw_execute( back[mu] ) ; 
   }
@@ -162,19 +162,19 @@ sum_DER3( double *red ,
 static void
 steep_Landau_FA( double *red ,
 		 struct site *lat ,
-		 struct fftw_stuff FFTW )
+		 struct fftw_stuff *FFTW )
 {
   // do a steepest-descents step with the result in "out"
-  FA_deriv( red , FFTW.in , lat ) ;
+  FA_deriv( red , FFTW -> in , lat ) ;
   
   // and do the fourier acceleration
   FOURIER_ACCELERATE3( FFTW ) ;
   
   // and step length gf_alpha provided from the input file
 #if (defined GLU_FR_CG) || (defined GLU_GFIX_SD)
-  egauge_Landau( lat , (const GLU_complex**)FFTW.in , Latt.gf_alpha ) ;
+  egauge_Landau( lat , (const GLU_complex**)FFTW -> in , Latt.gf_alpha ) ;
 #else
-  line_search_Landau( red , lat , (const GLU_complex**)FFTW.in ) ;
+  line_search_Landau( red , lat , (const GLU_complex**)FFTW -> in ) ;
 #endif
   
   return ;
@@ -182,8 +182,8 @@ steep_Landau_FA( double *red ,
 
 static int
 steep_Landau_FASD( struct site *lat ,
-		   struct fftw_stuff FFTW ,
-		   struct CGtemps CG ,
+		   struct fftw_stuff *FFTW ,
+		   struct CGtemps *CG ,
 		   double *tr ,
 		   const double acc ,
 		   const size_t max_iters )
@@ -195,14 +195,14 @@ steep_Landau_FASD( struct site *lat ,
 
   #pragma omp for private(k)
   for( k = 0 ; k < CLINE*Latt.Nthreads ; k++ ) {
-    CG.red[k] = 0.0 ;
+    CG -> red[k] = 0.0 ;
   }
   
-  steep_Landau_FA( CG.red , lat , FFTW ) ;
+  steep_Landau_FA( CG -> red , lat , FFTW ) ;
 
   double trAA = 0.0 ;
   for( k = 0 ; k < Latt.Nthreads ; k++ ) {
-    trAA += CG.red[ LINE_NSTEPS + 2 + k*CLINE ] ;
+    trAA += CG -> red[ LINE_NSTEPS + 2 + k*CLINE ] ;
   }
   *tr = trAA * GFNORM_LANDAU ;
 
@@ -215,8 +215,8 @@ steep_Landau_FASD( struct site *lat ,
 
 static int
 steep_Landau_FACG( struct site *lat ,
-		   struct fftw_stuff FFTW ,
-		   struct CGtemps CG ,
+		   struct fftw_stuff *FFTW ,
+		   struct CGtemps *CG ,
 		   double *tr ,
 		   const double acc ,
 		   const size_t max_iters )
@@ -225,10 +225,10 @@ steep_Landau_FACG( struct site *lat ,
   double trAA = 0.0 , inold = 0.0 , insum = 0.0 , sum_conj = 0.0 ;
     
   // perform an SD start
-  steep_Landau_FA( CG.red , lat , FFTW ) ;
+  steep_Landau_FA( CG -> red , lat , FFTW ) ;
 
   for( k = 0 ; k < Latt.Nthreads ; k++ ) {
-    trAA += CG.red[ LINE_NSTEPS + 2 + k*CLINE ] ;
+    trAA += CG -> red[ LINE_NSTEPS + 2 + k*CLINE ] ;
   }
   *tr = trAA * GFNORM_LANDAU ;
   
@@ -236,14 +236,14 @@ steep_Landau_FACG( struct site *lat ,
 #pragma omp for private(i)
   for( i = 0 ; i < TRUE_HERM*LVOLUME ; i++ ) {
     const size_t idx = i/LVOLUME , j = i%LVOLUME ;
-    CG.sn[idx][j] = CG.in_old[idx][j] = FFTW.in[idx][j] ;
+    CG -> sn[idx][j] = CG -> in_old[idx][j] = FFTW -> in[idx][j] ;
   }
 
   // compute the quantity Tr( dA dA )
-  sum_DER3( CG.red , (const GLU_complex**)FFTW.in ) ;
+  sum_DER3( CG -> red , (const GLU_complex**)FFTW -> in ) ;
     
   for( k = 0 ; k < Latt.Nthreads ; k++ ) {
-    inold += CG.red[ LINE_NSTEPS + CLINE*k ] ;
+    inold += CG -> red[ LINE_NSTEPS + CLINE*k ] ;
   }
   
  top :
@@ -254,15 +254,15 @@ steep_Landau_FACG( struct site *lat ,
   trAA = insum = sum_conj = 0.0 ;
 #pragma omp for private(k)
   for( k = 0 ; k < CLINE*Latt.Nthreads ; k++ ) {
-    CG.red[k] = 0.0 ;
+    CG -> red[k] = 0.0 ;
   }
   
   // this ONLY works with out and in, make sure that is what we use
-  FA_deriv( CG.red , FFTW.in , lat ) ;
+  FA_deriv( CG -> red , FFTW -> in , lat ) ;
 
   // normalise the measure
   for( k = 0 ; k < Latt.Nthreads ; k++ ) {
-    trAA += CG.red[ LINE_NSTEPS + 2 + k*CLINE ] ;
+    trAA += CG -> red[ LINE_NSTEPS + 2 + k*CLINE ] ;
   }
   *tr = trAA * GFNORM_LANDAU ;
   
@@ -270,13 +270,13 @@ steep_Landau_FACG( struct site *lat ,
   FOURIER_ACCELERATE3( FFTW ) ;
   
   // is the sum of the trace of in * in_old
-  sum_PR3( CG.red , (const GLU_complex**)FFTW.in , 
-	   (const GLU_complex**)CG.in_old ) ; 
+  sum_PR3( CG -> red , (const GLU_complex**)FFTW -> in , 
+	   (const GLU_complex**)CG -> in_old ) ; 
   
   // reduction happens for all threads
   for( k = 0 ; k < Latt.Nthreads ; k++ ) {
-    insum    += CG.red[ LINE_NSTEPS + CLINE*k ] ;
-    sum_conj += CG.red[ LINE_NSTEPS + 1 + CLINE*k ] ;
+    insum    += CG -> red[ LINE_NSTEPS + CLINE*k ] ;
+    sum_conj += CG -> red[ LINE_NSTEPS + 1 + CLINE*k ] ;
   }
       
   // compute the beta value, who knows what value is best?
@@ -291,17 +291,17 @@ steep_Landau_FACG( struct site *lat ,
 #pragma omp for private(i)
   for( i = 0 ; i < TRUE_HERM*LVOLUME ; i++ ) {
     size_t idx = i/LVOLUME , j = i%LVOLUME ;
-    GLU_complex *pin = FFTW.in[idx] ;
-    GLU_complex *pin_old = CG.in_old[idx] ;
-    GLU_complex *psn = CG.sn[idx] ;
+    GLU_complex *pin = FFTW -> in[idx] ;
+    GLU_complex *pin_old = CG -> in_old[idx] ;
+    GLU_complex *psn = CG -> sn[idx] ;
     psn[j] = pin[j] + beta * ( psn[j] ) ;
     pin_old[j] = pin[j] ;
   }
 
   if( *tr > CG_TOL ) {
-    line_search_Landau( CG.red , lat , (const GLU_complex**)CG.sn ) ;
+    line_search_Landau( CG -> red , lat , (const GLU_complex**)CG -> sn ) ;
   } else {
-    egauge_Landau( lat , (const GLU_complex**)CG.sn , Latt.gf_alpha ) ;
+    egauge_Landau( lat , (const GLU_complex**)CG -> sn , Latt.gf_alpha ) ;
   }
 
   loc_iters++ ;
@@ -315,7 +315,7 @@ steep_Landau_FACG( struct site *lat ,
 // overwrites the lattice links in lat to Landau gauge fixed links using CG
 size_t
 FACG( struct site *lat , 
-      struct fftw_stuff FFTW ,
+      struct fftw_stuff *FFTW ,
       double *th ,
       const double acc ,
       const size_t max_iters )
@@ -338,8 +338,13 @@ FACG( struct site *lat ,
   {
     size_t loc_iters = 1 ;
   top :
-    loc_iters = steep_Landau_FACG( lat , FFTW , CG , th ,
+    loc_iters = steep_Landau_FACG( lat , FFTW , &CG , th ,
 				   acc , max_iters ) ;
+
+    #pragma omp master
+    {
+      iters = loc_iters ;
+    }
     
     if( loc_iters >= max_iters ) {
       if( ( *th < 1E3*acc ) ) {
@@ -354,10 +359,6 @@ FACG( struct site *lat ,
 	iters = 123456789 ;
       }
     }
-    #pragma omp master
-    {
-      iters = loc_iters ;
-    }
   }
 
  end :
@@ -370,7 +371,7 @@ FACG( struct site *lat ,
 //returns the global gauge transform on lat
 size_t
 FASD( struct site *lat ,
-      struct fftw_stuff FFTW ,
+      struct fftw_stuff *FFTW ,
       double *th ,
       const double acc ,
       const size_t max_iters )
@@ -393,7 +394,7 @@ FASD( struct site *lat ,
   {
     size_t loc_iters = 1 ;    
   top :
-    loc_iters = steep_Landau_FASD( lat , FFTW , CG , th ,
+    loc_iters = steep_Landau_FASD( lat , FFTW , &CG , th ,
 				   acc , max_iters ) ;
     
     if( loc_iters >= max_iters ) {

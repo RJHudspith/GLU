@@ -24,13 +24,12 @@
 #define GLU_GF_WRAP_H
 
 /**
-   @fn void GF_wrap( FILE *__restrict infile , struct site *__restrict lat , const struct gf_info GFINFO , const struct sm_info SMINFO , const struct head_data HEAD_DATA )
+   @fn void GF_wrap( FILE *__restrict infile , struct site *__restrict lat , const struct gf_info GFINFO , const struct head_data HEAD_DATA )
    @brief This is the wrapper that calls the gauge fixing functions.
 
    @param infile :: configuration file, be it HIREP or NERSC
    @param lat :: gauge field
    @param GFINFO :: general gauge fixing information from the input file
-   @param SMINFO :: general smearing information from the input file
    @param HEAD_DATA :: information from the QCD header
 
    It includes the smeared-preconditioned and MAG-preconditioned
@@ -42,7 +41,6 @@ int
 GF_wrap( const char *__restrict infile , 
 	 struct site *__restrict lat , 
 	 const struct gf_info GFINFO , 
-	 const struct sm_info SMINFO ,
 	 const struct head_data HEAD_DATA ) ;
 
 #endif

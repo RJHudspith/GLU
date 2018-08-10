@@ -35,8 +35,8 @@
 
 //calculate gauge transform matrices along one line in one direction
 static void 
-gauge_set( GLU_complex *__restrict *__restrict gauge ,
-	   const struct site *__restrict lat , 
+gauge_set( GLU_complex **gauge ,
+	   const struct site *lat , 
 	   const size_t mu , 
 	   const size_t i )
 {  
@@ -56,16 +56,27 @@ gauge_set( GLU_complex *__restrict *__restrict gauge ,
 }
 
 //perform the maximal axial gauge fixing
-static void 
-MAG_fix( struct site *__restrict lat , 
-	 GLU_complex *__restrict *__restrict gauge )
+static int 
+MAG_fix( struct site *lat )
 {
-  // just in case set gauge to identity //
+  // allocate gauge field
+  GLU_complex **gauge = NULL ;
   size_t i ;
-  #pragma omp parallel for private(i)
-  for( i = 0 ; i < LVOLUME ; i++ ) {
-    identity( gauge[i] ) ; 
+  int flag = GLU_SUCCESS ;
+  
+  // allocate new gauge field
+  if( GLU_malloc( (void**)&gauge , 16 , LVOLUME * sizeof( GLU_complex* ) ) != 0 ) {
+    fprintf( stderr , "[GF] MAG failed to allocate temporary gauge\n" ) ;
+    flag = GLU_FAILURE ;
+    goto end ;
   }
+#pragma omp parallel for private(i)
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    gauge[i] = ( GLU_complex* )malloc( NCNC * sizeof( GLU_complex ) ) ; 
+    identity( gauge[i] ) ;
+  }
+
+  // set the gauge transformation matrices
   size_t subvol = 1 , mu ;
   for( mu = 0 ; mu < ND ; mu ++ ) {
     #pragma omp parallel for private(i)
@@ -75,16 +86,44 @@ MAG_fix( struct site *__restrict lat ,
     gtransform( lat , ( const GLU_complex ** )gauge ) ;
     subvol *= Latt.dims[ mu ] ;
   }
-  return ;
+
+ end :
+
+  // free the gauge transformation matrices
+  if( gauge != NULL ) {
+#pragma omp parallel for private(i)
+    for( i = 0 ; i < LVOLUME ; i++ ) {
+      free( gauge[i] ) ;   
+    }
+    free( gauge ) ;
+  }
+  
+  return flag ;
 }
 
-// simplistic axial gauge calculation, A_{\mu} = 0 as best we can
-void
-axial_gauge( struct site *__restrict lat , 
-	     GLU_complex *__restrict *__restrict gauge , 
+// simplistic axial gauge calculation, A_{DIR} = 0 as best we can
+int
+axial_gauge( struct site *lat ,
 	     const size_t DIR )
 {
+  latt_reunitU( lat ) ; 
+  
+  GLU_complex **gauge ;
   size_t i , subvolume = 1 ;
+  int flag = GLU_SUCCESS ;
+  
+  // allocate new gauge field
+  if( GLU_malloc( (void**)&gauge , 16 , LVOLUME * sizeof( GLU_complex* ) ) != 0 ) {
+    fprintf( stderr , "[GF] Axial failed to allocate temporary gauge\n" ) ;
+    flag = GLU_FAILURE ;
+    goto end ;
+  }
+#pragma omp parallel for private(i)
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    gauge[i] = ( GLU_complex* )malloc( NCNC * sizeof( GLU_complex ) ) ; 
+    identity( gauge[i] ) ;
+  }
+  
   for( i =  0 ; i < ND ; i++ ) {
     subvolume *= (i!=DIR) ? Latt.dims[i] : 1 ;
   }
@@ -97,41 +136,55 @@ axial_gauge( struct site *__restrict lat ,
     gauge_set( gauge , lat , DIR , k ) ; 
   }
   gtransform( lat , ( const GLU_complex ** )gauge ) ;
-  return ;
+
+ end :
+  
+  // free the gauge transformation matrices
+  if( gauge != NULL ) {
+#pragma omp parallel for private(i)
+    for( i = 0 ; i < LVOLUME ; i++ ) {
+      free( gauge[i] ) ;   
+    }
+    free( gauge ) ;
+  }
+
+  latt_reunitU( lat ) ; 
+  
+  return flag ;
 }
 
 // wrapper for the mag-fixing bit ...
-void 
-mag( struct site *__restrict lat , 
-     GLU_complex *__restrict *__restrict gauge )
+int
+mag( struct site *lat )
 {
   //loop lattice reuinitarizing everything
   latt_reunitU( lat ) ; 
-  MAG_fix( lat , gauge ) ; 
+  int flag = MAG_fix( lat ) ; 
   latt_reunitU( lat ) ; 
-  return ;
+  return flag ;
 }
 
 // residual fix
-void
-residual_fix( struct site *__restrict lat )
+int
+residual_fix( struct site *lat )
 {
-  size_t i ;
-
   // temporal gauge transformation matrices
   GLU_complex **gauge = NULL ;
+  size_t i ;
+  int flag = GLU_SUCCESS ;
   
   // set these
   if( GLU_malloc( (void**)&gauge , 16 , Latt.dims[ND-1] * sizeof( GLU_complex* ) ) != 0 ) {
     fprintf( stderr , "[RESFIX] temporary gauge allocation failure\n" ) ;
-    return ;
+    flag = GLU_FAILURE ;
+    goto end ;
   }
 
   for( i = 0 ; i < Latt.dims[ND-1] ; i++ ) {
     if( GLU_malloc( (void**)&gauge[i] , 16 , NCNC * sizeof( GLU_complex ) ) != 0 ) {
       fprintf( stderr , "[RESFIX] temporary gauge allocation failure\n" ) ;
-      free( gauge ) ;
-      return ;
+      flag = GLU_FAILURE ;
+      goto end ;
     }
     if( i == 0 ) identity( gauge[0] ) ;
   } 
@@ -182,10 +235,16 @@ residual_fix( struct site *__restrict lat )
       #endif
     }
   }
+
+ end :
+
   // free the temporary gauges
-  for( i = 0 ; i < Latt.dims[ND-1] ; i++ ) {
-    free( gauge[i] ) ;
+  if( gauge != NULL ) {
+    for( i = 0 ; i < Latt.dims[ND-1] ; i++ ) {
+      free( gauge[i] ) ;
+    }
+    free( gauge ) ;
   }
-  free( gauge ) ;
-  return ;
+  
+  return flag ;
 }

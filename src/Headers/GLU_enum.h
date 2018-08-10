@@ -108,8 +108,11 @@ typedef enum
 */
 typedef enum  
   { DEFAULT_NOFIX ,
+    GLU_AXIALT_FIX ,
+    GLU_COULOMB_FIX ,
+    GLU_COULOMB_RESIDUAL_FIX ,
     GLU_LANDAU_FIX ,
-    GLU_COULOMB_FIX } GLU_fixing ;
+    GLU_MAG_FIX } GLU_fixing ;
 
 /**
    @enum GF_improvements

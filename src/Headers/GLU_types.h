@@ -152,13 +152,11 @@ struct gauges {
 /**
    @struct gf_info
    @brief gauge fixing information storage
-   @param improve :: enumerated, (NONE,MAG,SMEARED_PRECONDITIONED)
    @param max_iters :: maximum iterations before we restart
    @param accuracy :: gauge fixing accuracy we try to meet 1E-20 is good
    @param type :: enumerated (LANDAU,COULOMB)
  */
 struct gf_info {
-  GF_improvements improve ; // improvement = MAG , SMEARED_PRECONDITIONED
   size_t max_iters ; // maximum iterations of the gauge fixing routine
   double accuracy ; // average accuracy to be used 
   GLU_fixing type ; // type of gauge fixing used, coulomb or landau?
