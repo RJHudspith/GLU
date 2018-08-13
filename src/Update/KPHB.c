@@ -33,6 +33,60 @@
 #include "random_config.h" // reunit_latt()
 #include "relax.h"         // overrelaxation
 
+// measure plaquette and polyakov loop
+static void
+perform_measurements( double *PLAQred ,
+		      double *POLYred ,
+		      const struct site *lat ,
+		      const size_t conf_idx )
+{
+  double pl = 0.0 , re , im ;
+  size_t mu , k ;
+  
+#pragma omp for private(k)
+  for( k = 0 ; k < Latt.Nthreads*CLINE ; k++ ) {
+    PLAQred[ k ] = 0.0 ;
+  }
+  
+  av_plaquette_th( PLAQred , lat ) ;
+  
+  for( k = 0 ; k < Latt.Nthreads ; k++ ) {
+    pl += PLAQred[ 3 + CLINE*k ] ;
+  }
+  
+#pragma omp master
+  {
+    // write out the plaquette
+    fprintf( stdout , "[UPDATE] %zu :: {P} %1.12f \n" , 
+	     conf_idx , pl/( NC*(ND-1)*(ND-2)*LVOLUME ) ) ;
+  }
+  
+#pragma omp for private(k)
+  for( k = 0 ; k < Latt.Nthreads*CLINE ; k++ ) {
+    POLYred[ k ] = 0.0 ;
+  }
+  
+  // write the polyakov loops, (re,im) |L|
+  for( mu = 0 ; mu < ND ; mu++ ) {
+    poly_th( POLYred , lat , mu ) ;
+  }
+  
+#pragma omp master
+  {
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      re = im = 0.0 ;
+      for( k = 0 ; k < Latt.Nthreads ; k++ ) {
+	re += POLYred[ 2*mu + k*CLINE ] ;
+	im += POLYred[ 2*mu + 1 + k*CLINE ] ;
+      }
+      fprintf( stdout , "[UPDATE] {L_%zu} ( %1.12e , %1.12e ) %1.12e \n" ,
+	       mu , re , im , sqrt( re*re + im*im ) ) ;
+    }
+    fflush( stdout ) ;
+  }
+  return ;
+}
+
 // updates the lattice
 static void
 update_lattice( struct site *lat ,
@@ -51,23 +105,7 @@ update_lattice( struct site *lat ,
     // perform over-relaxation 
     OR_lattice( lat , db ) ;
   }
-    
-  // reunitarise the gauge field? If NC gets large this can be a problem
-  size_t i ;
-#pragma omp for private(i)
-  for( i = 0 ; i < LVOLUME ; i++ ) {
-    #if ND == 4
-    gram_reunit( lat[i].O[0] ) ;
-    gram_reunit( lat[i].O[1] ) ;
-    gram_reunit( lat[i].O[2] ) ;
-    gram_reunit( lat[i].O[3] ) ; 
-    #else
-    size_t mu ;
-    for( mu = 0 ; mu < ND ; mu++ ) {
-      gram_reunit( lat[i].O[mu] ) ; 
-    }
-    #endif
-  }
+
   return ;
 }
 
@@ -124,7 +162,7 @@ hb_update( struct site *lat ,
   
 #pragma omp parallel
   {   
-    size_t i , k ;
+    size_t i ;
     for( i = 0 ; i < HBINFO.therm ; i++ ) {
       update_lattice( lat , inverse_beta , db , HBINFO.Nor ) ;
       if( !(i&15) ) {
@@ -154,50 +192,7 @@ hb_update( struct site *lat ,
       // set the lattice flow
       // if we are saving the data print out the plaquette and write a file
       if( i%HBINFO.Nmeasure == 0 ) {
-
-        #pragma omp for private(k)
-        for( k = 0 ; k < Latt.Nthreads*CLINE ; k++ ) {
-           PLAQred[ k ] = 0.0 ;
-        }
-	
-        av_plaquette_th( PLAQred , lat ) ;
-      
-        double pl = 0.0 ;
-        for( k = 0 ; k < Latt.Nthreads ; k++ ) {
-           pl += PLAQred[ 3 + CLINE*k ] ;
-        }
-	
-        #pragma omp master
-	{
-	  // write out the plaquette
-	  fprintf( stdout , "[UPDATE] %zu :: {P} %1.12f \n" , 
-		   i , pl/( NC*(ND-1)*(ND-2)*LVOLUME ) ) ;
-        }
-
-	#pragma omp for private(i)
-	for( i = 0 ; i < CLINE*Latt.Nthreads ; i++ ) {
-	  POLYred[ i ] = 0.0 ;
-	}
-	
-	// write the polyakov loops, (re,im) |L|
-        size_t mu ; 
-	for( mu = 0 ; mu < ND ; mu++ ) {
-	  poly_th( POLYred , lat , mu ) ;
-	}
-	
-        #pragma omp master
-	{
-	  for( mu = 0 ; mu < ND ; mu++ ) {
-	    double re = 0.0 , im = 0.0 ;
-	    for( k = 0 ; k < Latt.Nthreads ; k++ ) {
-	      re += POLYred[ 2*mu + k*CLINE ] ;
-	      im += POLYred[ 2*mu + 1 + k*CLINE ] ;
-	    }
-	    fprintf( stdout , "[UPDATE] {L_%zu} ( %1.12e , %1.12e ) %1.12e \n" ,
-		     mu , re , im , sqrt( re*re + im*im ) ) ;
-	  }
-	  fflush( stdout ) ;
-	}
+	perform_measurements( PLAQred , POLYred , lat , i ) ;
       }
 
       // if we hit a save point we write out the configuration
@@ -215,7 +210,10 @@ hb_update( struct site *lat ,
 	  }
 	}
       }
-      Latt.flow = i + 1 ; 
+      #pragma omp master
+      {
+	Latt.flow = i + 1 ; 
+      }
     }
   }
 

@@ -36,6 +36,8 @@ a    GLU is distributed in the hope that it will be useful,
 #include "SU2_rotate.h" // rotation
 #include "relax.h"      // OR
 
+#include "gramschmidt.h"
+
 // just update the diagonal
 //#define DIAGONAL_UPDATE
 
@@ -150,26 +152,20 @@ hb( GLU_complex U[ NCNC ] ,
 #ifdef DIAGONAL_UPDATE
   for( i = 0 ; i < NC-1 ; i++ ) {
     only_subgroup( &s0 , &s1 , &scale , U , staple , i ) ;
-    if( generate_SU2( &s0 , &s1 , invbeta*scale , thread ) == GLU_FAILURE ) {
-      continue ;
-    }
+    generate_SU2( &s0 , &s1 , invbeta*scale , thread ) ;
     su2_rotate( U , s0 , s1 , i ) ;
   }
 #elif defined STOCH
   for( i = 0 ; i < STOCH ; i++ ) {
     const size_t stoch = (size_t)( par_rng_dbl( thread ) * NSU2SUBGROUPS ) ;
     only_subgroup( &s0 , &s1 , &scale , U , staple , stoch ) ;
-    if( generate_SU2( &s0 , &s1 , invbeta*scale , thread ) == GLU_FAILURE ) {
-      continue ;
-    }
+    generate_SU2( &s0 , &s1 , invbeta*scale , thread ) ;
     su2_rotate( U , s0 , s1 , stoch ) ;
   }
 #else
   for( i = 0 ; i < NSU2SUBGROUPS ; i++ ) {
     only_subgroup( &s0 , &s1 , &scale , U , staple , i ) ;
-    if( generate_SU2( &s0 , &s1 , invbeta*scale , thread ) == GLU_FAILURE ) {
-      continue ;
-    }
+    generate_SU2( &s0 , &s1 , invbeta*scale , thread ) ;
     su2_rotate( U , s0 , s1 , i ) ;
   }
 #endif
@@ -196,24 +192,22 @@ hb_lattice( struct site *lat ,
       }
     }
 #else
-    size_t mu , i ;
-    for( mu = 0 ; mu < ND ; mu++ ) {
-      
-      size_t c ;
-      // loop draughtboard coloring
-      for( c = 0 ; c < db.Ncolors ; c++ ) {
-	// parallel loop over all sites with this coloring
-        #pragma omp for private(i) //schedule(dynamic)
-	for( i = 0 ; i < db.Nsquare[c] ; i++ ) {
-	const size_t it = db.square[c][i] ;
+    size_t cmu , i ;
+    for( cmu = 0 ; cmu < ND*db.Ncolors ; cmu++ ) {
+      const size_t mu = cmu/db.Ncolors ;
+      const size_t c  = cmu%db.Ncolors ;
+      // parallel loop over all sites with this coloring
+      #pragma omp for private(i) 
+      for( i = 0 ; i < db.Nsquare[c] ; i++ ) {
+        const size_t it = db.square[c][i] ;
 	GLU_complex stap[ NCNC ] GLUalign ;
 	zero_mat( stap ) ;
 	all_staples( stap , lat , it , mu , ND , SM_APE ) ;
 	hb( lat[ it ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
+	gram_reunit( lat[it].O[mu] ) ;
       }
-	// and that is it
     }
-}
+    // and that is it
 #endif
   return GLU_SUCCESS ;
 }

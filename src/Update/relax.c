@@ -25,6 +25,7 @@
 #include "staples.h"    // all_staples()
 #include "SU2_rotate.h" // rotation
 #include "par_rng.h"
+#include "gramschmidt.h"
 
 // chroma's seems the cheapest at the moment
 #define CHROMA_RELAX
@@ -116,21 +117,20 @@ OR_lattice( struct site *lat ,
       }
     }
 #else
-    size_t mu , i ;
-    for( mu = 0 ; mu < ND ; mu++ ) {
+    size_t cmu , i ;
+    for( cmu = 0 ; cmu < ND*db.Ncolors ; cmu++ ) {
       // loop draughtboard coloring
-      size_t c ;
-      for( c = 0 ; c < db.Ncolors ; c++ ) {
-        #pragma omp for private(i)
-	for( i = 0 ; i < db.Nsquare[c] ; i++ ) {
-	  const size_t it = db.square[c][i] ;
-	  GLU_complex stap[ NCNC ] GLUalign ;
-	  zero_mat( stap ) ;
-	  all_staples( stap , lat , it , mu , ND , SM_APE ) ;
-	  overrelax( lat[ it ].O[mu] , stap , get_GLU_thread() ) ;
-	}
-	// and that is it
+      const size_t mu = cmu/db.Ncolors ;
+      const size_t c  = cmu%db.Ncolors ;
+#pragma omp for private(i)
+      for( i = 0 ; i < db.Nsquare[c] ; i++ ) {
+	const size_t it = db.square[c][i] ;
+	GLU_complex stap[ NCNC ] GLUalign ;
+	zero_mat( stap ) ;
+	all_staples( stap , lat , it , mu , ND , SM_APE ) ;
+	overrelax( lat[ it ].O[mu] , stap , get_GLU_thread() ) ;
       }
+      // and that is it
     }
 #endif
   return GLU_SUCCESS ;
