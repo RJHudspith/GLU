@@ -185,11 +185,7 @@ hb_update( struct site *lat ,
     // iterate the number of runs
     const size_t start = Latt.flow ;
     for( i = Latt.flow ; i < HBINFO.iterations ; i++ ) {
-      
-      // perform a hb-OR step
-      update_lattice( lat , inverse_beta , db , HBINFO.Nor ) ;
 
-      // set the lattice flow
       // if we are saving the data print out the plaquette and write a file
       if( i%HBINFO.Nmeasure == 0 ) {
 	perform_measurements( PLAQred , POLYred , lat , i ) ;
@@ -210,6 +206,10 @@ hb_update( struct site *lat ,
 	  }
 	}
       }
+
+      // perform a hb-OR step
+      update_lattice( lat , inverse_beta , db , HBINFO.Nor ) ;
+
       #pragma omp master
       {
 	Latt.flow = i + 1 ; 

@@ -415,7 +415,7 @@ steep_step_FASD( GLU_complex **gauge ,
   sum_DER2( CG.red , (const GLU_complex**)FFTW -> in ) ;
   
   for( k = 0 ; k < Latt.Nthreads ; k++ ) {
-      *tr += CG.red[ LINE_NSTEPS + 2 + CLINE*k ] ;
+    *tr += CG.red[ LINE_NSTEPS + 2 + CLINE*k ] ;
   }
   *tr *= GFNORM_COULOMB ;
 
@@ -428,13 +428,17 @@ steep_step_FASD( GLU_complex **gauge ,
 
 // test the gauge transformation solution
 static GLU_bool
-adequate_solution( GLU_complex ** slice_gauge , 
+adequate_solution( GLU_complex **slice_gauge , 
 		   const size_t iters ) 
 {
   GLU_bool failure = GLU_TRUE ;
   size_t i ;
-#pragma omp for nowait private(i)
+#pragma omp for private(i)
   for( i = 0 ; i < LCU ; i++ ) {
+
+    // reunitarise the solution
+    gram_reunit( slice_gauge[i] ) ;
+    
     const double *p = (const double*)slice_gauge[i] ;
     register double sum = 0.0 ;
     size_t j ;
@@ -468,7 +472,7 @@ steep_fix( GLU_complex **gauge ,
 			const size_t max_iters ) )
 {
   // perform a Fourier accelerated step, this is where the CG can go ...
-    double tr = 0.0 ;
+    double tr = 1.0 ;
     size_t loc_iters = 0 , tot_iters = 0 , control = 0 ;
     GLU_bool trans_flag = GLU_FALSE ;
 
@@ -487,11 +491,11 @@ steep_fix( GLU_complex **gauge ,
 
     // attempt a continuation run if we are close to the desired accuracy
     if( loc_iters >= (max_iters) ) {
-      if( tr < 1E4*accuracy ) {
+      if( tr < 1E4*accuracy && !isnan( tr ) && !isinf( tr ) ) {
 	tot_iters += loc_iters ;
 	goto top ;
       }
-      if( tr > accuracy ) {
+      if( tr > accuracy || isnan( tr ) || isinf( tr ) ) {
 	trans_flag = GLU_TRUE ;
       }
     }
@@ -500,8 +504,8 @@ steep_fix( GLU_complex **gauge ,
     if( ( control < 8 ) && ( trans_flag == GLU_TRUE ) ) {
       #pragma omp master
       {
-	fprintf( stdout , "[CG] random gauge transform %zu :: %e\n" ,
-		 control , tr ) ;
+	fprintf( stdout , "[CG] random gauge transform %zu :: %e (%zu)\n" ,
+		 control , tr , loc_iters ) ;
       }
       size_t i ;
       #pragma omp for private(i)
@@ -573,14 +577,7 @@ Coulomb_FA( struct site  *__restrict lat ,
     // and t+1
     thread_its += steep_fix( G.g , CG , FFTW ,
 			     lat , t+1 , accuracy , max_iter , f ) ;
-    
-    // reunitarise the gauges to counteract the accumulated round-off error
-    #pragma omp for private(i)
-    for( i = 0 ; i < LCU ; i++ ) { 
-      gram_reunit( G.g_end[i] ) ; 
-      gram_reunit( G.g[i] ) ;
-    }
-    
+       
     //gauge transform the links at x and set slice_gauge_up to be slice_gauge
     gtransform_slice_th( (const GLU_complex **)G.g_end , lat , 
 			 (const GLU_complex **)G.g , 0 ) ;
@@ -593,12 +590,8 @@ Coulomb_FA( struct site  *__restrict lat ,
 
       // gauge fix on this slice
       thread_its += steep_fix( G.g_up , CG , FFTW , lat ,
-			    t , accuracy , max_iter , f ) ;
-      
-      // reunitarise to counteract the accumulated round-off error
-      #pragma omp for private(i) 
-      for( i = 0 ; i < LCU ; i++ ) { gram_reunit( G.g_up[i] ) ; }
-      
+			       t , accuracy , max_iter , f ) ;
+            
       //gauge transform the links for this slice "g"
       gtransform_slice_th( (const GLU_complex **)G.g , lat , 
 			   (const GLU_complex **)G.g_up , t - 1 ) ;

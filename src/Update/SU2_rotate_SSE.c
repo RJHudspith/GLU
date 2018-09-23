@@ -201,8 +201,7 @@ only_subgroup( GLU_complex *s0 ,
 #endif
 
   // puts the norm in both parts
-  register __m128d z = _mm_add_pd( _mm_mul_pd( sm0 , sm0 ) ,
-				   _mm_mul_pd( sm1 , sm1 ) ) ;
+  register __m128d z = SSE2_FMA( sm0 , sm0 , _mm_mul_pd( sm1 , sm1 ) ) ; 
   z = _mm_add_pd( z , _mm_shuffle_pd( z , z , 1 ) ) ;
   z = _mm_sqrt_pd( z ) ;
   z = _mm_div_pd( _mm_set1_pd( 1.0 ) , z ) ;
