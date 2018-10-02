@@ -283,7 +283,9 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
     size_t count = 0 ; 
     for( count = 1 ; count <= smiters && top_found != GLU_TRUE ; count++ ) {
 
-      #pragma omp barrier
+      {
+         #pragma omp barrier
+      }
       
       size_t i ;
       get_lv1( lev1 , lat , type , project ) ; 

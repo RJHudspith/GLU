@@ -97,7 +97,9 @@ smear3D( struct site *__restrict lat ,
     
     for( count = 1 ; count <= smiters && top_found != GLU_TRUE ; count++ ) {
 
-      #pragma omp barrier
+      {
+         #pragma omp barrier
+      }
       
       #ifdef SYMANZIK_ONE_LOOP
       const double improve = av_plaquette( lat ) ;

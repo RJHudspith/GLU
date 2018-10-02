@@ -103,8 +103,10 @@ flow_RK3( struct site *__restrict lat ,
     // perform the loop over smearing iterations ... We break at the stopping 
     // point anyway.
   top :
-    #pragma omp barrier
-
+    {
+       #pragma omp barrier
+    }
+    
     count++ ;
     
     t = count * delta_t ;

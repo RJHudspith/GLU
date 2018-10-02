@@ -88,7 +88,10 @@ twostep_adaptive( struct site *lat ,
   
   // adaptive loop, shrinking or growing the stepsize accordingly
  top :
-#pragma omp barrier
+  
+  {
+    #pragma omp barrier
+  }
   
 #pragma omp for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
@@ -242,9 +245,11 @@ flow_adaptive_RK3( struct site *__restrict lat ,
     
     // loop up to smiters
   top :
-      
-    #pragma omp barrier
 
+    {
+       #pragma omp barrier
+    }
+    
     errmax = 10. ;
     
     // perform two-step adaptive
@@ -298,8 +303,11 @@ flow_adaptive_RK3( struct site *__restrict lat ,
     if( fabs( T0_STOP - flow ) <= ( T0_STOP * FINETWIDDLE ) ) {
       delta_t = FINESTEP ;
     t0_top :
-      #pragma omp barrier
-      
+
+      {
+         #pragma omp barrier
+      }
+
       step_distance_memcheap( lat , WF , delta_t , SM_TYPE , project ) ;
 
       curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;

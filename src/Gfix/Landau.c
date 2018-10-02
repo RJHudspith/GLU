@@ -287,7 +287,7 @@ Landau( struct site *lat ,
 #else 
   FFTW.in = malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 
   #pragma omp parallel for private(i)
-  PFOR(  i = 0 ; i < TRUE_HERM ; i++  ) {
+  for(  i = 0 ; i < TRUE_HERM ; i++  ) {
     GLU_malloc( (void**)&FFTW.in[i] , ALIGNMENT , LVOLUME * sizeof( GLU_complex ) ) ;
   }
   // these are really dummy variables that don't get used in the SD
@@ -356,7 +356,7 @@ Landau( struct site *lat ,
   clean_up_fftw( FFTW , TRUE_HERM ) ;
 #else
   #pragma omp parallel for private(i)
-  PFOR( i = 0 ; i < TRUE_HERM ; i++ ) {
+  for( i = 0 ; i < TRUE_HERM ; i++ ) {
     free( FFTW.in[i] ) ; 
   }
   free( FFTW.in ) ; 
