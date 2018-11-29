@@ -120,6 +120,6 @@ bin_PROGRAMS = GLU
 
 GLU_SOURCES = ./Run/Mainfile.c
 GLU_CFLAGS = ${CFLAGS} -I${TOPDIR}/src/Headers/
-GLU_LDADD = libGLU.a ${LDFLAGS} -lm
+GLU_LDADD = libGLU.a ${LDFLAGS}
 
 endif

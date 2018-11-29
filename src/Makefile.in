@@ -474,7 +474,7 @@ include_HEADERS =
 @PREF_FALSE@Bindir = "${prefix}"/bin
 @PREF_FALSE@GLU_SOURCES = ./Run/Mainfile.c
 @PREF_FALSE@GLU_CFLAGS = ${CFLAGS} -I${TOPDIR}/src/Headers/
-@PREF_FALSE@GLU_LDADD = libGLU.a ${LDFLAGS} -lm
+@PREF_FALSE@GLU_LDADD = libGLU.a ${LDFLAGS}
 all: all-am
 
 .SUFFIXES:

@@ -268,7 +268,7 @@ TOPDIR = @top_srcdir@
 BUILDDIR = @top_builddir@
 unit_SOURCES = units.c geom_test.c U_Nops_test.c MMULs_test.c
 unit_CFLAGS = -Wall ${CFLAGS} -I${TOPDIR}/src/Headers/
-unit_LDADD = ../src/libGLU.a ${LDFLAGS} -lm
+unit_LDADD = ../src/libGLU.a ${LDFLAGS}
 all: all-am
 
 .SUFFIXES:

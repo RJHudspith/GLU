@@ -769,6 +769,7 @@ with_WFLOW_TIME_STOP
 with_WFLOW_MEAS_START
 enable_GLU_GFIX_SD
 enable_OVERRELAXED_GF
+with_MKL
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1455,6 +1456,7 @@ Optional Packages:
   --with-WFLOW_MEAS_START=
                           Specify at what time you want to start measuring
                           flow observables
+  --with-MKL              Link to intel MKL library
 
 Some influential environment variables:
   CC          C compiler command
@@ -6000,6 +6002,16 @@ esac
 
 ## Set up config.h, one of the most important headers of them all
 ac_config_headers="$ac_config_headers config.h"
+
+
+
+# Check whether --with-MKL was given.
+if test "${with_MKL+set}" = set; then :
+  withval=$with_MKL; LDFLAGS="$LDFLAGS -mkl"
+else
+  LDFLAGS="$LDFLAGS -lm"
+fi
+
 
 
 ## where are my files?
