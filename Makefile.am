@@ -14,7 +14,7 @@ else
   havedot=NO
 endif
 doxygen:
-	## seds the prefix path for the docs
+## seds the prefix path for the docs
 	sed s~MYOUTDIR~"${prefix}/docs"~g ./docs/Doxyfile.prov | sed s~MYDOT~${have_dot}~g > ./docs/Doxyfile 
 	(cd docs && $(MAKE) $(AM_MAKEFLAGS) $@) || exit 1
 
@@ -26,7 +26,7 @@ endif
 ## from the latex source
 if !PDFLTX
 documentation:
-	## export the prefix for the docs, can assign within make ...
+## export the prefix for the docs, can assign within make ...
 	(cd docs && $(MAKE) DOCPREFIX="${prefix}" $(AM_MAKEFLAGS) $@) || exit 1
 .PHONY: 
 	documentation

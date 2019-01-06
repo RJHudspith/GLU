@@ -26,6 +26,7 @@
 #include "crc.h"           // MILC, SCIDAC and ILDG formats use a crc
 #include "GLU_bswap.h"     // byteswapping
 #include "GLU_memcheck.h"  // can we use the faster/mem expensive code?
+#include "GLU_timer.h"     // timers for the IO
 #include "HIREP.h"         // write out a HIREP config
 #include "plaqs_links.h"   // compute plaquette and links again
 #include "Scidac.h"        // write out a scidac file
@@ -172,13 +173,13 @@ compute_checksum( uint32_t *nersc_cksum ,
   size_t i ;
   uint32_t k = 0 , sum29 = 0 , sum31 = 0 , CRCsum29 = 0 , CRCsum31 = 0 ;
 
-  //#pragma omp parallel for private(i) reduction(+:k) reduction(^:sum29) reduction(^:sum31) reduction(^:CRCsum29) reduction(^:CRCsum31) 
+  #pragma omp parallel for private(i) reduction(+:k) reduction(^:sum29) reduction(^:sum31) reduction(^:CRCsum29) reduction(^:CRCsum31) 
   for( i = 0 ; i < LVOLUME ; i++ ) { 
 
     // usual allocations
     GLU_real site[ ND * LOOP_VAR ] ;
-    size_t rank29 = ( i * ND * LOOP_VAR ) % 29 ;
-    size_t rank31 = ( i * ND * LOOP_VAR ) % 31 ;
+    uint32_t rank29 = ( i * ND * LOOP_VAR ) % 29 ;
+    uint32_t rank31 = ( i * ND * LOOP_VAR ) % 31 ;
     register uint32_t k_loc = 0 ;
     register uint32_t sum29_loc = 0 , sum31_loc = 0 ;
     uint32_t work ;
@@ -202,8 +203,8 @@ compute_checksum( uint32_t *nersc_cksum ,
     }
     // and compute the CRC for the outputted data
     swap_for_output( site , ND * LOOP_VAR ) ;
-    const size_t r29 = i % 29 ;
-    const size_t r31 = i % 31 ;
+    const uint32_t r29 = i % 29 ;
+    const uint32_t r31 = i % 31 ;
     work = (uint32_t)crc32( 0 , (unsigned char*)site , 
 			    ND * LOOP_VAR * sizeof( GLU_real ) ) ;
     CRCsum29 = CRCsum29 ^ (uint32_t) ( work << r29 | work >> ( 32 - r29 ) ) ;
@@ -246,7 +247,7 @@ copy_data( GLU_real *uout ,
 	   const GLU_output checktype )
 {
   size_t i ;
-  //#pragma omp parallel for private(i)
+#pragma omp parallel for private(i)
   for( i = START ; i < END ; i++ ) { 
     // temporary
     GLU_real site[ ND * LOOP_VAR ] ;
@@ -254,10 +255,10 @@ copy_data( GLU_real *uout ,
     // set this up here
     size_t val = LOOP_VAR * ( i * ND ) ;
 
-    // puts the matrix in glu_real temporary
+    // puts the matrix in glu_real temporary called site
     grab_sitedata( site , lat[i] , LOOP_VAR , checktype ) ;
 
-    // loop AntiHermitian_projised matrix-direction index
+    // copy into uout
     size_t j ;
     for( j = 0 ; j < ND * LOOP_VAR ; j++ ) {
       #ifdef OUT_DOUBLE
@@ -341,6 +342,8 @@ write_lat( struct site *lat ,
   const GLU_output checktype = \
     construct_loop_variables( &LATT_LOOP , &LOOP_VAR , type ) ;
 
+  start_timer() ;
+  
   // compute the checksums ...
   uint32_t nersc_cksum , milc_cksum29 , milc_cksum31 ;
   uint32_t scidac_cksum29 , scidac_cksum31 ;
@@ -349,7 +352,10 @@ write_lat( struct site *lat ,
 		    &milc_cksum29 , &milc_cksum31 , 
 		    &scidac_cksum29 , &scidac_cksum31 , 
 		    lat , LOOP_VAR , checktype ) ;
+  print_time() ;
 
+  start_timer() ;
+  
   // and begin writing the headers
   switch( type ) {
   case OUTPUT_HIREP : return GLU_FAILURE ;
@@ -391,6 +397,9 @@ write_lat( struct site *lat ,
   default :
     break ;
   }
+
+  print_time() ;
+  
   return GLU_SUCCESS ;
 }
 

@@ -16,6 +16,10 @@
     You should have received a copy of the GNU General Public License
     along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
+/**
+   @file CERN.h
+   @brief prototype declarations for reading an OpenQCD configuration
+ */
 #ifndef GLU_CERN_H
 #define GLU_CERN_H
 

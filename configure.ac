@@ -626,11 +626,11 @@ AC_C_INLINE([])
 ## Set up config.h, one of the most important headers of them all
 AC_CONFIG_HEADERS([config.h])
 
+## include MKL library, will fail if we don't have it
 AC_ARG_WITH([MKL],
         AC_HELP_STRING([--with-MKL],
                        [Link to intel MKL library]),
             [LDFLAGS="$LDFLAGS -mkl"],[LDFLAGS="$LDFLAGS -lm"])
-
 
 ## where are my files?
 AC_CONFIG_FILES([

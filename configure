@@ -6004,6 +6004,7 @@ esac
 ac_config_headers="$ac_config_headers config.h"
 
 
+## include MKL library, will fail if we don't have it
 
 # Check whether --with-MKL was given.
 if test "${with_MKL+set}" = set; then :
@@ -6011,7 +6012,6 @@ if test "${with_MKL+set}" = set; then :
 else
   LDFLAGS="$LDFLAGS -lm"
 fi
-
 
 
 ## where are my files?
