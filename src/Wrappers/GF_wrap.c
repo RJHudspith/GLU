@@ -86,22 +86,22 @@ static void
 print_fixing_info( const struct gf_info GFINFO )
 {
 #ifdef OVERRELAXED_GF
-  fprintf( stdout , "\n[GF] Using the Over-Relaxation routines\n[GF] " ) ;
+  fprintf( stdout , "\n[GF] Using the Over-Relaxation routines\n" ) ;
 #else
 #ifdef GLU_GFIX_SD
   #ifdef HAVE_FFTW3_H
   fprintf( stdout , "\n[GF] Using the Fourier accelerated steepest "
-	   "descent (FASD) routines\n[GF] " ) ;
+	   "descent (FASD) routines\n" ) ;
   #else
-  fprintf( stdout , "\n[GF] Using the steepest descent (SD) routines\n[GF] " ) ;
+  fprintf( stdout , "\n[GF] Using the steepest descent (SD) routines\n" ) ;
   #endif
 #else // default is the CG
   #ifdef HAVE_FFTW3_H
   fprintf( stdout , "\n[GF] Using the Fourier accelerated non-linear"
-	   " conjugate gradient (FACG) routines\n[GF] " ) ;
+	   " conjugate gradient (FACG) routines\n" ) ;
   #else
   fprintf( stdout , "\n[GF] Using the non-linear"
-	   " conjugate gradient (CG) routines\n[GF] " ) ;
+	   " conjugate gradient (CG) routines\n" ) ;
   #endif
 #endif
 #endif

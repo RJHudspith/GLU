@@ -29,6 +29,7 @@
 #include "GLU_bswap.h"    // byte swapping
 #include "plan_ffts.h"    // config space correlator is convolution
 #include "SM_wrap.h"      // in case we wish to do smearing
+#include "str_stuff.h"    // append_char()
 
 // compute the correlator using the convolved topological 
 // charge correlator
@@ -37,7 +38,7 @@ temporal_correlator( const GLU_complex *qtop ,
 		     const char *str )
 {
   // append .tcorr onto the output
-  char cstr[ 1024 ] ;
+  char cstr[ strlen(str)+7 ] ;
   sprintf( cstr , "%s.tcorr" , str ) ; 
   FILE *Ap = fopen( cstr , "wb" ) ; 
 
@@ -63,7 +64,7 @@ temporal_correlator( const GLU_complex *qtop ,
   }
 
   for( t = 0 ; t < Latt.dims[ ND-1 ] ; t++ ) {
-    printf( "[QSUSC] CORR %zu %e \n" , t , ct[t] ) ;
+    fprintf( stdout , "[QSUSC] CORR %zu %e \n" , t , ct[t] ) ;
   }
 
   // tell us where to go
@@ -103,7 +104,9 @@ compute_Qcorr( struct site *__restrict lat ,
 
   // set up the outputs
   char *str = output_str_struct( CUTINFO ) ;
-  sprintf( str , "%s.m%zu" , str , measurement ) ;
+  char tmp[64] ;
+  sprintf( tmp , "m%zu" , measurement ) ;
+  append_char( &str , tmp ) ; 
   FILE *Ap = fopen( str , "wb" ) ; 
 
   // flag for success or failure

@@ -22,6 +22,7 @@
 
 #include "cut_routines.h" // for simorb ratios
 #include "geometry.h"     // momentum calcs and what have you
+#include "str_stuff.h"    // append_char()
 
 // generic delta function
 static double **d ;
@@ -473,10 +474,11 @@ read_trip( int *__restrict trip ,
 {
 #ifdef NOT_CONDOR_MODE
   const size_t nn = nnmax / 2 ;
-  char str[256] ;
-  sprintf( str , "%s/Local/Moments/TRIP_%zu.config" ,
-	   HAVE_PREFIX ,
-	   nnmax ) ;
+  char *str = malloc( (1+strlen(HAVE_PREFIX))*sizeof(char)) , tmp[ 64 ] ;
+  sprintf( str , "%s" , HAVE_PREFIX ) ;
+  sprintf( tmp , "/Local/Moments/TRIP_%zu.config" , nnmax ) ;
+  append_char( &str , tmp ) ;
+  
   FILE *tripfile = fopen( str , "rb" ) ;
   int flag = 0 ;
 
@@ -492,7 +494,7 @@ read_trip( int *__restrict trip ,
     // get the triplet
     get_trip( trip , nnmax ) ;
 
-    printf("[CUTS] Storing Trip list @@@ ...\n%s\n",str) ;
+    fprintf( stdout , "[CUTS] Storing Trip list @@@ ...\n%s\n",str) ;
     // write to a file 
     FILE *tripfile2 = fopen( str , "wb" ) ;
     fwrite( trip , sizeof(int) , nn , tripfile2 ) ;
@@ -502,6 +504,7 @@ read_trip( int *__restrict trip ,
   tripfile = fopen( str , "rb" ) ;
   if( fread( trip , sizeof( int ) , nn , tripfile ) != nn ) return GLU_FAILURE ; 
   fclose( tripfile) ;
+  free( str ) ;
 
 #else
   get_trip( trip , nnmax ) ;
@@ -523,19 +526,23 @@ read_triplet_and_proj( int *__restrict *__restrict triplet ,
   size_t mu , i , flag = 0 ;
 
   // look for a configuration file that has the available triplets in ...
-  char str[496] ;
-  sprintf( str , "%s/Local/Moments/TRIPNP.PROJ%d." ,
-	   HAVE_PREFIX ,
+  char *str = malloc( (1+strlen(HAVE_PREFIX))*sizeof(char)) , tmp[64] ;
+  sprintf( str , "%s" , HAVE_PREFIX ) ;
+  sprintf( tmp , "/Local/Moments/TRIPNP.PROJ%d." ,
 	   #ifndef PROJ_GRACEY
 	   -1 
 	   #else
 	   PROJ_GRACEY 
 	   #endif 
 	   ) ;
-  for( mu = 0 ; mu < ND - 1 ; mu++ ) {
-    sprintf( str , "%s%zux" , str , Latt.dims[mu] ) ;
+  append_char( &str , tmp ) ;
+  
+  for( mu = 0 ; mu < ND-1 ; mu++ ) {
+    sprintf( tmp , "%zux" , Latt.dims[mu] ) ;
+    append_char( &str , tmp ) ;
   }
-  sprintf( str , "%s%zu_%zu.config" , str , Latt.dims[ ND - 1 ] , nnmax ) ;
+  sprintf( tmp , "%zu_%zu.config" , Latt.dims[mu] , nnmax ) ;
+  append_char( &str , tmp ) ;
 
   FILE *config = fopen( str , "rb" ) ;
   //force it to open ->create a file if needed
@@ -551,7 +558,8 @@ read_triplet_and_proj( int *__restrict *__restrict triplet ,
     // open a temporary file
     FILE *config2 = fopen( str , "wb" ) ;
 
-    printf("[CUTS] Storing Triplet and Proj list @@@ ...\n%s\n" , str ) ;
+    fprintf( stdout , "[CUTS] Storing Triplet and Proj list @@@ ...\n%s\n" ,
+	     str ) ;
 
     // allocate our triplet 
     int **triple = ( int **)malloc( count * sizeof( int* ) ) ;
@@ -559,14 +567,14 @@ read_triplet_and_proj( int *__restrict *__restrict triplet ,
     for( i = 0 ; i < count ; i++ ) {
       triple[i] = (int*)malloc( 3 *  sizeof (int ) ) ;
     }
-    printf( "[CUTS] Precomputing triplet \n" ) ;
+    fprintf( stdout , "[CUTS] Precomputing triplet \n" ) ;
     // compute the triplet in the stupidest manner possible
     get_triplet( triple , momentum , nnmax , nmom ) ;
     // write out "triple" our triplet
     for( i = 0 ; i < count ; i++ ) {
       fwrite( triple[i] , sizeof(int) , 3 , config2 ) ;
     }
-    printf( "Computing projector ... \n" ) ;
+    fprintf( stdout , "[CUTS] Computing projector ... \n" ) ;
     // compute our projector 
     compute_projector( triple , proj , momentum , count ) ;
     // I want to write the projector here too
@@ -600,6 +608,7 @@ read_triplet_and_proj( int *__restrict *__restrict triplet ,
   }
   // and close the file 
   fclose( config ) ;
+  free( str ) ;
 #else
   // initialise the delta
   init_delta( ) ;

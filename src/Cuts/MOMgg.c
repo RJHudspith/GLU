@@ -28,15 +28,67 @@
 #include "geometry.h"   // general geometry for a flattened 1D array
 #include "lie_mats.h"   // Lie algebra calculations
 
-// uncomment this if we would like to look at the lie elements
-//#define LIE_PROJECTION
-
 /**
   I provide three (equivalent) contractions
   The first is based on matrix products, the second traces and the final lie elements
   They all compute the contraction
   G^{(3)} = p_{\rho}/p^2 * ( g_{\mu\nu} - p_{\mu}p_{\nu}/p^2 ) * G_{\mu\nu\rho)(-p,0,p)
  */
+#ifdef LIE_PROJECTION
+// contraction using the lie matrices
+static double complex
+contraction_lies( const struct site *__restrict A ,
+		  const size_t posit ,
+		  const size_t conj ,
+		  const size_t lzero_mat ,
+		  const double mom[ ND ] ,
+		  const double spsq )
+{
+  double complex res = 0.0 , tr ;
+  size_t mu , nu , rho ;
+  for( mu = 0 ; mu < ND ; mu++ ) {
+    for( nu = 0 ; nu < ND ; nu++ ) {
+      for( rho = 0 ; rho < ND ; rho++ ) {
+	// OK so the vertex should be proportional to if^{abc} unless we messed up somewhere
+	// I checked the symmetric piece and it averages to 0
+	//tr = ifabc_dabc_ABC( A[ posit ].O[mu] , A[ conj ].O[nu] , A[ lzero_mat ].O[rho] ) ;
+	//tr = dabc_ABC( A[ posit ].O[mu] , A[ conj ].O[nu] , A[ lzero_mat ].O[rho] ) ;
+	tr = ifabc_ABC( A[ posit ].O[mu] , A[ conj ].O[nu] , A[ lzero_mat ].O[rho] ) ;
+	tr = (mu!=nu) ? (-mom[mu]*mom[nu]/spsq)*mom[rho]*tr : (1.0-mom[mu]*mom[nu]/spsq)*mom[rho]*tr ;
+	res += tr ;
+      }
+    }
+  }
+  return res / ( 4.0 * spsq ) ;
+}
+#elif TRACE_PROJECTION
+// contraction using the trace of three matrices identity
+static double complex
+contraction_traces( const struct site *__restrict A ,
+		    const size_t posit ,
+		    const size_t conj ,
+		    const size_t lzero_mat ,
+		    const double mom[ ND ] ,
+		    const double spsq )
+{
+  const double invspsq = spsq == 0.0 ? 1.0 : 1.0 / spsq ;
+  double complex res = 0.0 ;
+  GLU_complex tr ;
+  size_t mu , nu , rho ;
+  for( mu = 0 ; mu < ND ; mu++ ) {
+    for( nu = 0 ; nu < ND ; nu++ ) {
+      for( rho = 0 ; rho < ND ; rho++ ) {
+	trace_abc( &tr , A[ posit ].O[mu] , A[ conj ].O[nu] , 
+		   A[ lzero_mat ].O[rho] ) ;
+	tr = (mu!=nu) ? (-mom[mu]*mom[nu]*invspsq)*mom[rho]*tr :\
+	  (1.0-mom[mu]*mom[nu]*invspsq)*mom[rho]*tr ;
+	res += tr ;
+      }
+    }
+  }
+  return res * invspsq ;
+}
+#else
 static double complex
 contraction_matrices( const struct site *__restrict A ,
 		      const size_t posit ,
@@ -68,60 +120,7 @@ contraction_matrices( const struct site *__restrict A ,
   trace_abc( &WIV , Arho , AP , AM ) ;
   return (double complex)( TRANS + WIV ) / spsq ;
 }
-
-// contraction using the lie matrices
-static double complex
-contraction_lies( const struct site *__restrict A ,
-		  const size_t posit ,
-		  const size_t conj ,
-		  const size_t lzero_mat ,
-		  const double mom[ ND ] ,
-		  const double spsq )
-{
-  double complex res = 0.0 , tr ;
-  size_t mu , nu , rho ;
-  for( mu = 0 ; mu < ND ; mu++ ) {
-    for( nu = 0 ; nu < ND ; nu++ ) {
-      for( rho = 0 ; rho < ND ; rho++ ) {
-	// OK so the vertex should be proportional to if^{abc} unless we messed up somewhere
-	// I checked the symmetric piece and it averages to 0
-	//tr = ifabc_dabc_ABC( A[ posit ].O[mu] , A[ conj ].O[nu] , A[ lzero_mat ].O[rho] ) ;
-	//tr = dabc_ABC( A[ posit ].O[mu] , A[ conj ].O[nu] , A[ lzero_mat ].O[rho] ) ;
-	tr = ifabc_ABC( A[ posit ].O[mu] , A[ conj ].O[nu] , A[ lzero_mat ].O[rho] ) ;
-	tr = (mu!=nu) ? (-mom[mu]*mom[nu]/spsq)*mom[rho]*tr : (1.0-mom[mu]*mom[nu]/spsq)*mom[rho]*tr ;
-	res += tr ;
-      }
-    }
-  }
-  return res / ( 4.0 * spsq ) ;
-}
-
-// contraction using the trace of three matrices identity
-static double complex
-contraction_traces( const struct site *__restrict A ,
-		    const size_t posit ,
-		    const size_t conj ,
-		    const size_t lzero_mat ,
-		    const double mom[ ND ] ,
-		    const double spsq )
-{
-  const double invspsq = spsq == 0.0 ? 1.0 : 1.0 / spsq ;
-  double complex res = 0.0 ;
-  GLU_complex tr ;
-  size_t mu , nu , rho ;
-  for( mu = 0 ; mu < ND ; mu++ ) {
-    for( nu = 0 ; nu < ND ; nu++ ) {
-      for( rho = 0 ; rho < ND ; rho++ ) {
-	trace_abc( &tr , A[ posit ].O[mu] , A[ conj ].O[nu] , 
-		   A[ lzero_mat ].O[rho] ) ;
-	tr = (mu!=nu) ? (-mom[mu]*mom[nu]*invspsq)*mom[rho]*tr :\
-	  (1.0-mom[mu]*mom[nu]*invspsq)*mom[rho]*tr ;
-	res += tr ;
-      }
-    }
-  }
-  return res * invspsq ;
-}
+#endif
 
 // compute psq
 static double
@@ -194,26 +193,14 @@ write_exceptional_g2g3_MOMgg( FILE *__restrict Ap ,
     // make this a constant
     const double spsq = psq_calc( mom , posit ) ;
 
-    // helpful little enum
-    enum { MATRIX_CONTRACTION , TRACE_CONTRACTION , LIE_CONTRACTION } ; 
-    #ifdef LIE_PROJECTION
-    const int contraction = LIE_CONTRACTION ;
-    #else
-    const int contraction = MATRIX_CONTRACTION ; // is the fastest !!
-    //const int contraction = TRACE_CONTRACTION ;
-    #endif    
+#ifdef LIE_PROJECTION
+    g3[i] = creal( contraction_lies( A , posit , conj , lzero_mat , mom , spsq ) ) * g3_norm ;
+#elif (defined TRACE_PROJECTION)
+    g3[i] = creal( contraction_traces( A , posit , conj , lzero_mat , mom , spsq ) ) * g3_norm ;
+#else
+    g3[i] = creal( contraction_matrices( A , posit , conj , lzero_mat , mom , spsq ) ) * g3_norm ;
+#endif    
 
-    switch( contraction ) {
-    case TRACE_CONTRACTION :
-      g3[i] = creal( contraction_traces( A , posit , conj , lzero_mat , mom , spsq ) ) * g3_norm ;
-      break ;
-    case LIE_CONTRACTION :
-      g3[i] = creal( contraction_lies( A , posit , conj , lzero_mat , mom , spsq ) ) * g3_norm ;
-      break ;
-    default :
-      g3[i] = creal( contraction_matrices( A , posit , conj , lzero_mat , mom , spsq ) ) * g3_norm ;
-      break ;
-    }
     // end of parallel contractions loop
   }
   // call our writer ...

@@ -23,6 +23,7 @@
 #include "Mainfile.h"
 
 #include "GLU_timer.h" // tells us how long we spent planning FFTs
+#include "str_stuff.h" // append_char()
 
 // guard the whole thing
 #ifdef HAVE_FFTW3_H
@@ -35,37 +36,40 @@
 enum{ NOPLAN = 0 } ;
 
 // see if we have wisdom already
-static char *
+static char*
 obtain_wisdom( int *planflag ,
 	       const size_t dims[ ND ] ,
 	       const int DIR , 
 	       const char *type )
 {
   *planflag = NOPLAN ;
-  char *str = malloc( 256 * sizeof( char ) ) ;
-  sprintf( str , "%s" , type ) ;
-  if( DIR < 0 ) return str ;
+  char *str = malloc( (1+strlen(HAVE_PREFIX))* sizeof( char ) ) ;
+  sprintf( str , "%s" , HAVE_PREFIX ) ;
+  if( DIR < 0 ) return NULL ;
 #ifndef CONDOR_MODE
   FILE *wizzard ;
   size_t mu ;
-  char prec_str[ 16 ] ; 
+  char prec_str[16] , tmp[64] ;
   *planflag = NOPLAN ; 
   #ifdef SINGLE_PREC
   sprintf( prec_str , "FLOAT" ) ;
   #else
   sprintf( prec_str , "DOUBLE" ) ;
   #endif
-  sprintf( str , "%s/Local/Wisdom/%s_%sSU%d_" , 
-	   HAVE_PREFIX , prec_str , type , NC ) ;
-  for( mu = 0 ; mu < DIR - 1 ; mu++ ) {
-    sprintf( str , "%s%zux" , str , dims[ mu ] ) ;
+  sprintf( tmp , "/Local/Wisdom/%s_%sSU%d_" , prec_str , type , NC ) ;
+  append_char( &str , tmp ) ;
+  for( mu = 0 ; mu < DIR-1 ; mu++ ) {
+    sprintf( tmp , "%zux" , dims[ mu ] ) ;
+    append_char( &str , tmp ) ;
   }
-  sprintf( str , "%s%zu.wisdom" , str , dims[ DIR - 1 ] ) ;
+  sprintf( tmp , "%zu.wisdom" , dims[ mu ] ) ;
+  append_char( &str , tmp ) ;
   if( ( wizzard = fopen( str , "r" ) ) == NULL ) {
-    fprintf( stdout , "\n[FFTW] No wisdom to be obtained here ... planning\n" ) ; 
+    fprintf( stdout , "\n[FFTW] No wisdom (%s) to be obtained"
+	     "here ... planning\n" , str ) ; 
   } else {
     #ifdef verbose
-    fprintf( stdout , "\n[FFTW] Successful wisdom attained\n" ) ;
+    fprintf( stdout , "\n[FFTW] Successful wisdom (%s) attained\n" , str ) ;
     #endif
     *planflag = fftw_import_wisdom_from_file( wizzard ) ; 
     fclose( wizzard ) ; 
@@ -167,11 +171,14 @@ void
 small_clean_up_fftw( struct fftw_small_stuff FFTW )
 {
   fftw_free( FFTW.out ) ; 
-  fftw_free( FFTW.in ) ; 
-  fftw_cleanup( ) ;
+  fftw_free( FFTW.in ) ;
+  fftw_destroy_plan( FFTW.forward ) ;   
+  fftw_destroy_plan( FFTW.backward ) ;  
+  fftw_cleanup( ) ;    
   if( FFTW.psq != NULL ) {
     free( FFTW.psq ) ; 
   }
+  
   return ;
 }
 
@@ -193,6 +200,7 @@ small_create_plans_DFT( struct fftw_small_stuff *FFTW ,
   // allocations
   FFTW -> in = fftw_malloc( VOL * sizeof( GLU_complex ) ) ;
   FFTW -> out = fftw_malloc( VOL * sizeof( GLU_complex ) ) ;
+  FFTW -> psq = NULL ;
 
   // initialise the clock
   #ifdef verbose

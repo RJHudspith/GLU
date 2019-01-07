@@ -25,7 +25,8 @@
 #include "Mainfile.h"
 
 #include <errno.h>
-#include "GLU_rng.h"  // we initialise the RNG from the input file
+#include "GLU_rng.h"   // we initialise the RNG from the input file
+#include "str_stuff.h" // are_equal
 
 // we might want to change this at some point
 #define GLU_STR_LENGTH 64
@@ -44,10 +45,6 @@ static struct inputs *INPUT = NULL ;
 
 // counter for the number of tags
 static int NTAGS = 0 ;
-
-// strcmp defaults to 0 if they are equal which is contrary to standard if statements
-static int
-are_equal( const char *str_1 , const char *str_2 ) { return !strcmp( str_1 , str_2 ) ; }
 
 // allocate the input file struct
 static void 
@@ -627,6 +624,7 @@ get_input_data( struct infile_data *INFILE ,
   config_information( INFILE -> output_details ) ;
 
   // poke in some heatbath related things
+  INFILE -> HBINFO.continuation = GLU_FALSE ;
   if( !( Latt.head == UNIT_GAUGE || Latt.head == RANDOM_CONFIG ) ) {
     INFILE -> HBINFO.continuation = GLU_TRUE ;
     fprintf( stdout , "[UPDATE] Heatbath continuation run not"

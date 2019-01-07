@@ -22,10 +22,11 @@
  */
 #include "Mainfile.h"
 
-#include "clover.h"       // computation of the topological charge
-#include "cut_output.h"   // automatic formatting of our output file
-#include "geometry.h"     // for the spacing computation
-#include "plan_ffts.h"    // config space correlator is convolution
+#include "clover.h"     // computation of the topological charge
+#include "cut_output.h" // automatic formatting of our output file
+#include "geometry.h"   // for the spacing computation
+#include "plan_ffts.h"  // config space correlator is convolution
+#include "str_stuff.h"  // append_char()
 
 // local version of the one in geometry
 static void
@@ -78,7 +79,9 @@ compute_slabs( const GLU_complex *qtop ,
 
   // set up the outputs
   char *str = output_str_struct( CUTINFO ) ;
-  sprintf( str , "%s.m%zu.tcorr_d%zu" , str , measurement , SLAB_DIR ) ;
+  char tmp[64] ;
+  sprintf( tmp , ".m%zu.tcorr_d%zu" , measurement , SLAB_DIR ) ;
+  append_char( &str , tmp ) ;
   FILE *Ap = fopen( str , "wb" ) ;
 
   // timeslice length

@@ -14,8 +14,8 @@ static GLU_complex res1[ NCNC ] GLUalign , res2[ NCNC ] GLUalign ;
 
 // equivalence test for matrices
 static GLU_bool
-are_equal( GLU_complex a[ NCNC ] ,
-	   GLU_complex b[ NCNC ] ) 
+are_equal( const GLU_complex a[ NCNC ] ,
+	   const GLU_complex b[ NCNC ] ) 
 {
   size_t i ;
   for( i = 0 ; i < NCNC ; i++ ) {

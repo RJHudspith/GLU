@@ -213,7 +213,7 @@ am__objects_11 = ./Utils/GLU_bswap.$(OBJEXT) \
 	./Utils/GLU_timer.$(OBJEXT) ./Utils/par_KISS.$(OBJEXT) \
 	./Utils/par_MWC_1038.$(OBJEXT) ./Utils/par_MWC_4096.$(OBJEXT) \
 	./Utils/par_rng.$(OBJEXT) ./Utils/par_WELL_512.$(OBJEXT) \
-	./Utils/par_XOR_1024.$(OBJEXT)
+	./Utils/par_XOR_1024.$(OBJEXT) ./Utils/str_stuff.$(OBJEXT)
 am__objects_12 = ./Wrappers/CUT_wrap.$(OBJEXT) \
 	./Wrappers/GF_wrap.$(OBJEXT) ./Wrappers/GLUlib_wrap.$(OBJEXT) \
 	./Wrappers/OBS_wrap.$(OBJEXT) ./Wrappers/SM_wrap.$(OBJEXT)
@@ -451,7 +451,8 @@ UPDATEFILES = ./Update/KPHB.c ./Update/relax.c ./Update/hb.c \
 UTILSFILES = ./Utils/GLU_bswap.c ./Utils/GLU_malloc.c ./Utils/GLU_memcheck.c \
 	./Utils/GLU_splines.c ./Utils/GLU_sums.c ./Utils/GLU_timer.c \
 	./Utils/par_KISS.c ./Utils/par_MWC_1038.c ./Utils/par_MWC_4096.c \
-	./Utils/par_rng.c ./Utils/par_WELL_512.c ./Utils/par_XOR_1024.c
+	./Utils/par_rng.c ./Utils/par_WELL_512.c ./Utils/par_XOR_1024.c \
+	./Utils/str_stuff.c	
 
 WRAPPERSFILES = ./Wrappers/CUT_wrap.c ./Wrappers/GF_wrap.c \
 	./Wrappers/GLUlib_wrap.c ./Wrappers/OBS_wrap.c ./Wrappers/SM_wrap.c
@@ -835,6 +836,8 @@ Utils/$(DEPDIR)/$(am__dirstamp):
 	Utils/$(DEPDIR)/$(am__dirstamp)
 ./Utils/par_XOR_1024.$(OBJEXT): Utils/$(am__dirstamp) \
 	Utils/$(DEPDIR)/$(am__dirstamp)
+./Utils/str_stuff.$(OBJEXT): Utils/$(am__dirstamp) \
+	Utils/$(DEPDIR)/$(am__dirstamp)
 Wrappers/$(am__dirstamp):
 	@$(MKDIR_P) ./Wrappers
 	@: > Wrappers/$(am__dirstamp)
@@ -1043,6 +1046,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./Utils/$(DEPDIR)/par_WELL_512.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./Utils/$(DEPDIR)/par_XOR_1024.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./Utils/$(DEPDIR)/par_rng.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./Utils/$(DEPDIR)/str_stuff.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./Wrappers/$(DEPDIR)/CUT_wrap.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./Wrappers/$(DEPDIR)/GF_wrap.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./Wrappers/$(DEPDIR)/GLUlib_wrap.Po@am__quote@

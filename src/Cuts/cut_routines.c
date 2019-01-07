@@ -32,6 +32,7 @@
 #include "Mainfile.h"
 
 #include "geometry.h"
+#include "str_stuff.h" // append_char()
 
 // cylinder cut procedure
 //#define CYLINDER_AS
@@ -498,27 +499,33 @@ compute_veclist( size_t *__restrict list_size ,
   // if we can, we look for a file
 #ifndef CONDOR_MODE
   int flag = MOMENTUM_CONFIG ;
-  char str[1024] ;
-  sprintf( str , "%s/Local/Moments/" , HAVE_PREFIX ) ;
+  char *str = malloc( (1+strlen(HAVE_PREFIX))*sizeof(char) ) , tmp[ 64 ] ;
+  sprintf( str , "%s" , HAVE_PREFIX ) ;
+  append_char( &str , "/Local/Moments/" ) ;
+
   // write its dimensions
   size_t mu ;
-  for( mu = 0 ; mu < DIMS - 1 ; mu++ ) {
-    sprintf( str , "%s%zux" , str , Latt.dims[ mu ] ) ;
+  for( mu = 0 ; mu < DIMS-1 ; mu++ ) {
+    sprintf( tmp , "%zux" , Latt.dims[ mu ] ) ;
+    append_char( &str , tmp ) ;
   }
-  sprintf( str , "%s%zu" , str , Latt.dims[ DIMS - 1 ] ) ;
+  sprintf( tmp , "%zu_" , Latt.dims[ mu ] ) ;
+  append_char( &str , tmp ) ;
+
 
   // whether we use the sin-mom or the psq mom for our configs
-  sprintf( str , "%s_nn%zu_%d_%zu_%1.2f" ,
-	   str , CUTINFO.max_mom , CUTINFO.type , 
+  sprintf( tmp , "nn%zu_%d_%zu_%g_" ,
+	   CUTINFO.max_mom , CUTINFO.type , 
 	   CUTINFO.angle , CUTINFO.cyl_width ) ;
+  append_char( &str , tmp ) ;
 
   if( CONFIGSPACE == GLU_TRUE ) {
-    sprintf( str , "%s_CSPACE.config" , str ) ;
+    append_char( &str , "CSPACE.config" ) ;
   } else {
     #ifdef PSQ_MOM
-    sprintf( str , "%s_PSQ.config" , str ) ;
+    append_char( &str , "PSQ.config" ) ;
     #else
-    sprintf( str , "%s_SIN.config" , str ) ;
+    append_char( &str , "SIN.config" ) ;
     #endif
   }
 
@@ -552,6 +559,7 @@ compute_veclist( size_t *__restrict list_size ,
       fclose( config ) ;
       *list_size = 0 ;
       free( kept ) ;
+      free( str ) ;
       return NULL ;
     }
 
@@ -579,6 +587,7 @@ compute_veclist( size_t *__restrict list_size ,
     fclose( config ) ;
     *list_size = 0 ;
     free( list ) ;
+    free( str ) ;
     return NULL ;
   }
   if( flag != NO_MOMENTUM_CONFIG ) {
@@ -590,8 +599,10 @@ compute_veclist( size_t *__restrict list_size ,
     fclose( config ) ;
     *list_size = 0 ;
     free( list ) ;
+    free( str ) ;
     return NULL ;
   }
+  free( str ) ;
   fclose( config ) ;
 
 #else

@@ -32,6 +32,7 @@
 #include "POLY.h"          // poly()
 #include "random_config.h" // reunit_latt()
 #include "relax.h"         // overrelaxation
+#include "str_stuff.h"     // append_char
 
 // measure plaquette and polyakov loop
 static void
@@ -119,17 +120,19 @@ hb_update( struct site *lat ,
 {
   // strip the number in the infile if it has one
   char *pch = strtok( (char*)traj_name , "." ) ;
-  char str[ 256 ] ;
+  char str[ strlen(pch)+6+sizeof(size_t) ] ;
   sprintf( str , "%s.%zu.rand" , pch , Latt.flow ) ;
   
   if( HBINFO.continuation == GLU_FALSE ) {
     fprintf( stdout , "[UPDATE] initialising par_rng from pool\n" ) ;
     if( initialise_par_rng( NULL ) == GLU_FAILURE ) {
+      free( str ) ;
       return GLU_FAILURE ;
     }
   } else {
     fprintf( stdout , "[UPDATE] restarting from a previous trajectory\n" ) ;
     if( initialise_par_rng( str ) == GLU_FAILURE ) {
+      free( str ) ;
       return GLU_FAILURE ;
     }
   }
@@ -137,6 +140,7 @@ hb_update( struct site *lat ,
   // initialise the draughtboard
   struct draughtboard db ;
   if( init_cb( &db , LVOLUME , ND ) == GLU_FAILURE ) {
+    free( str ) ;
     return GLU_FAILURE ;
   }
 
@@ -195,14 +199,13 @@ hb_update( struct site *lat ,
       if( i%HBINFO.Nsave == 0 && i != start ) {
 	#pragma omp single
 	{
-	  char file_str[ 256 ] ;
 	  // write a configuration
-	  sprintf( file_str , "%s.%zu" , traj_name , i ) ;
-	  if( write_configuration( lat , file_str , storage , output_details )
+	  sprintf( str , "%s.%zu" , pch , i ) ;
+	  if( write_configuration( lat , str , storage , output_details )
 	      != GLU_FAILURE ) {
 	    // write out the rng state
-	    sprintf( file_str , "%s.rand" , file_str ) ;
-	    write_par_rng_state( file_str ) ;
+	    sprintf( str , "%s.%zu.rand" , pch , i ) ;
+	    write_par_rng_state( str ) ;
 	  }
 	}
       }

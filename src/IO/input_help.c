@@ -22,10 +22,7 @@
  */
 #include "Mainfile.h"
 
-// shortcut for equivalent strings
-static int
-are_equal( const char *str_1 , const char *str_2 ) { 
-  return !strcmp( str_1 , str_2 ) ; }
+#include "str_stuff.h"
 
 // function for generating example input files
 static void

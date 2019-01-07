@@ -75,7 +75,8 @@ UPDATEFILES=./Update/KPHB.c ./Update/relax.c ./Update/hb.c \
 UTILSFILES=./Utils/GLU_bswap.c ./Utils/GLU_malloc.c ./Utils/GLU_memcheck.c \
 	./Utils/GLU_splines.c ./Utils/GLU_sums.c ./Utils/GLU_timer.c \
 	./Utils/par_KISS.c ./Utils/par_MWC_1038.c ./Utils/par_MWC_4096.c \
-	./Utils/par_rng.c ./Utils/par_WELL_512.c ./Utils/par_XOR_1024.c
+	./Utils/par_rng.c ./Utils/par_WELL_512.c ./Utils/par_XOR_1024.c \
+	./Utils/str_stuff.c	
 
 ## wrapper files
 WRAPPERSFILES=./Wrappers/CUT_wrap.c ./Wrappers/GF_wrap.c \

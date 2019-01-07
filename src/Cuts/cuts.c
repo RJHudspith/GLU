@@ -57,11 +57,11 @@ mom_gauge( struct site *__restrict A ,
       equiv( A[i].O[mu] , temp ) ;
     }
   }
-  
+
   // FFTW routines
   struct fftw_small_stuff FFTW ;
   small_create_plans_DFT( &FFTW , Latt.dims , ND ) ;
-
+  
   //forward transform
   size_t mu , j ;
   for( mu = 0 ; mu < ND ; mu++ ) {
@@ -91,7 +91,6 @@ mom_gauge( struct site *__restrict A ,
       #endif
     }
   }
-
   //et voila! we have our fourier-transformed links in 0-2Pi BZ
   small_clean_up_fftw( FFTW ) ;
 
@@ -132,14 +131,14 @@ cuts_struct( struct site *__restrict A ,
   // NONEXCEPTIONAL MUST USE PSQ TO CONSERVE MOMENTUM
   if( CUTINFO.dir == NONEXCEPTIONAL ) {
     TEMP.type = PSQ_CUT ;
-  } 
+  }
+  
   const struct veclist *list = compute_veclist( in , TEMP ,
 						ND , GLU_FALSE ) ;
 
   // correct for the Landau condition
   correct_pspace_landau( A , list , in , ND ) ;
-
-  // set up the outputs
+  
   char *str = output_str_struct( CUTINFO ) ;  
   FILE *Ap = fopen( str , "wb" ) ; 
 

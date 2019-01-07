@@ -24,6 +24,7 @@
 
 #include "geometry.h"  // geometry for computing momenta
 #include "GLU_bswap.h" // byte swapping
+#include "str_stuff.h" // append_char()
 
 // big endian file writers, set up to mimic the c-standard fwrite but cannot
 // use a multiple of the array length for the size value
@@ -113,78 +114,86 @@ check_psq( const struct cut_info CUTINFO )
 char *
 output_str_struct( const struct cut_info CUTINFO )
 {
-  char *str = malloc( 1024 * sizeof ( char ) ) ;
-  
   char tmp[ 256 ] ;
-  sprintf( tmp , "%s" , CUTINFO.where ) ;
+
   #ifndef CONDOR_MODE
-  fprintf( stdout , "[CUTS] Our file is located @ %s \n", CUTINFO.where ) ;
+  char *str = malloc( (1+strlen(CUTINFO.where))*sizeof( char ) ) ;
+  sprintf( str , "%s" , CUTINFO.where ) ;
+  fprintf( stdout , "[CUTS] Our file is located @ %s \n", str ) ;
   #else
-  sprintf( tmp , "./" ) ;
+  char *str = malloc( (1+strlen("./"))*sizeof( char ) ) ;
+  sprintf( str , "./" ) ;
   #endif
 
   // each mode has a slightly different start so that you know what you are getting into 
   switch( CUTINFO.dir ) {
   case INSTANTANEOUS_GLUONS :
-    sprintf( str , "%sG2spG2t" , tmp ) ;
+    append_char( &str , "G2spG2t" ) ;
     break ;
   case SMEARED_GLUONS :
-    sprintf( str , "%sG2_G2SM" , tmp ) ;
+    append_char( &str , "G2_G2SM" ) ;
     break ;
   case GLUON_PROPS :
-    sprintf( str , "%sG2F2" , tmp ) ; 
+    append_char( &str , "G2F2" ) ;
     break ;
   case CONFIGSPACE_GLUONS :
-    sprintf( str , "%sCSPACE" , tmp ) ; 
+    append_char( &str , "CSPACE" ) ;
     break ;
   case FIELDS :
-    sprintf( str , "%sMATS" , tmp) ; 
+    append_char( &str , "MATS" ) ;
     break ;
   case EXCEPTIONAL :
-    sprintf( str , "%sMOMgg" , tmp ) ; 
+    append_char( &str , "MOMgg" ) ;
     break ;
   case NONEXCEPTIONAL :
 #ifdef PROJ_GRACEY
-    sprintf( str , "%spgracey", tmp ) ;
+    append_char( &str , "spgracey" ) ;
 #else
-    sprintf( str , "%spboucaud", tmp ) ;
+    append_char( &str , "spboucaud" ) ;
 #endif
     break ;
   case STATIC_POTENTIAL :
-    sprintf( str , "%sSTATPOT" , tmp ) ;
+    append_char( &str , "STATPOT" ) ;
     break ;
   case TOPOLOGICAL_SUSCEPTIBILITY :
-    sprintf( str , "%sQSUSC" , tmp ) ;
+    append_char( &str , "QSUSC" ) ;
     break ;
   default : // default behaviour is the 3 gluon vertex
-    sprintf( str , "%sMOMgg" , tmp ) ; 
+    append_char( &str , "MOMgg" ) ;
     break ;
   }
   // color info
-  sprintf( str , "%s_SU%d_" , str , NC ) ;
+  sprintf( tmp , "_SU%d_" , NC ) ;
+  append_char( &str , tmp ) ;
 
   // print out the dimensions of the lattice used for the cut
   size_t mu ;
-  for( mu = 0 ; mu < ND - 1 ; mu++ ) {
-    sprintf( str , "%s%zux" , str , Latt.dims[mu] ) ;
+  for( mu = 0 ; mu < ND-1 ; mu++ ) {
+    sprintf( tmp , "%zux" , Latt.dims[mu] ) ;
+    append_char( &str , tmp ) ;
   }
-  sprintf( str , "%s%zu_" , str , Latt.dims[ ND - 1 ] ) ;
+  sprintf( tmp , "%zu_" , Latt.dims[mu] ) ;
+  append_char( &str , tmp ) ;
 
   if( CUTINFO.dir == CONFIGSPACE_GLUONS ) {
     if( CUTINFO.definition == LOG_DEF ) {
-      sprintf( str , "%sLOG.%zu.bin" , str , Latt.flow ) ;
+      sprintf( tmp , "LOG.%zu.bin" , Latt.flow ) ;
+      append_char( &str , tmp ) ;
     } else {
-      sprintf( str , "%sLIN.%zu.bin" , str , Latt.flow ) ;
+      sprintf( tmp , "LIN.%zu.bin" , Latt.flow ) ;
+      append_char( &str , tmp ) ;
     }
     return str ;
   }
 
   /////// MOMENTUM SPACE STUFF FROM HERE ///////
-  sprintf( str , "%s%zu_" , str , CUTINFO.max_mom ) ;
+  sprintf( tmp , "%zu_" , CUTINFO.max_mom ) ;
+  append_char( &str , tmp ) ;
 
   // static potential measurement has T-detail here
   if( CUTINFO.dir == STATIC_POTENTIAL ) { 
-    sprintf( str , "%sT%zu_" , str , CUTINFO.max_t ) ;
+    sprintf( tmp , "T%zu_" , CUTINFO.max_t ) ;
+    append_char( &str , tmp ) ;
   }
 
   // switch on the correct cut, only PSQ is allowed for the non-exceptional
@@ -196,16 +205,18 @@ output_str_struct( const struct cut_info CUTINFO )
   // print out the cutting type performed
   switch( type ) {
   case HYPERCUBIC_CUT :
-    sprintf( str , "%scutHYP" , str ) ;
+    append_char( &str , "cutHYP" ) ;
     break;
   case PSQ_CUT :
-    sprintf( str , "%scutPSQ" , str ) ;
+    append_char( &str , "cutPSQ" ) ;
     break;
   case CYLINDER_CUT :
-    sprintf( str , "%scutCYL_w%g" , str , CUTINFO.cyl_width ) ;
+    sprintf( tmp , "cutCYL_w%g" , CUTINFO.cyl_width ) ;
+    append_char( &str , tmp ) ;
     break ;
   case CYLINDER_AND_CONICAL_CUT :
-    sprintf( str , "%scutCON_%zu" , str , CUTINFO.angle ) ;
+    sprintf( tmp , "cutCON_%zu" , CUTINFO.angle ) ;
+    append_char( &str , tmp ) ;
     break ; 
   default:
     break ; 
@@ -216,9 +227,9 @@ output_str_struct( const struct cut_info CUTINFO )
   if( CUTINFO.dir != STATIC_POTENTIAL && 
       CUTINFO.dir != TOPOLOGICAL_SUSCEPTIBILITY ) {
     #ifdef SIN_MOM
-    sprintf( str , "%s_SINMOM" , str ) ;
+    append_char( &str , "_SINMOM" ) ;
     #else
-    sprintf( str , "%s_PSQMOM" , str ) ;
+    append_char( &str , "_PSQMOM" ) ;
     #endif
   }
 
@@ -226,7 +237,8 @@ output_str_struct( const struct cut_info CUTINFO )
   #ifdef PROJ_GRACEY
   if( CUTINFO.dir == NONEXCEPTIONAL ) {
     #if PROJ_GRACEY > -1 && PROJ_GRACEY < 15
-    sprintf( str , "%s_PROJ%d" , str , PROJ_GRACEY ) ;
+    sprintf( tmp , "_PROJ%d" , PROJ_GRACEY ) ;
+    append_char( &str , tmp ) ;
     #endif
   }
   #endif
@@ -235,13 +247,16 @@ output_str_struct( const struct cut_info CUTINFO )
   if( CUTINFO.dir != STATIC_POTENTIAL && 
       CUTINFO.dir != TOPOLOGICAL_SUSCEPTIBILITY ) {
     if( CUTINFO.definition == LOG_DEF ) {
-      sprintf( str , "%s_LOG" , str ) ;
+      append_char( &str , "_LOG" ) ;
     } else {
-      sprintf( str , "%s_LIN" , str ) ;
+      append_char( &str , "_LIN" ) ;
     }
   }
   // and finish up with the configuration number
-  sprintf( str , "%s.%zu.bin" , str , Latt.flow ) ;
+  sprintf( tmp , ".%zu.bin" , Latt.flow ) ;
+
+  append_char( &str , tmp ) ;
+
   return str ;
 }
 

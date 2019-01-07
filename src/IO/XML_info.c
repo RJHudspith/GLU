@@ -24,12 +24,7 @@
 
 #include <errno.h>
 
-// slightly clearer (for me) string equality function
-static int
-are_equal( const char *pch , const char *tag )
-{
-  return !strcmp( pch , tag ) ;
-}
+#include "str_stuff.h" // are_equal
 
 /**
   These functions came from ahmidas, they claim to have had trouble parsing ILDG
@@ -163,12 +158,16 @@ parse_and_set_xml_SCIDAC( char *xml_info ,
       if( are_equal( pch , "precision" ) ) {
 	if( ( dimensions = get_prec_tag( pch , "precision" ) ) != -1 ) {
 	  if( dimensions == FLOAT_PREC ) {
+	    #ifdef verbose
 	    fprintf( stdout , "[IO] Attempting to read "
 		     "single precision data\n" ) ;
+	    #endif
 	    HEAD_DATA -> precision = FLOAT_PREC ;
 	  } else if( dimensions == DOUBLE_PREC ) {
+	    #ifdef verbose
 	    fprintf( stdout , "[IO] Attempting to read double "
 		     "precision data\n" ) ;
+	    #endif
 	    HEAD_DATA -> precision = DOUBLE_PREC ;
 	  } else {
 	    fprintf( stderr , "[IO] Precision %d not understood \n" , 
