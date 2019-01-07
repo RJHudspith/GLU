@@ -135,32 +135,29 @@ print_fixing_info( const struct gf_info GFINFO )
   fprintf( stdout , "[GF] Allowing for %d restarts before complaint ... \n" , 
 	   GF_GLU_FAILURES ) ; 
   // derivative routines available
-  fprintf( stdout , "[GF] " ) ;
   #ifdef deriv_lin
-  fprintf( stdout , "Using the Hermitian projection definition "
+  fprintf( stdout , "[GF] Using the Hermitian projection definition "
 	   "of the gluon fields.\n" ) ; 
   #elif defined deriv_full
-  fprintf( stdout , "Using the exact Log definition of the gluon fields.\n" ) ; 
+  fprintf( stdout , "[GF] Using the exact Log definition of the gluon fields.\n" ) ; 
   #endif
   // exponentiation approximation routines
-  fprintf( stdout , "[GF] " ) ;
   #if defined exp_approx
-  fprintf( stdout , "Approximate O(a) exponential expansion, "
+  fprintf( stdout , "[GF] Approximate O(a) exponential expansion, "
 	   "and reunitarisation in Gauge Fixing.\n" ) ; 
   #elif defined exp_exact
-  fprintf( stdout , "Exact exponentiation in the Gauge Fixing being used.\n" ) ;
+  fprintf( stdout , "[GF] Exact exponentiation in the Gauge Fixing being used.\n" ) ;
   #endif
 // tell us which log-method we are using
 #if ( defined deriv_full ) || ( defined deriv_fulln )
   fprintf( stdout , "[GF] Using Vandermonde logarithmic def warm-up \n" ) ;
 #endif
 #ifdef LUXURY_GAUGE
-  fprintf( stdout , "[GF] " ) ;
   #ifdef WORST_COPY
-  fprintf( stdout , "Finding the worst from %d random copies \n" , 
+  fprintf( stdout , "[GF] Finding the worst from %d random copies \n" , 
 	   LUXURY_GAUGE ) ;
   #else
-  fprintf( stdout , "Finding the best from %d random copies \n" , 
+  fprintf( stdout , "[GF] Finding the best from %d random copies \n" , 
 	   LUXURY_GAUGE ) ;
   #endif
 #endif
