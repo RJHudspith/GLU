@@ -126,13 +126,11 @@ hb_update( struct site *lat ,
   if( HBINFO.continuation == GLU_FALSE ) {
     fprintf( stdout , "[UPDATE] initialising par_rng from pool\n" ) ;
     if( initialise_par_rng( NULL ) == GLU_FAILURE ) {
-      free( str ) ;
       return GLU_FAILURE ;
     }
   } else {
     fprintf( stdout , "[UPDATE] restarting from a previous trajectory\n" ) ;
     if( initialise_par_rng( str ) == GLU_FAILURE ) {
-      free( str ) ;
       return GLU_FAILURE ;
     }
   }
@@ -140,7 +138,6 @@ hb_update( struct site *lat ,
   // initialise the draughtboard
   struct draughtboard db ;
   if( init_cb( &db , LVOLUME , ND ) == GLU_FAILURE ) {
-    free( str ) ;
     return GLU_FAILURE ;
   }
 

@@ -353,10 +353,8 @@ FACG( struct site *lat ,
     
     if( loc_iters >= max_iters ) {
       if( ( *th < 1E3*acc ) ) {
-	loc_iters = 0 ;
 	#pragma omp master
 	{
-	  iters += loc_iters ;
 	  fprintf( stdout , "[GF] Continuation run \n" ) ;
 	}
 	goto top ;
@@ -414,10 +412,6 @@ FASD( struct site *lat ,
       } else {
 	iters = 123456789 ;
       }
-    }
-    #pragma omp master
-    {
-      iters = loc_iters ;
     }
   }
 

@@ -68,13 +68,15 @@ initialise_par_rng( const char *rng_file )
 	FILE *urandom = fopen( "/dev/urandom" , "r" ) ;
 	if( urandom == NULL ) {
 	  fprintf( stderr , "[RNG] /dev/urandom not opened!! ... Exiting \n" ) ;
+	  free( Seeds ) ;
 	  return GLU_FAILURE ;
 	}
 	// read them from urandom
 	if( fread( &Seeds[0] , sizeof( uint32_t ) , 
 		   1 , urandom ) != 1 ) { 
 	  fprintf( stderr , "[RNG] Entropy pool Seed not read properly ! "
-		   "... Exiting \n" ) ; 
+		   "... Exiting \n" ) ;
+	  free( Seeds ) ;
 	  return GLU_FAILURE ;
 	}
 	for( i = 1 ; i < Latt.Nthreads ; i++ ) {
@@ -88,8 +90,10 @@ initialise_par_rng( const char *rng_file )
       }
 
       // Other seeds are just 1+ this one
-      fprintf( stdout , "[PAR_RNG] Entropy read Seed %u\n" , Seeds[0] ) ;
-
+      if( Latt.Nthreads > 0 ) {
+	fprintf( stdout , "[PAR_RNG] Entropy read Seed %u\n" , Seeds[0] ) ;
+      }
+      
       // do the seeding
       #if (defined KISS_RNG)
       GLU_set_par_KISS_table( Seeds ) ;

@@ -118,7 +118,10 @@ compute_Qcorr( struct site *__restrict lat ,
   // set up the matrix-valued array of the topological charge
   struct fftw_small_stuff FFTW ;
 #ifndef HAVE_FFTW3_H
+  FFTW.in = FFTW.out = FFTW.psq = NULL ;
   FFTW.in = malloc( LVOLUME * sizeof( GLU_complex ) ) ;
+#else
+  small_create_plans_DFT( &FFTW , Latt.dims , ND ) ;
 #endif
   size_t i ;
 
@@ -145,9 +148,6 @@ compute_Qcorr( struct site *__restrict lat ,
 #ifdef HAVE_FFTW3_H
 
   const double mulfac = NORMSQ / (double)LVOLUME ;
-
-  // FFT Gmunu
-  small_create_plans_DFT( &FFTW , Latt.dims , ND ) ;
 
   // computes the full correlator in p-space and FFTs back
   fftw_execute( FFTW.forward ) ;

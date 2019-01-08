@@ -473,8 +473,8 @@ steep_fix( GLU_complex **gauge ,
 
  top :
     
-   loc_iters = f( gauge , CG , FFTW , &tr ,
-		  lat , t , accuracy , max_iters ) ;
+    loc_iters = f( gauge , CG , FFTW , &tr ,
+		   lat , t , accuracy , max_iters ) ;
     
     // quick test for unitarity of our gauge transformation matrices
     if( tr < accuracy ) {
@@ -508,7 +508,6 @@ steep_fix( GLU_complex **gauge ,
 	Sunitary_gen( gauge[i] , get_GLU_thread( ) ) ;
       }
       tot_iters += loc_iters ;
-      loc_iters = 0 ;
       control++ ;
       trans_flag = GLU_FALSE ;
       goto top ;

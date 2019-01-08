@@ -95,7 +95,12 @@ init_cb( struct draughtboard *db ,
     #ifdef verbose
     fprintf( stdout , "[DB] COLOR_%zu :: %zu \n" , i , db -> Nsquare[i] ) ;
     #endif
-    db -> square[i] = malloc( db -> Nsquare[i] * sizeof( size_t ) ) ;
+    if( db -> Nsquare[i] == 0 ) {
+      db -> square[i] = NULL ;
+      return GLU_FAILURE ;
+    } else {
+      db -> square[i] = malloc( db -> Nsquare[i] * sizeof( size_t ) ) ;
+    }
     db -> Nsquare[i] = 0 ;
   }
 
