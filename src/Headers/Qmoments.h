@@ -24,13 +24,11 @@
 #define GLU_QMOMENTS_H
 
 /**
-   @fn int compute_Qmoments( struct site *__restrict lat , struct Qmoments *Qmom , const struct cut_info CUTINFO , const size_t measurement )
+   @fn int compute_Qmoments( struct site *__restrict lat , struct Qmoments *Qmom )
    @brief compute moments of the topological charge
  */
 int
 compute_Qmoments( struct site *__restrict lat ,
-		  struct Qmoments *Qmom , 
-		  const struct cut_info CUTINFO ,
-		  const size_t measurement ) ;
+		  struct Qmoments *Qmom ) ;
 
 #endif

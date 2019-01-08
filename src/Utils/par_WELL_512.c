@@ -36,11 +36,11 @@ par_WELL_512( const uint32_t thread )
 
   register uint32_t a  = t[ *index ] ;
   register uint32_t c  = t[( *index + 13 )&15 ] ;
-  const register uint32_t b  = a^c^(a<<16)^(c<<15) ;
+  register const uint32_t b  = a^c^(a<<16)^(c<<15) ;
   c  = t[ (*index+9 )&15 ] ;
   c ^= (c>>11) ;
   a  = t[ *index ] = b^c ; 
-  const register uint32_t d  = a^((a<<5)&0xDA442D24UL) ;
+  register const uint32_t d  = a^((a<<5)&0xDA442D24UL) ;
 
   *index = ( *index + 15)&15;
   a = t[ *index ];

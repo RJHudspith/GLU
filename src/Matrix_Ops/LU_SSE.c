@@ -31,7 +31,7 @@
 
 //  LU determinant computation with intrinsics
 double complex
-LU_det( const int N , const GLU_complex U[ N*N ] )
+LU_det( const size_t N , const GLU_complex U[ N*N ] )
 {
   GLU_complex a[ N*N ] ;
   memcpy( a , U , N*N * sizeof( GLU_complex ) ) ;
@@ -40,7 +40,7 @@ LU_det( const int N , const GLU_complex U[ N*N ] )
 
 //  same as above overwrites U
 double complex
-LU_det_overwrite( const int N , GLU_complex U[ N*N ] )
+LU_det_overwrite( const size_t N , GLU_complex U[ N*N ] )
 {
   __m128d determinant = _mm_setr_pd( 1.0 , 0.0 ) ;
   register __m128d best , attempt , z1 , z2 ; 

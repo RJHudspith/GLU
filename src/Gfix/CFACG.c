@@ -91,7 +91,6 @@ FOURIER_ACCELERATE2( struct fftw_stuff *FFTW )
 // bit that calculates the steepest descent with fourier acceleration
 static void
 steep_deriv_CG( GLU_complex **in ,
-		const struct CGtemps CG ,
 		const struct site *lat , 
 		const GLU_complex **slice_gauge , 
 		const size_t t )
@@ -163,7 +162,6 @@ steep_deriv_CG( GLU_complex **in ,
   }
   return ;
 }
-
 
 static void
 sum_DER2( double *red ,
@@ -268,8 +266,7 @@ steep_step_SD( GLU_complex **slice_gauge ,
 	       const struct site *lat , 
 	       const size_t t )
 {
-  steep_deriv_CG( FFTW -> in , CG , lat ,
-  		  (const GLU_complex**)slice_gauge , t ) ;
+  steep_deriv_CG( FFTW -> in , lat , (const GLU_complex**)slice_gauge , t ) ;
 
   // if we want to Fourier accelerate, we call this otherwise it is the SD
   FOURIER_ACCELERATE2( FFTW ) ;
@@ -307,8 +304,7 @@ steep_step_FACG( GLU_complex **gauge ,
     CG.red[ k ] = 0.0 ;
   }
 
-  steep_deriv_CG( FFTW -> in , CG , lat ,
-  		  (const GLU_complex**)gauge , t ) ;
+  steep_deriv_CG( FFTW -> in , lat , (const GLU_complex**)gauge , t ) ;
 
   // if we want to Fourier accelerate, we call this otherwise it is the SD
   FOURIER_ACCELERATE2( FFTW ) ;
@@ -338,8 +334,7 @@ steep_step_FACG( GLU_complex **gauge ,
     CG.red[ k ] = 0.0 ;
   }
   
-  steep_deriv_CG( FFTW -> in , CG , lat ,
-		  (const GLU_complex**)gauge ,  t ) ;
+  steep_deriv_CG( FFTW -> in , lat , (const GLU_complex**)gauge ,  t ) ;
   
   FOURIER_ACCELERATE2( FFTW ) ;
   

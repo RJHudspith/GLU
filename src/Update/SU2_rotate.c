@@ -135,11 +135,9 @@ only_subgroup( GLU_complex *s0 ,
 //     | c d || M[row(c)] M[row(c)++] .... |
 //
 void
-shortened_su2_multiply( GLU_complex *w , 
-			const GLU_complex a , 
-			const GLU_complex b , 
-			const GLU_complex c , 
-			const GLU_complex d , 
+shortened_su2_multiply( GLU_complex *w ,
+			const GLU_complex a ,
+			const GLU_complex b ,
 			const size_t su2_index )
 {
   GLU_complex W1 , W2 ; // temporaries
@@ -150,7 +148,7 @@ shortened_su2_multiply( GLU_complex *w ,
     W1 = w[ row_a + i ] ;
     W2 = w[ row_c + i ] ;
     w[ row_a + i ] = a * W1 + b * W2 ;
-    w[ row_c + i ] = c * W1 + d * W2 ;
+    w[ row_c + i ] = -conj(b) * W1 + conj(a) * W2 ;
   }
   return ;
 }
@@ -162,11 +160,9 @@ shortened_su2_multiply( GLU_complex *w ,
 //   | .....        .......      |
 //
 void
-shortened_su2_multiply_dag( GLU_complex *U , 
-			    const GLU_complex a , 
-			    const GLU_complex b , 
-			    const GLU_complex c , 
-			    const GLU_complex d , 
+shortened_su2_multiply_dag( GLU_complex *U ,
+			    const GLU_complex a ,
+			    const GLU_complex b ,
 			    const size_t su2_index )
 {
   GLU_complex U1 , U2 ; // temporaries for caching
@@ -177,7 +173,7 @@ shortened_su2_multiply_dag( GLU_complex *U ,
     U1 = U[ col_a + i*NC ] ;
     U2 = U[ col_b + i*NC ] ;
     U[ col_a + i*NC ] = U1 * conj(a) + U2 * conj(b) ;
-    U[ col_b + i*NC ] = U1 * conj(c) + U2 * conj(d) ;
+    U[ col_b + i*NC ] = -U1 * b + U2 * a ;
   }
   return ;
 }
@@ -245,7 +241,7 @@ su2_rotate( GLU_complex U[ NCNC ] ,
   *( U + 3 ) =  conj( U[0] ) ;
 #else
   // just a call to su2 multiply
-  shortened_su2_multiply( U , s0 , s1 , -conj(s1) , conj(s0) , su2_index ) ;
+  shortened_su2_multiply( U , s0 , s1 , su2_index ) ;
 #endif
   return ;
 }

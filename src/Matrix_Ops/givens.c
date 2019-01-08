@@ -389,8 +389,8 @@ rotation( GLU_complex U[ NCNC ] ,
   // the necessary operations.
   // Factor of 10x for SU(8) for doing this, old code is back 
   // in the SVN for checking
-  shortened_su2_multiply( w , s0 , s1 , -conj(s1) , conj(s0) , su2_index ) ;
-  shortened_su2_multiply_dag( U , s0 , s1 , -conj(s1) , conj(s0) , su2_index ) ;
+  shortened_su2_multiply( w , s0 , s1 , su2_index ) ;
+  shortened_su2_multiply_dag( U , s0 , s1 , su2_index ) ;
 
   return ;
 }

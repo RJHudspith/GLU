@@ -225,12 +225,10 @@ void
 shortened_su2_multiply( GLU_complex *w , 
 			const GLU_complex a , 
 			const GLU_complex b , 
-			const GLU_complex c , 
-			const GLU_complex d , 
 			const size_t su2_index )
 {
-  const register __m128d A = _mm_setr_pd( creal( a ) , cimag( a ) ) ;
-  const register __m128d B = _mm_setr_pd( creal( b ) , cimag( b ) ) ;
+  register const __m128d A = _mm_setr_pd( creal( a ) , cimag( a ) ) ;
+  register const __m128d B = _mm_setr_pd( creal( b ) , cimag( b ) ) ;
 
   const size_t row_a = NC * (int)( Latt.su2_data[ su2_index ].idx_a / NC ) ;
   const size_t row_c = NC * (int)( Latt.su2_data[ su2_index ].idx_c / NC ) ;
@@ -259,19 +257,27 @@ void
 shortened_su2_multiply_dag( GLU_complex *U , 
 			    const GLU_complex a , 
 			    const GLU_complex b , 
-			    const GLU_complex c , 
-			    const GLU_complex d , 
 			    const size_t su2_index )
 {
-  GLU_complex U1 , U2 ; // temporaries for caching
+  // set A and b to be their conjugates
+  register const __m128d A = _mm_setr_pd( creal( a ) , -cimag( a ) ) ;
+  register const __m128d B = _mm_setr_pd( creal( b ) , -cimag( b ) ) ;
+  
+  //GLU_complex U1 , U2 ; // temporaries for caching
   const size_t col_a = (int)( Latt.su2_data[ su2_index ].idx_a % NC ) ;
   const size_t col_b = (int)( Latt.su2_data[ su2_index ].idx_b % NC ) ;
+
+  register __m128d tmp ;
+  __m128d *U1 = (__m128d*)( U + col_a ) ;
+  __m128d *U2 = (__m128d*)( U + col_b ) ;
+  
   size_t i ;
   for( i = 0 ; i < NC ; i++ ) {
-    U1 = U[ col_a + i*NC ] ;
-    U2 = U[ col_b + i*NC ] ;
-    U[ col_a + i*NC ] = U1 * conj(a) + U2 * conj(b) ;
-    U[ col_b + i*NC ] = U1 * conj(c) + U2 * conj(d) ;
+    tmp = *U1 ;
+    *U1 = _mm_add_pd( SSE2_MUL( tmp , A ) , SSE2_MUL( *U2 , B ) ) ;
+    *U2 = _mm_sub_pd( SSE2_MUL_CONJ( *U2 , A ) , SSE2_MUL_CONJ( tmp , B ) ) ;
+    U1 += NC ;
+    U2 += NC ;
   }
   return ;
 }
@@ -380,7 +386,7 @@ su2_rotate( GLU_complex U[ NCNC ] ,
   *( u + 3 ) = SSE2_CONJ( *( u + 0 ) ) ;
 #else
   // just a call to su2 multiply
-  shortened_su2_multiply( U , s0 , s1 , -conj(s1) , conj(s0) , su2_index ) ;
+  shortened_su2_multiply( U , s0 , s1 , su2_index ) ;
 #endif
   return ;
 }

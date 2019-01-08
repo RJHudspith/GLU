@@ -59,25 +59,21 @@ only_subgroup( GLU_complex *s0 ,
 	       const size_t su2_index ) ;
 
 /**
-   @fn void shortened_su2_multiply( GLU_complex *w , const GLU_complex a , const GLU_complex b , const GLU_complex c , const GLU_complex d , const size_t su2_index )
+   @fn void shortened_su2_multiply( GLU_complex *w , const GLU_complex a , const GLU_complex b , const size_t su2_index )
    @brief su(2) multiply w = su2[ su2_index ] * w
    @param w :: matrix being hit on the left
    @param a :: top left su(2) element
    @param b :: top right su(2) element
-   @param c :: bottom left su(2) element
-   @param d :: bottom right su(2) element
    @param su2_index :: index describing which subgroup we are using
  */
 void
 shortened_su2_multiply( GLU_complex *w , 
 			const GLU_complex a , 
 			const GLU_complex b , 
-			const GLU_complex c , 
-			const GLU_complex d , 
 			const size_t su2_index ) ;
 
 /**
-   @fn void shortened_su2_multiply_dag( GLU_complex *U , const GLU_complex a , const GLU_complex b , const GLU_complex c , const GLU_complex d , const size_t su2_index )
+   @fn void shortened_su2_multiply_dag( GLU_complex *U , const GLU_complex a , const GLU_complex b , const size_t su2_index )
    @brief su(2) multiply U = U * su2[ su2_index ] ^{dagger}
    @param w :: matrix being hit on the right by a daggered SU(2)
    @param a :: top left su(2) element
@@ -90,8 +86,6 @@ void
 shortened_su2_multiply_dag( GLU_complex *U , 
 			    const GLU_complex a , 
 			    const GLU_complex b , 
-			    const GLU_complex c , 
-			    const GLU_complex d , 
 			    const size_t su2_index ) ;
 
 /**

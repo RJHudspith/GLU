@@ -77,8 +77,8 @@ main( const int argc ,
 		 argv[ WRITE ] , INFILE.storage , INFILE.output_details ) ;
     break ;
   case MODE_HEATBATH :
-    heatbath( argv[ READ ] , INFILE.HBINFO , argv[ WRITE ] , 
-	      INFILE.storage , INFILE.output_details ) ;
+    heatbath( argv[ READ ] , INFILE.HBINFO , INFILE.storage ,
+	      INFILE.output_details ) ;
     break ;
   default :
     read_and_check( argv[ READ ] , INFILE.rtrans , argv[ WRITE ] , 

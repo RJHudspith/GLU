@@ -39,13 +39,12 @@ enum{ NOPLAN = 0 } ;
 static char*
 obtain_wisdom( int *planflag ,
 	       const size_t dims[ ND ] ,
-	       const int DIR , 
+	       const size_t DIR , 
 	       const char *type )
 {
   *planflag = NOPLAN ;
   char *str = malloc( (1+strlen(HAVE_PREFIX))* sizeof( char ) ) ;
   sprintf( str , "%s" , HAVE_PREFIX ) ;
-  if( DIR < 0 ) return NULL ;
 #ifndef CONDOR_MODE
   FILE *wizzard ;
   size_t mu ;
@@ -84,7 +83,7 @@ obtain_wisdom( int *planflag ,
 // clean up the allocations by create_plans_DFT
 void
 clean_up_fftw( struct fftw_stuff FFTW ,
-	       const int ARR_SIZE )
+	       const size_t ARR_SIZE )
 {
   size_t i ;
   for( i = 0 ; i < ARR_SIZE; i++ ) {
@@ -108,8 +107,8 @@ clean_up_fftw( struct fftw_stuff FFTW ,
 void
 create_plans_DFT( struct fftw_stuff *FFTW ,
 		  const size_t dims[ ND ] ,
-		  const int ARR_SIZE ,
-		  const int DIR )
+		  const size_t ARR_SIZE ,
+		  const size_t DIR )
 {
   // set up our fft
   size_t VOL = 1 , mu , i ;
@@ -186,7 +185,7 @@ small_clean_up_fftw( struct fftw_small_stuff FFTW )
 void
 small_create_plans_DFT( struct fftw_small_stuff *FFTW ,
 			const size_t dims[ ND ] ,
-			const int DIR )
+			const size_t DIR )
 {
   // set up our fft
   size_t VOL = 1 , mu ;

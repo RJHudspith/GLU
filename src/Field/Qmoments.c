@@ -77,8 +77,7 @@ static int
 Time_Moments( double *Moment ,
 	      const GLU_complex *qtop ,
 	      const double NORM ,
-	      const size_t DIR ,
-	      const size_t measurement )
+	      const size_t DIR )
 {
   // sum qtop into a correlator q(t)
   GLU_complex *Qt = malloc( Latt.dims[ DIR ] * sizeof( GLU_complex ) ) ;
@@ -89,7 +88,8 @@ Time_Moments( double *Moment ,
 				    39916800 } ;
   const int LT = (int)Latt.dims[ DIR ] ;
   size_t dims[ ND ] ;
-  int n , t , subvol = 1 ;
+  size_t n , subvol = 1 ;
+  int t ;
 
   for( n = 0 ; n < ND ; n++ ) {
     if( n != DIR ) {
@@ -102,7 +102,7 @@ Time_Moments( double *Moment ,
 
   // compute the temporal sums
 #pragma omp parallel for private(t)
-  for( t = 0 ; t < Latt.dims[ DIR ] ; t++ ) {
+  for( t = 0 ; t < (int)Latt.dims[ DIR ] ; t++ ) {
     Qt[ t ] = 0.0 ;
     register GLU_complex sum = 0.0 ;
     size_t i ;
@@ -114,7 +114,7 @@ Time_Moments( double *Moment ,
 
   // initialise powers of t to t^0
   int *tpow = malloc( Latt.dims[ DIR ] * sizeof( int ) ) ;
-  for( t = 0 ; t < LT ; t++ ) {
+  for( t = 0 ; t < (int)LT ; t++ ) {
     tpow[ t ] = 1 ;
   }
   
@@ -138,7 +138,7 @@ Time_Moments( double *Moment ,
     
     // divide by the factorial and sign
     //#ifdef verbose
-    fprintf( stdout , "[QMOMENTS] Dir_%zu Moment_%d %1.12e \n" ,
+    fprintf( stdout , "[QMOMENTS] Dir_%zu Moment_%zu %1.12e \n" ,
 	     DIR , n , Moment[ n + NQMOMENTS * DIR ] ) ;
     //#endif
   }
@@ -157,8 +157,7 @@ Time_Moments( double *Moment ,
 // compute the moments of the topological charge
 static int
 compute_Q_moments( struct Qmoments *Qmom ,
-		   struct fftw_small_stuff FFTW ,
-		   const size_t measurement )
+		   struct fftw_small_stuff FFTW )
 {
   // normalisations
   const double NORM = -0.001583143494411527678811 ; // -1.0/(64*Pi*Pi)
@@ -166,7 +165,7 @@ compute_Q_moments( struct Qmoments *Qmom ,
   size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     Time_Moments( Qmom -> Q , FFTW.in ,
-		  NORM , mu , measurement ) ;
+		  NORM , mu ) ;
   }
 
   return GLU_SUCCESS ;
@@ -176,8 +175,7 @@ compute_Q_moments( struct Qmoments *Qmom ,
 // fftw will use qtop in here!
 static int
 compute_Q2_moments( struct Qmoments *Qmom ,
-		    struct fftw_small_stuff FFTW ,
-		    const size_t measurement )
+		    struct fftw_small_stuff FFTW )
 {
   const double NORM = -0.001583143494411527678811 ; // -1.0/(64*Pi*Pi)
   const double NORMSQ = NORM * NORM ;
@@ -200,7 +198,7 @@ compute_Q2_moments( struct Qmoments *Qmom ,
   size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     Time_Moments( Qmom -> Q2 , FFTW.in ,
-		  mulfac , mu , measurement ) ;
+		  mulfac , mu ) ;
   }
   
 #else
@@ -222,7 +220,7 @@ compute_Q2_moments( struct Qmoments *Qmom ,
   size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     Time_Moments( Qmom -> Q2 , FFTW.out ,
-		  NORMSQ , mu , measurement ) ;
+		  NORMSQ , mu ) ;
   }
   
 #endif
@@ -233,9 +231,7 @@ compute_Q2_moments( struct Qmoments *Qmom ,
 // compute the topological moments
 int
 compute_Qmoments( struct site *__restrict lat ,
-		  struct Qmoments *Qmom ,
-		  const struct cut_info CUTINFO ,
-		  const size_t measurement )
+		  struct Qmoments *Qmom )
 {
   // normalisations
   const double NORM = -0.001583143494411527678811 ; // -1.0/(64*Pi*Pi)
@@ -264,12 +260,12 @@ compute_Qmoments( struct site *__restrict lat ,
   }
 
   // compute moments of Q
-  if( compute_Q_moments( Qmom , FFTW , measurement ) == GLU_FAILURE ) {
+  if( compute_Q_moments( Qmom , FFTW ) == GLU_FAILURE ) {
     goto memfree ;
   }
 
   // compute moments of Q^2
-  if( compute_Q2_moments( Qmom , FFTW , measurement ) == GLU_FAILURE ) {
+  if( compute_Q2_moments( Qmom , FFTW ) == GLU_FAILURE ) {
     goto memfree ;
   }
 

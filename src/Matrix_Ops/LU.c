@@ -31,7 +31,7 @@
 //  does not save L, just need the diagonal of U as determinant is product
 //  of these elements
 double complex
-LU_det( const int N , const GLU_complex U[ N*N ] )
+LU_det( const size_t N , const GLU_complex U[ N*N ] )
 {
   double complex a[ N*N ] ;
   memcpy( a , U , N*N * sizeof( GLU_complex ) ) ;
@@ -40,7 +40,7 @@ LU_det( const int N , const GLU_complex U[ N*N ] )
 
 // same as above, overwrites U
 double complex
-LU_det_overwrite( const int N , GLU_complex U[ N*N ] )
+LU_det_overwrite( const size_t N , GLU_complex U[ N*N ] )
 {
   size_t i , j , l , piv , perms = 0 ;
   double complex dt , determinant = 1. ;

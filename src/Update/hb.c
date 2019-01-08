@@ -54,7 +54,7 @@ Creutz( double *__restrict d ,
 	const double NORM ,
 	const uint32_t thread ) 
 {
-  const register double x4 = par_rng_dbl( thread ) ;
+  register const double x4 = par_rng_dbl( thread ) ;
   register const double a0 = 1.0 + \
     log( xl + ( 1.0 - xl ) * par_rng_dbl( thread ) ) * NORM ;
   *d = 1.0 - a0 ;
@@ -68,8 +68,8 @@ KP( double *__restrict d ,
     const double NORM ,
     const uint32_t thread ) 
 {  
-  const register double x4 = par_rng_dbl( thread ) ;
-  const register double x3 = cos( TWOPI * par_rng_dbl( thread ) ) ;
+  register const double x4 = par_rng_dbl( thread ) ;
+  register const double x3 = cos( TWOPI * par_rng_dbl( thread ) ) ;
   *d = -( log( par_rng_dbl( thread ) ) + log( par_rng_dbl( thread ) ) * x3*x3 ) * NORM ;
   return ( 1. - 0.5*(*d) ) < x4*x4 ;
 }

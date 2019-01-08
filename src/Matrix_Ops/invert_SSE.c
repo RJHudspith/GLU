@@ -37,7 +37,7 @@
 inline static __m128d
 absfac( const __m128d a )
 {
-  const register __m128d z2 = _mm_shuffle_pd( a , a , 1 ) ;
+  register const __m128d z2 = _mm_shuffle_pd( a , a , 1 ) ;
   return _mm_add_pd( _mm_mul_pd( a , a ) , _mm_mul_pd( z2 , z2 ) ) ;
 }
 
@@ -56,7 +56,7 @@ eliminate_column( __m128d *a ,
 		  const size_t j )
 {
   // common factor crops up everywhere
-  const register __m128d fac1 = SSE2_MUL( a[ i + j*NC ] , fac ) ;
+  register const __m128d fac1 = SSE2_MUL( a[ i + j*NC ] , fac ) ;
   __m128d *pA = ( a + i*(NC+1) + 1 ) , *ppA = ( a  + i + 1 + j*NC ) ;
   size_t k ;
   // such a pattern elimintates cancelling zeros

@@ -77,8 +77,7 @@ compute_Qsusc_step( struct site *__restrict lat ,
 	flag = GLU_FAILURE ; break ;
       }
     } else if( CUTINFO.dir == TOPOLOGICAL_MOMENTS ) {
-      if( compute_Qmoments( lat , &Qmom[ measurement-1 ] , 
-			    CUTINFO , measurement ) == GLU_FAILURE ) {
+      if( compute_Qmoments( lat , &Qmom[ measurement-1 ] ) == GLU_FAILURE ) {
         flag = GLU_FAILURE ; break ;
       }
     }

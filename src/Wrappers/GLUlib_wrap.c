@@ -187,7 +187,6 @@ write_configuration( struct site *lat ,
 int
 heatbath( const char *infile ,
 	  const struct hb_info HBINFO ,
-	  const char *outfile , 
 	  const GLU_output storage , 
 	  const char *output_details )
 {

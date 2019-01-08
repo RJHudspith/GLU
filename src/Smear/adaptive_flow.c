@@ -329,7 +329,9 @@ flow_adaptive_RK3( struct site *__restrict lat ,
     if( fabs( W0_STOP - wapprox ) <= ( W0_STOP * FINETWIDDLE ) ) {
       delta_t = FINESTEP ;
     w0_top :
-      #pragma omp barrier
+      {
+         #pragma omp barrier
+      }
       
       step_distance_memcheap( lat , WF , delta_t , SM_TYPE , project ) ;
 

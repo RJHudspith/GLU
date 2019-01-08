@@ -29,9 +29,8 @@
 ///////////////////// CERN HEADER /////////////////////////////
 // suspiciously similar to the HIREP header. Coincidence?
 static int
-get_header_data_CERN( FILE *__restrict CONFIG ,
-		      struct head_data *__restrict HEAD_DATA ,
-		      const GLU_bool VERB )
+get_header_data_CERN( FILE *CONFIG ,
+		      struct head_data *HEAD_DATA )
 {
   // sanity check
   if( NC != 3 || ND != 4 ) {
@@ -79,8 +78,8 @@ get_header_data_CERN( FILE *__restrict CONFIG ,
 
 ///////////////////// HIREP HEADER /////////////////////////////
 static int
-get_header_data_HIREP( FILE *__restrict CONFIG ,
-		       struct head_data *__restrict HEAD_DATA ,
+get_header_data_HIREP( FILE *CONFIG ,
+		       struct head_data *HEAD_DATA ,
 		       const GLU_bool VERB )
 {
   HEAD_DATA -> config_type = OUTPUT_HIREP ;
@@ -141,7 +140,7 @@ get_header_data_HIREP( FILE *__restrict CONFIG ,
 // does not support the "NODE DUMP" output, only the natural order  //
 //////////////////////////////////////////////////////////////////////
 static int
-get_header_data_MILC( FILE *__restrict in , 
+get_header_data_MILC( FILE *in , 
 		      struct head_data *HEAD_DATA ,
 		      const GLU_bool VERB ) 
 {
@@ -225,8 +224,8 @@ get_header_data_MILC( FILE *__restrict in ,
 
 // reads the NERSC header and sets up our data ...
 static int 
-get_header_data_NERSC( FILE *__restrict CONFIG ,
-		       struct head_data *__restrict HEAD_DATA ,
+get_header_data_NERSC( FILE *CONFIG ,
+		       struct head_data *HEAD_DATA ,
 		       const GLU_bool VERB )
 {
   struct QCDheader *get_header( FILE *__restrict in ) , * hdr ; 
@@ -361,14 +360,14 @@ get_header_data_NERSC( FILE *__restrict CONFIG ,
 
 // switch for reading the header file ...
 int
-read_header( FILE *__restrict infile ,
-	     struct head_data *__restrict HEAD_DATA ,
+read_header( FILE *infile ,
+	     struct head_data *HEAD_DATA ,
 	     const GLU_bool VERB )
 {
   // switch on the header type
   switch( Latt.head ) {
   case CERN_HEADER :
-    return get_header_data_CERN( infile , HEAD_DATA , VERB ) ;
+    return get_header_data_CERN( infile , HEAD_DATA ) ;
   case NERSC_HEADER :
     return get_header_data_NERSC( infile , HEAD_DATA , VERB ) ;
   case HIREP_HEADER :

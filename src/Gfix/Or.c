@@ -121,10 +121,8 @@ OR_single( struct site *__restrict lat ,
   // gauge rotate all the links that touch this gauge transformation
   for( mu = 0 ; mu < ND ; mu++ ) {
     back = lat[i].back[mu] ;
-    shortened_su2_multiply( lat[i].O[mu] , s0 , s1 , 
-			    -conj(s1) , conj(s0) , su2_index ) ;
-    shortened_su2_multiply_dag( lat[back].O[mu] , s0 , s1 , 
-				-conj(s1) , conj(s0) , su2_index ) ;
+    shortened_su2_multiply( lat[i].O[mu] , s0 , s1 , su2_index ) ;
+    shortened_su2_multiply_dag( lat[back].O[mu] , s0 , s1 , su2_index ) ;
   }
   
   return ;
@@ -333,4 +331,3 @@ OrCoulomb( struct site *__restrict lat ,
 
   return iters ;
 }
-

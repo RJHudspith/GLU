@@ -22,10 +22,11 @@
  */
 #include "Mainfile.h"
 
-#include "CFACG.h"        // Coulomb Conjugate Gradient
-#include "geometry.h"     // for the p^2 calc
-#include "plan_ffts.h"    // fftw plan wrapper
-#include "plaqs_links.h"  // plaqutte and link measurements
+#include "CFACG.h"         // Coulomb Conjugate Gradient
+#include "geometry.h"      // for the p^2 calc
+#include "plan_ffts.h"     // fftw plan wrapper
+#include "plaqs_links.h"   // plaqutte and link measurements
+#include "random_config.h" // latt_reunitU()
 
 // Coulomb gauge fixing code
 size_t
@@ -91,6 +92,8 @@ Coulomb( struct site *__restrict lat ,
   free( FFTW.in ) ;
 
 #endif
+
+  latt_reunitU( lat ) ;
 
   all_links( lat , &splink , &tlink ) ;
   fprintf( stdout , "[GF] Tuning :: %f || Iterations :: %zu ||"
