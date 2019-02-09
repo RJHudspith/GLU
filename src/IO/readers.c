@@ -186,18 +186,30 @@ lattice_reader_suNC( struct site *lat ,
       return GLU_FAILURE ;
     }
     // scidac checksum is on the RAW binary data, not the byteswapped
-    if( Latt.head == ILDG_BQCD_HEADER || Latt.head == SCIDAC_HEADER ||
+    if( Latt.head == SCIDAC_HEADER ||
 	Latt.head == ILDG_SCIDAC_HEADER ) {
       size_t i ;
+      #pragma omp parallel for private(i) reduction(^:CRCsum29) reduction(^:CRCsum31)
       for( i = 0 ; i < LVOLUME ; i++ ) {
-	DML_checksum_accum( &CRCsum29 , &CRCsum31 , 
-			    i , (char*)( uind + ( i * ND * LOOP_VAR ) ) ,
-			    sizeof(double) * ND * LOOP_VAR ) ;
-	// BQCD's
-	CKSUM_ADD( ( uind + ( i * ND * LOOP_VAR ) ) , 
-		   sizeof(double) * ND * LOOP_VAR ) ;
+	const uint32_t rank29 = i % 29 ;
+	const uint32_t rank31 = i % 31 ;
+	const uint32_t work =
+	  (uint32_t)crc32(0, (unsigned char*)( uind + i*ND*LOOP_VAR ) ,
+			  sizeof(double) * ND * LOOP_VAR );
+	CRCsum29 = CRCsum29 ^ ( work<<rank29 | work>>(32-rank29));
+	CRCsum31 = CRCsum31 ^ ( work<<rank31 | work>>(32-rank31) );
+	// TDOD -> an unthreaded bswap here ?
       }
-      // BQCD checksum is just the crc of the whole thing
+    }
+    // BQCD checksum is just the crc of the whole thing and is not thread safe
+    // for the moment possibly for ever
+    if( Latt.head == ILDG_BQCD_HEADER ) {
+      size_t i ;
+      for( i = 0 ; i < LVOLUME ; i++ ) {
+	// BQCD's
+	CKSUM_ADD( ( uin + ( i * ND * LOOP_VAR ) ) , 
+		   sizeof(float) * ND * LOOP_VAR ) ;
+      }
       uint32_t nbytes ;
       CKSUM_GET( &CRC_BQCD , &nbytes ) ;
     }
@@ -214,14 +226,26 @@ lattice_reader_suNC( struct site *lat ,
       free( uin ) ;
       return GLU_FAILURE ;
     }
-    // BQCD checksum is just the crc of the whole thing and is kinda expensive
-    if( Latt.head == ILDG_BQCD_HEADER || Latt.head == SCIDAC_HEADER ||
+    // ILDG checksum is on the raw data
+    if( Latt.head == SCIDAC_HEADER ||
 	Latt.head == ILDG_SCIDAC_HEADER ) {
       size_t i ;
+      #pragma omp parallel for private(i) reduction(^:CRCsum29) reduction(^:CRCsum31)
       for( i = 0 ; i < LVOLUME ; i++ ) {
-	DML_checksum_accum( &CRCsum29 , &CRCsum31 , 
-			    i , (char*)( uin + ( i * ND * LOOP_VAR ) ) ,
-			    sizeof(float) * ND * LOOP_VAR ) ;
+	const uint32_t rank29 = i % 29 ;
+	const uint32_t rank31 = i % 31 ;
+	const uint32_t work =
+	  (uint32_t)crc32(0, (unsigned char*)( uin + i*ND*LOOP_VAR ) ,
+			  sizeof(float) * ND * LOOP_VAR );
+	CRCsum29 = CRCsum29 ^ ( work<<rank29 | work>>(32-rank29));
+	CRCsum31 = CRCsum31 ^ ( work<<rank31 | work>>(32-rank31) );
+	// TDOD -> an unthreaded bswap here ?
+      }
+    }
+    // BQCD checksum is just the crc of the whole thing and is kinda expensive
+    if( Latt.head == ILDG_BQCD_HEADER ) {
+      size_t i ;
+      for( i = 0 ; i < LVOLUME ; i++ ) {
 	// BQCD's
 	CKSUM_ADD( ( uin + ( i * ND * LOOP_VAR ) ) , 
 		   sizeof(float) * ND * LOOP_VAR ) ;
@@ -236,7 +260,7 @@ lattice_reader_suNC( struct site *lat ,
     q = uin ;
   }
 
-  // compute the crcs
+  // compute the crcs and poke into gauge links
   uint32_t k = 0 , sum29 = 0 , sum31 = 0 ;
   size_t i ;
   #pragma omp parallel for private(i) reduction(+:k) reduction(^:sum29) reduction(^:sum31)
