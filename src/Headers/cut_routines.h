@@ -30,7 +30,7 @@
 extern GLU_real rats[ ND ] ;
 
 /**
-   @fn void simorb_ratios( const int DIMS )
+   @fn void simorb_ratios( const size_t DIMS )
    @brief compute the ratio of the smallest to the largest lattice direction
    @param DIMS :: dimensions of the problem
 
@@ -40,10 +40,10 @@ extern GLU_real rats[ ND ] ;
    momenta.
  **/
 void
-simorb_ratios( const int DIMS ) ;
+simorb_ratios( const size_t DIMS ) ;
 
 /**
-   @fn struct veclist* compute_veclist( int *__restrict list_size , const struct cut_info CUTINFO , const int DIMS , const GLU_bool CONFIGSPACE ) ;
+   @fn struct veclist* compute_veclist( int *__restrict list_size , const struct cut_info CUTINFO , const size_t DIMS , const GLU_bool CONFIGSPACE ) ;
    @brief compute the list of momenta, or read it if possible
    @param list_size :: size of the veclist struct
    @param CUTINFO :: momentum cut information
@@ -53,7 +53,7 @@ simorb_ratios( const int DIMS ) ;
 struct veclist*
 compute_veclist( size_t *__restrict list_size , 
 		 const struct cut_info CUTINFO ,
-		 const int DIMS ,
+		 const size_t DIMS ,
 		 const GLU_bool CONFIGSPACE ) ;
 
 #endif

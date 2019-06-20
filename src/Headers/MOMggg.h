@@ -26,7 +26,7 @@
 #define GLU_MOMGGG_h
 
 /**
-   @fn int write_nonexceptional_g2g3( FILE *__restrict Ap , const struct site *__restrict A , const struct veclist *__restrict list , int num_mom[ 1 ] , const int nnmax )
+   @fn int write_nonexceptional_g2g3( FILE *__restrict Ap , const struct site *__restrict A , const struct veclist *__restrict list , size_t num_mom[ 1 ] , const size_t nnmax )
    @brief computes the nonexceptional three point function and the gluon propagator
    @param Ap :: file we write out to
    @param A :: lie-algebra field
@@ -41,6 +41,6 @@ write_nonexceptional_g2g3( FILE *__restrict Ap ,
 			   const struct site *__restrict A , 
 			   const struct veclist *__restrict list , 
 			   size_t num_mom[ 1 ] , 
-			   const int nnmax ) ;
+			   const size_t nnmax ) ;
 
 #endif

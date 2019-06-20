@@ -108,7 +108,7 @@ check_sums( const double plaq ,
 }
 
 // things that check the checksums //
-short int
+int
 checks( struct site *__restrict lat , 
 	uint32_t chksum ,
 	struct head_data HEAD_DATA )

@@ -27,18 +27,18 @@
 #define GLU_COULOMB_H
 
 /**
-   @fn int Coulomb( struct site *__restrict lat , const double accuracy , const int iter ) 
+   @fn size_t Coulomb( struct site *__restrict lat , const double accuracy , const size_t iter ) 
    @brief Coulomb gauge fixing
    
    @param lat :: Lattice fields
    @param accuracy :: Gauge fixing accuracy we are iterating to
    @param iter :: Maximum number of iterations before restarting
 
-   @return #GLU_FAILURE or #GLU_SUCCESS
+   @return the number of iterations
  */
-int 
+size_t 
 Coulomb( struct site *__restrict lat , 
 	 const double accuracy , 
-	 const int iter ) ;
+	 const size_t iter ) ;
 
 #endif
