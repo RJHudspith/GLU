@@ -38,7 +38,7 @@ Coul_staticpot( struct site *lat ,
 		const struct sm_info SMINFO ) ;
 
 /**
-   @fn double complex poly( const struct site *lat , int dir )
+   @fn double complex poly( const struct site *lat , size_t dir )
    @brief computes the polyakov loop in the direction "dir"
    @param lat :: lattice fields
    @param dir :: direction to measure in
@@ -49,7 +49,7 @@ Coul_staticpot( struct site *lat ,
  **/
 double complex 
 poly( const struct site *lat , 
-      int dir ) ;
+      size_t dir ) ;
 
 /**
    @fn void poly_th( double *red , const struct site *lat , size_t dir ) ;

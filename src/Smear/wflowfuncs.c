@@ -30,7 +30,7 @@
 
 // controls for the wilson flow these get externed!
 const double W0_STOP    = NC*0.1 ; // BMW's choice for the W_0 parameter
-const double T0_STOP    = NC*0.1 ; // Martin's choice for the t_0 scale
+const double T0_STOP    = NC*0.1 ; // Martin Luescher's choice for the t_0 scale
 
 // shortening function needs to be out of alphabetical order because
 // it is called by flow directions
@@ -39,14 +39,14 @@ make_short_log( GLU_complex short_staple[ HERMSIZE ] ,
 		const GLU_complex staple[ NCNC ] )
 {
 #if NC == 3
-  *( short_staple + 0 ) = staple[ 0 ] ;
-  *( short_staple + 1 ) = staple[ 1 ] ;
-  *( short_staple + 2 ) = staple[ 2 ] ;
-  *( short_staple + 3 ) = staple[ 4 ] ;
-  *( short_staple + 4 ) = staple[ 5 ] ;
+  short_staple[0] = staple[ 0 ] ;
+  short_staple[1] = staple[ 1 ] ;
+  short_staple[2] = staple[ 2 ] ;
+  short_staple[3] = staple[ 4 ] ;
+  short_staple[4] = staple[ 5 ] ;
 #elif NC == 2
-  *( short_staple + 0 ) = staple[ 0 ] ;
-  *( short_staple + 1 ) = staple[ 1 ] ;
+  short_staple[0] = staple[ 0 ] ;
+  short_staple[1] = staple[ 1 ] ;
 #else
   size_t i, j , idx = 0 ;
   for( i = 0 ; i < NC-1 ; i++ ) {

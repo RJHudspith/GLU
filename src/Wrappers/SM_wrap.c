@@ -216,7 +216,7 @@ print_smearinfo( const struct sm_info SMINFO )
 }
 
 // the wrapper that decides the routine 5to be called ...
-short int
+int
 SM_wrap_struct( struct site *__restrict lat ,
 		const struct sm_info SMINFO )
 {

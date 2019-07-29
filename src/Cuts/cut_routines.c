@@ -70,12 +70,12 @@ enum{ MOMENTUM_CONFIG , NO_MOMENTUM_CONFIG } momenta_saved ;
 
 // calculate similar orbits i.e measure anisotropy
 void
-simorb_ratios( const int DIMS )
+simorb_ratios( const size_t DIMS )
 {
   // similar orbits in terms of the smallest dimension ...
   // find the smallest
   small = Latt.dims[0] ;
-  int mu ;
+  size_t mu ;
   for( mu = 1 ; mu < DIMS ; mu++ ) {
     if( Latt.dims[ mu ] < small ) {
       small = Latt.dims[ mu ] ;
@@ -343,6 +343,7 @@ safe_momenta( const int n[ ND ] ,
     if( gen_calc_psq( n , DIMS ) <= CUTINFO.max_mom ) {
       return GLU_TRUE ;
     }
+    break ;
   case CYLINDER_CUT :
     if( gen_calc_psq( n , DIMS ) <= CUTINFO.max_mom ) {
       GLU_real k[ ND ] ; 
@@ -367,10 +368,12 @@ safe_momenta( const int n[ ND ] ,
 	return GLU_TRUE ;
       }
     }
+    break ;
   default :
     if( gen_calc_psq( n , DIMS ) <= CUTINFO.max_mom ) {
       return GLU_TRUE ;
     }
+    break ;
   }
   return GLU_FALSE ;
 }

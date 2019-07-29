@@ -63,7 +63,7 @@ get_site_2piBZ( int x[ ND ] ,
 
 // returns the site on the 0-> 2pi Bz 
 // from the momentum defined in the -Pi to Pi BZ
-int
+size_t
 get_site_pipiBZ( int x[ ND ] , 
 		 const size_t DIMS )
 {
