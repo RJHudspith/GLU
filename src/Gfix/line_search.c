@@ -40,76 +40,18 @@ approx_minimum( const size_t nmeas ,
 		const double alphas[ nmeas ] ,
 		const double functional[ nmeas ] )
 {
-  // compute the spline derivatives
-  double derivative[ nmeas ] ;
-  spline_derivative( derivative , alphas , functional , nmeas ) ;
+  // find the minimum from the lagrange interpolating polynomial
+  const double A = functional[0]/((alphas[0]-alphas[1])*(alphas[0]-alphas[2])) ;
+  const double B = functional[1]/((alphas[1]-alphas[0])*(alphas[1]-alphas[2])) ;
+  const double C = functional[2]/((alphas[2]-alphas[0])*(alphas[2]-alphas[1])) ;
+  
+  const double Sol = (alphas[0]*(B+C)+alphas[1]*(A+C)+alphas[2]*(A+B))/(2*(A+B+C)) ;
 
-  // compute the sum of the derivatives, if they are all small my thinking is
-  // that we are at the limit of the precision of the functional
-  register double sumder = 0.0 ;
-
-  // best minimum index
-  size_t bestmin = 0 ;
-  // best alpha
-  double func_min = 2.0 ;
-  // number of derivatives with a minus sign
-  size_t sumneg = 0 ;
-
-  size_t i ;
-  for( i = 0 ; i < nmeas ; i++ ) {
-
-    // sum of the derivatives, if we are too flat
-    // we exit returning the user-specified tuning alpha
-    sumder += fabs( derivative[i] ) ;
-
-    // we find a minimum using this dirty method
-    if( derivative[i] < 0. ) {
-      sumneg ++ ;
-      // find the lowest minimum in case we have more than one
-      // this is pretty unlikely unless we use a bunch of probes
-      if( functional[i] < func_min ) {
-	bestmin = i + 1 ;
-	func_min = functional[i] ;
-      }
-    }
-
-    #ifdef verbose
-    fprintf( stdout , "[GF] fun[%zu] %e\n" , i , functional[i] ) ;
-    fprintf( stdout , "[GF] der[%zu] %e \n" , i , derivative[i] ) ;
-    #endif
+  if( isnan( Sol ) || isinf( Sol ) || Sol > alphas[2] || Sol < alphas[0] ) {
+    return 0.08 ;
   }
-
-  #ifdef verbose
-  fprintf( stdout , "[GF] sumneg  :: %zu \n" , sumneg ) ;
-  fprintf( stdout , "[GF] bestmin :: %zu \n" , bestmin ) ;
-  fprintf( stdout , "[GF] sumder  :: %e \n" , sumder ) ;
-  #endif
-
-  // if we are at the limit of precision we leave
-  if( sumder < PREC_TOL ) {
-    return Latt.gf_alpha ;
-  }
-
-  // at the moment this routine assumes a quadratic shape
-  // if there are no negative terms in the derivative we return 0
-  if( sumneg == 0 ) {
-    return 0. ;
-    // if it is all negative the best alpha is greater than our largest probe
-    // we return the largest probe
-  } else if( sumneg == nmeas ) {
-    return alphas[nmeas-1] ;
-    // otherwise we have bound the minimum and we solve for it 
-  } else {
-    const double result = cubic_min( alphas , functional , 
-				     derivative , bestmin ) ;
-
-    if( isnan( result ) ) { 
-      return 0.0 ;
-    } else {
-      return result ;
-    }
-  }
-  return 0.0 ;
+  
+  return Sol ;
 }
 
 void
