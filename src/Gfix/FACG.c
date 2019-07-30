@@ -253,11 +253,12 @@ steep_Landau_FACG( struct site *lat ,
   // not totally sure why this needs to be here but result changes
   // if it isn't
   {
-     #pragma omp barrier
+    #pragma omp barrier
   }
 
+  // might not need a barrier here... not sure
   trAA = insum = sum_conj = 0.0 ;
-#pragma omp for private(k)
+  #pragma omp for private(k)
   for( k = 0 ; k < CLINE*Latt.Nthreads ; k++ ) {
     CG -> red[k] = 0.0 ;
   }

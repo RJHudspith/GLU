@@ -40,39 +40,77 @@ Re_trace_abc_dag_suNC( const GLU_complex a[ NCNC ] ,
   const __m128d *C = ( const __m128d* )c ;
   double complex csum ;
 #if NC == 3
-  //const GLU_complex a0 = ( a[0] * b[0] + a[1] * b[3] + a[2] * b[6] ) ;
-  const __m128d a0 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 0 ) ) ,
-				 _mm_add_pd( SSE2_MUL( *( A + 1 ) , *( B + 3 ) ) ,
-					     SSE2_MUL( *( A + 2 ) , *( B + 6 ) ) ) ) ;
-  const __m128d a1 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 1 ) ) ,
-				 _mm_add_pd( SSE2_MUL( *( A + 1 ) , *( B + 4 ) ) ,
-					     SSE2_MUL( *( A + 2 ) , *( B + 7 ) ) ) ) ;
-  const __m128d a2 = _mm_add_pd( SSE2_MUL( *( A + 0 ) , *( B + 2 ) ) ,
-				 _mm_add_pd( SSE2_MUL( *( A + 1 ) , *( B + 5 ) ) ,
-					     SSE2_MUL( *( A + 2 ) , *( B + 8 ) ) ) ) ;
-  // second row
-  const __m128d a3 = _mm_add_pd( SSE2_MUL( *( A + 3 ) , *( B + 0 ) ) ,
-				 _mm_add_pd( SSE2_MUL( *( A + 4 ) , *( B + 3 ) ) ,
-					     SSE2_MUL( *( A + 5 ) , *( B + 6 ) ) ) ) ;
-  const __m128d a4 = _mm_add_pd( SSE2_MUL( *( A + 3 ) , *( B + 1 ) ) ,
-				 _mm_add_pd( SSE2_MUL( *( A + 4 ) , *( B + 4 ) ) ,
-					     SSE2_MUL( *( A + 5 ) , *( B + 7 ) ) ) ) ;
-  const __m128d a5 = _mm_add_pd( SSE2_MUL( *( A + 3 ) , *( B + 2 ) ) ,
-				 _mm_add_pd( SSE2_MUL( *( A + 4 ) , *( B + 5 ) ) ,
-					     SSE2_MUL( *( A + 5 ) , *( B + 8 ) ) ) ) ;
-  // last row is always a completion
-  const __m128d a6 = SSE2_CONJ( _mm_sub_pd( SSE2_MUL( a1 , a5 ) ,
-					    SSE2_MUL( a2 , a4 ) ) ) ;
-  const __m128d a7 = SSE2_CONJ( _mm_sub_pd( SSE2_MUL( a2 , a3 ) ,
-					    SSE2_MUL( a0 , a5 ) ) ) ;
-  const __m128d a8 = SSE2_CONJ( _mm_sub_pd( SSE2_MUL( a0 , a4 ) ,
-					    SSE2_MUL( a1 , a3 ) ) ) ;
+  register __m128d E , F , G , H , J , K ;
+  E = SSE2_MUL( *( A + 0 ) , *( B + 0 ) ) ;
+  F = SSE2_MUL( *( A + 1 ) , *( B + 3 ) ) ;
+  G = SSE2_MUL( *( A + 2 ) , *( B + 6 ) ) ;
+  H = SSE2_MUL( *( A + 0 ) , *( B + 1 ) ) ;
+  J = SSE2_MUL( *( A + 1 ) , *( B + 4 ) ) ;
+  K = SSE2_MUL( *( A + 2 ) , *( B + 7 ) ) ;
+  E = _mm_add_pd( E , F ) ;
+  H = _mm_add_pd( H , J ) ;
+  const __m128d a0 = _mm_add_pd( E , G ) ;
+  const __m128d a1 = _mm_add_pd( H , K ) ;
+
+  E = SSE2_MUL( *( A + 0 ) , *( B + 2 ) ) ;
+  F = SSE2_MUL( *( A + 1 ) , *( B + 5 ) ) ;
+  G = SSE2_MUL( *( A + 2 ) , *( B + 8 ) ) ;
+  H = SSE2_MUL( *( A + 3 ) , *( B + 0 ) ) ;
+  J = SSE2_MUL( *( A + 4 ) , *( B + 3 ) ) ;
+  K = SSE2_MUL( *( A + 5 ) , *( B + 6 ) ) ;
+  E = _mm_add_pd( E , F ) ;
+  H = _mm_add_pd( H , J ) ;
+  const __m128d a2 = _mm_add_pd( E , G ) ;
+  const __m128d a3 = _mm_add_pd( H , K ) ;
+
+  E = SSE2_MUL( *( A + 3 ) , *( B + 1 ) ) ;
+  F = SSE2_MUL( *( A + 4 ) , *( B + 4 ) ) ;
+  G = SSE2_MUL( *( A + 5 ) , *( B + 7 ) ) ;
+  H = SSE2_MUL( *( A + 3 ) , *( B + 2 ) ) ;
+  J = SSE2_MUL( *( A + 4 ) , *( B + 5 ) ) ;
+  K = SSE2_MUL( *( A + 5 ) , *( B + 8 ) ) ;
+  E = _mm_add_pd( E , F ) ;
+  H = _mm_add_pd( H , J ) ;
+  const __m128d a4 = _mm_add_pd( E , G ) ;
+  const __m128d a5 = _mm_add_pd( H , K ) ;
+
+  // this does the completion
+  F = SSE2_MUL( a1 , a3 ) ;
+  H = SSE2_MUL( a0 , a4 ) ;
+  G = SSE2_MUL( a2 , a4 ) ;
+  K = SSE2_MUL( a1 , a5 ) ;
+  E = SSE2_MUL( a2 , a3 ) ;
+  J = SSE2_MUL( a0 , a5 ) ;
+  H = _mm_sub_pd( H , F ) ;
+  K = _mm_sub_pd( K , G ) ;
+  E = _mm_sub_pd( E , J ) ;
+  const __m128d a8 = SSE2_CONJ( H ) ;
+  const __m128d a6 = SSE2_CONJ( K ) ;
+  const __m128d a7 = SSE2_CONJ( E ) ;
+    
   // and compute the real part of the trace
-  register __m128d sum ;
-  sum = SSE2_FMA( a0 , *( C+0 ) , SSE2_FMA( a1 , *( C+1 ) , _mm_mul_pd( a2 , *( C + 2 ) ) ) ) ;
-  sum = SSE2_FMA( a3 , *( C + 3 ) , SSE2_FMA( a4 , *( C + 4 ) , sum ) ) ;
-  sum = SSE2_FMA( a5 , *( C + 5 ) , SSE2_FMA( a6 , *( C + 6 ) , sum ) ) ;
-  sum = SSE2_FMA( a7 , *( C + 7 ) , SSE2_FMA( a8 , *( C + 8 ) , sum ) ) ;
+  E =  _mm_mul_pd( a2 , *( C + 2 ) ) ;
+  F =  _mm_mul_pd( a1 , *( C + 1 ) ) ;
+  G =  _mm_mul_pd( a0 , *( C + 0 ) ) ;
+  E = _mm_add_pd( E , F ) ;
+  E = _mm_add_pd( E , G ) ;
+
+  register __m128d sum = _mm_setzero_pd( ) ;
+  sum = _mm_add_pd( sum , E ) ;
+
+  H =  _mm_mul_pd( a3 , *( C + 3 ) ) ;
+  J =  _mm_mul_pd( a4 , *( C + 4 ) ) ;
+  K =  _mm_mul_pd( a5 , *( C + 5 ) ) ;
+  H = _mm_add_pd( H , J ) ;
+  H = _mm_add_pd( H , K ) ;  
+  sum = _mm_add_pd( sum , H ) ;
+
+  E =  _mm_mul_pd( a6 , *( C + 6 ) ) ;
+  F =  _mm_mul_pd( a7 , *( C + 7 ) ) ;
+  G =  _mm_mul_pd( a8 , *( C + 8 ) ) ;
+  E = _mm_add_pd( E , F ) ;
+  E = _mm_add_pd( E , G ) ;
+  sum = _mm_add_pd( sum , E ) ;
   
   _mm_store_pd( (void*)&csum , sum ) ;
 #elif NC == 2
@@ -106,8 +144,6 @@ Re_trace_abc_dag_suNC( const GLU_complex a[ NCNC ] ,
   // multiply by 2
   _mm_store_pd( (void*)&csum , sum ) ;
 #endif
-  //printf( "%1.15f\n" , creal( csum ) + cimag( csum ) ) ;
-  //exit(1) ;
   return creal( csum ) + cimag( csum ) ;  
 }
 

@@ -38,50 +38,64 @@ void
 gram_reunit( GLU_complex *__restrict U )
 {
 #if NC == 3
-    __m128d *u = ( __m128d* )U ;
-  // orthogonalise the first row
-  register __m128d sum ;
-
-  // orthogonalise first row
-  sum = SSE2_FMA( *( u + 0 ) , *( u + 0 ) ,
-		  SSE2_FMA( *( u + 3 ) , *( u + 3 ) ,
-			    _mm_mul_pd( *( u + 6 ) , *( u + 6 ) ) ) ) ;
+  __m128d *u = ( __m128d* )U ;
+  const __m128d one = _mm_set_pd( 1. , 1. ) ;
   
-  sum = _mm_add_pd( sum , _mm_shuffle_pd( sum , sum , 1 ) ) ;
-  sum = _mm_div_pd( _mm_setr_pd( 1. , 1. ) , _mm_sqrt_pd( sum ) ) ; // has the norm
- 
-  *( u + 0 ) = _mm_mul_pd( *( u + 0 ) , sum ) ;
-  *( u + 3 ) = _mm_mul_pd( *( u + 3 ) , sum ) ;
-  *( u + 6 ) = _mm_mul_pd( *( u + 6 ) , sum ) ;
+  // orthogonalise the first row
+  register __m128d sum1 ;
+  register __m128d A = _mm_mul_pd( *(u+0) , *(u+0) ) ;
+  register __m128d B = _mm_mul_pd( *(u+3) , *(u+3) ) ;
+  register __m128d C = _mm_mul_pd( *(u+6) , *(u+6) ) ;
+  sum1 = _mm_add_pd( A , B ) ;
+  sum1 = _mm_add_pd( sum1 , C ) ;
+  sum1 = _mm_add_pd( sum1 , _mm_shuffle_pd( sum1 , sum1 , 1 ) ) ;
+  sum1 = _mm_div_pd( _mm_setr_pd( 1. , 1. ) , _mm_sqrt_pd( sum1 ) ) ; 
+  *( u + 0 ) = _mm_mul_pd( *( u + 0 ) , sum1 ) ;
+  *( u + 3 ) = _mm_mul_pd( *( u + 3 ) , sum1 ) ;
+  *( u + 6 ) = _mm_mul_pd( *( u + 6 ) , sum1 ) ;
 
   // gramschmidt second with respect to first
   // u = u - vw / ww
-  sum = _mm_add_pd( SSE2_MUL_CONJ( *( u + 1 ) , *( u + 0 ) ) ,
-		    _mm_add_pd( SSE2_MUL_CONJ( *( u + 4 ) , *( u + 3 ) ) ,
-				SSE2_MUL_CONJ( *( u + 7 ) , *( u + 6 ) ) ) ) ;
-  *( u + 1 ) = _mm_sub_pd( *( u + 1 ) , SSE2_MUL( sum , *( u + 0 ) ) ) ;
-  *( u + 4 ) = _mm_sub_pd( *( u + 4 ) , SSE2_MUL( sum , *( u + 3 ) ) ) ;
-  *( u + 7 ) = _mm_sub_pd( *( u + 7 ) , SSE2_MUL( sum , *( u + 6 ) ) ) ;
+  A = SSE2_MUL_CONJ( *( u + 1 ) , *( u + 0 ) ) ;
+  B = SSE2_MUL_CONJ( *( u + 4 ) , *( u + 3 ) ) ;
+  C = SSE2_MUL_CONJ( *( u + 7 ) , *( u + 6 ) ) ;
+  sum1 = _mm_add_pd( A , B ) ;
+  sum1 = _mm_add_pd( sum1 , C ) ;
+
+  A = SSE2_MUL( sum1 , *( u + 0 ) ) ;
+  B = SSE2_MUL( sum1 , *( u + 3 ) ) ;
+  C = SSE2_MUL( sum1 , *( u + 6 ) ) ;
+  *( u + 1 ) = _mm_sub_pd( *( u + 1 ) , A ) ;
+  *( u + 4 ) = _mm_sub_pd( *( u + 4 ) , B ) ;
+  *( u + 7 ) = _mm_sub_pd( *( u + 7 ) , C ) ;
 
   // normalise
-  sum = SSE2_FMA( *( u + 1 ) , *( u + 1 ) ,
-		  SSE2_FMA( *( u + 4 ) , *( u + 4 ) ,
-			    _mm_mul_pd( *( u + 7 ) , *( u + 7 ) ) ) ) ;
-  
-  sum = _mm_add_pd( sum , _mm_shuffle_pd( sum , sum , 1 ) ) ;
-  sum = _mm_div_pd( _mm_setr_pd( 1. , 1. ) , _mm_sqrt_pd( sum ) ) ; // has the norm
+  register __m128d D = _mm_mul_pd( *(u+1) , *(u+1) ) ;
+  register __m128d E = _mm_mul_pd( *(u+4) , *(u+4) ) ;
+  register __m128d F = _mm_mul_pd( *(u+7) , *(u+7) ) ;
+  C = _mm_add_pd( D , E ) ;
+  B = _mm_add_pd( C , F ) ;
+  A = _mm_shuffle_pd( B , B , 1 ) ;
+  sum1 = _mm_add_pd( B , A ) ;
+  sum1 = _mm_div_pd( one , _mm_sqrt_pd( sum1 ) ) ;
 
-  *( u + 1 ) = _mm_mul_pd( *( u + 1 ) , sum ) ;
-  *( u + 4 ) = _mm_mul_pd( *( u + 4 ) , sum ) ;
-  *( u + 7 ) = _mm_mul_pd( *( u + 7 ) , sum ) ;
+  *( u + 1 ) = _mm_mul_pd( *( u + 1 ) , sum1 ) ;
+  *( u + 4 ) = _mm_mul_pd( *( u + 4 ) , sum1 ) ;
+  *( u + 7 ) = _mm_mul_pd( *( u + 7 ) , sum1 ) ;
 
   // and complete using the minors
-  *( u + 2 ) = SSE2_CONJ( _mm_sub_pd( SSE2_MUL( *( u + 3 ) , *( u + 7 ) ) ,
-				      SSE2_MUL( *( u + 4 ) , *( u + 6 ) ) ) ) ;
-  *( u + 5 ) = SSE2_CONJ( _mm_sub_pd( SSE2_MUL( *( u + 1 ) , *( u + 6 ) ) ,
-				      SSE2_MUL( *( u + 0 ) , *( u + 7 ) ) ) ) ;
-  *( u + 8 ) = SSE2_CONJ( _mm_sub_pd( SSE2_MUL( *( u + 0 ) , *( u + 4 ) ) ,
-				      SSE2_MUL( *( u + 1 ) , *( u + 3 ) ) ) ) ;
+  F = SSE2_MUL( *( u + 1 ) , *( u + 3 ) ) ;
+  C = SSE2_MUL( *( u + 1 ) , *( u + 6 ) ) ;
+  E = SSE2_MUL( *( u + 0 ) , *( u + 4 ) ) ;
+  B = SSE2_MUL( *( u + 4 ) , *( u + 6 ) ) ;
+  A = SSE2_MUL( *( u + 3 ) , *( u + 7 ) ) ;
+  D = SSE2_MUL( *( u + 0 ) , *( u + 7 ) ) ;
+  A = _mm_sub_pd( A , B ) ;
+  C = _mm_sub_pd( C , D ) ;
+  E = _mm_sub_pd( E , F ) ;
+  *( u + 2 ) = SSE2_CONJ( A ) ;
+  *( u + 5 ) = SSE2_CONJ( C ) ;
+  *( u + 8 ) = SSE2_CONJ( E ) ;
 #elif NC == 2
     __m128d *u = ( __m128d* )U ;
 
