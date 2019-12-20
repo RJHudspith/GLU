@@ -107,6 +107,13 @@ check_sums( const double plaq ,
       return GLU_FAILURE ;
     }
     break ;
+  case LIME_HEADER :
+  case RANDOM_CONFIG :
+  case UNIT_GAUGE :
+  case INSTANTON :
+    break ;
+  case UNSUPPORTED :
+    return GLU_FAILURE ;
   }
   fprintf( stdout , "[IO] Calculated Trace :: %1.15f  || Plaq :: %1.15f \n" , 
 	   tr , plaq ) ; 
