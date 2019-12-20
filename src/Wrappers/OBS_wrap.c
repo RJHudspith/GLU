@@ -208,6 +208,7 @@ gauge( const struct site *__restrict lat )
   fprintf( stdout , "\n") ;
 
   // gauge invariance checks and what have you
+#ifdef NO_LINK_CHECK
   size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     // compute correct denominator
@@ -223,6 +224,7 @@ gauge( const struct site *__restrict lat )
 	    cabs( R ) * DENOM ) ;
   }
   check_links( lat ) ;
+#endif
 
   // check the gauge fixing accuracy for the LINEAR and LOG definition
   gf_check( lat ) ;

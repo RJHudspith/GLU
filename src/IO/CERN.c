@@ -95,9 +95,7 @@ read_CLS_field( struct site *__restrict lat ,
 	  }
 	  
 	}}}}
-  
-  latt_reunitU( lat ) ;
-  
+    
   *chksum = k ;
   free( uind ) ;
   return GLU_SUCCESS ; 

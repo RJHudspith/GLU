@@ -37,18 +37,22 @@ check_sums( const double plaq ,
 	    const uint32_t chksum ,
 	    const struct head_data HEAD_DATA )
 {
-  // these headers I use the same check, the %29 one
-  if( Latt.head == MILC_HEADER || Latt.head == ILDG_SCIDAC_HEADER || 
-      Latt.head == SCIDAC_HEADER ) {
+  double TTOL = 0.0 ;
+  int error = 0 ;
+  enum{ DISASTER = 3 } ;
+  
+  switch( Latt.head ) {
+  case MILC_HEADER :
+  case ILDG_SCIDAC_HEADER :
+  case SCIDAC_HEADER :
     // do a check only on the sum29
     if( chksum != HEAD_DATA.checksum )  {
       fprintf( stderr , "\n[IO] Unequal checksums [Calc] %x [Read] %x \n\n" , 
 	       chksum , HEAD_DATA.checksum ) ; 
       return GLU_FAILURE ;
     }
-  } else if( Latt.head == ILDG_BQCD_HEADER ) {
-    // BQCD provides a CRC and a plaquette
-    double TTOL = 0.0 ;
+    break ;
+  case ILDG_BQCD_HEADER :
     if( HEAD_DATA.precision == FLOAT_PREC ) {
       TTOL = 1E-6 ;
     } else {
@@ -65,18 +69,19 @@ check_sums( const double plaq ,
 	       chksum , HEAD_DATA.checksum ) ; 
       return GLU_FAILURE ;
     }
-  } else if( Latt.head == HIREP_HEADER ) {
+    break ;
+  case HIREP_HEADER :
+  case CERN_HEADER :
     // only check available is the plaquette
     if( fabs( plaq - HEAD_DATA.plaquette ) > 10*PREC_TOL ) {
-      fprintf( stderr , "[IO] HIREP header Plaquette Mismatch %e vs %e "
+      fprintf( stderr , "[IO] Config Plaquette Mismatch %e vs %e "
 	       " < diff > %e ... Leaving \n" , plaq , HEAD_DATA.plaquette , 
 	       fabs( plaq - HEAD_DATA.plaquette ) ) ;
       return GLU_FAILURE ;
     }
-  } else if( Latt.head == NERSC_HEADER ) {
-    enum{ DISASTER = 3 } ;
+    break ;
+  case NERSC_HEADER :
     // it is disastrous if all three checks fail ...
-    int error = 0 ; 
     if( chksum != HEAD_DATA.checksum )  {
       fprintf( stderr , "\n[IO] Unequal checksums Calc %x || Read %x \n\n" , 
 	       chksum , HEAD_DATA.checksum ) ; 
@@ -101,7 +106,8 @@ check_sums( const double plaq ,
 	       "this is a problem .. Leaving \n") ; 
       return GLU_FAILURE ;
     }
-  } 
+    break ;
+  }
   fprintf( stdout , "[IO] Calculated Trace :: %1.15f  || Plaq :: %1.15f \n" , 
 	   tr , plaq ) ; 
   return GLU_SUCCESS ; // may only be partially successful but I am optimistic

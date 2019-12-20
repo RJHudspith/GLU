@@ -124,6 +124,9 @@
    */
 #undef NOT_CONDOR_MODE
 
+/* No link unitary check */
+#undef NO_LINK_CHECK
+
 /* OpenMP-parallel FFT routines. */
 #undef OMP_FFTW
 

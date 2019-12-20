@@ -769,6 +769,7 @@ with_WFLOW_TIME_STOP
 with_WFLOW_MEAS_START
 enable_GLU_GFIX_SD
 enable_OVERRELAXED_GF
+enable_NO_LINK_CHECK
 with_MKL
 '
       ac_precious_vars='build_alias
@@ -1423,6 +1424,7 @@ Optional Features:
  --enable-WFLOW_TIME_ONLY
  --enable-GLU_GFIX_SD
  --enable-OVERRELAXED_GF
+ --enable-NO_LINK_CHECK
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -5818,6 +5820,22 @@ $as_echo "#define OVERRELAXED_GF /**/" >>confdefs.h
 
 	     ;;
 	*) as_fn_error $? "bad value ${enableval} for --enable-OVERRELAXED_GF" "$LINENO" 5 ;;
+	esac
+
+fi
+
+
+## do not check links
+# Check whether --enable-NO_LINK_CHECK was given.
+if test "${enable_NO_LINK_CHECK+set}" = set; then :
+  enableval=$enable_NO_LINK_CHECK; case "${enableval}" in
+	yes) { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING!! not checking link unitarity" >&5
+$as_echo "$as_me: WARNING!! not checking link unitarity" >&6;}
+
+$as_echo "#define NO_LINK_CHECK /**/" >>confdefs.h
+
+	     ;;
+	*) as_fn_error $? "bad value ${enableval} for --enable-NO_LINK_CHECK" "$LINENO" 5 ;;
 	esac
 
 fi
