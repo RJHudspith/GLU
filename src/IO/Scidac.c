@@ -226,10 +226,12 @@ write_header_SCIDAC( FILE *__restrict out )
   append_char( &str , tmp ) ;
   
   int mu ;
-  for( mu = 0 ; mu < ND ; mu++ ) {
+  for( mu = 0 ; mu < ND-1 ; mu++ ) {
     sprintf( tmp , "%zu " , Latt.dims[mu] ) ;
     append_char( &str , tmp ) ;
   }
+  sprintf( tmp , "%zu" , Latt.dims[mu] ) ;
+  append_char( &str , tmp ) ;
   append_char( &str , "</dims><volfmt>0</volfmt></scidacFile>" ) ;
 
   // some dummy file
@@ -308,11 +310,14 @@ write_header_ILDG( FILE *__restrict out )
 	   "<spacetime>%d</spacetime><dims>" , ND ) ;
   append_char( &str , tmp ) ;
   size_t mu ;
-  for( mu = 0 ; mu < ND ; mu++ ) {
+  for( mu = 0 ; mu < ND-1 ; mu++ ) {
     sprintf( tmp , "%zu " , Latt.dims[mu] ) ;
     append_char( &str , tmp ) ;
   }
-  append_char( &str , "%s</dims><volfmt>0</volfmt></ScidacFile>" ) ;
+  sprintf( tmp , "%zu" , Latt.dims[mu] ) ;
+  append_char( &str , tmp ) ;
+
+  append_char( &str , "</dims><volfmt>0</volfmt></ScidacFile>" ) ;
   // some dummy file
   write_SCIDAC_binary( out , str , strlen( str ) , "scidac-private-file-xml" ) ;
   free( str ) ;
