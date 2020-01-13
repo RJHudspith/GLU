@@ -237,8 +237,8 @@ write_header_SCIDAC( FILE *__restrict out )
   // some dummy file
   write_SCIDAC_binary( out , str , strlen( str ) , "scidac-private-file-xml" ) ;
   free( str ) ;
-  write_SCIDAC_binary( out , "Dummy user file xml" ,
-		       strlen( "Dummy user file xml" ) ,
+  write_SCIDAC_binary( out , "<title>GLU SCIDAC archival gauge configuration</title>" ,
+		       strlen( "<title>GLU SCIDAC archival gauge configuration</title>" ) ,
 		       "scidac-file-xml" ) ;
   
   // gauge file informations
@@ -266,8 +266,8 @@ write_header_SCIDAC( FILE *__restrict out )
   free( gstr ) ;
 
   // dummy again
-  write_SCIDAC_binary( out , "Dummy user record XML for lattice fields" ,
-		       strlen( "Dummy user record XML for lattice fields" ) ,
+  write_SCIDAC_binary( out , "<info>GLU library configuration file</info>" ,
+		       strlen( "<info>GLU library configuration file</info>" ) ,
 		       "scidac-record-xml" ) ;
   
   // and then leave space for the gauge field
