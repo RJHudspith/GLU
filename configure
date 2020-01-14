@@ -1424,7 +1424,7 @@ Optional Features:
  --enable-WFLOW_TIME_ONLY
  --enable-GLU_GFIX_SD
  --enable-OVERRELAXED_GF
- --enable-NO_LINK_CHECK
+--enable-NO_LINK_CHECK
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]

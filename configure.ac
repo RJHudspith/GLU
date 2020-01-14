@@ -614,7 +614,7 @@ AC_ARG_ENABLE([OVERRELAXED_GF],
 
 ## do not check links
 AC_ARG_ENABLE([NO_LINK_CHECK],
-	[ --enable-NO_LINK_CHECK ],
+	[--enable-NO_LINK_CHECK],
 	[case "${enableval}" in
 	yes) AC_MSG_NOTICE([WARNING!! not checking link unitarity])	
 	     AC_DEFINE([NO_LINK_CHECK],[],[No link unitary check])
