@@ -151,7 +151,7 @@ parse_SCIDAC_hdr( FILE *infile ,
 static int
 write_SCIDAC_binary( FILE *__restrict out ,
 		     char *record ,
-		     const int record_length ,
+		     const size_t record_length ,
 		     const char *banf )
 {
   // padding ...
@@ -179,14 +179,14 @@ write_SCIDAC_binary( FILE *__restrict out ,
     header.uchr[ ref + chr ] = banf[ chr ] ;
   }
   // and write out the record
-  if( fwrite( (void*)header.int64 , sizeof( int64_t ) , MAX_HDR64 , out ) 
+  if( fwrite( (void*)header.int64 , sizeof( uint64_t ) , MAX_HDR64 , out ) 
       != MAX_HDR64 ) {
     fprintf( stderr , "[IO] SCIDAC header writing failure ... Leaving\n" ) ;
     return GLU_FAILURE ;
   }
   fprintf( out , "%s" , record ) ;
   // write out some padding ...
-  const int padding = lime_padding( (size_t)record_length ) ;
+  const int padding = lime_padding( record_length ) ;
   fwrite( padbuf , sizeof( unsigned char ) , padding , out ) ;
   return GLU_SUCCESS ;
 }
@@ -390,7 +390,7 @@ write_header_ILDG( FILE *__restrict out )
 	   
   // and then leave space for the gauge field
   char *nada = "" ; 
-  write_SCIDAC_binary( out , nada , sizeof( GLU_real ) * LVOLUME * ND * NCNC * 2 , 
+  write_SCIDAC_binary( out , nada , sizeof( GLU_real )*LVOLUME*ND*NCNC*2 , 
 		       "ildg-binary-data" ) ; // the 2 is for complex
   return ;
 }
