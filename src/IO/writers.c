@@ -173,13 +173,16 @@ compute_checksum( uint32_t *nersc_cksum ,
   size_t i ;
   uint32_t k = 0 , sum29 = 0 , sum31 = 0 , CRCsum29 = 0 , CRCsum31 = 0 ;
 
-  #pragma omp parallel for private(i) reduction(+:k) reduction(^:sum29) reduction(^:sum31) reduction(^:CRCsum29) reduction(^:CRCsum31) 
+#pragma omp parallel for private(i) reduction(+:k) reduction(^:sum29) reduction(^:sum31) reduction(^:CRCsum29) reduction(^:CRCsum31)
   for( i = 0 ; i < LVOLUME ; i++ ) { 
 
     // usual allocations
-    GLU_real site[ ND * LOOP_VAR ] ;
-    uint32_t rank29 = ( i * ND * LOOP_VAR ) % 29 ;
-    uint32_t rank31 = ( i * ND * LOOP_VAR ) % 31 ;
+    GLU_real site[ ND*LOOP_VAR ] ;
+    const size_t tmp = ( i*ND*LOOP_VAR ) ;
+    register size_t r29 = tmp%29 ;
+    register size_t r31 = tmp%31 ;
+    uint32_t rank29 = (uint32_t)(r29) ;
+    uint32_t rank31 = (uint32_t)(r31) ;
     register uint32_t k_loc = 0 ;
     register uint32_t sum29_loc = 0 , sum31_loc = 0 ;
     uint32_t work ;
@@ -203,12 +206,13 @@ compute_checksum( uint32_t *nersc_cksum ,
     }
     // and compute the CRC for the outputted data
     swap_for_output( site , ND * LOOP_VAR ) ;
-    const uint32_t r29 = i % 29 ;
-    const uint32_t r31 = i % 31 ;
+    r29 = i%29 ; r31 = i%31 ;
+    const uint32_t u29 = (uint32_t)(r29) ;
+    const uint32_t u31 = (uint32_t)(r31) ;
     work = (uint32_t)crc32( 0 , (unsigned char*)site , 
 			    ND * LOOP_VAR * sizeof( GLU_real ) ) ;
-    CRCsum29 = CRCsum29 ^ (uint32_t) ( work << r29 | work >> ( 32 - r29 ) ) ;
-    CRCsum31 = CRCsum31 ^ (uint32_t) ( work << r31 | work >> ( 32 - r31 ) ) ;
+    CRCsum29 = CRCsum29 ^ (uint32_t) ( work << u29 | work >> ( 32 - u29 ) ) ;
+    CRCsum31 = CRCsum31 ^ (uint32_t) ( work << u31 | work >> ( 32 - u31 ) ) ;
 
     // and the local values reductions
     // nersc
