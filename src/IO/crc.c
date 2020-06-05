@@ -71,19 +71,10 @@ Comments) 1950 to 1952 in the files ftp://ds.internic.net/rfc/rfc1950.txt
   Comments) 1950 to 1952 in the files ftp://ds.internic.net/rfc/rfc1950.txt
   (zlib format), rfc1951.txt (deflate format) and rfc1952.txt (gzip format).
 */
-
 #include "Mainfile.h"
 
-typedef uint32_t uLong;            /* At least 32 bits */
-typedef unsigned char Byte;
-typedef Byte Bytef;
-typedef uLong uLongf;
-#define Z_NULL  0  /* for initializing zalloc, zfree, opaque */
-
-#define local static
-
 /// Table of CRC-32's of all single-byte values (made by make_crc_table)
-local uLongf crc_table[256] = {
+static const uint32_t crc_table[256] = {
   0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
   0x706af48fL, 0xe963a535L, 0x9e6495a3L, 0x0edb8832L, 0x79dcb8a4L,
   0xe0d5e91eL, 0x97d2d988L, 0x09b64c2bL, 0x7eb17cbdL, 0xe7b82d07L,
@@ -135,8 +126,7 @@ local uLongf crc_table[256] = {
   0xbdbdf21cL, 0xcabac28aL, 0x53b39330L, 0x24b4a3a6L, 0xbad03605L,
   0xcdd70693L, 0x54de5729L, 0x23d967bfL, 0xb3667a2eL, 0xc4614ab8L,
   0x5d681b02L, 0x2a6f2b94L, 0xb40bbe37L, 0xc30c8ea1L, 0x5a05df1bL,
-  0x2d02ef8dL
-};
+  0x2d02ef8dL};
 
 //
 #define DO1(buf) crc = crc_table[((int)crc ^ (*buf++)) & 0xff] ^ (crc >> 8);
@@ -146,23 +136,20 @@ local uLongf crc_table[256] = {
 
 //
 uint32_t
-crc32( uLong crc , const unsigned char *buf , size_t len )
+crc32( uint32_t crc ,
+       const unsigned char *buf ,
+       size_t len )
 {
-    if (buf == Z_NULL) return 0L;
-#ifdef DYNAMIC_CRC_TABLE
-    if (crc_table_empty)
-      make_crc_table();
-#endif
-    crc = crc ^ 0xffffffffL;
-    while (len >= 8)
-    {
-      DO8(buf);
-      len -= 8;
-    }
-    if (len) do {
+  if (buf == NULL ) return 0L;
+  crc = crc ^ 0xffffffffL;
+  while (len >= 8) {
+    DO8(buf);
+    len -= 8;
+  }
+  if (len) do {
       DO1(buf);
     } while (--len);
-    return crc ^ 0xffffffffL;
+  return crc ^ 0xffffffffL;
 }
 
 ////////////////////////////////////////////////////////////////////////////

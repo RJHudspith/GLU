@@ -770,6 +770,7 @@ with_WFLOW_MEAS_START
 enable_GLU_GFIX_SD
 enable_OVERRELAXED_GF
 enable_NO_LINK_CHECK
+with_NSTOCH
 with_MKL
 '
       ac_precious_vars='build_alias
@@ -1458,6 +1459,7 @@ Optional Packages:
   --with-WFLOW_MEAS_START=
                           Specify at what time you want to start measuring
                           flow observables
+  --with-NSTOCH=          number of randomly-drawn subgroups per HB-OR, NSTOCH
   --with-MKL              Link to intel MKL library
 
 Some influential environment variables:
@@ -5837,6 +5839,27 @@ $as_echo "#define NO_LINK_CHECK /**/" >>confdefs.h
 	     ;;
 	*) as_fn_error $? "bad value ${enableval} for --enable-NO_LINK_CHECK" "$LINENO" 5 ;;
 	esac
+
+fi
+
+
+## Compile for a set NC, default is NC=3
+
+# Check whether --with-NSTOCH was given.
+if test "${with_NSTOCH+set}" = set; then :
+  withval=$with_NSTOCH;
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: User specified NSTOCH = (${with_NSTOCH})" >&5
+$as_echo "$as_me: User specified NSTOCH = (${with_NSTOCH})" >&6;}
+
+cat >>confdefs.h <<_ACEOF
+#define NSTOCH ${with_NSTOCH}
+_ACEOF
+
+
+else
+
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: User unspecified NSTOCH, default to updating all subgroups" >&5
+$as_echo "$as_me: User unspecified NSTOCH, default to updating all subgroups" >&6;}
 
 fi
 

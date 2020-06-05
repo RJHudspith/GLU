@@ -712,4 +712,19 @@ Defines for the gauge fixing routines ( Landau/{}.c )
   #define U1_DFT
 #endif
 
+/**********************************
+
+       Heatbath stuff
+
+***********************************/
+
+/**
+   @def NSTOCH
+   @brief if we didn't specify the number of stochastically-drawn su(2) subgroups in the configure then we loop over all NSU2SUBGROUPS, or if we set it to something dumb
+ **/
+#if !(defined NSTOCH) || (NSTOCH>NSU2SUBGROUPS) || (NSTOCH<1)
+  #undef NSTOCH
+  #define NSTOCH NSU2SUBGROUPS
+#endif
+
 #endif

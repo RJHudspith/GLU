@@ -127,6 +127,9 @@
 /* No link unitary check */
 #undef NO_LINK_CHECK
 
+/* NSTOCH updates */
+#undef NSTOCH
+
 /* OpenMP-parallel FFT routines. */
 #undef OMP_FFTW
 

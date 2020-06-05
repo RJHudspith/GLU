@@ -211,8 +211,6 @@ gauge( const struct site *__restrict lat )
 
   // gauge invariance checks and what have you
 #if !(defined NO_LINK_CHECK)
-
-  printf( "WHAT!!!!!!!!!!!!!!!\n" ) ;
   size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     // compute correct denominator

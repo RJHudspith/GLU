@@ -37,6 +37,7 @@
 ##                         initial transformations, default is 20
 ## --enable-GLU_GFIX_SD :: turn on the steepest descent codes (default is the CG)
 ## --enable-OVERRELAXED_GF :: switch to the overrelaxed codes for gauge fixing
+## --with-NSTOCH= :: number of randomly-drawn su2 subgroups per heatbath update
 
 AC_INIT([GLU], [1.1], [renwick.james.hudspith@gmail.com])
 AM_INIT_AUTOMAKE([-Wall subdir-objects])
@@ -622,6 +623,17 @@ AC_ARG_ENABLE([NO_LINK_CHECK],
 	*) AC_MSG_ERROR([bad value ${enableval} for --enable-NO_LINK_CHECK]) ;;
 	esac
 	],[])
+
+## Compile for a set NC, default is NC=3
+AC_ARG_WITH([NSTOCH],
+	AC_HELP_STRING([--with-NSTOCH=],
+		       [number of randomly-drawn subgroups per HB-OR, NSTOCH]),
+            [
+	    AC_MSG_NOTICE([User specified NSTOCH = (${with_NSTOCH})])
+	    AC_DEFINE_UNQUOTED([NSTOCH], [${with_NSTOCH}] , [NSTOCH updates] )	
+	    ],[
+	    AC_MSG_NOTICE([User unspecified NSTOCH, default to updating all subgroups])	
+	    ])
 
 ## Some compiler checks
 ## My code is littered with consts

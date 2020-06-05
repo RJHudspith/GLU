@@ -33,26 +33,16 @@
 // number of SOR steps
 //#define SOR
 
-// number of stochastic SU(2) updates
-//#define NSTOCH (NC)
-
 // microcanonical su(2) update
 void
 microcanonical( GLU_complex *s0 ,
 		GLU_complex *s1 )
 {
   // chroma's is better as it has one fewer rotation
-#ifdef CHROMA_RELAX
-  // compute z
   register const double z = ( creal(*s0)*creal(*s0) - cimag(*s0)*cimag(*s0) -
 			      creal(*s1)*creal(*s1) - cimag(*s1)*cimag(*s1) ) ;
   *s1 = -2. * creal( *s0 ) * ( *s1 ) ;
   *s0 = z - I * ( 2. * creal(*s0) * cimag(*s0) ) ;
-#else
-  // milc relax
-  *s0 =  creal( *s0 ) - I * cimag( *s0 ) ;
-  *s1 = -creal( *s1 ) - I * cimag( *s1 ) ;
-#endif
   return ;
 }
 
@@ -65,34 +55,20 @@ overrelax( GLU_complex U[ NCNC ] ,
   GLU_complex s0 GLUalign , s1 GLUalign ;
   double scale GLUalign ;
   size_t i ;
-#ifdef NSTOCH
   for( i = 0 ; i < NSTOCH ; i++ ) {
+    #if (NSTOCH != NSU2SUBGROUPS)
     const size_t stoch = (size_t)( par_rng_dbl( thread ) * NSU2SUBGROUPS ) ;
-    only_subgroup( &s0 , &s1 , &scale , U , staple , stoch ) ;
-    microcanonical( &s0 , &s1 ) ;
-    #ifdef CHROMA_RELAX
-    su2_rotate( U , s0 , s1 , stoch ) ;
     #else
-    su2_rotate( U , s0 , s1 , stoch ) ;  
-    su2_rotate( U , s0 , s1 , stoch ) ;
+    const size_t stoch = i ;
     #endif
-  }
-#else
-  for( i = 0 ; i < NSU2SUBGROUPS ; i++ ) {
-    #ifdef SOR
     // stochastic-OR?
+    #ifdef SOR
     if( par_rng_dbl( thread ) < 0.5 ) continue ;
     #endif
-    only_subgroup( &s0 , &s1 , &scale , U , staple , i ) ;
+    only_subgroup( &s0 , &s1 , &scale , U , staple , stoch ) ;
     microcanonical( &s0 , &s1 ) ;
-    #ifdef CHROMA_RELAX
-    su2_rotate( U , s0 , s1 , i ) ;
-    #else
-    su2_rotate( U , s0 , s1 , i ) ;  
-    su2_rotate( U , s0 , s1 , i ) ;
-    #endif
+    su2_rotate( U , s0 , s1 , stoch ) ;
   }
-#endif
   return ;
 }
 
@@ -122,7 +98,7 @@ OR_lattice( struct site *lat ,
       // loop draughtboard coloring
       const size_t mu = cmu/db.Ncolors ;
       const size_t c  = cmu%db.Ncolors ;
-#pragma omp for private(i)
+      #pragma omp for private(i)
       for( i = 0 ; i < db.Nsquare[c] ; i++ ) {
 	const size_t it = db.square[c][i] ;
 	GLU_complex stap[ NCNC ] GLUalign ;

@@ -20,6 +20,8 @@
    @file expMat.c
    @brief matrix exponentiation routines
  */
+#define _GNU_SOURCE // sincos
+
 #include "Mainfile.h"
 
 #include "effs.h"     // compute the f-constants of Cayley-Hamilton
@@ -190,18 +192,13 @@ exponentiate( GLU_complex U[ NCNC ] ,
   // will write this out as it can be done cheaper
   // 1/3 * tr AAA is just det( A ) 
   // Below is a quickened determinant
-  double c0 =  REQ0  * ( REQ4 * REQ8				\
-			 - REQ5  * REQ5  - IMQ5  * IMQ5  ) ;
+  double c0 =  REQ0  * ( REQ4*REQ8 - REQ5*REQ5 - IMQ5*IMQ5  ) ;
   // from the middle
-  c0 -= REQ1  * ( REQ1 * REQ8 		\
-		  - REQ5  * REQ2  - IMQ5  * IMQ2  ) ;
-  c0 += IMQ1  * ( - IMQ1 * REQ8		\
-		  + REQ5  * IMQ2  - IMQ5  * REQ2 ) ;
+  c0 -= REQ1  * ( REQ1*REQ8 - REQ5*REQ2  - IMQ5*IMQ2  ) ;
+  c0 += IMQ1  * ( -IMQ1*REQ8 + REQ5*IMQ2  - IMQ5*REQ2 ) ;
   // final column
-  c0 += REQ2  * ( - REQ4  * REQ2			\
-		  + REQ1 * REQ5  - IMQ1 * IMQ5  ) ;
-  c0 -= IMQ2  * ( REQ4  * IMQ2				\
-		  - REQ1 * IMQ5  - IMQ1 * REQ5 ) ;
+  c0 += REQ2  * ( -REQ4  * REQ2 + REQ1 * REQ5  - IMQ1 * IMQ5  ) ;
+  c0 -= IMQ2  * ( REQ4  * IMQ2	- REQ1 * IMQ5  - IMQ1 * REQ5 ) ;
 
   // so if c0 is negative we flip the sign ...
   const double flag = c0 < 0 ? -1.0 : 1.0 ;
@@ -210,26 +207,30 @@ exponentiate( GLU_complex U[ NCNC ] ,
   // compute the constants c0_max and the root of c1 ...
   const double rc1 = sqrt( c1 ) ;
   const double c0_max = 2. * rc1 * c1 ; 
-  const double theta = acos( c0 / c0_max ) / 3. ; 
-  const double ctheta = cos( theta ) ;
-  register const double u = rc1 * ctheta ; 
-  register const double w = r3 * rc1 * sin( theta ) ;
-  const double uu = u * u  ,  ww = w * w  ,  cw = cos( w ) ; 
+  const double theta = acos( c0 / c0_max ) / 3. ;
+
+  // use sincos as it is cheaper
+  double s , c ;
+  sincos( theta , &s , &c ) ;
+ 
+  register const double u = rc1 * c ; 
+  register const double w = r3 * rc1 * s ;
+  const double uu = u * u  ,  ww = w * w  ;
   const double denom = 1.0 / ( 9. * uu - ww ) ;
-  const double cu = cos( u ) ;
-  const double su = sin( u ) ;
+
+  sincos( u , &s , &c ) ;
   // and I thought double angle formulas were useless!
-  //double complex one , two ;
-  const double complex one = cu - I * su ;
+  const double complex one = c - I * s ;
   double complex two = conj( one ) ; //cu + I * su ;
   two *= two ;
  
   // taylor expand if getting toward the numerically unstable end
-  const double E0 = fabs( w ) < SINTOL ? ( 1 - ww / 6. * ( 1 - ww / 20. * ( 1 - ww / 42. ) ) ) : sin( w ) / w ; 
+  sincos( w , &s , &c ) ; 
+  const double E0 = fabs( w ) < SINTOL ? ( 1 - ww / 6. * ( 1 - ww / 20. * ( 1 - ww / 42. ) ) ) : s / w ; 
 
-  double complex f0 = ( uu - ww ) * two + one * ( 8. * uu * cw + 2. * I * u * ( 3. * uu + ww ) * E0 ) ; 
-  double complex f1 = 2. * u * two - one * ( 2. * u * cw - I * ( 3. * uu - ww ) * E0 ) ; 
-  double complex f2 = two - one * ( cw + 3. * I * u * E0 ) ; 
+  double complex f0 = ( uu - ww ) * two + one * ( 8. * uu * c + 2. * I * u * ( 3. * uu + ww ) * E0 ) ; 
+  double complex f1 = 2. * u * two - one * ( 2. * u * c - I * ( 3. * uu - ww ) * E0 ) ; 
+  double complex f2 = two - one * ( c + 3. * I * u * E0 ) ; 
 
   f0 = denom * ( creal( f0 ) + I * cimag( f0 ) * flag ) ;
   f1 = denom * ( flag * creal( f1 ) + I * cimag( f1 ) ) ;
@@ -382,7 +383,7 @@ exponentiate_short( GLU_complex U[ NCNC ] ,
   const double REQ5 = *( qq + 8 ) ;
   const double IMQ5 = *( qq + 9 ) ;
   const double REQ8 = -( REQ0 + REQ4 ) ;
-  const double c1 = ( REQ0 * -REQ8 + REQ4 * REQ4			\
+  const double c1 = ( - REQ0 * REQ8 + REQ4 * REQ4			\
 		      + REQ1 * REQ1 + IMQ1 * IMQ1			\
 		      + REQ2 * REQ2 + IMQ2 * IMQ2			\
 		      + REQ5 * REQ5 + IMQ5 * IMQ5 ) / 3. ;
@@ -423,27 +424,33 @@ exponentiate_short( GLU_complex U[ NCNC ] ,
   const double flag = c0 < 0 ? -1.0 : 1.0 ;
   c0 *= flag ;
 
-  // compute the constants c0_max and the root of c1 ...
+    // compute the constants c0_max and the root of c1 ...
   const double rc1 = sqrt( c1 ) ;
   const double c0_max = 2. * rc1 * c1 ; 
-  const double theta = acos( c0 / c0_max ) / 3. ; 
-  const double ctheta = cos( theta ) ;
-  register const double u = rc1 * ctheta ; 
-  register const double w = r3 * rc1 * sin( theta ) ; 
-  const double uu = u * u  ,  ww = w * w  ,  cw = cos( w ) ; 
+  const double theta = acos( c0 / c0_max ) / 3. ;
+
+  // use sincos as it is cheaper
+  double s , c ;
+  sincos( theta , &s , &c ) ;
+ 
+  register const double u = rc1 * c ; 
+  register const double w = r3 * rc1 * s ;
+  const double uu = u * u  ,  ww = w * w  ;
   const double denom = 1.0 / ( 9. * uu - ww ) ;
-  const double cu = cos( u ) ;
-  const double su = sin( u ) ;
-  const double complex one = cu - I * su ;
-  double complex two = conj( one ) ;
+
+  sincos( u , &s , &c ) ;
+  // and I thought double angle formulas were useless!
+  const double complex one = c - I * s ;
+  double complex two = conj( one ) ; //cu + I * su ;
   two *= two ;
-
+ 
   // taylor expand if getting toward the numerically unstable end
-  const double E0 = fabs( w ) < SINTOL ? ( 1 - ww / 6. * ( 1 - ww / 20. * ( 1 - ww / 42. ) ) ) : sin( w ) / w ; 
-
-  double complex f0 = ( uu - ww ) * two + one * ( 8 * uu * cw + 2 * I * u * ( 3 * uu + ww ) * E0 ) ; 
-  double complex f1 = 2. * u * two - one * ( 2. * u * cw - I * ( 3 * uu - ww ) * E0 ) ; 
-  double complex f2 = two - one * ( cw + 3 * I * u * E0 ) ; 
+  sincos( w , &s , &c ) ; 
+  const double E0 = fabs( w ) < SINTOL ? ( 1 - ww / 6. * ( 1 - ww / 20. * ( 1 - ww / 42. ) ) ) : s / w ; 
+  
+  double complex f0 = ( uu - ww ) * two + one * ( 8 * uu * c + 2 * I * u * ( 3 * uu + ww ) * E0 ) ; 
+  double complex f1 = 2. * u * two - one * ( 2. * u * c - I * ( 3 * uu - ww ) * E0 ) ; 
+  double complex f2 = two - one * ( c + 3 * I * u * E0 ) ; 
 
   f0 = ( creal( f0 ) + I * cimag( f0 ) * flag ) ;
   f1 = ( flag * creal( f1 ) + I * cimag( f1 ) ) ;

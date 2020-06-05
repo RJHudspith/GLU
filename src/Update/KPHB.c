@@ -147,6 +147,7 @@ hb_update( struct site *lat ,
   // give us some information
   fprintf( stdout , "[UPDATE] Performing %zu HB-OR iterations\n" , 
 	   HBINFO.iterations ) ;
+  fprintf( stdout , "[UPDATE] NSTOCH updates %d\n" , NSTOCH ) ;
   fprintf( stdout , "[UPDATE] Themalising for %zu iterations\n" , 
 	   HBINFO.therm ) ;
   fprintf( stdout , "[UPDATE] %zu over-relaxations per heatbath\n" ,
