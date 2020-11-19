@@ -319,8 +319,8 @@ asinh_log( GLU_complex *__restrict Q ,
 //   i.e. backwards, with the smallest terms added first to account for roundoff
 //   in the matrix power series.
 int
-brute_force_log( GLU_complex *__restrict Q , 
-		 const GLU_complex *__restrict U ,
+brute_force_log( GLU_complex *Q , 
+		 const GLU_complex *U ,
 		 const size_t NROOTS )
 {
   // check to see if we can do precomputations

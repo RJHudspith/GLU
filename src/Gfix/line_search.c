@@ -47,7 +47,9 @@ approx_minimum( const size_t nmeas ,
   
   const double Sol = (alphas[0]*(B+C)+alphas[1]*(A+C)+alphas[2]*(A+B))/(2*(A+B+C)) ;
 
-  if( isnan( Sol ) || isinf( Sol ) || Sol > alphas[2] || Sol < alphas[0] ) {
+  if( Sol > alphas[2] ) return alphas[2] ;
+  
+  if( isnan( Sol ) || isinf( Sol ) || Sol < alphas[0] ) {
     return 0.08 ;
   }
   

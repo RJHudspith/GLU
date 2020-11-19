@@ -46,7 +46,7 @@ asinh_log( GLU_complex *__restrict Q ,
 	   const GLU_complex *__restrict U ) ;
 
 /**
-   @fn int brute_force_log( GLU_complex *__restrict Q , const GLU_complex *__restrict U , const int NROOTS ) ;
+   @fn int brute_force_log( GLU_complex *Q , const GLU_complex *U , const size_t NROOTS ) ;
    @brief computes the logarithm of a matrix using accelerated Taylor series approximations
    @param Q :: the principal logarithm of Q
    @param U :: the matrix having its log taken
@@ -56,9 +56,9 @@ asinh_log( GLU_complex *__restrict Q ,
    @return #GLU_FAILURE or #GLU_SUCCESS
  */
 int
-brute_force_log( GLU_complex *__restrict Q , 
-		 const GLU_complex *__restrict U ,
-		 const int NROOTS ) ;
+brute_force_log( GLU_complex *Q , 
+		 const GLU_complex *U ,
+		 const size_t NROOTS ) ;
 
 /**
    @fn free_taylors( void )
