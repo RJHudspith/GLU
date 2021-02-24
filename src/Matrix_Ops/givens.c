@@ -38,9 +38,7 @@
    @brief precondition the routine by giving the reunitarised matrix as an initial guess
    This is seen to reduce the number of iterations and preserve gauge covariance in the APE and HYP smearing for large #NC
  */
-#ifndef OBC_HACK
-  #define GIVE_PRECOND
-#endif
+#define GIVE_PRECOND
 
 #ifdef GIVE_PRECOND
   #include "gramschmidt.h" 
@@ -398,12 +396,45 @@ rotation( GLU_complex U[ NCNC ] ,
 }
 #endif
 
+static inline GLU_bool
+link_is_zero( const GLU_complex U[ NCNC ] )
+{
+  register double res = 0.0 ;
+#if (NC == 3)
+  res += creal(U[0])*creal(U[0]) + cimag(U[0])*cimag(U[0]);
+  res += creal(U[1])*creal(U[1]) + cimag(U[1])*cimag(U[1]);
+  res += creal(U[2])*creal(U[2]) + cimag(U[2])*cimag(U[2]);
+  // middle
+  res += creal(U[3])*creal(U[3]) + cimag(U[3])*cimag(U[3]);
+  res += creal(U[4])*creal(U[4]) + cimag(U[4])*cimag(U[4]);
+  res += creal(U[5])*creal(U[5]) + cimag(U[5])*cimag(U[5]);
+  // final
+  res += creal(U[6])*creal(U[6]) + cimag(U[6])*cimag(U[6]);
+  res += creal(U[7])*creal(U[7]) + cimag(U[7])*cimag(U[7]);
+  res += creal(U[8])*creal(U[8]) + cimag(U[8])*cimag(U[8]);
+#else
+  for( int i = 0 ; i < NCNC ; i++ ) {
+    res += creal(U[i])*creal(U[i]) + cimag(U[i])*cimag(U[i]);
+  }
+#endif
+  if( res < PREC_TOL ) {
+    return GLU_TRUE ;
+  }
+  return GLU_FALSE ;
+}
+
 // Cabibbo-Marinari projections for trace maximisation
 void
 givens_reunit( GLU_complex U[ NCNC ] ) 
 {
   GLU_complex w[ NCNC ] GLUalign ;
   double trace_new , trace_old ;
+
+  #ifdef OBC_HACK
+  if( link_is_zero( U ) == GLU_TRUE ) {
+    return ;
+  }
+  #endif
 
   #ifdef GIVE_PRECOND
   // MILC precondition,
