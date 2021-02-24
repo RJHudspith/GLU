@@ -35,11 +35,11 @@
 //#define GLU_LOG_SPEED
 //#define GLU_PRINT_LOOPS
 
+#ifndef OBC_HACK
 // log types we are looking at
 typedef enum { EXACT_FAST , EXACT_SLOW ,
 	       EXACT_SLOWER , LINEAR } log_type ;
 
-#if !(defined NO_LINK_CHECK)
 // checks for any problems with non-SU( NC ) matrices
 static void
 check_links( const struct site *__restrict lat )
@@ -210,7 +210,7 @@ gauge( const struct site *__restrict lat )
   fprintf( stdout , "\n") ;
 
   // gauge invariance checks and what have you
-#if !(defined NO_LINK_CHECK)
+#if !(defined OBC_HACK)
   size_t mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     // compute correct denominator

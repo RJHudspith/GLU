@@ -515,7 +515,7 @@ steep_fix( GLU_complex **gauge ,
     tot_iters += loc_iters ;
 
     // get the general gauge fixing information
-    get_info( t , tr , tot_iters , control , accuracy ) ; 
+    get_info( t , tr , tot_iters , control , accuracy ) ;
 
     return tot_iters ;
 }
@@ -598,7 +598,7 @@ Coulomb_FA( struct site  *__restrict lat ,
 	G.g_up = ptr ;
       }
     }
-    
+
     // no need for a reunitarisation step as it has already been done
     // gauge transform the very final slice
     gtransform_slice_th( (const GLU_complex **)G.g , lat , 

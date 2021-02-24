@@ -46,7 +46,7 @@ output_fixing_info( struct site *lat ,
 {
   // reunitarise just to limit the damage from round-off
   latt_reunitU( lat ) ;
-
+  
   ////////// Print out the Gauge Fixing information /////////////
 
   printf( "[GF] Plaquette :: %1.15f \n[GF] Accuracy :: %1.4e\n" , 

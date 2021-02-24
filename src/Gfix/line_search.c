@@ -143,6 +143,7 @@ line_search_Coulomb( double *red ,
     // wayyy too often!
     set_gauge_matrix( A1 , in , PC1 , idx ) ;
     set_gauge_matrix( A2 , in , PC2 , idx ) ;
+    
     for( mu = 0 ; mu < ND-1 ; mu++ ) {
       fwd = lat[idx].neighbor[mu] ;
       bck = lat[idx].back[mu] ;
@@ -190,7 +191,7 @@ line_search_Coulomb( double *red ,
 
   const double Calcg[ LINE_NSTEPS ] = { 0.0 , PC1 , PC2 } ;
   const double min = approx_minimum( LINE_NSTEPS , Calcg , val ) ;
- 
+  
   exponentiate_gauge_CG( gauge , in , min ) ;
 
   return ;

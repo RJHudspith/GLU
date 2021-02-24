@@ -39,7 +39,6 @@ multab_suNC( GLU_complex a[ NCNC ] ,
   const __m128d *B = (const __m128d*)b ;
   const __m128d *C = (const __m128d*)c ;
 #if NC == 3
-  // top row
   //a[0] = b[0] * c[0] + b[1] * c[3] + b[2] * c[6] ; 
   *( A + 0 ) = _mm_add_pd( SSE2_MUL( *( B + 0 ) , *( C + 0 ) ) ,
 			   _mm_add_pd( SSE2_MUL( *( B + 1 ) , *( C + 3 ) ) ,
@@ -74,7 +73,7 @@ multab_suNC( GLU_complex a[ NCNC ] ,
 				      SSE2_MUL( *( A + 0 ) , *( A + 5 ) ) ) ) ;
   // a[8] = conj( a[0] * a[4] - a[1] * a[3] ) ; 
   *( A + 8 ) = SSE2_CONJ( _mm_sub_pd( SSE2_MUL( *( A + 0 ) , *( A + 4 ) ) ,
-				      SSE2_MUL( *( A + 1 ) , *( A + 3 ) ) ) ) ;
+				      SSE2_MUL( *( A + 1 ) , *( A + 3 ) ) ) ) ;  
 #elif NC == 2
   *( A + 0 ) = _mm_add_pd( SSE2_MUL( *( B + 0 ) , *( C + 0 ) ) ,
 			   SSE2_MUL( *( B + 1 ) , *( C + 2 ) ) ) ;

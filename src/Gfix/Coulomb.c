@@ -93,6 +93,7 @@ Coulomb( struct site *__restrict lat ,
 
 #endif
 
+  // turn this off and the code works with OBC!
   latt_reunitU( lat ) ;
 
   all_links( lat , &splink , &tlink ) ;

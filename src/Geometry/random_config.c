@@ -47,6 +47,9 @@ latt_reunitU( struct site *__restrict lat )
   for( i = 0 ; i < LVOLUME ; i++ ) {
     size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
+      #ifdef OBC_HACK
+      if( (i/(LCU) == Latt.dims[ND-1]-1) && (mu == ND-1) ) continue ;
+      #endif
       gram_reunit( lat[i].O[mu] ) ; 
     }
   }

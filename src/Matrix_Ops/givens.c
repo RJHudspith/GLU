@@ -38,7 +38,9 @@
    @brief precondition the routine by giving the reunitarised matrix as an initial guess
    This is seen to reduce the number of iterations and preserve gauge covariance in the APE and HYP smearing for large #NC
  */
-#define GIVE_PRECOND
+#ifndef OBC_HACK
+  #define GIVE_PRECOND
+#endif
 
 #ifdef GIVE_PRECOND
   #include "gramschmidt.h" 

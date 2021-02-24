@@ -36,6 +36,7 @@
 ## 		       	  functional) from specified number of random
 ##                         initial transformations, default is 20
 ## --enable-GLU_GFIX_SD :: turn on the steepest descent codes (default is the CG)
+## --enable-OBC_HACK :: make sure the code works for Open temporal boundaries
 ## --enable-OVERRELAXED_GF :: switch to the overrelaxed codes for gauge fixing
 ## --with-NSTOCH= :: number of randomly-drawn su2 subgroups per heatbath update
 
@@ -614,13 +615,13 @@ AC_ARG_ENABLE([OVERRELAXED_GF],
 	],[])
 
 ## do not check links
-AC_ARG_ENABLE([NO_LINK_CHECK],
-	[--enable-NO_LINK_CHECK],
+AC_ARG_ENABLE([OBC_HACK],
+	[--enable-OBC_HACK],
 	[case "${enableval}" in
-	yes) AC_MSG_NOTICE([WARNING!! not checking link unitarity])	
-	     AC_DEFINE([NO_LINK_CHECK],[],[No link unitary check])
+	yes) AC_MSG_NOTICE([WARNING!! specific code paths for open temporal boundaries])	
+	     AC_DEFINE([OBC_HACK],[],[OBC hacks enabled])
 	     ;;
-	*) AC_MSG_ERROR([bad value ${enableval} for --enable-NO_LINK_CHECK]) ;;
+	*) AC_MSG_ERROR([bad value ${enableval} for --enable-OBC_HACK]) ;;
 	esac
 	],[])
 
