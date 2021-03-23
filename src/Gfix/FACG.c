@@ -414,6 +414,10 @@ FASD( struct site *lat ,
 	iters = 123456789 ;
       }
     }
+#pragma omp master
+    {
+      iters += loc_iters ;
+    }
   }
 
  end :
