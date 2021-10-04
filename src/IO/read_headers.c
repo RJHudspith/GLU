@@ -379,6 +379,16 @@ read_header( FILE *infile ,
   case ILDG_SCIDAC_HEADER : // ILDG and SCIDAC are basically the same ...
   case ILDG_BQCD_HEADER : // ILDG and SCIDAC are basically the same ...
     return get_header_data_SCIDAC( infile , HEAD_DATA ) ; // in Scidac.c
+  case JLQCD_HEADER :
+    // type it out by hand
+    HEAD_DATA -> endianess   = B_ENDIAN ; //B_ENDIAN ;
+    HEAD_DATA -> config_type = OUTPUT_NCxNC ;
+    HEAD_DATA -> precision   = DOUBLE_PREC ;
+    HEAD_DATA -> plaquette   = 1.0 ;
+    HEAD_DATA -> trace       = 1.0 ;
+    HEAD_DATA -> checksum    = 0 ;
+    HEAD_DATA -> checksumb   = 0 ;
+    return GLU_SUCCESS ;
   case RANDOM_CONFIG :
   case UNIT_GAUGE :
   case INSTANTON :

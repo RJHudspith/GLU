@@ -111,6 +111,7 @@ check_sums( const double plaq ,
   case RANDOM_CONFIG :
   case UNIT_GAUGE :
   case INSTANTON :
+  case JLQCD_HEADER :
     break ;
   case UNSUPPORTED :
     return GLU_FAILURE ;
@@ -143,8 +144,10 @@ get_config_SUNC( FILE *__restrict CONFIG ,
   case ILDG_BQCD_HEADER : // basically all the same NERSC NCxNC
   case ILDG_SCIDAC_HEADER : // ILDG and SCIDAC
   case SCIDAC_HEADER : // Scidac's binary data is compliant
-  case MILC_HEADER : // MILC's binary data is the same
+  case MILC_HEADER :   // MILC's binary data is the same
   case NERSC_HEADER :
+  case JLQCD_HEADER :
+    fprintf( stdout , "In here -> get_config_SUNC\n" ) ;
     if( HEAD_DATA.config_type == OUTPUT_SMALL ||
 	HEAD_DATA.config_type == OUTPUT_GAUGE ||
 	HEAD_DATA.config_type == OUTPUT_NCxNC ) {

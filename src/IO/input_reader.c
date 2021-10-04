@@ -287,14 +287,22 @@ header_type( header_mode *HEADINFO )
       fprintf( stdout , "[IO] Using sequence number from input file :: %zu \n" ,
 	      Latt.flow ) ;
       *HEADINFO = ILDG_BQCD_HEADER ;
-    } else if( are_equal( INPUT[header_idx].VALUE , "RANDOM" ) ) {
-      fprintf( stdout , "[IO] Attempting to generate an SU(%d) "
-	       "RANDOM config .. " , NC ) ;
+    } else if( are_equal( INPUT[header_idx].VALUE , "JLQCD" ) ) {
       if( read_random_lattice_info( ) == GLU_FAILURE ) {
 	printf( "failed\n" ) ;
 	return GLU_FAILURE ;
       } else {
 	printf( "succeeded\n" ) ;
+      }
+      *HEADINFO = JLQCD_HEADER ; // is actually no header
+    } else if( are_equal( INPUT[header_idx].VALUE , "RANDOM" ) ) {
+      fprintf( stdout , "[IO] Attempting to generate an SU(%d) "
+	       "RANDOM config .. " , NC ) ;
+      if( read_random_lattice_info( ) == GLU_FAILURE ) {
+	printf( stdout , "failed\n" ) ;
+	return GLU_FAILURE ;
+      } else {
+	fprintf( stdout , "succeeded\n" ) ;
       }
       *HEADINFO = RANDOM_CONFIG ;
     } else if( are_equal( INPUT[header_idx].VALUE , "UNIT" ) ) {

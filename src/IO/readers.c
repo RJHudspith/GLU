@@ -336,6 +336,7 @@ lattice_reader_suNC( struct site *lat ,
   case SCIDAC_HEADER : return CRCsum29 ;
   case ILDG_BQCD_HEADER : return CRC_BQCD ;
   case LIME_HEADER : return GLU_SUCCESS ;
+  case JLQCD_HEADER : return GLU_SUCCESS ;
   default : return GLU_FAILURE ; // should print an error here
   }
 }
@@ -478,6 +479,7 @@ lattice_reader_suNC_cheaper( struct site *lat ,
   case SCIDAC_HEADER : return CRCsum29 ;
   case ILDG_BQCD_HEADER : return CRC_BQCD ;
   case LIME_HEADER : return GLU_SUCCESS ;
+  case JLQCD_HEADER : return GLU_SUCCESS ;
   default : return GLU_FAILURE ; // should print an error here
   }
 }
