@@ -25,33 +25,33 @@
 #define GLU_BSWAP_H
 
 /**
-   @fn void bswap_16( const int n , void *u ) 
+   @fn void bswap_16( const size_t n , void *u ) 
    @brief swaps the bytes of a 16 bit array
    @param n :: length of the array
    @param u :: pointer to memory
  */
 void
-bswap_16( const int n , 
+bswap_16( const size_t n , 
 	  void *u ) ;
 
 /**
-   @fn void bswap_32( const int n , void *u ) 
+   @fn void bswap_32( const size_t n , void *u ) 
    @brief swaps the bytes of a 32 bit array
    @param n :: length of the array
    @param u :: pointer to memory
  */
 void
-bswap_32( const int n , 
+bswap_32( const size_t n , 
 	  void *u ) ;
 
 /**
-   @fn void bswap_64( const int n , void *u ) 
+   @fn void bswap_64( const size_t n , void *u ) 
    @brief swaps the bytes of a 64 bit array
    @param n :: length of the array
    @param u :: pointer to memory
  */
 void
-bswap_64( const int n , 
+bswap_64( const size_t n , 
 	  void *u ) ;
 
 #endif

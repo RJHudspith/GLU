@@ -22,6 +22,7 @@
    
    All of the external routines require an array to be swapped
  */
+#include <stdlib.h>
 #include <stdint.h>
 
 // These three functions are from LLVM, credit to them, I didn't know
@@ -73,10 +74,10 @@ SwapByteOrder_64( uint64_t value ) {
 
 // this is for 16 bits, i.e. shorts
 void
-bswap_16( const int n , void *u ) 
+bswap_16( const size_t n , void *u ) 
 {
   uint16_t *T = u ;
-  int i ;
+  size_t i ;
 #pragma omp parallel for private(i)
   for( i = 0 ; i < n ; i++ ) {
     *( T + i ) = SwapByteOrder_16( *( T + i ) ) ;
@@ -86,10 +87,10 @@ bswap_16( const int n , void *u )
 
 // this is for 32 bits, i.e. float and int
 void
-bswap_32( const int n , void *u ) 
+bswap_32( const size_t n , void *u ) 
 {
   uint32_t *T = u ;
-  int i ;
+  size_t i ;
 #pragma omp parallel for private(i)
   for( i = 0 ; i < n ; i++ ) {
     *( T + i ) = SwapByteOrder_32( *( T + i ) ) ;
@@ -99,10 +100,10 @@ bswap_32( const int n , void *u )
 
 // this one is for 64 bits, double and double complex
 void
-bswap_64( const int n , void *u ) 
+bswap_64( const size_t n , void *u ) 
 {
   uint64_t *T = u ;
-  int i ;
+  size_t i ;
 #pragma omp parallel for private(i)
   for( i = 0 ; i < n ; i++ ) {
     *( T + i ) = SwapByteOrder_64( *( T + i ) ) ;
