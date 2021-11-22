@@ -389,7 +389,7 @@ read_cuts_struct( struct cut_info *CUTINFO )
       fprintf( stderr , "[IO] I do not understand your CUTTYPE %s\n" , 
 	       INPUT[cuttype_idx].VALUE ) ;
       fprintf( stderr , "[IO] Defaulting to no cutting \n" ) ;
-      return GLU_FAILURE ;
+      return GLU_SUCCESS ;
     }
   }
   // momentum space cut def
