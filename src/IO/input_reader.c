@@ -158,11 +158,6 @@ static int
 config_information( char *details )
 {
   const int details_idx = tag_search( "CONFIG_INFO" ) ;
-  /*
-  if( are_equal( INPUT[details_idx].VALUE , "YES" ) ) { 
-    return tag_failure( "CONFIG_INFO" ) ; 
-  }
-  */
   sprintf( details , "%s" , INPUT[details_idx].VALUE ) ;
   return GLU_SUCCESS ;
 }
@@ -289,17 +284,17 @@ header_type( header_mode *HEADINFO )
       *HEADINFO = ILDG_BQCD_HEADER ;
     } else if( are_equal( INPUT[header_idx].VALUE , "JLQCD" ) ) {
       if( read_random_lattice_info( ) == GLU_FAILURE ) {
-	printf( "failed\n" ) ;
+	fprintf( stderr , "failed\n" ) ;
 	return GLU_FAILURE ;
       } else {
-	printf( "succeeded\n" ) ;
+	fprintf( stderr , "succeeded\n" ) ;
       }
       *HEADINFO = JLQCD_HEADER ; // is actually no header
     } else if( are_equal( INPUT[header_idx].VALUE , "RANDOM" ) ) {
       fprintf( stdout , "[IO] Attempting to generate an SU(%d) "
 	       "RANDOM config .. " , NC ) ;
       if( read_random_lattice_info( ) == GLU_FAILURE ) {
-	printf( stdout , "failed\n" ) ;
+	fprintf( stderr , "failed\n" ) ;
 	return GLU_FAILURE ;
       } else {
 	fprintf( stdout , "succeeded\n" ) ;
@@ -363,6 +358,7 @@ read_cuts_struct( struct cut_info *CUTINFO )
   {
     const int cuttype_idx = tag_search( "CUTTYPE" ) ;
     if( cuttype_idx == GLU_FAILURE ) { return tag_failure( "CUTTYPE" ) ; }
+    CUTINFO -> dir = GLU_NOCUTS ;
     if( are_equal( INPUT[cuttype_idx].VALUE , "EXCEPTIONAL" ) ) {
       CUTINFO -> dir = EXCEPTIONAL ;
     } else if( are_equal( INPUT[cuttype_idx].VALUE , "NON_EXCEPTIONAL" ) ) {
@@ -407,7 +403,8 @@ read_cuts_struct( struct cut_info *CUTINFO )
     } else {
       fprintf( stderr , "[IO] Unrecognised type [%s] \n" , 
 	       INPUT[momcut_idx].VALUE ) ; 
-      fprintf( stderr , "[IO] Defaulting to SPHERICAL_CUT \n" ) ; 
+      fprintf( stderr , "[IO] Defaulting to SPHERICAL_CUT \n" ) ;
+      CUTINFO -> type = PSQ_CUT ; 
     }
   }
   // field definition

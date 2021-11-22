@@ -170,7 +170,8 @@ typedef enum
     STATIC_POTENTIAL ,
     TOPOLOGICAL_CORRELATOR ,
     TOPOLOGICAL_MOMENTS ,
-    TOPOLOGICAL_SUSCEPTIBILITY } cut_mode ;
+    TOPOLOGICAL_SUSCEPTIBILITY ,
+    GLU_NOCUTS } cut_mode ;
 
 /**
    @enum lie_field_def
