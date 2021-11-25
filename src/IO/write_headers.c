@@ -55,7 +55,7 @@ write_header_MILC( FILE *__restrict out ,
   swap_and_write_int( out , magic , 1 ) ;
 
   int dims[ ND ] ;
-  memcpy( dims , Latt.dims , ND * sizeof( int ) ) ;
+  for (int i = 0; i < ND; i ++) dims[i] = Latt.dims[i];
   swap_and_write_int( out , dims , ND ) ;
 
   char str[ 64 ] ;
