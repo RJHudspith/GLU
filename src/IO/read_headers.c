@@ -174,8 +174,10 @@ get_header_data_MILC( FILE *in ,
   }
   
   // read in ND ints ... even though MILC only supports ND == 4 !!
-  if( fread( Latt.dims , sizeof(int) , ND , in ) != ND ) return GLU_FAILURE ;
-  if( need_swap ) { bswap_32( ND , Latt.dims ) ; }
+  int dimensions [ND];
+  if( fread( dimensions , sizeof(int) , ND , in ) != ND ) return GLU_FAILURE ;
+  if( need_swap ) { bswap_32( ND , dimensions ) ; } 
+  for (int i = 0; i < ND; i ++) Latt.dims[i] = dimensions[i];
 
   // date and time of creation is 64 bytes long ...
   char str[65] ;
