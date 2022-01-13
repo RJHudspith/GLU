@@ -9,7 +9,7 @@ The library can be used for:
 File conversion : Support for ILDG, Scidac, NERSC, HiRep, MILC, and CERN configuration files. Both reading and writing.
 
 Gauge fixing : Landau and Coulomb gauge fixing is possible. With binding to the FFTW library, Fourier Accelerated routines
-               for very fast gauge fixing have been implemented.
+               for very fast gauge fixing have been implemented with the NLCG (default) or FASD algorithms.
 
 Smearing : APE, STOUT and LOG with their hypercubically blocked variants HYP, HEX and HYL smearing routines are available.
            So is the computation of the STOUT and LOG Wilson flow. Inclusion of various rectangle coefficients is
@@ -30,17 +30,17 @@ Compilation
 
 The usual,
 
-./configure --prefix={}
+    ./configure CC={} CFLAGS={} --prefix={}
 
-If using the Fourier acceleration then
+If using the Fourier acceleration (I recommend you do) then
 
---with-fftw={}
+    --with-fftw={}
 
 should be called.
 
-If compiling for a different number of colors (NC) or dimensions (ND) the options
+If compiling for a different number of colors (NC) or dimensions (ND) (default is NC=3 and ND=4) the options
 
---with-NC={} --with-ND={}
+    --with-NC={} --with-ND={}
 
 are your friends.
 
@@ -48,32 +48,45 @@ There a bunch of other options that are briefly synopsised at the top of configu
 
 After that,
 
-make && make all install
+    make && make all install
 
 will create the binary GLU in $prefix/bin/ and the library libGLU.a in $prefix/lib/ .
 
-make documentation
+    make documentation
 
 will create pdfs of the documentation in the $prefix/docs/ directory
 
-make doxygen
+    make doxygen
 
-will create the doxygen with perhaps the callgraphs if dot is available.
+will create the doxygen with perhaps the callgraphs if the library dot is available.
+
+the code either uses SSE2 intrinsics or defaults to generic code. I strongly recommend using the intrinsics branch (configure will tell you if it has found <immintrin.h> and openMP, this needs to be specified via the CFLAGS during compilation, so for example with icc:
+
+    CFLAGS="-O3 -xHOST -fopenmp"
+    
+or with gcc
+
+    CFLAGS="-O3 -msse2 -fopenmp"
 
 Usage
 =====
 
 Standard usage is
 
-./GLU -i {input_file} -c {configuration file} -o {output file}
+    ./GLU -i {input_file} -c {configuration file} -o {output file}
 
 The output file is not necessary, the other two are. An example input file should be in $prefix/bin/
 a couple of example input files can be printed to stdout by the command,
 
-./GLU --autoin={COULOMB,LANDAU,STATIC_POTENTIAL,SUNCxU1,WFLOW}
+    ./GLU --autoin={COULOMB,LANDAU,STATIC_POTENTIAL,SUNCxU1,WFLOW}
 
 If you would like more information about some option in the input file,
 
-./GLU --help={option}
+    ./GLU --help={option}
 
 Should provide you with some information.
+
+Input File
+==========
+
+The input file expects a very specific format and even though you might not be using the gluon props, smearing, gauge-fixing, heatbath, whatever ... they still need to be there or the very simple reader will complain. Don't worry though, if they aren't used in your specific calculation they will just be ignored. 
