@@ -198,7 +198,7 @@ sum_DER2( double *red ,
     const double t = red[ LINE_NSTEPS + th * CLINE ] + y ;
     c[0] = ( t - red[ LINE_NSTEPS + th * CLINE ] ) - y ;
     red[ LINE_NSTEPS + th * CLINE ] = t ;
-  }
+  } 
   return ;
 }
 
@@ -275,7 +275,6 @@ steep_step_SD( GLU_complex **slice_gauge ,
   line_search_Coulomb( CG.red , slice_gauge , CG.db , lat , 
 		       (const GLU_complex**)FFTW -> in , t ) ;
 #else
-  // exponentiate this
   exponentiate_gauge_CG( slice_gauge ,
 			 (const GLU_complex**)FFTW -> in ,
 			 Latt.gf_alpha ) ;
@@ -300,7 +299,7 @@ steep_step_FACG( GLU_complex **gauge ,
   
   // set everything to zero
   #pragma omp for private(k)
-  for( k = 0 ; k < CLINE*Latt.Nthreads ; k++ ) {
+  for( k = 0 ; k < LINE_NSTEPS+CLINE*Latt.Nthreads ; k++ ) {
     CG.red[ k ] = 0.0 ;
   }
 
@@ -330,7 +329,7 @@ steep_step_FACG( GLU_complex **gauge ,
 
   // set everything to zero
   insum = sum_conj =  trAA = 0.0 ;
-  for( k = 0 ; k < CLINE*Latt.Nthreads ; k++ ) {
+  for( k = 0 ; k < LINE_NSTEPS + CLINE*Latt.Nthreads ; k++ ) {
     CG.red[ k ] = 0.0 ;
   }
   
@@ -394,26 +393,35 @@ steep_step_FASD( GLU_complex **gauge ,
 		 const double accuracy , 
 		 const size_t max_iters )
 {
+  double trAA ;
   size_t loc_iters = 0 ;
   size_t k ;
 
  top :
+
+  {
+    #pragma omp barrier
+  }
+  
+  *tr = 0.0 ;
   
   // perform a Fourier accelerated step
 #pragma omp for private(k)
-  for( k = 0 ; k < CLINE*Latt.Nthreads ; k++ ) {
+  for( k = 0 ; k < LINE_NSTEPS + CLINE*Latt.Nthreads ; k++ ) {
     CG.red[ k ] = 0.0 ;
   }
   
   steep_step_SD( gauge , CG , FFTW , lat , t ) ;
 
   sum_DER2( CG.red , (const GLU_complex**)FFTW -> in ) ;
-  
-  for( k = 0 ; k < Latt.Nthreads ; k++ ) {
-    *tr += CG.red[ LINE_NSTEPS + 2 + CLINE*k ] ;
-  }
-  *tr *= GFNORM_COULOMB ;
 
+  // all threads see this
+  trAA = 0.0 ;
+  for( k = 0 ; k < (size_t)Latt.Nthreads ; k++ ) {
+    trAA += CG.red[ LINE_NSTEPS + CLINE*k ] ;
+  }  
+  *tr = trAA * GFNORM_COULOMB ;
+  
   loc_iters++ ;
   
   if( ( *tr > accuracy ) && ( loc_iters < max_iters) ) goto top ;

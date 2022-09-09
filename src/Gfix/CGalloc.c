@@ -32,7 +32,7 @@ allocate_temp_cg( struct gauges *G ,
 {
   GLU_bool FLAG = GLU_FALSE ;
   size_t i ;
-  if( ( CG -> red = calloc( CLINE * Latt.Nthreads , sizeof( double ) ) ) == NULL ) {
+  if( ( CG -> red = calloc( LINE_NSTEPS + CLINE * Latt.Nthreads , sizeof( double ) ) ) == NULL ) {
     FLAG = GLU_TRUE ;  goto end ;
   }
   // checkerboard for the line search
@@ -52,7 +52,7 @@ allocate_temp_cg( struct gauges *G ,
       FLAG = GLU_TRUE ; goto end ;
     }
   }
-   // reduce some overhead here
+  // reduce some overhead here
 #pragma omp parallel
   {
     if( FACG == GLU_TRUE ) {
@@ -68,6 +68,7 @@ allocate_temp_cg( struct gauges *G ,
 	}
       }
     }
+    // general gauge allocations (need up, here and end to make it gauge invariant)
     #pragma omp for private(i)
     for( i = 0 ; i < LCU ; i++ ) {
       // allocations
@@ -100,7 +101,7 @@ allocate_temp_lg( struct CGtemps *CG ,
   CG -> sn = NULL ; CG -> in_old = NULL ; CG -> red = NULL ;
   size_t i ;
   GLU_bool FLAG = GLU_FALSE ;
-  if( ( CG -> red = calloc( CLINE * Latt.Nthreads , sizeof( double ) ) ) == NULL ) {
+  if( ( CG -> red = calloc( LINE_NSTEPS + CLINE * Latt.Nthreads , sizeof( double ) ) ) == NULL ) {
     FLAG = GLU_TRUE ;  goto end ;
   }
 

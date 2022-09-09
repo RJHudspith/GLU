@@ -33,8 +33,8 @@ static char *reunit_test( void )
   Sunitary_gen( Ua , 0 ) ;
   Sunitary_gen( Ub , 0 ) ;
 
-  mu_assert( "[GLUnit] error : reunit2 is broken" , is_unitary( Ua ) ) ;
-  mu_assert( "[GLUnit] error : reunit2 is broken" , is_unitary( Ub ) ) ;
+  mu_assert( "[GLUnit] error : Sunitary_gen is broken" , is_unitary( Ua ) ) ;
+  mu_assert( "[GLUnit] error : Sunitary_gen is broken" , is_unitary( Ub ) ) ;
   return NULL ;
 }
 

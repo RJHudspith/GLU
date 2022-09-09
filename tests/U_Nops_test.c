@@ -187,6 +187,21 @@ static char *diag_vect_test( void ) {
   return 0;
 }
 
+static char *gram_reunit_test( void ) {
+  GLU_complex d[ NCNC ] GLUalign ;
+
+  identity( d ) ;
+  gram_reunit( d ) ;
+  is_unitary( d ) ;
+  
+  for( int runs = 0 ; runs < 1E2 ; runs++ ) {
+    par_generate_NCxNC( d , 0 ) ;
+    gram_reunit( d ) ;
+    is_unitary( d ) ;
+  }
+  return NULL ;
+}
+
 // test the identity routine
 static char *identity_test( void ) {
   GLU_bool is_ok = GLU_TRUE ;
@@ -610,6 +625,7 @@ unops_test( void )
 #if NC>3
   mu_run_test( LU_det_test ) ;
 #endif
+  mu_run_test( gram_reunit_test ) ;
   mu_run_test( det_test ) ;
   mu_run_test( cofactor_transpose_test ) ;
   mu_run_test( mat_mult_vec_test ) ;

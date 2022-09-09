@@ -216,7 +216,7 @@ gram_reunit( GLU_complex *__restrict U )
     register const GLU_real mulfact = ( i % 2 == 0 ) ? 1.0 : -1.0 ; 
     #endif
     // compute the determinant of the minors using the LU decomp
-    U[i] = conj( mulfact * (GLU_complex)LU_det_overwrite( NC-1 , array ) ) ;
+    U[i] = conj( mulfact * (GLU_complex)LU_det( NC-1 , array ) ) ;
   }
   free( array ) ;
 #endif

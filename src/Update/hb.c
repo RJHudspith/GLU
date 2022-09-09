@@ -161,7 +161,8 @@ int
 hb_lattice( struct site *lat ,
 	    const double invbeta ,
 	    const struct draughtboard db )
-{    // single node until I figure out the coloring
+{
+  // single node until I figure out the coloring -- could this just be a simple copy? i.e. a temporary gauge field being set and then pointer-swapped?
 #ifdef IMPROVED_SMEARING
     #pragma omp single
     {

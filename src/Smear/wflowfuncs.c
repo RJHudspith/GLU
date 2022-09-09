@@ -29,8 +29,8 @@
 #include "staples.h"     // computes staples
 
 // controls for the wilson flow these get externed!
-const double W0_STOP    = NC*0.1 ; // BMW's choice for the W_0 parameter
-const double T0_STOP    = NC*0.1 ; // Martin Luescher's choice for the t_0 scale
+const double W0_STOP    = 0.1125*(NCNC-1)/(double)NC ; // BMW's choice for the W_0 parameter
+const double T0_STOP    = 0.1125*(NCNC-1)/(double)NC ; // Martin Luescher's choice for the t_0 scale
 
 // shortening function needs to be out of alphabetical order because
 // it is called by flow directions

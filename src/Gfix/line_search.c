@@ -96,6 +96,7 @@ egauge_Landau( struct site *lat ,
   return ;
 }
 
+// coulomb gauge (approximate) exponentiation
 void
 exponentiate_gauge_CG( GLU_complex **gauge , 
 		       const GLU_complex **in ,
