@@ -256,20 +256,18 @@ copy_data( GLU_real *uout ,
     // temporary
     GLU_real site[ ND * LOOP_VAR ] ;
 
-    // set this up here
-    size_t val = LOOP_VAR * ( i * ND ) ;
-
     // puts the matrix in glu_real temporary called site
     grab_sitedata( site , lat[i] , LOOP_VAR , checktype ) ;
 
-    // copy into uout
-    size_t j ;
-    for( j = 0 ; j < ND * LOOP_VAR ; j++ ) {
-      #ifdef OUT_DOUBLE
-      uout[ val++ ] = (double)site[ j ] ; 
-      #else
-      uout[ val++ ] = (float)site[ j ] ; 
-      #endif
+    // set this up here
+    const size_t val = (size_t)( LOOP_VAR * ( i * ND ) ) ;
+    for( size_t j = 0 ; j < ND*LOOP_VAR ; j++ ) {
+#ifdef OUT_DOUBLE
+      uout[ val + j ] = (double)site[ j ] ;
+#else
+      uout[ val + j ] = (float)site[ j ] ;
+#endif
+
     }
   }
   return ;

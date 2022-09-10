@@ -114,6 +114,82 @@ exponentiate_gauge_CG( GLU_complex **gauge ,
   return ;
 }
 
+// does the line search and exponentiates the best step
+static void
+line_exp( GLU_complex **gauge ,
+	  const double *red ,
+	  const GLU_complex **in )
+{
+  // compute the vals
+  double val[ LINE_NSTEPS ] ;
+  size_t j , i ;
+  for( j = 0 ; j < LINE_NSTEPS ; j++ ) {
+    val[j] = 0.0 ;
+    for( i = 0 ; i < Latt.Nthreads ; i++ ) {
+      val[ j ] -= red[ j + CLINE*i ] ;
+    }
+  }
+
+  const double Calcg[ LINE_NSTEPS ] = { 0.0 , PC1 , PC2 } ;
+  const double min = approx_minimum( LINE_NSTEPS , Calcg , val ) ;
+  
+  exponentiate_gauge_CG( gauge , in , min ) ;
+}
+
+// odd dimension slower code
+static void
+line_search_CoulombOdd( double *red ,
+			GLU_complex **gauge ,
+			const struct draughtboard db ,
+			const struct site *lat ,
+			const GLU_complex **in ,
+			const size_t t )
+{
+  double c[ LINE_NSTEPS ] = { 0. , 0. , 0. } ;
+  size_t i ;
+#pragma omp for private(i)
+  for( i = 0 ; i < LCU ; i++ ) {
+    GLU_complex A1[ NCNC ] GLUalign ;
+    GLU_complex A2[ NCNC ] GLUalign ;
+    GLU_complex B[ NCNC ] GLUalign ;
+    GLU_complex C[ NCNC ] GLUalign ;
+    double loc_v[ LINE_NSTEPS ] ;
+    size_t mu , n ;
+    for( mu = 0 ; mu < LINE_NSTEPS ; mu++ ) {
+      loc_v[ mu ] = 0.0 ;
+    }
+    // set these for this index
+    set_gauge_matrix( A1 , in , PC1 , i ) ;
+    set_gauge_matrix( A2 , in , PC2 , i ) ;
+    for( mu = 0 ; mu < ND-1 ; mu++ ) {
+      const size_t fwd = lat[i].neighbor[mu] ;
+      memcpy( C , lat[i+LCU*t].O[mu] , NCNC*sizeof( GLU_complex ) ) ;
+      gtransform_local( gauge[i] , C , gauge[fwd] ) ;
+
+      loc_v[0] += creal( trace( C ) ) ;
+      
+      // positive ones
+      set_gauge_matrix( B , in , PC1 , fwd ) ;
+      loc_v[1] += Re_trace_abc_dag_suNC( A1 , C , B ) ;
+      // positive ones
+      set_gauge_matrix( B , in , PC2 , fwd ) ;
+      loc_v[2] += Re_trace_abc_dag_suNC( A2 , C , B ) ;      
+    }
+    const size_t th = get_GLU_thread() ;
+    // reductions
+    for( n = 0 ; n < LINE_NSTEPS ; n++ ) {
+      const double y = loc_v[n] - c[n] ;
+      const double t = red[ n + th * CLINE ] + y ;
+      c[n] = ( t - red[ n + th * CLINE ] ) - y ;
+      red[ n + th * CLINE ] = t ;
+    }
+  }
+  // exponentiates the best step
+  line_exp( gauge , red , in ) ;
+
+  return ;
+}
+
 // perform a line search using GLUbic splines for approximately the best alpha
 void
 line_search_Coulomb( double *red ,
@@ -124,6 +200,14 @@ line_search_Coulomb( double *red ,
 		     const size_t t )
 {
   double c[ LINE_NSTEPS ] = { 0. , 0. , 0. } ;
+
+  // odd dimensional code
+  if( db.Ncolors != 2 ) {
+    line_search_CoulombOdd( red , gauge , db , lat , in , t ) ;
+    return ;
+  }
+  
+  // only sensible for even dirs, cheaper as it reuses set_gauge_matrix
   size_t i ;
 #pragma omp for private(i)
   for( i = 0 ; i < db.Nsquare[0] ; i++ ) {
@@ -180,20 +264,9 @@ line_search_Coulomb( double *red ,
       red[ n + th * CLINE ] = t ;
     }
   }
-  // compute the vals
-  double val[ LINE_NSTEPS ] ;
-  size_t j ;
-  for( j = 0 ; j < LINE_NSTEPS ; j++ ) {
-    val[j] = 0.0 ;
-    for( i = 0 ; i < Latt.Nthreads ; i++ ) {
-      val[ j ] -= red[ j + CLINE*i ] ;
-    }
-  }
-
-  const double Calcg[ LINE_NSTEPS ] = { 0.0 , PC1 , PC2 } ;
-  const double min = approx_minimum( LINE_NSTEPS , Calcg , val ) ;
   
-  exponentiate_gauge_CG( gauge , in , min ) ;
+  // exponentiates the best step
+  line_exp( gauge , red , in ) ;
 
   return ;
 }

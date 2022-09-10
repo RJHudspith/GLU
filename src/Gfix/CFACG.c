@@ -342,14 +342,13 @@ steep_step_FACG( GLU_complex **gauge ,
 
   // reduction happens for all threads
   for( k = 0 ; k < Latt.Nthreads ; k++ ) {
-    insum += CG.red[ LINE_NSTEPS + CLINE*k ] ;
+    insum    += CG.red[ LINE_NSTEPS + CLINE*k ] ;
     sum_conj += CG.red[ LINE_NSTEPS + 1 + CLINE*k ] ;
   }
   *tr = insum * GFNORM_COULOMB ;
   
   // compute the beta value, who knows what value is best?
   double beta = PRfmax( 0.0 , sum_conj / inold ) ;
-  
   // switch to the fletcher reeves
   if( *tr < CG_TOL ) {
     beta = insum / inold ;
@@ -359,7 +358,7 @@ steep_step_FACG( GLU_complex **gauge ,
   #pragma omp for private(i)
   for( i = 0 ; i < TRUE_HERM*LCU ; i++ ) {
     const size_t idx = i/LCU , j = i%LCU ;
-    GLU_complex *pin = FFTW -> in[idx] ;
+    const GLU_complex *pin = FFTW -> in[idx] ;
     GLU_complex *pin_old = CG.in_old[idx] ;
     GLU_complex *psn = CG.sn[idx] ;
     psn[j] = pin[j] + beta * ( psn[j] ) ;
@@ -399,6 +398,7 @@ steep_step_FASD( GLU_complex **gauge ,
 
  top :
 
+  // need this barrier to sync reduction array
   {
     #pragma omp barrier
   }
