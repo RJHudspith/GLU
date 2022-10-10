@@ -194,13 +194,9 @@ complete_plaquette( const GLU_complex *__restrict a ,
   
   #endif
 #else
-  GLU_complex temp1[NCNC] GLUalign , temp2[NCNC] GLUalign ; 
-  multab( temp1 , a , b ) ; 
-  multab_dag( temp2 , temp1 , c ) ; 
-  multab_dag( temp1 , temp2 , d ) ; 
-  double tr ;
-  speed_trace_Re( &tr , temp1 ) ;
-  return tr ;
+  GLU_complex temp1[NCNC] GLUalign ;
+  multab_dag( temp1 , b , c ) ;
+  return Re_trace_abc_dag_suNC( a , temp1 , d ) ;
 #endif
 }
 
@@ -247,7 +243,7 @@ double
 av_plaquette( const struct site *__restrict lat )
 {
   double plaq = 0. ;
-  size_t i ; 
+  size_t i ;
   for( i = 0 ; i < LVOLUME ; i++ ) {
     register double p = 0. , face ;
     size_t mu , nu , t , s ;
