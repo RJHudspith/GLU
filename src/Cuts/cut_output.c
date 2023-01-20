@@ -407,8 +407,6 @@ write_moments( struct Qmoments *Qmom ,
   uint32_t nmom[ 1 ] = { NQMOMENTS } ;
   uint32_t Nmeas[ 1 ] = { Nmeasurements } ;
   char filename[ 256 ] ;
-
-  printf( "IO?\n" ) ;
   
   size_t mu , i , j ;
   for( mu = 0 ; mu < ND ; mu++ ) {

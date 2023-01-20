@@ -1,193 +1,194 @@
+/* config.h.  Generated from config.h.in by configure.  */
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Define if building universal (internal helper macro) */
-#undef AC_APPLE_UNIVERSAL_BUILD
+/* #undef AC_APPLE_UNIVERSAL_BUILD */
 
 /* Ascii output to stdout. */
-#undef ASCII_CHECK
+/* #undef ASCII_CHECK */
 
 /* Use the highly improved clover term. */
-#undef CLOVER_IMPROVE
+/* #undef CLOVER_IMPROVE */
 
 /* DBW2 improved staple. */
-#undef DBW2
+/* #undef DBW2 */
 
 /* Trace maximisation routine for APE projection. */
-#undef GIVENS_APE
+#define GIVENS_APE /**/
 
 /* Bluegene specific hacks. */
-#undef GLU_BGQ
+/* #undef GLU_BGQ */
 
 /* SD gauge fixing routines */
-#undef GLU_GFIX_SD
+/* #undef GLU_GFIX_SD */
 
 /* GSL default (Mersenne Twister) selection */
-#undef GSL_RNG
+/* #undef GSL_RNG */
 
 /* Define to 1 if you have the <complex.h> header file. */
-#undef HAVE_COMPLEX_H
+#define HAVE_COMPLEX_H 1
 
 /* FFTW library. */
-#undef HAVE_FFTW3_H
+#define HAVE_FFTW3_H /**/
 
 /* Do we have the GSL libs? */
-#undef HAVE_GSL
+/* #undef HAVE_GSL */
 
 /* Define to 1 if you have the <gsl/gsl_eigen.h> header file. */
-#undef HAVE_GSL_GSL_EIGEN_H
+/* #undef HAVE_GSL_GSL_EIGEN_H */
 
 /* Define to 1 if you have the <immintrin.h> header file. */
-#undef HAVE_IMMINTRIN_H
+#define HAVE_IMMINTRIN_H 1
 
 /* Define to 1 if you have the <inttypes.h> header file. */
-#undef HAVE_INTTYPES_H
+#define HAVE_INTTYPES_H 1
 
 /* Define to 1 if you have the <lapacke.h> header file. */
-#undef HAVE_LAPACKE_H
+/* #undef HAVE_LAPACKE_H */
 
 /* Define to 1 if you have the <limits.h> header file. */
-#undef HAVE_LIMITS_H
+#define HAVE_LIMITS_H 1
 
 /* Define to 1 if you have the <math.h> header file. */
-#undef HAVE_MATH_H
+#define HAVE_MATH_H 1
 
 /* Define to 1 if you have the <omp.h> header file. */
-#undef HAVE_OMP_H
+#define HAVE_OMP_H 1
 
 /* Look for where we prefix to */
-#undef HAVE_PREFIX
+#define HAVE_PREFIX "/home/jamie/PROG/LIBS/GLU_SU3"
 
 /* Define to 1 if you have the <stdint.h> header file. */
-#undef HAVE_STDINT_H
+#define HAVE_STDINT_H 1
 
 /* Define to 1 if you have the <stdio.h> header file. */
-#undef HAVE_STDIO_H
+#define HAVE_STDIO_H 1
 
 /* Define to 1 if you have the <stdlib.h> header file. */
-#undef HAVE_STDLIB_H
+#define HAVE_STDLIB_H 1
 
 /* Define to 1 if you have the <strings.h> header file. */
-#undef HAVE_STRINGS_H
+#define HAVE_STRINGS_H 1
 
 /* Define to 1 if you have the <string.h> header file. */
-#undef HAVE_STRING_H
+#define HAVE_STRING_H 1
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
-#undef HAVE_SYS_STAT_H
+#define HAVE_SYS_STAT_H 1
 
 /* Define to 1 if you have the <sys/time.h> header file. */
-#undef HAVE_SYS_TIME_H
+#define HAVE_SYS_TIME_H 1
 
 /* Define to 1 if you have the <sys/types.h> header file. */
-#undef HAVE_SYS_TYPES_H
+#define HAVE_SYS_TYPES_H 1
 
 /* Define to 1 if you have the <time.h> header file. */
-#undef HAVE_TIME_H
+#define HAVE_TIME_H 1
 
 /* Define to 1 if you have the <unistd.h> header file. */
-#undef HAVE_UNISTD_H
+#define HAVE_UNISTD_H 1
 
 /* Iwasaki improved staple. */
-#undef IWASAKI
+/* #undef IWASAKI */
 
 /* Leading term */
-#undef IWA_WEIGHT1
+/* #undef IWA_WEIGHT1 */
 
 /* Sub-leading rectangle term */
-#undef IWA_WEIGHT2
+/* #undef IWA_WEIGHT2 */
 
 /* Keep It Simple Stupid RNG (JKISS32) */
-#undef KISS_RNG
+/* #undef KISS_RNG */
 
 /* Generated Gribov copies. */
-#undef LUXURY_GAUGE
+/* #undef LUXURY_GAUGE */
 
 /* Multiply With Carry (1038) selection */
-#undef MWC_1038_RNG
+/* #undef MWC_1038_RNG */
 
 /* Multiply With Carry (4096) selection */
-#undef MWC_4096_RNG
+/* #undef MWC_4096_RNG */
 
 /* No loop unrolling. */
-#undef NBLOCK
+/* #undef NBLOCK */
 
 /* Compiled for SU(NC) */
-#undef NC
+#define NC 3 
 
 /* Compiled for ND */
-#undef ND
+/* #undef ND */
 
 /* targeted, has been seen to be quicker but do not distribute the binaries!
    */
-#undef NOT_CONDOR_MODE
+#define NOT_CONDOR_MODE /**/
 
 /* NSTOCH updates */
-#undef NSTOCH
+/* #undef NSTOCH */
 
 /* OBC hacks enabled */
-#undef OBC_HACK
+/* #undef OBC_HACK */
 
 /* OpenMP-parallel FFT routines. */
-#undef OMP_FFTW
+/* #undef OMP_FFTW */
 
 /* overrelaxed routines are slow */
-#undef OVERRELAXED_GF
+/* #undef OVERRELAXED_GF */
 
 /* Name of package */
-#undef PACKAGE
+#define PACKAGE "glu"
 
 /* Define to the address where bug reports for this package should be sent. */
-#undef PACKAGE_BUGREPORT
+#define PACKAGE_BUGREPORT "renwick.james.hudspith@gmail.com"
 
 /* Define to the full name of this package. */
-#undef PACKAGE_NAME
+#define PACKAGE_NAME "GLU"
 
 /* Define to the full name and version of this package. */
-#undef PACKAGE_STRING
+#define PACKAGE_STRING "GLU 1.1"
 
 /* Define to the one symbol short name of this package. */
-#undef PACKAGE_TARNAME
+#define PACKAGE_TARNAME "glu"
 
 /* Define to the home page for this package. */
-#undef PACKAGE_URL
+#define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#undef PACKAGE_VERSION
+#define PACKAGE_VERSION "1.1"
 
 /* Plaquette field strength tensor. */
-#undef PLAQUETTE_FMUNU
+/* #undef PLAQUETTE_FMUNU */
 
 /* Nonexceptional projection index. */
-#undef PROJ_GRACEY
+#define PROJ_GRACEY 0
 
 /* Storage of single precision fields and utilisation of fftwf routines. */
-#undef SINGLE_PREC
+/* #undef SINGLE_PREC */
 
 /* Define to 1 if all of the C90 standard headers exist (not just the ones
    required in a freestanding environment). This macro is provided for
    backward compatibility; new code need not use it. */
-#undef STDC_HEADERS
+#define STDC_HEADERS 1
 
 /* Symanzik improved staple. */
-#undef SYMANZIK
+/* #undef SYMANZIK */
 
 /* Topological charge measurement start. */
-#undef TOP_VALUE
+/* #undef TOP_VALUE */
 
 /* Version number of package */
-#undef VERSION
+#define VERSION "1.1"
 
 /* Well (512) rng selection */
-#undef WELL_512_RNG
+/* #undef WELL_512_RNG */
 
 /* Wflow observable measurements start from here */
-#undef WFLOW_MEAS_START
+/* #undef WFLOW_MEAS_START */
 
 /* Only timing the gradient flow */
-#undef WFLOW_TIME_ONLY
+/* #undef WFLOW_TIME_ONLY */
 
 /* Wilson flow maximum time stopping condition. */
-#undef WFLOW_TIME_STOP
+/* #undef WFLOW_TIME_STOP */
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
@@ -197,35 +198,35 @@
 # endif
 #else
 # ifndef WORDS_BIGENDIAN
-#  undef WORDS_BIGENDIAN
+/* #  undef WORDS_BIGENDIAN */
 # endif
 #endif
 
 /* XOR (1024) selection */
-#undef XOR_1024_RNG
+/* #undef XOR_1024_RNG */
 
 /* Define to empty if `const' does not conform to ANSI C. */
-#undef const
+/* #undef const */
 
 /* Defined the overimproved smearing parameter epsilon. */
-#undef epsilon
+/* #undef epsilon */
 
 /* Exact exponentiation for the gauge transformation matrices */
-#undef exp_exact
+/* #undef exp_exact */
 
 /* Define to `__inline__' or `__inline' if that's what the C compiler
    calls it, or to nothing if 'inline' is not supported under any name.  */
 #ifndef __cplusplus
-#undef inline
+/* #undef inline */
 #endif
 
 /* K5 term in the overimproved smearing definition. */
-#undef k5
+/* #undef k5 */
 
 /* Define to the equivalent of the C99 'restrict' keyword, or to
    nothing if this is not supported.  Do not define if restrict is
    supported only directly.  */
-#undef restrict
+#define restrict __restrict__
 /* Work around a bug in older versions of Sun C++, which did not
    #define __restrict__ or support _Restrict or __restrict__
    even though the corresponding Sun C compiler ended up with
@@ -238,4 +239,4 @@
 #endif
 
 /* Verbose output printed to stdout. */
-#undef verbose
+/* #undef verbose */

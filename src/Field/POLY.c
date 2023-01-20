@@ -346,7 +346,7 @@ Coul_staticpot( struct site *lat ,
 
   // set up the outputs
   const char *str = output_str_struct( CUTINFO ) ;  
-  FILE *Ap = fopen( str , "wb" ) ; 
+  FILE *Ap = fopen( str , "wb" ) ;
 
   // write the list, in cut_outputs.c
   write_mom_veclist( Ap , size , list , ND-1 ) ;
@@ -371,16 +371,19 @@ Coul_staticpot( struct site *lat ,
   for( t = 1 ; t < T ; t++ ) {
 
     // initialise results 
-    #pragma omp parallel for private(i)
-    for( i = 0 ; i < size[0] ; i++ ) {
-      result[i] = trtr[i] = 0.0 ;
-    }
+    #pragma omp parallel
+    {
+      #pragma omp for private(i)
+      for( i = 0 ; i < size[0] ; i++ ) {
+	result[i] = trtr[i] = 0.0 ;
+      }
 
-    // atomically multiply link matrix at posit (i,t)
-    // into the array of matrices poly
-    #pragma omp parallel for private(i)
-    for( i = 0 ; i < LVOLUME ; i++ ) { 
-      multab_atomic_right( poly[i] , lat[( i + t * LCU ) % LVOLUME].O[ND-1] ) ;
+      // atomically multiply link matrix at posit (i,t)
+      // into the array of matrices poly
+      #pragma omp for private(i)
+      for( i = 0 ; i < LVOLUME ; i++ ) { 
+	multab_atomic_right( poly[i] , lat[( i + t * LCU ) % LVOLUME].O[ND-1] ) ;
+      }
     }
     
     // compute the two quark correlator

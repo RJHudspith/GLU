@@ -64,7 +64,7 @@ obtain_wisdom( int *planflag ,
   sprintf( tmp , "%zu.wisdom" , dims[ mu ] ) ;
   append_char( &str , tmp ) ;
   if( ( wizzard = fopen( str , "r" ) ) == NULL ) {
-    fprintf( stdout , "\n[FFTW] No wisdom (%s) to be obtained"
+    fprintf( stdout , "\n[FFTW] No wisdom (%s) to be obtained "
 	     "here ... planning\n" , str ) ; 
   } else {
     #ifdef verbose

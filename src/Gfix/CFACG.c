@@ -572,9 +572,14 @@ Coulomb_FA( struct site  *__restrict lat ,
   #pragma omp parallel
   {
     size_t t = 0 , i , thread_its = 0 ;
+    #ifdef OBC_HACK
+    const double bcval = 1E-7 ;
+    #else
+    const double bcval = accuracy ;
+    #endif
     // OK so we have set up the gauge transformation matrices
     thread_its = steep_fix( G.g_end , CG , FFTW ,
-			    lat , t , accuracy , max_iter , f ) ;
+			    lat , t , bcval , max_iter , f ) ;
     
     // and t+1
     thread_its += steep_fix( G.g , CG , FFTW ,
@@ -592,7 +597,8 @@ Coulomb_FA( struct site  *__restrict lat ,
 
       // gauge fix on this slice
       thread_its += steep_fix( G.g_up , CG , FFTW , lat ,
-			       t , accuracy , max_iter , f ) ;
+			       t , t==Latt.dims[ND-1]-1?bcval:accuracy ,
+			       max_iter , f ) ;
             
       //gauge transform the links for this slice "g"
       gtransform_slice_th( (const GLU_complex **)G.g , lat , 
