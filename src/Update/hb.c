@@ -37,10 +37,31 @@ a    GLU is distributed in the hope that it will be useful,
 #include "relax.h"      // OR
 
 #include "gramschmidt.h"
+#include "GLU_malloc.h"
+#include "geometry.h"
+
+static struct site *lat2 = NULL ;
 
 // maximum number of heatbath updates
 #define NHBMAX (42)
 
+// Tony and Brian's algorithm is better - sorry LatticeGuy!
+#define USE_KP
+
+#ifdef USE_KP
+// Kennedy-Pendleton heatbath algorithm
+static int
+KP( double *__restrict d ,
+    const double xl ,
+    const double NORM ,
+    const uint32_t thread ) 
+{  
+  register const double x4 = par_rng_dbl( thread ) ;
+  register const double x3 = cos( TWOPI * par_rng_dbl( thread ) ) ;
+  *d = -( log( par_rng_dbl( thread ) ) + log( par_rng_dbl( thread ) ) * x3*x3 ) * NORM ;
+  return ( 1. - 0.5*(*d) ) < x4*x4 ;
+}
+#else
 // Creutz heatbath algorithm
 static int
 Creutz( double *__restrict d ,
@@ -54,19 +75,7 @@ Creutz( double *__restrict d ,
   *d = 1.0 - a0 ;
   return ( 1.0 - a0*a0 ) < x4*x4 ;
 }
-
-// Kennedy-Pendleton heatbath algorithm
-static int
-KP( double *__restrict d ,
-    const double xl ,
-    const double NORM ,
-    const uint32_t thread ) 
-{  
-  register const double x4 = par_rng_dbl( thread ) ;
-  register const double x3 = cos( TWOPI * par_rng_dbl( thread ) ) ;
-  *d = -( log( par_rng_dbl( thread ) ) + log( par_rng_dbl( thread ) ) * x3*x3 ) * NORM ;
-  return ( 1. - 0.5*(*d) ) < x4*x4 ;
-}
+#endif
 
 // generate SU(2) matrix proportional to boltzmann weight
 static int
@@ -83,27 +92,18 @@ generate_SU2( GLU_complex *s0 ,
 		   const double xl ,
 		   const double NORM ,
 		   const uint32_t thread ) ;
-
-  // for small beta (large NORM) the Creutz algorithm is preferred
-  char msg[8] ;
-  if( NORM < 2.0 ) {
-    K = KP ; sprintf( msg , "KenPen" ) ;
-  } else {
-    K = Creutz ;
-    xl = exp( -2./NORM ) ; 
-    sprintf( msg , "Creutz" ) ;
-  }
+#ifdef USE_KP
+  K = KP ;
+#else
+  K = Creutz ;
+  xl = exp( -2./NORM ) ; 
+#endif
 
   // compute d which is (1-a0) = the leftmost su2 matrix element
   if( K( &d , xl , NORM , thread ) ) {
     // redo the algorithm
     while( K( &d , xl , NORM , thread ) && iters < NHBMAX ) {
       iters++ ;
-    }
-    // complain if we do too many hits?
-    if( iters == NHBMAX ) {
-      fprintf( stderr , "[HB] %d iterations of %s to no avail \n" ,
-	       NHBMAX , msg ) ;
     }
   }
 
@@ -164,35 +164,36 @@ hb_lattice( struct site *lat ,
 {
   // single node until I figure out the coloring -- could this just be a simple copy? i.e. a temporary gauge field being set and then pointer-swapped?
 #ifdef IMPROVED_SMEARING
-    #pragma omp single
-    {
-      size_t mu , i ;
-      for( mu = 0 ; mu < ND ; mu++ ) {
-	for( i = 0 ; i < LVOLUME ; i++ ) {
-	  GLU_complex stap[ NCNC ] GLUalign ;
-	  zero_mat( stap ) ;
-	  all_staples_improve( stap , lat , i , mu , ND , SM_APE ) ;
-	  hb( lat[ i ].O[mu] , stap , invbeta , 0 ) ;
-	}
-      }
+  size_t cmu , i ;
+  for( cmu = 0 ; cmu < db.Ncolors ; cmu++ ) {
+    const size_t mu = (size_t)cmu/4 ;
+    // parallel loop over all sites with this coloring
+    #pragma omp for private(i) 
+    for( i = 0 ; i < db.Nsquare[cmu] ; i++ ) {
+      const size_t it = db.square[cmu][i] ;
+      GLU_complex stap[ NCNC ] GLUalign ;
+      zero_mat( stap ) ;
+      all_staples_improve( stap , lat , it , mu , ND , SM_APE ) ;
+      hb( lat[ it ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
+      gram_reunit( lat[it].O[mu] ) ;
     }
+  }
 #else
-    size_t cmu , i ;
-    for( cmu = 0 ; cmu < ND*db.Ncolors ; cmu++ ) {
-      const size_t mu = cmu/db.Ncolors ;
-      const size_t c  = cmu%db.Ncolors ;
-      // parallel loop over all sites with this coloring
-      #pragma omp for private(i) 
-      for( i = 0 ; i < db.Nsquare[c] ; i++ ) {
-        const size_t it = db.square[c][i] ;
-	GLU_complex stap[ NCNC ] GLUalign ;
-	zero_mat( stap ) ;
-	all_staples( stap , lat , it , mu , ND , SM_APE ) ;
-	hb( lat[ it ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
-	gram_reunit( lat[it].O[mu] ) ;
-      }
+  size_t cmu , i ;
+  for( cmu = 0 ; cmu < ND*db.Ncolors ; cmu++ ) {
+    const size_t mu = cmu/db.Ncolors ;
+    const size_t c  = cmu%db.Ncolors ;
+    // parallel loop over all sites with this coloring
+    #pragma omp for private(i) 
+    for( i = 0 ; i < db.Nsquare[c] ; i++ ) {
+      const size_t it = db.square[c][i] ;
+      GLU_complex stap[ NCNC ] GLUalign ;
+      zero_mat( stap ) ;
+      all_staples( stap , lat , it , mu , ND , SM_APE ) ;
+      hb( lat[ it ].O[mu] , stap , invbeta , get_GLU_thread() ) ;
+      gram_reunit( lat[it].O[mu] ) ;
     }
-    // and that is it
+  }
 #endif
   return GLU_SUCCESS ;
 }

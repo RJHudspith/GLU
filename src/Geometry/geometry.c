@@ -276,7 +276,7 @@ compute_spacing( const int separation[ ND ] ,
   get_mom_2piBZ( n , k , DIMS ) ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     if( mu < DIMS ) {
-      n[mu] = ( n[mu] + separation[mu] ) % Latt.dims[mu] ;
+      n[mu] = ( n[mu] + separation[mu] + Latt.dims[mu] ) % Latt.dims[mu] ;
     } else {
       n[ mu ] = 0 ;
     }

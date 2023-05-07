@@ -44,4 +44,13 @@ init_cb( struct draughtboard *db ,
 	 const size_t LENGTH ,
 	 const size_t DIR ) ;
 
+/**
+   @fn void init_improved_cb( struct draughtboard *db )
+   @brief initialise the improved draughtboard
+   @param db :: draughtboard structure
+   @return #GLU_SUCCESS or #GLU_FAILURE
+*/
+int
+init_improved_cb( struct draughtboard *db ) ;
+
 #endif

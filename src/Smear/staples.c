@@ -210,7 +210,7 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
       multab_dag( b , tempstap , lat[ tf3 ].O[mu] ) ;
     }
     a_plus_b( c1_stap , b ) ;
-    
+
     //// The horizontal, backwards contribution
     //
     // x-->--x-->--x       x--<--x==<==x
@@ -376,7 +376,7 @@ all_staples_improve( GLU_complex stap[ NCNC ] ,
   for( nu = 0 ; nu < NCNC ; nu++ ) {
     stap[nu] = stap[nu] + c2_multiplier * c2_stap[nu] ;
   }
-  #endif
+#endif
 
   return ;
 }

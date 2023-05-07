@@ -134,12 +134,18 @@ hb_update( struct site *lat ,
       return GLU_FAILURE ;
     }
   }
-
+  
   // initialise the draughtboard
   struct draughtboard db ;
+#ifdef IMPROVED_SMEARING
+  if( init_improved_cb( &db ) == GLU_FAILURE ) {
+    return GLU_FAILURE ;
+  }
+#else
   if( init_cb( &db , LVOLUME , ND ) == GLU_FAILURE ) {
     return GLU_FAILURE ;
   }
+#endif
 
   // this guy appears throughout the HB algorithm
   const double inverse_beta = NC/(HBINFO.beta) ;

@@ -130,19 +130,19 @@ OR_single( struct site *__restrict lat ,
 
 // perform one iteration of the overrelaxed gauge fixing routine
 static void
-OR_iteration( struct site *__restrict lat ,
-	      const struct draughtboard db ,
-	      const size_t su2_index ,
-	      const double OrParam ,
-	      const size_t t ,
-	      const size_t DIMS )
+OR_iteration_th( struct site *__restrict lat ,
+		 const struct draughtboard db ,
+		 const size_t su2_index ,
+		 const double OrParam ,
+		 const size_t t ,
+		 const size_t DIMS )
 {
   // perform an overrelaxation step
   size_t i , c ;
   for( c = 0 ; c < db.Ncolors ; c++ ) {
-    #pragma omp parallel for private(i)
+    #pragma omp for private(i)
     for( i = 0 ; i < db.Nsquare[c] ; i++ ) {
-      OR_single( lat , su2_index  , OrParam , 
+      OR_single( lat , su2_index , OrParam ,
 		 db.square[c][i] + LCU * t , DIMS ) ;
     }
   }
@@ -211,9 +211,12 @@ OrLandau( struct site *__restrict lat ,
     oldlink = newlink ;
 
     // loop su2 indices
-    size_t su2_index = 0 ;
-    for( su2_index = 0 ; su2_index < NSU2SUBGROUPS ; su2_index++ ) {
-      OR_iteration( lat , db , su2_index , OrParam , 0 , ND ) ;
+    #pragma omp parallel
+    {
+      size_t su2_index = 0 ;
+      for( su2_index = 0 ; su2_index < NSU2SUBGROUPS ; su2_index++ ) {
+	OR_iteration_th( lat , db , su2_index , OrParam , 0 , ND ) ;
+      }
     }
 
     newlink = links( lat ) ;
@@ -277,6 +280,11 @@ OrCoulomb( struct site *__restrict lat ,
     iters = 123456789 ;
     goto end ;
   }
+  if( OrParam < 0.0 || OrParam >= 1.0 ) {
+    fprintf( stderr , "[OR] SOR param should be between 0 and 1, not %f \n" ,
+	     OrParam ) ;
+    goto end ;
+  }
 #endif
 
   size_t t ;
@@ -292,9 +300,12 @@ OrCoulomb( struct site *__restrict lat ,
       oldlink = newlink ;
 
       // loop su2 indices
-      size_t su2_index ;
-      for( su2_index = 0 ; su2_index < NSU2SUBGROUPS ; su2_index++ ) {
-	OR_iteration( lat , db , su2_index , OrParam , t , ND-1 ) ;
+      #pragma omp parallel
+      {
+	size_t su2_index ;
+	for( su2_index = 0 ; su2_index < NSU2SUBGROUPS ; su2_index++ ) {
+	  OR_iteration_th( lat , db , su2_index , OrParam , t , ND-1 ) ;
+	}
       }
 
       newlink = slice_spatial_links( lat , t ) ;
