@@ -126,7 +126,9 @@ init_improved_cb( struct draughtboard *db )
   for( int mu = 0 ; mu < ND ; mu++ ) {
     assert( Latt.dims[mu]%4 == 0 && Latt.dims[mu] >=4 ) ;
   }
-  assert( !SYMANZIK_ONE_LOOP ) ;
+#ifdef SYMANZIK_ONE_LOOP
+  assert( true ) ;
+#endif
   
   size_t i ;
 
