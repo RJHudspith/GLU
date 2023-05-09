@@ -23,8 +23,15 @@
 #include "Mainfile.h"
 
 #include <assert.h>
+#include <stdlib.h>
 
 #include "geometry.h" //   get_mom_2piBZ()
+
+static int
+comp( const void *a , const void *b )
+{
+  return *(size_t*)a < *(size_t*)b ;
+}
 
 // free the draughtboard
 void
@@ -130,15 +137,13 @@ init_improved_cb( struct draughtboard *db )
   assert( true ) ;
 #endif
   
-  size_t i ;
-
   // initially set up the database
   db -> Ncolors = 16 ;
   db -> square  = malloc( db -> Ncolors * sizeof( size_t* ) ) ;
   db -> Nsquare = malloc( db -> Ncolors * sizeof( size_t ) ) ;
-  
+
   // set the counters to zero
-  for( i = 0 ; i < db -> Ncolors ; i++ ) {
+  for( size_t i = 0 ; i < db -> Ncolors ; i++ ) {
     db -> Nsquare[i] = LVOLUME/4 ;
     db->square[ i ] = malloc( db->Nsquare[i]*sizeof( size_t ) ) ;
     memset( db->square[i] , 0 , sizeof( size_t )*db->Nsquare[i] ) ;
@@ -223,6 +228,12 @@ init_improved_cb( struct draughtboard *db )
       }
     }
   }
+
+  // sort the indexing for better cache coherence
+  for( size_t i = 0 ; i < db -> Ncolors ; i++ ) {
+    qsort( db->square[i] , db->Nsquare[i] , sizeof(size_t) , comp ) ;
+  }
+  
   fprintf( stdout , "\n[DB] initialised\n\n" ) ;
   return GLU_SUCCESS ;
 }
