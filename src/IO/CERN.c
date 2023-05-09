@@ -28,6 +28,8 @@
  */
 #include "Mainfile.h"
 
+#include <assert.h>
+
 #include "geometry.h"      // gen_site()
 #include "GLU_bswap.h"     // byte swapping arrays
 #include "plaqs_links.h"   // compute the plaquette
@@ -39,6 +41,8 @@ read_CLS_field( struct site *__restrict lat ,
 		FILE *__restrict in , 
 		uint32_t *chksum )
 {
+  assert( ND == 4 ) ;
+  
   const size_t Nelements = NCNC ;
   const size_t PM = 2 ; // +/-
   const size_t Complex = 2 ; // double complex
@@ -53,11 +57,9 @@ read_CLS_field( struct site *__restrict lat ,
     for( x = 0 ; x < Latt.dims[0] ; x++ ) {
       for( y = 0 ; y < Latt.dims[1] ; y++ ) {
 	for( z = 0 ; z < Latt.dims[2] ; z++ ) {
-    
 	  if( (x+y+z+t)%2 ) {
 	    
 	    int X[4] = { (int)x , (int)y , (int)z , (int)t } ;
-
 	    const size_t idx = gen_site( X ) ;
 	    
 	    if( fread( uind , sizeof( double ) , stride , in ) != stride ) {
@@ -80,7 +82,7 @@ read_CLS_field( struct site *__restrict lat ,
 	      lat[shift].O[ND-1][j] = (GLU_real)uind[a] + I * (GLU_real)uind[a + 1] ;
 	      a += 2 ;
 	    }
-	    // then the others (xyz)?
+	    // then the others (xyz)
 	    for( mu = 0 ;  mu < ND - 1 ; mu++ ) {
 	      for( j = 0 ; j < NCNC ; j++ ) {
 		lat[idx].O[mu][j] = (GLU_real)uind[a] + I * (GLU_real)uind[a + 1] ;
@@ -92,8 +94,7 @@ read_CLS_field( struct site *__restrict lat ,
 		a += 2 ;
 	      }
 	    }
-	  }
-	  
+	  }	  
 	}}}}
     
   *chksum = k ;
@@ -106,13 +107,15 @@ void
 write_CLS_field( const struct site *__restrict lat ,
 		 FILE *__restrict outfile )
 {
+  assert( ND == 4 ) ;
+  
   // the size of the link matrices
   const size_t PM = 2 ;
   const size_t Complex = 2 ;
   // chunk we will read
   const size_t stride = PM * Complex * NCNC * ND ; 
   // modifier size
-  const size_t Mod[ 4 ] = { 1 , 1 , 1 , 1 } ;
+  const size_t Mod[ 4 ] = { 1 , 1 , 1 , 2 } ;
   
   uint32_t NAV[ ND ] ; 
   size_t mu ;
@@ -143,7 +146,6 @@ write_CLS_field( const struct site *__restrict lat ,
     for( x = 0 ; x < Mod[0]*Latt.dims[ 0 ] ; x++ ) {
       for( y = 0 ; y < Mod[1]*Latt.dims[ 1 ] ; y++ ) {
 	for( z = 0 ; z < Mod[2]*Latt.dims[ 2 ] ; z++ ) {
-
 	  // convert it into local GLU coordinates
 	  if( ( x + y + z + t )%2 ) {
 
@@ -193,7 +195,6 @@ write_CLS_field( const struct site *__restrict lat ,
 	    }
 	    fwrite( uoutd , sizeof( double ) , stride , outfile ) ; 
 	  }
-
 	  // tzyx
 	}}}}
 

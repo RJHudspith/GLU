@@ -24,9 +24,9 @@
 
 // staple routine the positive \nu one goes like
 //
-//         ---<---
+//         --->---
 //         |      |
-//         v      ^
+//         ^      v
 //         |      |
 void
 all_staples( GLU_complex stap[ NCNC ] , 
@@ -83,6 +83,8 @@ all_staples( GLU_complex stap[ NCNC ] ,
 
 // (OVER)IMPROVED STAPLES ROUTINE
 #ifdef IMPROVED_SMEARING
+
+// improved staples
 void
 all_staples_improve( GLU_complex stap[ NCNC ] , 
 		     const struct site *__restrict lat , 
