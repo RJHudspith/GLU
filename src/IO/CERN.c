@@ -115,7 +115,7 @@ write_CLS_field( const struct site *__restrict lat ,
   // chunk we will read
   const size_t stride = PM * Complex * NCNC * ND ; 
   // modifier size
-  const size_t Mod[ 4 ] = { 1 , 1 , 1 , 2 } ;
+  const size_t Mod[ 4 ] = { 1 , 1 , 1 , 1 } ;
   
   uint32_t NAV[ ND ] ; 
   size_t mu ;
