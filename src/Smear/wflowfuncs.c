@@ -471,7 +471,7 @@ scaleset( struct wfmeas *curr ,
   }
   #pragma omp master
   {
-    fprintf( stdout , "[GT-scale] G(%g) %f \n" , T_0 , sqrt( t0 ) ) ;
+    fprintf( stdout , "[GT-scale] G(%g) %1.12e \n" , T_0 , sqrt( t0 ) ) ;
   }
   // W(t) = t ( dG(t) / dt )
   if( count > 0 ) {
@@ -489,7 +489,7 @@ scaleset( struct wfmeas *curr ,
   }
   #pragma omp master
   {
-    fprintf( stdout , "[WT-scale] W(%g) %g \n" , W_0 , sqrt( w0 ) ) ;
+    fprintf( stdout , "[WT-scale] W(%g) %1.12e \n" , W_0 , sqrt( w0 ) ) ;
   }
  free :
   free( der ) ;
