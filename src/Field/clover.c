@@ -169,7 +169,7 @@ compute_s4( GLU_complex *__restrict sum ,
 }
 #endif
 
-#ifdef CLOVER_IMPROVE 
+#if (defined CLOVER_IMPROVE && !defined PLAQUETTE_FMUNU) 
 // compute sector 1 with improvements 
 // return the plaquette. Sector 1 is the
 // top right of the clover term.
@@ -883,7 +883,7 @@ compute_q( GLU_complex q[ NCNC ] ,
   zero_mat( sum_1 ) ; zero_mat( sum_2 ) ;
   // temp matrices in u and v
   GLU_complex u[ NCNC ] GLUalign , v[ NCNC ] GLUalign ;
-#ifdef CLOVER_IMPROVE
+#if (defined CLOVER_IMPROVE && !defined PLAQUETTE_FMUNU)
   // highly improved clover definition
   compute_clover_s1( sum_1 , u , v , lat , i , mu , nu ) ;
   compute_clover_s2( sum_1 , u , v , lat , i , mu , nu ) ;
@@ -948,7 +948,7 @@ compute_Gmunu_kernel( double *__restrict plaq_t ,
   zero_mat( sum_1 ) ; zero_mat( sum_2 ) ;
   // temp matrices in u and v
   GLU_complex u[ NCNC ] GLUalign , v[ NCNC ] GLUalign ;
-#ifdef CLOVER_IMPROVE
+#if (defined CLOVER_IMPROVE && !defined PLAQUETTE_FMUNU)
   // highly improved clover definition
   compute_clover_s1( sum_1 , u , v , lat , i , mu , nu ) ;
   compute_clover_s2( sum_1 , u , v , lat , i , mu , nu ) ;
@@ -1026,8 +1026,8 @@ compute_Gmunu( double *__restrict GG ,
   *qtop = Q ;
   // just to accommodate for the sum over 4 of the others
 #ifdef PLAQUETTE_FMUNU
-  *GG *= 16.0 ;
-  *qtop *= Q ;
+  *GG   *= 16.0 ;
+  *qtop *= 16.0 ;
 #endif
 
   return ;
@@ -1073,8 +1073,18 @@ compute_Gmunu_th( double *red ,
     compute_Gmunu_kernel( &plt , &plsp , &q , lat ,
 			  i , 3 , 2 , 0 , 1  ) ;
     red[ 0 + CLINE*th ] += plt + plsp ;
-    red[ 1 + CLINE*th ] += q ; 
+    red[ 1 + CLINE*th ] += q ;
   }
+
+  // plaquette and clover differ by 4*4
+#ifdef PLAQUETTE_FMUNU
+  #pragma omp for private(i)
+  for( i = 0 ; i < Latt.Nthreads ; i++ ) {
+    red[ 0 + i*CLINE ] *= 16.0 ;
+    red[ 1 + i*CLINE ] *= 16.0 ;
+  }
+#endif
+  
   return ;
 }
 
@@ -1104,6 +1114,10 @@ compute_Gmunu_array( GLU_complex *__restrict qtop , // an LVOLUME array for the 
     //
     compute_q( Qmat , lat , i , 3 , 2 , 0 , 1  ) ;
     qtop[i] += trace( Qmat ) ;
+
+    #ifdef PLAQUETTE_FMUNU
+    qtop[i] *= 16 ;
+    #endif
   }
   return ;
 }
