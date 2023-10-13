@@ -977,7 +977,7 @@ compute_Gmunu_kernel( double *__restrict plaq_t ,
   compute_GG_q( sum_1 , sum_2 , plaq_t , plaq_sp , qtop ) ;
 #ifdef PLAQUETTE_FMUNU
   *plaq_sp = 2.0 * ( (double)NC - (double)trace( sum_1 ) ) ;
-  *plaq_t = 2.0 * ( (double)NC - (double)trace( sum_2 ) ) ;
+  *plaq_t  = 2.0 * ( (double)NC - (double)trace( sum_2 ) ) ;
 #endif
 #endif
   return ;

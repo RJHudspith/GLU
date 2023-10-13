@@ -22,6 +22,8 @@
 
    @warning requires FFTW linking to work
  */
+#define _GNU_SOURCE // sincos
+
 #include "Mainfile.h"
 
 // and the other headers it uses
@@ -31,12 +33,10 @@
 #include "plan_ffts.h"
 #include "U1_obs.h"
 
-//#define U1_DHT
+#ifdef HAVE_FFTW3_H
 
 // just to make it clear what we are doing
 enum{ CONJUGATE_NOT_IN_LIST , CONJUGATE_IN_LIST } ;
-
-#ifdef HAVE_FFTW3_H
 
 // little inline for the ( 0 , 0 , .. , 0 ) point in the -Pi -> Pi BZ
 static size_t
@@ -75,8 +75,8 @@ conjugate_site( const size_t i )
 }
 
 // periodic fields using the DFT
-static void 
-periodic_dft( GLU_complex *__restrict *__restrict fields )
+void 
+periodic_dft( GLU_complex **fields )
 {
   // we know that there are no self-conjugate momenta beyond this point
   const size_t SYMM_POINT = compute_zeropoint( ) + 1 ;
@@ -84,7 +84,7 @@ periodic_dft( GLU_complex *__restrict *__restrict fields )
 
   size_t i ;
   // openmp does not play nice with the rng
-#pragma omp parallel for private(i)
+  #pragma omp parallel for private(i)
   for( i = 0 ; i < SYMM_POINT ; i++ ) {
     const uint32_t thread = get_GLU_thread( ) ;
     if( count[i] == CONJUGATE_NOT_IN_LIST ) {
@@ -126,21 +126,21 @@ periodic_dft( GLU_complex *__restrict *__restrict fields )
 }
 
 // create the U1 fields
-static int
-create_u1( GLU_real *__restrict *__restrict U ,
+int
+create_u1( GLU_real **U ,
 	   const GLU_real alpha )
 {
 #ifndef HAVE_FFTW3_H
-
   fprintf( stderr , "[U(1)] Cannot create U(1) fields, "
 	   "requires FFTW ... Leaving\n" ) ;
   return GLU_FAILURE ;
-
 #else
-
-  // alpha = 0.0795775387 is beta = 1 , gives noncompact plaq = 0.25 , test
-  const GLU_real Nbeta = LVOLUME / ( ND * MPI * alpha ) ;
-  fprintf( stdout , "\n[U(1)] 1/(%d Beta) :: %f \n\n" , ND , ( MPI * alpha ) ) ;
+  // alpha = 1/4\pi = 0.0795775387 is beta = 1 , gives noncompact plaq = 0.5
+  // note the factor of 2 in the plaquette due to my conventions of giving
+  // compact plaquette at \alpha = 0 of 1
+  // factor of Volume comes from us not normalizing the FFTs
+  const GLU_real Nbeta = LVOLUME / ( 4. * MPI * alpha ) ;
+  fprintf( stdout , "\n[U(1)] Beta :: %f \n\n" , ND , 1/( 4*MPI * alpha ) ) ;
 
   size_t i ;
 
@@ -157,13 +157,13 @@ create_u1( GLU_real *__restrict *__restrict U ,
 
   periodic_dft( FFTW.in ) ;
 
-  // set up the distribution with the lattice mom
+  // set up the distribution with the lattice mom Feynmann gauge QEDL prescription
 #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     int flag = 0 ;
     const GLU_real f = 1.0 / (GLU_real)sqrt( gen_p_sq_feyn( i , &flag ) ) ;
 
-    // these should become SIMD'd or something
+    // these should become SIMD'd or something probably pointless because of the flag
     if( flag == 1 ) {
       #if ND == 4
       FFTW.in[0][i] = FFTW.in[1][i] = FFTW.in[2][i] = FFTW.in[3][i] = 0. + I * 0. ; 
@@ -190,19 +190,25 @@ create_u1( GLU_real *__restrict *__restrict U ,
 
   // fft the fields allow for the parallel omp-ified fftws
   size_t mu ;
-
-  #pragma omp parallel for private(mu) 
+#pragma omp parallel for private(mu) 
   for( mu = 0 ; mu < ND ; mu++ ) {
     fftw_execute( FFTW.forward[ mu ] ) ;
   }
-
+  
   const GLU_real rbeta = 1.0 / (GLU_real)sqrt( Nbeta ) ;
 #pragma omp parallel for private(i)
   for( i = 0 ; i < LVOLUME ; i++ )  {
+    #if ND == 4
+    U[ 0 ][ i ] = creal( FFTW.out[ 0 ][ i ] ) * rbeta ;
+    U[ 1 ][ i ] = creal( FFTW.out[ 1 ][ i ] ) * rbeta ;
+    U[ 2 ][ i ] = creal( FFTW.out[ 2 ][ i ] ) * rbeta ;
+    U[ 3 ][ i ] = creal( FFTW.out[ 3 ][ i ] ) * rbeta ;
+    #else
     size_t nu ;
     for( nu = 0 ; nu < ND ; nu ++ ) {
-      U[ nu ][ i ] = FFTW.out[ nu ][ i ] * rbeta ;
+      U[ nu ][ i ] = creal( FFTW.out[ nu ][ i ] ) * rbeta ;
     }
+    #endif
   }
 
   print_time( ) ;
@@ -212,12 +218,11 @@ create_u1( GLU_real *__restrict *__restrict U ,
 #endif
  return GLU_SUCCESS ;
 }
-
 #endif // HAVE_FFTW3_H
 
 // Possibly a check that the plaquette has changed ..
 int
-suNC_cross_u1( struct site *__restrict lat , 
+suNC_cross_u1( struct site *lat , 
 	       const struct u1_info U1INFO )
 {
 #ifndef HAVE_FFTW3_H
@@ -230,25 +235,46 @@ suNC_cross_u1( struct site *__restrict lat ,
     U[i] = ( GLU_real* )malloc( LVOLUME * sizeof( GLU_real ) ) ;
   }
 
+  fprintf( stdout , "U1 allocated ....\n" ) ;
+
   // create the U1 field ...
   create_u1( U , U1INFO.alpha ) ;
+
+  fprintf( stdout , "U1 created ....\n" ) ;
   
   // compute some U1 observables why not ?
   compute_U1_obs( (const GLU_real**)U , U1INFO.meas ) ;
 
+  fprintf( stdout , "Exponentiation ....\n" ) ;
+
   // multiply the < exponentiated > fields
 #pragma omp parallel for private(i) 
-  for( i = 0 ; i < LVOLUME ; i++ ) {
-    size_t mu ;
-    for( mu = 0 ; mu < ND ; mu ++ ) {
-      // call to cexp is expensive
-      register const GLU_real theta = U[mu][i] * U1INFO.charge ;
-      const GLU_complex U1 = cos( theta ) + I * sin( theta ) ;
-      size_t element ;
-      for( element = 0 ; element < NCNC ; element++ ) {
-	lat[i].O[mu][element] *= U1 ;
-      }
+  for( i = 0 ; i < LVOLUME*ND ; i++ ) {
+    const size_t idx = i/ND ;
+    const size_t mu = idx%ND ;
+
+    // call to cexp is expensive so we just do a simple sincos
+    double re , im ;
+    sincos( U[mu][idx]*U1INFO.charge , &re , &im ) ;
+
+    // could be a vectorised multiply ... 
+    register const GLU_complex U1 = re + I*im ;
+    #if NC == 3
+    lat[idx].O[mu][0] *= U1 ;
+    lat[idx].O[mu][1] *= U1 ;
+    lat[idx].O[mu][2] *= U1 ;
+    lat[idx].O[mu][3] *= U1 ;
+    lat[idx].O[mu][4] *= U1 ;
+    lat[idx].O[mu][5] *= U1 ;
+    lat[idx].O[mu][6] *= U1 ;
+    lat[idx].O[mu][7] *= U1 ;
+    lat[idx].O[mu][8] *= U1 ;
+    #else
+    size_t element ;
+    for( element = 0 ; element < NCNC ; element++ ) {
+      lat[idx].O[mu][element] *= U1 ;
     }
+    #endif
   }
 
   // free memory and stuff

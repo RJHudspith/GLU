@@ -27,10 +27,10 @@
 
 // calculation of the non-compact U(1) plaquette
 static double 
-non_plaquette( double *__restrict plaq ,
-	       const GLU_real *__restrict *__restrict O )
+non_plaquette( double *plaq ,
+	       const GLU_real **O )
 {
-  const double denom = 1. / (double)( LVOLUME * ND * ( ND - 1 ) ) ;
+  const double denom = 2. / (double)( LVOLUME * ND * ( ND - 1 ) ) ;
   size_t i ;
   double plaquette = 0. , sum = 0. ;
 #pragma omp parallel for private(i) reduction(+:sum) reduction(+:plaquette) 
@@ -58,8 +58,8 @@ non_plaquette( double *__restrict plaq ,
 
 // computation of the U1 rectangle
 static double
-U1_rectangle( double *__restrict U1REC ,
-	      const GLU_real *__restrict *__restrict O )
+U1_rectangle( double *U1REC ,
+	      const GLU_real **O )
 {
   const double denom = 1. / ( LVOLUME * ND * ( ND - 1 ) ) ;
   size_t i ;
@@ -102,8 +102,8 @@ U1_rectangle( double *__restrict U1REC ,
       }
     }
     // looks pretty sexy
-    sum = sum + (double)( loc_rec * 0.5 ) ;
-    sum_nc = sum_nc + (double)( loc_ncrec * 0.5 ) ;
+    sum = sum + (double)( loc_rec ) ;
+    sum_nc = sum_nc + (double)( loc_ncrec ) ;
   }
   *U1REC = sum * denom ;
   return sum_nc * denom ;
@@ -111,20 +111,20 @@ U1_rectangle( double *__restrict U1REC ,
 
 // wrapper for the U1 configurations
 void
-compute_U1_obs( const GLU_real *__restrict *__restrict U , 
+compute_U1_obs( const GLU_real **U , 
 		const U1_meas meas )
 {
   double plaq = 0. ;
   const double test_noncompact = non_plaquette( &plaq , (const GLU_real**)U ) ;
   const double test_compact = plaq ;
   // should have our U1-ified fields
-  fprintf( stdout , "\n[U(1)] Plaquettes [NON-COMPACT] %lf  [COMPACT] %lf \n" ,
+  fprintf( stdout , "\n[U(1)] Plaquettes [NON-COMPACT] %lf [COMPACT] %lf \n" ,
 	   test_noncompact , test_compact ) ;
 
   if( meas == U1_RECTANGLE ) {
     const double test_rectangle = U1_rectangle( &plaq , (const GLU_real**)U ) ;
     fprintf( stdout , "\n[U(1)] Rectangle  [NON-COMPACT] %lf"
-	     "[COMPACT] %lf \n" , test_rectangle , plaq ) ;
+	     " [COMPACT] %lf \n" , test_rectangle , plaq ) ;
   } else if( meas == U1_TOPOLOGICAL ) {
     double qtop ;
     int monopole , dirac_sheet ;
