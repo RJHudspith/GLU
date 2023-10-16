@@ -89,7 +89,7 @@ periodic_dft( GLU_complex **fields )
     const uint32_t thread = get_GLU_thread( ) ;
     if( count[i] == CONJUGATE_NOT_IN_LIST ) {
       count[i] = CONJUGATE_IN_LIST; // set the element of the list to 1
-      const size_t b = conjugate_site( i ) ;
+      const size_t b = conjugate_site( i ) ;      
       size_t mu ;
       if( i == b ) {
         #if ND%2 == 0
@@ -140,7 +140,7 @@ create_u1( GLU_real **U ,
   // compact plaquette at \alpha = 0 of 1
   // factor of Volume comes from us not normalizing the FFTs
   const GLU_real Nbeta = LVOLUME / ( 4. * MPI * alpha ) ;
-  fprintf( stdout , "\n[U(1)] Beta :: %f \n\n" , ND , 1/( 4*MPI * alpha ) ) ;
+  fprintf( stdout , "\n[U(1)] Beta :: %f \n\n" , 1./( 4*MPI * alpha ) ) ;
 
   size_t i ;
 
@@ -216,7 +216,7 @@ create_u1( GLU_real **U ,
   clean_up_fftw( FFTW , ND ) ;
 
 #endif
- return GLU_SUCCESS ;
+  return GLU_SUCCESS ;
 }
 #endif // HAVE_FFTW3_H
 
@@ -235,17 +235,17 @@ suNC_cross_u1( struct site *lat ,
     U[i] = ( GLU_real* )malloc( LVOLUME * sizeof( GLU_real ) ) ;
   }
 
-  fprintf( stdout , "U1 allocated ....\n" ) ;
+  fprintf( stdout , "[U1] U1 allocated ....\n" ) ;
 
   // create the U1 field ...
   create_u1( U , U1INFO.alpha ) ;
 
-  fprintf( stdout , "U1 created ....\n" ) ;
+  fprintf( stdout , "[U1] U1 created ....\n" ) ;
   
   // compute some U1 observables why not ?
   compute_U1_obs( (const GLU_real**)U , U1INFO.meas ) ;
 
-  fprintf( stdout , "Exponentiation ....\n" ) ;
+  fprintf( stdout , "[U1] Exponentiation ....\n" ) ;
 
   // multiply the < exponentiated > fields
 #pragma omp parallel for private(i) 
@@ -277,12 +277,16 @@ suNC_cross_u1( struct site *lat ,
     #endif
   }
 
+  fprintf( stdout , "[U1] Memory Cleanup ....\n" ) ;
+
   // free memory and stuff
-  size_t mu ;
-  for( mu = 0 ; mu < ND ; mu++ ) {
-    free( U[mu] ) ;
+  if( U != NULL ) {
+    size_t mu ;
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      free( U[mu] ) ;
+    }
+    free( U ) ;
   }
-  free( U ) ;
 #endif
   return GLU_SUCCESS ;
 }
