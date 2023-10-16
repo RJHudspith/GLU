@@ -24,7 +24,7 @@
 #define GLU_U1_OPS_H
 
 /**
-   @fn void compute_U1_obs( const GLU_real *__restrict *__restrict U , const U1_meas meas )
+   @fn void compute_U1_obs( const GLU_complex **U , const U1_meas meas )
    @brief this function is a wrapper for the U1 measurements
    @param U :: the U(1) non-compact field
    @param meas :: the measurement being made of type #U1_meas
@@ -34,7 +34,7 @@
    and the "dirac_sheet".
  **/
 void
-compute_U1_obs( const GLU_real *__restrict *__restrict U ,
+compute_U1_obs( const GLU_complex **U ,
 		const U1_meas meas ) ;
 
 #endif

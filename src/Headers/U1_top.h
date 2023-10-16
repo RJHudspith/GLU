@@ -24,7 +24,7 @@
 #define GLU_U1_TOP_H
 
 /**
-   @fn void U1_topological( int *__restrict monopole , int *__restrict d_sheet , double *__restrict qtop , const GLU_real *__restrict *__restrict O  )
+   @fn void U1_topological( int *monopole , int *d_sheet , double *qtop , const GLU_complex **O  )
    @brief measures some of the more elementary topological defects from the noncompact U(1) gauge field
    @param monopole :: number of monopoles
    @param d_sheet :: the "dirac sheet", the sum total of the non-zero windings around the elementary plaquette
@@ -32,9 +32,9 @@
    @param O :: the noncompact U(1) gauge field 
  */
 void 
-U1_topological( int *__restrict monopole , 
-		int *__restrict d_sheet , 
-		double *__restrict qtop ,
-		const GLU_real *__restrict *__restrict O ) ;
+U1_topological( int *monopole , 
+		int *d_sheet , 
+		double *qtop ,
+		const GLU_complex **O ) ;
 
 #endif

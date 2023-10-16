@@ -30,7 +30,7 @@
 
 // I have reason to believe that this gives better results
 // FFTW_PATIENT OVERWRITES the data in the arrray given, be warned!
-#define GLU_PLAN FFTW_PATIENT
+#define GLU_PLAN FFTW_ESTIMATE
 
 // for ease of reading
 enum{ NOPLAN = 0 } ;
@@ -127,7 +127,8 @@ create_plans_DFT( struct fftw_stuff *FFTW ,
   FFTW -> forward  = malloc( ARR_SIZE * sizeof( fftw_plan ) ) ; 
   FFTW -> backward = malloc( ARR_SIZE * sizeof( fftw_plan ) ) ; 
   FFTW -> out      = fftw_malloc( ARR_SIZE * sizeof( GLU_complex* ) ) ; 
-  FFTW -> in       = fftw_malloc( ARR_SIZE * sizeof( GLU_complex* ) ) ; 
+  FFTW -> in       = fftw_malloc( ARR_SIZE * sizeof( GLU_complex* ) ) ;
+  FFTW -> psq      = NULL ;
 
 #pragma omp parallel
   {

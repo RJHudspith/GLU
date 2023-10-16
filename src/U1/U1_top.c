@@ -26,7 +26,7 @@
 
 // compute the dirac current
 static int 
-current( const int *__restrict *__restrict M )
+current( const int **M )
 {
   size_t mu , monopole = 0 ;
 #pragma omp parallel for private(mu) reduction(+:monopole)
@@ -49,23 +49,23 @@ mod_2pi( const GLU_real theta )
 
 // the noncompact face of the plaquette
 static GLU_real
-noncompact_face( const GLU_real *__restrict *__restrict O , 
+noncompact_face( const GLU_complex **O , 
 		 const size_t i , 
 		 const size_t mu , 
 		 const size_t nu )
 {
-  const GLU_real a = O[mu][i];
+  const GLU_real a = creal( O[mu][i] ) ;
   size_t temp = gen_shift( i , mu ) ;
-  const GLU_real b = O[nu][temp] ;
-  const GLU_real d = O[nu][i] ;
+  const GLU_real b = creal( O[nu][temp] ) ;
+  const GLU_real d = creal( O[nu][i] ) ;
   temp = gen_shift( i , nu ) ;
-  const GLU_real c = O[mu][temp] ;
+  const GLU_real c = creal( O[mu][temp] ) ;
   return ( a + b - c - d ) ;
 }
 
 // calculates the "s", the winding per face of the plaquette
 inline static int 
-obtain_S( const GLU_real *__restrict *__restrict O ,
+obtain_S( const GLU_complex **O ,
 	  const size_t i , 
 	  const size_t mu , 
 	  const size_t nu )
@@ -76,7 +76,7 @@ obtain_S( const GLU_real *__restrict *__restrict O ,
 
 // compute the "dirac sheet" from the noncompact plaquette
 static int 
-dirac_sheet( const GLU_real *__restrict *__restrict O )
+dirac_sheet( const GLU_complex **O )
 {
   size_t i ;
   int sheet = 0 ;
@@ -97,8 +97,8 @@ dirac_sheet( const GLU_real *__restrict *__restrict O )
 
 // computes the dirac observable "M"
 static void 
-dirac( int *__restrict *__restrict M ,
-       const GLU_real *__restrict *__restrict O )
+dirac( int **M ,
+       const GLU_complex **O )
 {
   size_t i ;
 #pragma omp parallel for private(i) 
@@ -132,7 +132,7 @@ dirac( int *__restrict *__restrict M ,
 // very naive topological charge using the noncompact plaquettes 
 // e_\mu\nu\rho\eta G_\mu\nu G_\rho\eta 
 static double 
-non_Qtop( const GLU_real *__restrict *__restrict O )
+non_Qtop( const GLU_complex **O )
 {
   double charge = 0.0 ;
   size_t i;
@@ -150,10 +150,10 @@ non_Qtop( const GLU_real *__restrict *__restrict O )
 
 // compute all of the topological measures here
 void 
-U1_topological( int *__restrict monopole , 
-		int *__restrict d_sheet , 
-		double *__restrict qtop , 
-		const GLU_real *__restrict *__restrict O  )
+U1_topological( int *monopole , 
+		int *d_sheet , 
+		double *qtop , 
+		const GLU_complex **O  )
 {
   int **M = calloc( ND , sizeof( int * ) ) ;
   size_t mu ;
@@ -162,7 +162,7 @@ U1_topological( int *__restrict monopole ,
   }
 
   // initialise the dirac measurement
-  dirac( M , (const GLU_real**)O ) ;
+  dirac( M , (const GLU_complex**)O ) ;
   
   // calculate the observables
   *monopole = current( (const int**)M ) ;

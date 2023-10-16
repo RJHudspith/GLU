@@ -28,7 +28,7 @@
 // calculation of the non-compact U(1) plaquette
 static double 
 non_plaquette( double *plaq ,
-	       const GLU_real **O )
+	       const GLU_complex **O )
 {
   const double denom = 2. / (double)( LVOLUME * ND * ( ND - 1 ) ) ;
   size_t i ;
@@ -41,10 +41,9 @@ non_plaquette( double *plaq ,
       s = gen_shift( i , mu ) ;
       for( nu = 0 ; nu < mu ; nu++ ) {
 	t = gen_shift( i , nu ) ;
-	register const double temp = (double)O[mu][i] + \
-	  (double)O[nu][s] -				\
-	  (double)O[mu][t] -				\
-	  (double)O[nu][i] ;
+	register const double temp = \
+	  creal( (double)O[mu][i] + (double)O[nu][s] -		\
+		 (double)O[mu][t] - (double)O[nu][i] ) ;
 	loc_sum += cos( temp ) ;
 	loc_plaq += ( temp * temp ) ;
       }
@@ -59,7 +58,7 @@ non_plaquette( double *plaq ,
 // computation of the U1 rectangle
 static double
 U1_rectangle( double *U1REC ,
-	      const GLU_real **O )
+	      const GLU_complex **O )
 {
   const double denom = 1. / ( LVOLUME * ND * ( ND - 1 ) ) ;
   size_t i ;
@@ -77,12 +76,12 @@ U1_rectangle( double *U1REC ,
       for( nu = 0 ; nu < mu ; nu++ ) {
 	v = gen_shift( i , nu ) ;
 	u = gen_shift( v , mu ) ;
-	register const double cache = (double)O[mu][i] +		\
-	  (double)O[mu][s] +						\
-	  (double)O[nu][t] -						\
-	  (double)O[mu][u] -						\
-	  (double)O[mu][v] -						\
-	  (double)O[nu][i] ;
+	register const double cache = creal( (double)O[mu][i] +		\
+					     (double)O[mu][s] +		\
+					     (double)O[nu][t] -		\
+					     (double)O[mu][u] -		\
+					     (double)O[mu][v] -		\
+					     (double)O[nu][i] ) ;
 	loc_rec += cos( cache ) ; // taking the cosine is expensive - think!
 	loc_ncrec += cache * cache ;
       }
@@ -94,9 +93,9 @@ U1_rectangle( double *U1REC ,
 	t = gen_shift( s , nu ) ;
 	v = gen_shift( i , nu ) ;
 	u = gen_shift( v , nu ) ;
-	register const double cache = (double)O[mu][i] + (double)O[nu][s] + \
-	  (double)O[nu][t] - (double)O[mu][u] -\
-	  (double)O[mu][v] - (double)O[nu][i] ;
+	register const double cache = creal( (double)O[mu][i] + (double)O[nu][s] + \
+					     (double)O[nu][t] - (double)O[mu][u] - \
+					     (double)O[mu][v] - (double)O[nu][i] ) ;
 	loc_rec += cos( cache ) ; // taking the cosine is expensive - think!
 	loc_ncrec += cache * cache ;
       }
@@ -111,24 +110,24 @@ U1_rectangle( double *U1REC ,
 
 // wrapper for the U1 configurations
 void
-compute_U1_obs( const GLU_real **U , 
+compute_U1_obs( const GLU_complex **U , 
 		const U1_meas meas )
 {
   double plaq = 0. ;
-  const double test_noncompact = non_plaquette( &plaq , (const GLU_real**)U ) ;
+  const double test_noncompact = non_plaquette( &plaq , (const GLU_complex**)U ) ;
   const double test_compact = plaq ;
   // should have our U1-ified fields
   fprintf( stdout , "\n[U(1)] Plaquettes [NON-COMPACT] %lf [COMPACT] %lf \n" ,
 	   test_noncompact , test_compact ) ;
 
   if( meas == U1_RECTANGLE ) {
-    const double test_rectangle = U1_rectangle( &plaq , (const GLU_real**)U ) ;
+    const double test_rectangle = U1_rectangle( &plaq , (const GLU_complex**)U ) ;
     fprintf( stdout , "\n[U(1)] Rectangle  [NON-COMPACT] %lf"
 	     " [COMPACT] %lf \n" , test_rectangle , plaq ) ;
   } else if( meas == U1_TOPOLOGICAL ) {
     double qtop ;
     int monopole , dirac_sheet ;
-    U1_topological( &monopole , &dirac_sheet , &qtop , (const GLU_real**)U ) ;
+    U1_topological( &monopole , &dirac_sheet , &qtop , (const GLU_complex**)U ) ;
     fprintf( stdout , "\n[U(1)] Topological :: [Monopole] %d"
 	     "[Dirac_Sheet] %d [QTOP] %g \n" , monopole , dirac_sheet , qtop ) ;
   }
