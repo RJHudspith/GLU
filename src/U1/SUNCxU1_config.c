@@ -127,8 +127,8 @@ create_u1( struct site *lat ,
   // note the factor of 2 in the plaquette due to my conventions of giving
   // compact plaquette at \alpha = 0 of 1
   // factor of Volume comes from us not normalizing the FFTs
-  const GLU_real Nbeta = LVOLUME / ( 4. * MPI * U1INFO.alpha ) ;
-  fprintf( stdout , "\n[U(1)] Beta :: %f \n\n" , 1./( 4*MPI * U1INFO.alpha ) ) ;
+  const GLU_real Nbeta = 2*LVOLUME / ( 4. * MPI * U1INFO.alpha ) ;
+  fprintf( stdout , "\n[U(1)] Beta :: %f \n\n" , 2./( 4*MPI * U1INFO.alpha ) ) ;
 
   size_t i ;
 
