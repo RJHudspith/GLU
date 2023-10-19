@@ -47,6 +47,9 @@ Coulomb( struct site *__restrict lat ,
   // put an ifdef guard here as SD requires none of this ...
 #ifdef HAVE_FFTW3_H
 
+  // create the fftw plans, or read them if they are stored
+  create_plans_DFT( &FFTW , Latt.dims , TRUE_HERM , ND - 1 ) ;
+  
   FFTW.psq = malloc( LCU * sizeof( GLU_real ) ) ; 
   
   // we calculate the lattice p-squared here and pass it to the FFT-accelerator
@@ -54,9 +57,6 @@ Coulomb( struct site *__restrict lat ,
   for( i = 0 ; i < LCU ; i ++ ) {
     FFTW.psq[i] = MAX_COULOMB / ( gen_p_sq( i , ND - 1 ) ) ;
   }
-
-  // create the fftw plans, or read them if they are stored
-  create_plans_DFT( &FFTW , Latt.dims , TRUE_HERM , ND - 1 ) ;
 
   /////  End of the search for Wisdom  ////
 #else

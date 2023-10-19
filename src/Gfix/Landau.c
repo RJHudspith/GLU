@@ -271,6 +271,9 @@ Landau( struct site *lat ,
   
 #ifdef HAVE_FFTW3_H
 
+  /////////////// Look for Wisdom //////////////
+  create_plans_DFT( &FFTW , Latt.dims , TRUE_HERM , ND ) ;
+
   FFTW.psq = malloc( LVOLUME * sizeof( GLU_real ) ) ; 
   #pragma omp parallel
   {
@@ -279,10 +282,7 @@ Landau( struct site *lat ,
       FFTW.psq[i] = MAX_LANDAU / ( gen_p_sq( i , ND )  ) ; 
     }
   }
-
-  /////////////// Look for Wisdom //////////////
-  create_plans_DFT( &FFTW , Latt.dims , TRUE_HERM , ND ) ;
-
+  
   ///////// End of the search for Wisdom //////
 #else 
   FFTW.in = malloc( ( TRUE_HERM ) * sizeof( GLU_complex* ) ) ; 

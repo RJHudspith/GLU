@@ -132,7 +132,7 @@ create_plans_DFT( struct fftw_stuff *FFTW ,
 
 #pragma omp parallel
   {
-#pragma omp for private(i)
+    #pragma omp for private(i)
     for(  i = 0 ; i < ARR_SIZE ; i++  ) {
       FFTW -> out[i] = ( GLU_complex* )fftw_malloc( VOL * sizeof( GLU_complex ) ) ; 
       FFTW -> in[i] = ( GLU_complex* )fftw_malloc( VOL * sizeof( GLU_complex ) ) ; 
