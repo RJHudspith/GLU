@@ -24,9 +24,10 @@
 #define GLU_U1_OPS_H
 
 /**
-   @fn void compute_U1_obs( const GLU_complex **U , const U1_meas meas )
+   @fn void compute_U1_obs( const GLU_complex **U , const struct site *lat , const U1_meas meas )
    @brief this function is a wrapper for the U1 measurements
    @param U :: the U(1) non-compact field
+   @param lat :: the lattice gauge field used for look up of neighbors
    @param meas :: the measurement being made of type #U1_meas
    it computes the non-compact and compact plaquettes by default. <br>
    if U1_RECTANGLE is defined, it outputs the compact rectangle <br>
@@ -35,6 +36,7 @@
  **/
 void
 compute_U1_obs( const GLU_complex **U ,
+		const struct site *lat ,
 		const U1_meas meas ) ;
 
 #endif

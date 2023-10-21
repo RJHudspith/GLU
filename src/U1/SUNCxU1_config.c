@@ -123,12 +123,17 @@ create_u1( struct site *lat ,
 	   "requires FFTW ... Leaving\n" ) ;
   return GLU_FAILURE ;
 #else
-  // alpha = 1/4\pi = 0.0795775387 is beta = 1 , gives noncompact plaq = 0.5
-  // note the factor of 2 in the plaquette due to my conventions of giving
-  // compact plaquette at \alpha = 0 of 1
-  // factor of Volume comes from us not normalizing the FFTs
-  const GLU_real Nbeta = 2*LVOLUME / ( 4. * MPI * U1INFO.alpha ) ;
-  fprintf( stdout , "\n[U(1)] Beta :: %f \n\n" , 2./( 4*MPI * U1INFO.alpha ) ) ;
+
+  // update notation to conventions of https://arxiv.org/pdf/0708.0484.pdf
+  // use noncompact beta = 2 fixed and compute "e" see their table III for
+  // comparable notation
+  // Algorithm comes from https://inspirehep.net/literature/279595
+  // "Finite Size, Fermion Mass and NN(f) Systematics in Computer Simulations of Quantum Electrodynamics"
+  // and plaquette check should give ~ 0.5
+  const GLU_real e = sqrt( 4. * M_PI * U1INFO.alpha ) ;
+
+  // Factor of sqrt(V) is for the FFT norm
+  fprintf( stdout , "\n[U(1)] e :: %1.14f \n\n" , e ) ;
 
   size_t i ;
 
@@ -137,23 +142,27 @@ create_u1( struct site *lat ,
   // set up the distribution with the lattice mom Feynmann gauge QEDL prescription
   periodic_dft( FFTW ) ;
   
-  // fft the fields allow for the parallel omp-ified fftws
-  const GLU_real rbeta = 1.0 / (GLU_real)sqrt( Nbeta ) ;
+  // beta rescaling from dagotto
+  const GLU_real rv = 1.0 / (GLU_real)sqrt( LVOLUME ) ;
 #pragma omp parallel
   {
+    // perform FFTs
     #pragma omp for private(i) 
     for( i = 0 ; i < ND ; i++ ) {
       fftw_execute( FFTW -> forward[ i ] ) ;
     }
+    // rescale beta and U1-ify the gauge fields
     #pragma omp for private( i )
     for( i = 0 ; i < LVOLUME*ND ; i++ ) {
       const size_t idx = i/ND ;
       const size_t mu = i%ND ;
-      FFTW->out[mu][idx] = creal( FFTW->out[mu][idx] )*rbeta + I*0.0 ;
+
+      // compute the \beta=2 field with correct normalisation
+      FFTW->out[mu][idx] = creal( FFTW->out[mu][idx] )*rv + I*0.0 ;
 
       // call to cexp is expensive so we just do a simple sincos
       double re , im ;
-      sincos( creal( FFTW -> out[mu][idx])*U1INFO.charge , &im , &re ) ;
+      sincos( creal( FFTW -> out[mu][idx] )*e*U1INFO.charge , &im , &re ) ;
       // could be a vectorised multiply ... 
       register const GLU_complex U1 = re + I*im ;
       #if NC == 3
@@ -221,7 +230,7 @@ suNC_cross_u1( struct site *lat ,
   
   // compute some U1 observables why not ?
   start_timer() ;
-  compute_U1_obs( (const GLU_complex**)FFTW.out , U1INFO.meas ) ;
+  compute_U1_obs( (const GLU_complex**)FFTW.out , lat , U1INFO.meas ) ;
   print_time() ;
 
   fprintf( stdout , "[U1] U1 Memory Cleanup ....\n" ) ;

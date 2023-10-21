@@ -28,6 +28,7 @@
 // calculation of the non-compact U(1) plaquette
 static double 
 non_plaquette( double *plaq ,
+	       const struct site *lat ,
 	       const GLU_complex **O )
 {
   const double denom = 2. / (double)( LVOLUME * ND * ( ND - 1 ) ) ;
@@ -37,11 +38,11 @@ non_plaquette( double *plaq ,
   for( i = 0 ; i < LVOLUME ; i++ ) {
     register double loc_sum = 0.0 , loc_plaq = 0.0 ;
     size_t mu , nu , s , t ;
-    for( mu = 0 ; mu < ND ; mu++ ) {
-      s = gen_shift( i , mu ) ;
+    for( mu = 1 ; mu < ND ; mu++ ) {
+      s = lat[i].neighbor[mu] ;
       for( nu = 0 ; nu < mu ; nu++ ) {
-	t = gen_shift( i , nu ) ;
-	register const double temp = \
+	t = lat[i].neighbor[nu] ;
+	register const double temp =				\
 	  creal( (double)O[mu][i] + (double)O[nu][s] -		\
 		 (double)O[mu][t] - (double)O[nu][i] ) ;
 	loc_sum += cos( temp ) ;
@@ -58,49 +59,38 @@ non_plaquette( double *plaq ,
 // computation of the U1 rectangle
 static double
 U1_rectangle( double *U1REC ,
+	      const struct site *lat ,
 	      const GLU_complex **O )
 {
-  const double denom = 1. / ( LVOLUME * ND * ( ND - 1 ) ) ;
+  const double denom = 1. / (double)( LVOLUME * ND * ( ND - 1 ) ) ;
   size_t i ;
-
   double sum_nc = 0. , sum = 0. ;
 #pragma omp parallel for private(i) reduction(+:sum) reduction(+:sum_nc)
   for( i = 0 ; i < LVOLUME ; i++ ) {
-
     double loc_rec = 0. , loc_ncrec = 0. ;
-    size_t mu , nu , s , t , u , v ;
-    // first one is the (2x1) rectangle
-    for( mu = 0 ; mu < ND ; mu++ ) {
-      s = gen_shift( i , mu ) ;
-      t = gen_shift( s , mu ) ;
+    size_t mu , nu , s , t , t2 , u , v ;
+    for( mu = 1 ; mu < ND ; mu++ ) {
+      s = lat[i].neighbor[mu] ;
+      t = lat[s].neighbor[mu] ;
       for( nu = 0 ; nu < mu ; nu++ ) {
-	v = gen_shift( i , nu ) ;
-	u = gen_shift( v , mu ) ;
-	register const double cache = creal( (double)O[mu][i] +		\
-					     (double)O[mu][s] +		\
-					     (double)O[nu][t] -		\
-					     (double)O[mu][u] -		\
-					     (double)O[mu][v] -		\
-					     (double)O[nu][i] ) ;
-	loc_rec += cos( cache ) ; // taking the cosine is expensive - think!
+	v = lat[i].neighbor[nu] ;
+	u = lat[v].neighbor[mu] ;
+	// first one is the (2x1) rectangle
+	register double cache =						\
+	  creal( (double)O[mu][i] + (double)O[mu][s] + (double)O[nu][t] -
+		 (double)O[mu][u] - (double)O[mu][v] - (double)O[nu][i] ) ;
+	loc_rec += cos( cache ) ;
+	loc_ncrec += cache * cache ;
+	// second one is the (1x2) rectangle
+	t2 = lat[s].neighbor[nu] ;
+	u  = lat[v].neighbor[nu] ;
+        cache =								\
+	  creal( (double)O[mu][i] + (double)O[nu][s] + (double)O[nu][t2] -
+		 (double)O[mu][u] - (double)O[nu][v] - (double)O[nu][i] ) ;
+	loc_rec += cos( cache ) ;
 	loc_ncrec += cache * cache ;
       }
     }
-    // second one is the (1x2) rectangle
-    for( mu = 0 ; mu < ND ; mu++ ) {
-      s = gen_shift( i , mu ) ;
-      for( nu = 0 ; nu < mu ; nu++ ) {
-	t = gen_shift( s , nu ) ;
-	v = gen_shift( i , nu ) ;
-	u = gen_shift( v , nu ) ;
-	register const double cache = creal( (double)O[mu][i] + (double)O[nu][s] + \
-					     (double)O[nu][t] - (double)O[mu][u] - \
-					     (double)O[mu][v] - (double)O[nu][i] ) ;
-	loc_rec += cos( cache ) ; // taking the cosine is expensive - think!
-	loc_ncrec += cache * cache ;
-      }
-    }
-    // looks pretty sexy
     sum = sum + (double)( loc_rec ) ;
     sum_nc = sum_nc + (double)( loc_ncrec ) ;
   }
@@ -108,20 +98,41 @@ U1_rectangle( double *U1REC ,
   return sum_nc * denom ;
 }
 
+// compute the norm of the fields
+static double
+normU( const GLU_complex **U )
+{
+  size_t i ;
+  double sum = 0 ;
+#pragma omp parallel for private(i) reduction(+:sum)
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    size_t mu ;
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      sum = sum + U[mu][i];
+    }
+  }
+  return sqrt( sum*sum / LVOLUME ) ;
+}
+
 // wrapper for the U1 configurations
 void
-compute_U1_obs( const GLU_complex **U , 
+compute_U1_obs( const GLU_complex **U ,
+		const struct site *lat ,
 		const U1_meas meas )
 {
   double plaq = 0. ;
-  const double test_noncompact = non_plaquette( &plaq , (const GLU_complex**)U ) ;
+  const double test_noncompact = \
+    non_plaquette( &plaq , lat , (const GLU_complex**)U ) ;
   const double test_compact = plaq ;
+  fprintf( stdout , "\n[U(1)] Norm U (should be zero) %e\n" , normU( U ) ) ;
+  
   // should have our U1-ified fields
   fprintf( stdout , "\n[U(1)] Plaquettes [NON-COMPACT] %lf [COMPACT] %lf \n" ,
 	   test_noncompact , test_compact ) ;
 
   if( meas == U1_RECTANGLE ) {
-    const double test_rectangle = U1_rectangle( &plaq , (const GLU_complex**)U ) ;
+    const double test_rectangle = \
+      U1_rectangle( &plaq , lat , (const GLU_complex**)U ) ;
     fprintf( stdout , "\n[U(1)] Rectangle  [NON-COMPACT] %lf"
 	     " [COMPACT] %lf \n" , test_rectangle , plaq ) ;
   } else if( meas == U1_TOPOLOGICAL ) {
