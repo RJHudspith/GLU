@@ -40,8 +40,6 @@ a    GLU is distributed in the hope that it will be useful,
 #include "GLU_malloc.h"
 #include "geometry.h"
 
-static struct site *lat2 = NULL ;
-
 // maximum number of heatbath updates
 #define NHBMAX (42)
 
