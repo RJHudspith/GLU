@@ -462,10 +462,11 @@ scaleset( struct wfmeas *curr ,
   if( count > 0 ) {
     t0 = evaluate_scale( der , time , GT , count , T_0 , "GT" ) ;
   }
-  if( t0 == -1 ) {
-    fprintf( stderr , "[WFLOW] cubic solve failure (gt)\n" ) ;
-    fprintf( stderr , "[WFLOW] solve needs to bound the value you "
-	     "are looking for\n" ) ;
+  if( t0 == -1 || w0 == -1 ) {
+    #pragma omp master
+    {
+      fprintf( stderr , "[WFLOW] cannot compute t0 as we do not bracket GT\n" ) ;
+    }
     flag = GLU_FAILURE ;
     goto free ;
   }
@@ -481,9 +482,10 @@ scaleset( struct wfmeas *curr ,
   }
   w0 = evaluate_scale( der , time , GT , count , W_0 , "WT" ) ;
   if( w0 == -1 ) {
-    fprintf( stderr , "[WFLOW] cubic solve failure (wt) \n" ) ;
-    fprintf( stderr , "[WFLOW] solve needs to bound the value you "
-	     "are looking for\n" ) ;
+    #pragma omp master
+    {
+      fprintf( stderr , "[WFLOW] cannot compute t0 as we do not bracket GT\n" ) ;
+    }
     flag = GLU_FAILURE ;
     goto free ;
   }
