@@ -29,6 +29,7 @@
 #include "GLU_timer.h"     // timers for the IO
 #include "HIREP.h"         // write out a HIREP config
 #include "plaqs_links.h"   // compute plaquette and links again
+#include "random_config.h" // latt_reunitU()
 #include "Scidac.h"        // write out a scidac file
 #include "write_headers.h" // write the config header
 
@@ -326,6 +327,9 @@ write_lat( struct site *lat ,
 	   const GLU_output type , 
 	   char *__restrict details )
 {
+  // reunitarise the field before writing out
+  latt_reunitU( lat ) ;
+  
   // CERN stuff is all handled in CERN.c
   if( type == OUTPUT_CERN ) {
     printf( "[IO] Writing out in CERN format\n" ) ;
