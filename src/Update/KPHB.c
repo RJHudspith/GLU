@@ -34,6 +34,8 @@
 #include "relax.h"         // overrelaxation
 #include "str_stuff.h"     // append_char
 
+//#define POLY_MEAS
+
 // measure plaquette and polyakov loop
 static void
 perform_measurements( double *PLAQred ,
@@ -41,8 +43,8 @@ perform_measurements( double *PLAQred ,
 		      const struct site *lat ,
 		      const size_t conf_idx )
 {
-  double pl = 0.0 , re , im ;
-  size_t mu , k ;
+  double pl = 0.0 ;
+  size_t k ;
   
 #pragma omp for private(k)
   for( k = 0 ; k < Latt.Nthreads*CLINE ; k++ ) {
@@ -61,6 +63,11 @@ perform_measurements( double *PLAQred ,
     fprintf( stdout , "[UPDATE] %zu :: {P} %1.12f \n" , 
 	     conf_idx , pl/( NC*(ND-1)*(ND-2)*LVOLUME ) ) ;
   }
+
+  // icc really hates this for some reason
+#if POLY_MEAS
+  double re = 0 , im = 0 ;
+  size_t mu ;
   
 #pragma omp for private(k)
   for( k = 0 ; k < Latt.Nthreads*CLINE ; k++ ) {
@@ -85,6 +92,7 @@ perform_measurements( double *PLAQred ,
     }
     fflush( stdout ) ;
   }
+#endif
   return ;
 }
 

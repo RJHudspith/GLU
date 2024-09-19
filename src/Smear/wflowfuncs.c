@@ -462,7 +462,7 @@ scaleset( struct wfmeas *curr ,
   if( count > 0 ) {
     t0 = evaluate_scale( der , time , GT , count , T_0 , "GT" ) ;
   }
-  if( t0 == -1 || w0 == -1 ) {
+  if( t0 == -1 ) {
     #pragma omp master
     {
       fprintf( stderr , "[WFLOW] cannot compute t0 as we do not bracket GT\n" ) ;
@@ -484,7 +484,7 @@ scaleset( struct wfmeas *curr ,
   if( w0 == -1 ) {
     #pragma omp master
     {
-      fprintf( stderr , "[WFLOW] cannot compute t0 as we do not bracket GT\n" ) ;
+      fprintf( stderr , "[WFLOW] cannot compute t0 as we do not bracket WT\n" ) ;
     }
     flag = GLU_FAILURE ;
     goto free ;
