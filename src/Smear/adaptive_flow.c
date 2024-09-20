@@ -185,9 +185,7 @@ flow_adaptive_RK3( struct site *__restrict lat ,
   // adaptive error conserving
   const double ADAPTIVE_ERRCON = powl( 5./ADAPTIVE_SAFE , 1./ADAPTIVE_GROWTH ) ;
   // percentage to value we want for performing fine measurements
-  const double FINETWIDDLE = 0.08 ;
-  // fine measurement step
-  const double FINESTEP = 0.02 ;
+  const double FINETWIDDLE = 0.06 ;
 
   // adaptive factors for RK4, we are RK3 could be more lenient?
   fprintf( stdout , "[WFLOW] Adaptive Error :: %e \n" , ADAPTIVE_EPS ) ;
@@ -196,7 +194,7 @@ flow_adaptive_RK3( struct site *__restrict lat ,
   fprintf( stdout , "[WFLOW] Growth factor :: %g \n" , ADAPTIVE_GROWTH ) ;
   fprintf( stdout , "[WFLOW] Shrink factor :: %g \n\n" , ADAPTIVE_SHRINK ) ; 
   fprintf( stdout , "[WFLOW] Fine measurement %% :: %g \n" , FINETWIDDLE ) ;
-  fprintf( stdout , "[WFLOW] Fine step :: %g \n\n" , FINESTEP ) ;
+  fprintf( stdout , "[WFLOW] Fine step is 0.01 of current flow time\n\n" ) ;
 
   //////////////////////////////////////////
   void (*project) ( GLU_complex log[ NCNC ] , 
@@ -245,7 +243,6 @@ flow_adaptive_RK3( struct site *__restrict lat ,
     
     // loop up to smiters
   top :
-
     {
        #pragma omp barrier
     }
@@ -301,9 +298,8 @@ flow_adaptive_RK3( struct site *__restrict lat ,
     // perform fine measurements around T0_STOP for t_0 and W0_STOP for w_0
 #ifndef WFLOW_TIME_ONLY
     if( fabs( T0_STOP - flow ) <= ( T0_STOP * FINETWIDDLE ) ) {
-      delta_t = FINESTEP ;
+      delta_t = t/100. ;
     t0_top :
-
       {
          #pragma omp barrier
       }
@@ -327,7 +323,7 @@ flow_adaptive_RK3( struct site *__restrict lat ,
 
     // perform some fine measurements around W0_STOP
     if( fabs( W0_STOP - wapprox ) <= ( W0_STOP * FINETWIDDLE ) ) {
-      delta_t = FINESTEP ;
+      delta_t = t/100. ;
     w0_top :
       {
          #pragma omp barrier
