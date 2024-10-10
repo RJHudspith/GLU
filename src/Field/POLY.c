@@ -66,7 +66,7 @@ poly( const struct site *lat ,
   }
 #pragma omp parallel for private(i) reduction(+:sum)
   for( i = 0 ; i < subvolume ; i++ ) {
-    GLU_complex poly[ NCNC ] ;
+    GLU_complex poly[ NCNC ] GLUalign ;
     // use the correct site for one of the hypercubes ...
     int x[ ND ] ;
     get_mom_2piBZ( x , i , dir ) ;
@@ -92,7 +92,7 @@ poly_th( double *red ,
   }
 #pragma omp for private(i)
   for( i = 0 ; i < subvolume ; i++ ) {
-    GLU_complex poly[ NCNC ] ;
+    GLU_complex poly[ NCNC ] GLUalign ;
     // use the correct site for one of the hypercubes ...
     int x[ ND ] ;
     get_mom_2piBZ( x , i , dir ) ;
