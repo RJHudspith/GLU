@@ -68,6 +68,19 @@ static const double ADAPTIVE_EPS = 1E-6 ;
 // define adaptive safe
 #define ADAPTIVE_SAFE (0.9)
 
+// little plaquett utility
+static inline double
+get_plaq_th( struct site *lat ,
+	     struct wflow_temps WF )
+{
+  av_plaquette_th( WF.red , lat ) ;
+  double new_plaq = 0.0 ;
+  for( size_t k = 0 ; k < Latt.Nthreads ; k++ ) {
+    new_plaq += WF.red[ 3 + CLINE*k ] ;
+  }
+  return new_plaq/( NC * ( ND-1 ) * ( ND - 2 ) * LVOLUME ) ;
+}
+
 // two step adaptive routine
 static int
 twostep_adaptive( struct site *lat ,
@@ -84,7 +97,7 @@ twostep_adaptive( struct site *lat ,
 				   const double smear_alpha )  )
 {
   *errmax = 10. ;
-  size_t counter = 0 , i ;
+  size_t counter = 0 , i , mu ;
   
   // adaptive loop, shrinking or growing the stepsize accordingly
  top :
@@ -93,34 +106,26 @@ twostep_adaptive( struct site *lat ,
     #pragma omp barrier
   }
   
-#pragma omp for private(i)
+#pragma omp for private(i) collapse(2)
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    register size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       equiv( WF.lat_two[i].O[mu] , lat[i].O[mu] ) ;
     }
   }
-    
+
 #pragma omp for private(i)
   for( i = 0 ; i < CLINE*Latt.Nthreads ; i++ ) {
     WF.red[i] = 0.0 ;
   }
-    
+  
   // step forward once and write into lat_two
-  step_distance_memcheap( WF.lat_two , WF , *dt , SM_TYPE , project ) ;
-    
+  step_distance( WF.lat_two , WF , *dt , SM_TYPE , project ) ;
+  
   // compute the one-step first comparison
-  av_plaquette_th( WF.red , WF.lat_two ) ;
-    
-  double old_plaq = 0 ;
-  for( i = 0 ; i < Latt.Nthreads ; i++ ) {
-    old_plaq += WF.red[ 3 + CLINE*i ] ;
-  }
-  old_plaq = 2.0 * old_plaq / ( NC * ND * ( ND-1 ) * LVOLUME ) ; 
-    
-#pragma omp for private(i)
+  const double old_plaq = get_plaq_th( WF.lat_two , WF ) ;
+  
+#pragma omp for private(i) collapse(2)
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    register size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       equiv( WF.lat_two[i].O[mu] , lat[i].O[mu] ) ;
     }
@@ -132,17 +137,11 @@ twostep_adaptive( struct site *lat ,
   }
     
   // and step forward twice and write into lat_two
-  step_distance_memcheap( WF.lat_two , WF , 0.5*(*dt) , SM_TYPE , project ) ;
-  step_distance_memcheap( WF.lat_two , WF , 0.5*(*dt) , SM_TYPE , project ) ;
+  step_distance( WF.lat_two , WF , 0.5*(*dt) , SM_TYPE , project ) ;
+  step_distance( WF.lat_two , WF , 0.5*(*dt) , SM_TYPE , project ) ;
     
   // compute the error I will use the average plaquette ...
-  av_plaquette_th( WF.red , WF.lat_two ) ;
-    
-  double nplaq = 0 ;
-  for( i = 0 ; i < Latt.Nthreads ; i++ ) {
-    nplaq += WF.red[ 3 + CLINE*i ] ;
-  }
-  *new_plaq = 2.0 * nplaq / ( NC * ND * ( ND-1 ) * LVOLUME ) ; 
+  *new_plaq = get_plaq_th( WF.lat_two , WF ) ;
     
   // so the problem is that at large t the plaquettes become very close so the 
   // step gets pretty wild. My way of compensating this is just to multiply by t^2
@@ -216,7 +215,7 @@ flow_adaptive_RK3( struct site *__restrict lat ,
   
   // allocate temps
   struct wflow_temps WF ;
-  if( allocate_WF( &WF , GLU_TRUE , GLU_TRUE ) == GLU_FAILURE ) {
+  if( allocate_WF( &WF , GLU_FALSE , GLU_TRUE ) == GLU_FAILURE ) {
     goto memfree ;
   }
 
@@ -298,40 +297,44 @@ flow_adaptive_RK3( struct site *__restrict lat ,
     // perform fine measurements around T0_STOP for t_0 and W0_STOP for w_0
 #ifndef WFLOW_TIME_ONLY
     if( fabs( T0_STOP - flow ) <= ( T0_STOP * FINETWIDDLE ) ) {
+      int past_the_post = 0 ;
       delta_t = t/100. ;
     t0_top :
       {
          #pragma omp barrier
       }
 
-      step_distance_memcheap( lat , WF , delta_t , SM_TYPE , project ) ;
-
+      step_distance( lat , WF , delta_t , SM_TYPE , project ) ;
+      
+      new_plaq = get_plaq_th( lat , WF ) ;
       curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
       update_meas_list( head , curr , WF.red ,
 			new_plaq , t = t+delta_t , delta_t ,
 			errmax*ADAPTIVE_EPS , lat ) ;
-
       flow_next = curr -> Gt ;
       wapprox = ( flow_next - flow ) * curr -> time / delta_t ;
       flow = flow_next ;
-
+      
       head = curr ;
       count++ ;
       meas_count++ ;
-      if( fabs( T0_STOP - flow ) <= ( T0_STOP * FINETWIDDLE ) ) goto t0_top ;
+      if( flow > T0_STOP ) { past_the_post++ ; }
+      if( fabs( T0_STOP - flow ) <= ( T0_STOP * FINETWIDDLE ) && past_the_post < 3 ) goto t0_top ;
     }
 
     // perform some fine measurements around W0_STOP
     if( fabs( W0_STOP - wapprox ) <= ( W0_STOP * FINETWIDDLE ) ) {
+      int past_the_post = 0 ;
       delta_t = t/100. ;
     w0_top :
       {
          #pragma omp barrier
       }
       
-      step_distance_memcheap( lat , WF , delta_t , SM_TYPE , project ) ;
+      step_distance( lat , WF , delta_t , SM_TYPE , project ) ;
 
       curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
+      new_plaq = get_plaq_th( lat , WF ) ;
       update_meas_list( head , curr , WF.red ,
 			new_plaq , t += delta_t , delta_t ,
 			errmax*ADAPTIVE_EPS , lat ) ;
@@ -342,7 +345,8 @@ flow_adaptive_RK3( struct site *__restrict lat ,
       head = curr ;
       count++ ;
       meas_count++ ;
-      if( fabs( W0_STOP - wapprox ) <= ( W0_STOP * FINETWIDDLE ) ) goto w0_top ;
+      if( wapprox > W0_STOP ) { past_the_post++ ; }
+      if( fabs( W0_STOP - wapprox ) <= ( W0_STOP * FINETWIDDLE ) && past_the_post < 3 ) goto w0_top ;
     }
 #endif
     
@@ -365,8 +369,8 @@ flow_adaptive_RK3( struct site *__restrict lat ,
     // step back a little way
     if( t > WFLOW_TIME_STOP ) {
       delta_t = WFLOW_TIME_STOP - t ;
-      step_distance_memcheap( lat , WF , delta_t , SM_TYPE , project ) ;
-      
+      step_distance( lat , WF , delta_t , SM_TYPE , project ) ;
+      new_plaq = get_plaq_th( lat , WF ) ;
       curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
       update_meas_list( head , curr , WF.red ,
 			new_plaq , t += delta_t , delta_t ,
@@ -385,7 +389,8 @@ flow_adaptive_RK3( struct site *__restrict lat ,
     if( ( fabs( curr -> time - WFLOW_TIME_STOP ) > PREC_TOL ) && 
 	count < smiters &&
 	meas_count > 0 ) {
-      scaleset( curr , T0_STOP , W0_STOP , meas_count ) ;
+      scaleset( curr , T0_STOP , W0_STOP , meas_count , GLU_TRUE ) ;
+      scaleset( curr , T0_STOP , W0_STOP , meas_count , GLU_FALSE ) ;
     }
 #endif
     
@@ -398,7 +403,7 @@ flow_adaptive_RK3( struct site *__restrict lat ,
   
  memfree :
 
-  free_WF( &WF , GLU_TRUE , GLU_TRUE ) ;
+  free_WF( &WF , GLU_FALSE , GLU_TRUE ) ;
 
   return FLAG ;
 }

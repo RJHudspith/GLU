@@ -164,7 +164,8 @@ flow_RK3( struct site *__restrict lat ,
 	count <= smiters &&
 	meas_count > 0 ) {
       // set the scale at t_0 and w_0
-      scaleset( curr , T0_STOP , W0_STOP , meas_count ) ;
+      scaleset( curr , T0_STOP , W0_STOP , meas_count , GLU_TRUE ) ;
+      scaleset( curr , T0_STOP , W0_STOP , meas_count , GLU_FALSE ) ;
     }
 #endif
 

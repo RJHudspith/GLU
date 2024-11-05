@@ -138,17 +138,14 @@ RK3step( struct wflow_temps WF ,
 			  const GLU_complex link[ NCNC ] , 
 			  const double smear_alpha ) )
 {
-  size_t i ;
-#pragma omp for private(i) SCHED
+  size_t i , mu ;
+#pragma omp for private(i) collapse(2) SCHED 
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    GLU_complex staple[ NCNC ] GLUalign , temp[ NCNC ] GLUalign ;
-    GLU_complex short_staple[ HERMSIZE ] GLUalign ;
-    size_t mu ;
-    switch( SM_TYPE ) {
-    case SM_LOG :
-      for( mu = 0 ; mu < ND ; mu++ ) {
-	zero_mat( staple ) ;
-	// first element
+    for( mu = 0 ; mu < ND ; mu++ ) {
+      GLU_complex staple[ NCNC ] GLUalign = {} , temp[ NCNC ] GLUalign = {} ;
+      GLU_complex short_staple[ HERMSIZE ] GLUalign = {} ;
+      switch( SM_TYPE ) {
+      case SM_LOG :
         #ifdef IMPROVED_SMEARING
 	all_staples_improve( staple , lat , i , mu , ND , SM_TYPE ) ;
         #else
@@ -158,11 +155,8 @@ RK3step( struct wflow_temps WF ,
 	make_short_log( short_staple , staple ) ;
 	set_zmatrix( WF.Z , short_staple , multiplier , i , mu ) ;
 	project( WF.lat2[i].O[mu] , WF.Z[i].O[mu] , lat[i].O[mu] , delta_t ) ; 
-      } break ;
-    default :
-      for( mu = 0 ; mu < ND ; mu++ ) {
-	zero_mat( staple ) ;
-	// first element
+	break ;
+      default :
         #ifdef IMPROVED_SMEARING
 	all_staples_improve( staple , lat , i , mu , ND , SM_TYPE ) ;
         #else
@@ -174,13 +168,13 @@ RK3step( struct wflow_temps WF ,
 	Hermitian_proj_short( short_staple , temp ) ;
 	set_zmatrix( WF.Z , short_staple , multiplier , i , mu ) ;
 	project( WF.lat2[i].O[mu] , WF.Z[i].O[mu] , lat[i].O[mu] , delta_t ) ;
-      } break ;
+	break ;
+      }
     }
   }
   // copy into lat
-#pragma omp for private(i)
+#pragma omp for private(i) collapse(2)
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       equiv( lat[i].O[mu] , WF.lat2[i].O[mu] ) ;
     }
@@ -415,8 +409,10 @@ print_flow( const struct wfmeas *curr ,
     fprintf( stdout , "[WFLOW] {err} %1.3e {t} %f {dt} %g " ,
 	     err , curr -> time , delta_t ) ;
   }
-  fprintf( stdout , "{p} %g {q} %g {Gt} %g \n" ,
-	   curr -> avplaq , curr -> qtop , curr -> Gt ) ;
+  fprintf( stdout , "{p} %g {q} %g {Gt} %g {GtP} %g\n" ,
+	   curr -> avplaq , curr -> qtop , curr -> Gt ,
+	   curr->time*curr->time*32*(1-curr -> avplaq) 
+	   ) ;
   return ;
 }
 
@@ -442,7 +438,8 @@ int
 scaleset( struct wfmeas *curr , 
 	  const double T_0 ,
 	  const double W_0 ,
-	  const size_t count ) 
+	  const size_t count ,
+	  const GLU_bool is_clover ) 
 {
   // now we have the number of measurements in count
   double *GT   = malloc( ( count + 1 ) * sizeof( double ) ) ;
@@ -456,7 +453,10 @@ scaleset( struct wfmeas *curr ,
   // traverse back down the linked list
   for( i = 0 ; i < ( count + 1 ) ; i++ ) {
     time[ count - i ] = curr -> time ;
-    GT[ count - i ] = curr -> Gt ;
+    GT[ count - i ]   = curr->time*curr->time*32*(1-curr -> avplaq) ;
+    if( is_clover == GLU_TRUE ) {
+      GT[ count - i ]   = curr -> Gt ;
+    }
     curr = curr -> next ;
   }
   if( count > 0 ) {
@@ -465,14 +465,18 @@ scaleset( struct wfmeas *curr ,
   if( t0 == -1 ) {
     #pragma omp master
     {
-      fprintf( stderr , "[WFLOW] cannot compute t0 as we do not bracket GT\n" ) ;
+      fprintf( stderr , "[WFLOW] cannot compute Clover t0 as we do not bracket GT\n" ) ;
     }
     flag = GLU_FAILURE ;
     goto free ;
   }
   #pragma omp master
   {
-    fprintf( stdout , "[GT-scale] G(%g) %1.12e \n" , T_0 , sqrt( t0 ) ) ;
+    if( is_clover == GLU_TRUE ) {
+      fprintf( stdout , "[WT-scale Clover] W(%g) %1.12e \n" , T_0 , sqrt( t0 ) ) ;
+    } else {
+      fprintf( stdout , "[WT-scale Plaq] W(%g) %1.12e \n" , T_0 , sqrt( t0 ) ) ;
+    }
   }
   // W(t) = t ( dG(t) / dt )
   if( count > 0 ) {
@@ -484,14 +488,18 @@ scaleset( struct wfmeas *curr ,
   if( w0 == -1 ) {
     #pragma omp master
     {
-      fprintf( stderr , "[WFLOW] cannot compute t0 as we do not bracket WT\n" ) ;
+      fprintf( stderr , "[WFLOW] cannot compute Clover w0 as we do not bracket WT\n" ) ;
     }
     flag = GLU_FAILURE ;
     goto free ;
   }
   #pragma omp master
   {
-    fprintf( stdout , "[WT-scale] W(%g) %1.12e \n" , W_0 , sqrt( w0 ) ) ;
+    if( is_clover == GLU_TRUE ) {
+      fprintf( stdout , "[WT-scale Clover] W(%g) %1.12e \n" , W_0 , sqrt( w0 ) ) ;
+    } else {
+      fprintf( stdout , "[WT-scale Plaq] W(%g) %1.12e \n" , W_0 , sqrt( w0 ) ) ;
+    }
   }
  free :
   free( der ) ;
@@ -520,10 +528,9 @@ step_distance( struct site *__restrict lat ,
   const double mseventeenOthsix = -17.0/36.0 ;
   const double eightOnine = 8.0/9.0 ;
   // set z to zero
-  size_t i ;
-  #pragma omp for private(i)
+  size_t i , mu ;
+#pragma omp for private(i) collapse(2)
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    register size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       memset( WF.Z[i].O[mu] , 0.0 , TRUE_HERM*sizeof( GLU_complex ) ) ;
     }
@@ -554,10 +561,9 @@ step_distance_memcheap( struct site *__restrict lat ,
   const double mseventeenOthsix = -17.0/36.0 ;
   const double eightOnine = 8.0/9.0 ;
   // set z to zero
-  size_t i ;
-#pragma omp for private(i)
+  size_t i , mu ;
+#pragma omp for private(i) collapse(2)
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    register size_t mu ;
     for( mu = 0 ; mu < ND ; mu++ ) {
       memset( WF.Z[i].O[mu] , 0.0 , TRUE_HERM*sizeof( GLU_complex ) ) ;
     }
