@@ -448,6 +448,10 @@ scaleset( struct wfmeas *curr ,
   // error handling
   double t0 = -1 , w0 = -1 ;
   int flag = GLU_SUCCESS ;
+  char clovstr[ 64 ] = "Plaq" ;
+  if( is_clover == GLU_TRUE ) {
+    sprintf( clovstr , "Clover" ) ;
+  }  
   // traverse the list backwards setting the time and GT
   size_t i ;
   // traverse back down the linked list
@@ -465,18 +469,14 @@ scaleset( struct wfmeas *curr ,
   if( t0 == -1 ) {
     #pragma omp master
     {
-      fprintf( stderr , "[WFLOW] cannot compute Clover t0 as we do not bracket GT\n" ) ;
+      fprintf( stderr , "[WFLOW] cannot compute %s t0 as we do not bracket GT\n" , clovstr ) ;
     }
     flag = GLU_FAILURE ;
     goto free ;
   }
   #pragma omp master
   {
-    if( is_clover == GLU_TRUE ) {
-      fprintf( stdout , "[WT-scale Clover] W(%g) %1.12e \n" , T_0 , sqrt( t0 ) ) ;
-    } else {
-      fprintf( stdout , "[WT-scale Plaq] W(%g) %1.12e \n" , T_0 , sqrt( t0 ) ) ;
-    }
+    fprintf( stdout , "[GT-scale %s] W(%g) %1.12e \n" , clovstr , T_0 , sqrt( t0 ) ) ;
   }
   // W(t) = t ( dG(t) / dt )
   if( count > 0 ) {
@@ -488,18 +488,14 @@ scaleset( struct wfmeas *curr ,
   if( w0 == -1 ) {
     #pragma omp master
     {
-      fprintf( stderr , "[WFLOW] cannot compute Clover w0 as we do not bracket WT\n" ) ;
+      fprintf( stderr , "[WFLOW] cannot compute %s w0 as we do not bracket WT\n" , clovstr ) ;
     }
     flag = GLU_FAILURE ;
     goto free ;
   }
   #pragma omp master
   {
-    if( is_clover == GLU_TRUE ) {
-      fprintf( stdout , "[WT-scale Clover] W(%g) %1.12e \n" , W_0 , sqrt( w0 ) ) ;
-    } else {
-      fprintf( stdout , "[WT-scale Plaq] W(%g) %1.12e \n" , W_0 , sqrt( w0 ) ) ;
-    }
+    fprintf( stdout , "[WT-scale %s] W(%g) %1.12e \n" , clovstr , W_0 , sqrt( w0 ) ) ;
   }
  free :
   free( der ) ;

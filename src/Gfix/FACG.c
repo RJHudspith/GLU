@@ -94,6 +94,7 @@ FOURIER_ACCELERATE3( struct fftw_stuff *FFTW )
   return ;
 }
 
+// what does this do
 static void
 sum_PR3( double *red ,
 	 const GLU_complex **in , 
@@ -103,6 +104,7 @@ sum_PR3( double *red ,
 #pragma omp for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     double loc_sum1 = 0.0 , loc_sum2 = 0.0 ;
+    #if NC==3
     loc_sum1 += creal(in[0][i]) * creal(in[0][i]) + cimag(in[0][i])*cimag(in[0][i]) 
       + creal(in[0][i]) * cimag( in[0][i] ) ;
     loc_sum1 += creal(in[1][i]) * creal(in[1][i]) + cimag(in[1][i])*cimag(in[1][i]) ; 
@@ -118,7 +120,22 @@ sum_PR3( double *red ,
     loc_sum2 += 2.0 * ( creal( in[2][i] ) * creal( temp ) + cimag( in[2][i] ) * cimag( temp ) ) ;
     temp = in[3][i] - in_old[3][i] ;
     loc_sum2 += 2.0 * ( creal( in[3][i] ) * creal( temp ) + cimag( in[3][i] ) * cimag( temp ) ) ;
-
+    #elif (NC==2)
+    loc_sum1 += creal(in[0][i]) * creal(in[0][i]) + cimag(in[0][i])*cimag(in[0][i]) + creal(in[0][i]) * cimag( in[0][i] ) ;    
+    loc_sum1 += creal(in[1][i]) * creal(in[1][i]) + cimag(in[1][i])*cimag(in[1][i]) ;
+    register GLU_complex temp = in[0][i] - in_old[0][i] ;
+    loc_sum2 += 2.0 * ( creal( in[0][i] ) * creal( temp ) + cimag( in[0][i] ) * cimag( temp ) ) ;
+    loc_sum2 += creal( in[0][i] ) * cimag( temp ) + cimag( in[0][i] ) * creal( temp ) ;
+    temp = in[1][i] - in_old[1][i] ;
+    loc_sum2 += 2.0 * ( creal( in[1][i] ) * creal( temp ) + cimag( in[1][i] ) * cimag( temp ) ) ;    
+    #else
+    size_t mu ;
+    for( mu = 0 ; mu < TRUE_HERM ; mu++ ) {
+      test_sum1 += conj(in[mu][i])*in[mu][i] ;
+      register GLU_complex temp = in[mu][i] - in_old[mu][i] ;
+      test_sum2 += 2*creal( conj(in[mu][i])*temp ) ;
+    }
+    #endif
     const size_t th = get_GLU_thread() ;
     red[ LINE_NSTEPS + th * CLINE ] += 2*loc_sum1 ;
     red[ LINE_NSTEPS + 1 + th * CLINE ] += loc_sum2 ;

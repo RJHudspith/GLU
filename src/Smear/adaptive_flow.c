@@ -387,7 +387,6 @@ flow_adaptive_RK3( struct site *__restrict lat ,
     // compute the t_0 and w_0 scales from the measurements
 #ifndef WFLOW_TIME_ONLY
     if( ( fabs( curr -> time - WFLOW_TIME_STOP ) > PREC_TOL ) && 
-	count < smiters &&
 	meas_count > 0 ) {
       scaleset( curr , T0_STOP , W0_STOP , meas_count , GLU_TRUE ) ;
       scaleset( curr , T0_STOP , W0_STOP , meas_count , GLU_FALSE ) ;

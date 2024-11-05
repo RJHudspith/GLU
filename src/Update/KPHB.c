@@ -114,7 +114,6 @@ update_lattice( struct site *lat ,
     // perform over-relaxation 
     OR_lattice( lat , db ) ;
   }
-
   return ;
 }
 
