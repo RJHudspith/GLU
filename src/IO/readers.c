@@ -121,6 +121,7 @@ DML_checksum_accum( uint32_t *checksuma ,
   return ;
 }
 
+#if NC<4
 // recreate O from the "short" definition
 static void 
 exhume_O( GLU_complex *__restrict S , 
@@ -130,6 +131,7 @@ exhume_O( GLU_complex *__restrict S ,
   gram_reunit( S ) ;
   return ;
 }
+#endif
 
 // rebuilt using the switch for the different allowd formats
 static void
@@ -140,7 +142,11 @@ rebuild_lat( GLU_complex *__restrict link ,
   // smash all the read values into lat
   switch( type ) { 
   case OUTPUT_SMALL :
-    exhume_O( link , utemp ) ; 
+    #if NC<4
+    exhume_O( link , utemp ) ;
+    #else
+    exit(1) ;
+    #endif
     return ;
   case OUTPUT_GAUGE :
     complete_top( link , utemp ) ;

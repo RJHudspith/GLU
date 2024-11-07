@@ -94,7 +94,7 @@ FOURIER_ACCELERATE3( struct fftw_stuff *FFTW )
   return ;
 }
 
-// what does this do
+// computes the PR factor tr( in* in) and tr( in* (in-in_old) )
 static void
 sum_PR3( double *red ,
 	 const GLU_complex **in , 
@@ -104,13 +104,12 @@ sum_PR3( double *red ,
 #pragma omp for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     double loc_sum1 = 0.0 , loc_sum2 = 0.0 ;
-    #if NC==3
-    loc_sum1 += creal(in[0][i]) * creal(in[0][i]) + cimag(in[0][i])*cimag(in[0][i]) 
-      + creal(in[0][i]) * cimag( in[0][i] ) ;
-    loc_sum1 += creal(in[1][i]) * creal(in[1][i]) + cimag(in[1][i])*cimag(in[1][i]) ; 
-    loc_sum1 += creal(in[2][i]) * creal(in[2][i]) + cimag(in[2][i])*cimag(in[2][i]) ; 
-    loc_sum1 += creal(in[3][i]) * creal(in[3][i]) + cimag(in[3][i])*cimag(in[3][i]) ; 
-	
+    #if NC==3    
+    loc_sum1 += 2.0*( creal(in[0][i]) * creal(in[0][i]) + cimag(in[0][i])*cimag(in[0][i] ) 
+		      + creal(in[0][i]) * cimag( in[0][i] )) ;
+    loc_sum1 += 2.0*( creal(in[1][i]) * creal(in[1][i]) + cimag(in[1][i])*cimag(in[1][i]) ); 
+    loc_sum1 += 2.0*( creal(in[2][i]) * creal(in[2][i]) + cimag(in[2][i])*cimag(in[2][i]) ) ; 
+    loc_sum1 += 2.0*( creal(in[3][i]) * creal(in[3][i]) + cimag(in[3][i])*cimag(in[3][i]) ) ;
     register GLU_complex temp = in[0][i] - in_old[0][i] ;
     loc_sum2 += 2.0 * ( creal( in[0][i] ) * creal( temp ) + cimag( in[0][i] ) * cimag( temp ) ) ;
     loc_sum2 += creal( in[0][i] ) * cimag( temp ) + cimag( in[0][i] ) * creal( temp ) ;
@@ -119,25 +118,27 @@ sum_PR3( double *red ,
     temp = in[2][i] - in_old[2][i] ;
     loc_sum2 += 2.0 * ( creal( in[2][i] ) * creal( temp ) + cimag( in[2][i] ) * cimag( temp ) ) ;
     temp = in[3][i] - in_old[3][i] ;
-    loc_sum2 += 2.0 * ( creal( in[3][i] ) * creal( temp ) + cimag( in[3][i] ) * cimag( temp ) ) ;
+    loc_sum2 += 2.0 * ( creal( in[3][i] ) * creal( temp ) + cimag( in[3][i] ) * cimag( temp ) ) ;   
     #elif (NC==2)
-    loc_sum1 += creal(in[0][i]) * creal(in[0][i]) + cimag(in[0][i])*cimag(in[0][i]) + creal(in[0][i]) * cimag( in[0][i] ) ;    
-    loc_sum1 += creal(in[1][i]) * creal(in[1][i]) + cimag(in[1][i])*cimag(in[1][i]) ;
+    loc_sum1 += 2.0*( cimag(in[0][i])*cimag(in[0][i]) ) ;
+    loc_sum1 += 2.0*( creal(in[1][i]) * creal(in[1][i]) + cimag(in[1][i])*cimag(in[1][i]) ) ;
     register GLU_complex temp = in[0][i] - in_old[0][i] ;
-    loc_sum2 += 2.0 * ( creal( in[0][i] ) * creal( temp ) + cimag( in[0][i] ) * cimag( temp ) ) ;
-    loc_sum2 += creal( in[0][i] ) * cimag( temp ) + cimag( in[0][i] ) * creal( temp ) ;
+    loc_sum2 += 2.0 * ( cimag( in[0][i] ) * cimag( temp ) ) ;
     temp = in[1][i] - in_old[1][i] ;
     loc_sum2 += 2.0 * ( creal( in[1][i] ) * creal( temp ) + cimag( in[1][i] ) * cimag( temp ) ) ;    
     #else
+    // generic version uses a cast
+    GLU_complex a[ HERMSIZE ] GLUalign = {} , b[ HERMSIZE ] GLUalign = {} ;
     size_t mu ;
-    for( mu = 0 ; mu < TRUE_HERM ; mu++ ) {
-      test_sum1 += conj(in[mu][i])*in[mu][i] ;
-      register GLU_complex temp = in[mu][i] - in_old[mu][i] ;
-      test_sum2 += 2*creal( conj(in[mu][i])*temp ) ;
+    for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
+      a[mu] = in[mu][i] ;
+      b[mu] = in[mu][i] - in_old[mu][i];
     }
+    trace_ab_herm_short( &loc_sum1 , a , a ) ;
+    trace_ab_herm_short( &loc_sum2 , a , b ) ;
     #endif
     const size_t th = get_GLU_thread() ;
-    red[ LINE_NSTEPS + th * CLINE ] += 2*loc_sum1 ;
+    red[ LINE_NSTEPS + 0 + th * CLINE ] += loc_sum1 ;
     red[ LINE_NSTEPS + 1 + th * CLINE ] += loc_sum2 ;
   }
   return ;
@@ -151,16 +152,16 @@ sum_DER3( double *red ,
 #pragma omp for private(i)
   for( i = 0 ; i < LVOLUME ; i++ ) {
     register double loc_sum = 0.0 ;
-#if NC == 3
+    #if NC == 3
     loc_sum += creal(in[0][i]) * creal(in[0][i]) + cimag(in[0][i])*cimag(in[0][i]) 
       + creal(in[0][i]) * cimag( in[0][i] ) ;
     loc_sum += creal(in[1][i]) * creal(in[1][i]) + cimag(in[1][i])*cimag(in[1][i]) ; 
     loc_sum += creal(in[2][i]) * creal(in[2][i]) + cimag(in[2][i])*cimag(in[2][i]) ; 
     loc_sum += creal(in[3][i]) * creal(in[3][i]) + cimag(in[3][i])*cimag(in[3][i]) ; 
-#elif NC == 2
+    #elif NC == 2
     loc_sum += creal(in[0][i]) * creal(in[0][i]) + cimag(in[0][i])*cimag(in[0][i]) ;
     loc_sum += creal(in[1][i]) * creal(in[1][i]) + cimag(in[1][i])*cimag(in[1][i]) ;
-#else
+    #else
     GLU_complex temp[ HERMSIZE ] GLUalign ;
     size_t mu ;
     for( mu = 0 ; mu < HERMSIZE ; mu++ ) {
@@ -169,7 +170,7 @@ sum_DER3( double *red ,
     GLU_real tr ;
     trace_ab_herm_short( &tr , temp , temp ) ;
     loc_sum = 0.5 * (double)tr ;
-#endif
+    #endif
     const size_t th = get_GLU_thread() ;
     red[ LINE_NSTEPS + th*CLINE ] += 2*loc_sum ;
   }

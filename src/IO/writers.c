@@ -113,16 +113,21 @@ grab_sitedata( GLU_real *__restrict chunk ,
 	       const size_t LOOP_VAR , 
 	       const GLU_output checktype )
 {
+  #if NC<4
   GLU_real tmp[ LOOP_VAR ] ;
-  //GLU_real *plat = (GLU_real*)lat.O ;
+  #endif
   size_t j , val = 0 , mu ;
   for( mu = 0 ; mu < ND ; mu++ ) {
     switch( checktype ) {
     case OUTPUT_SMALL :
+      #if NC<4
       shorten( tmp , lat.O[mu] ) ;
       for( j = 0 ; j < LOOP_VAR ; j++ ) {
 	chunk[ val++ ] = tmp[ j ] ;
       }
+      #else
+      exit(1) ;
+      #endif
       break ;
     default :
       for( j = 0 ; j < LOOP_VAR/2 ; j++ ) {

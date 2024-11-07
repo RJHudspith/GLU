@@ -255,6 +255,7 @@ pack_hermitian( GLU_complex a[ HERMSIZE ] ,
 void 
 printcomplex( const GLU_complex a ) ;
 
+#if NC<4
 /**
    @fn void rebuild( GLU_complex a[ NCNC ] , const GLU_real *__restrict b )
    @brief rebuilds the shortened matrix form of a into its full form
@@ -264,6 +265,7 @@ printcomplex( const GLU_complex a ) ;
 void 
 rebuild( GLU_complex a[ NCNC ] , 
 	 const GLU_real *__restrict b ) ;
+#endif
 
 /**
    @fn void rebuild_antihermitian( GLU_complex a[ NCNC ] , const GLU_complex b[ HERMSIZE ] )
@@ -287,6 +289,7 @@ void
 rebuild_hermitian( GLU_complex a[ NCNC ] , 
 		   const GLU_complex b[ HERMSIZE ] ) ;
 
+#if NC<4
 /**
    @fn void shorten( GLU_real *__restrict a , const GLU_complex b[ NCNC ] )
    @brief shortens the special-unitary matrix b to its smallest representation
@@ -298,6 +301,7 @@ rebuild_hermitian( GLU_complex a[ NCNC ] ,
 void
 shorten( GLU_real *__restrict a ,
 	 const GLU_complex b[ NCNC ] ) ;
+#endif
 
 /**
    @fn void speed_det( GLU_complex *__restrict dt ,  const GLU_complex U[ NCNC ] )

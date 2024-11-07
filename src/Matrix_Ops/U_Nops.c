@@ -555,6 +555,7 @@ printcomplex( const GLU_complex a )
   return ;
 }
 
+#if NC<4
 // rebuild the 8 parameter configuration
 void 
 rebuild( GLU_complex a[ NCNC ] , 
@@ -562,11 +563,11 @@ rebuild( GLU_complex a[ NCNC ] ,
 {
 #if NC == 3
   const double tmp = ( b[0] * b[0] + b[1] * b[1] + b[2] * b[2] + b[3] * b[3] ) ;
-#ifdef SINGLE_PREC
+  #ifdef SINGLE_PREC
   const GLU_bool test = ( fabs( tmp ) < FLT_MIN ) ? GLU_TRUE : GLU_FALSE ;
-#else
+  #else
   const GLU_bool test = ( fabs( tmp ) < DBL_MIN ) ? GLU_TRUE : GLU_FALSE ;
-#endif
+  #endif
   if( test != GLU_FALSE ) {
     identity( a ) ;
   } else {
@@ -598,14 +599,13 @@ rebuild( GLU_complex a[ NCNC ] ,
   a[1] = b[1] + I * b[2] ;
   a[2] = -conj( a[1] ) ;
   a[3] = conj( a[0] ) ;
-#else
-  // not supported should exit if this is called no?
 #endif
   // apparently sometimes need a reunitarisation because my constraints on how accurately
   // the code keeps stuff SU(3) have tightened and we are losing some backwards
   // compatibility here, so I reunit on a read of each 8 parameter configuration
   return ;
 }
+#endif
 
 // same as above but for the antihermitian matrices
 void
@@ -690,6 +690,7 @@ rebuild_hermitian( GLU_complex a[ NCNC ] ,
 }
 
 // shortening of the gauge matrices
+#if (NC<4)
 void
 shorten( GLU_real *__restrict a ,
 	 const GLU_complex b[ NCNC ] )
@@ -704,12 +705,10 @@ shorten( GLU_real *__restrict a ,
   a[0] = carg( b[0] ) ;
   a[1] = creal( b[1] ) ;
   a[2] = cimag( b[1] ) ;
-#else
-  // not supported, even though what is happening in essence is the storage
-  // of the SU(2) subgroup values to build the SU(N) matrix
 #endif
   return ;
 }
+#endif
 
 // Determinant passed by reference
 void
