@@ -515,7 +515,6 @@ compute_veclist( size_t *__restrict list_size ,
   sprintf( tmp , "%zu_" , Latt.dims[ mu ] ) ;
   append_char( &str , tmp ) ;
 
-
   // whether we use the sin-mom or the psq mom for our configs
   sprintf( tmp , "nn%zu_%d_%zu_%g_" ,
 	   CUTINFO.max_mom , CUTINFO.type , 
@@ -559,7 +558,6 @@ compute_veclist( size_t *__restrict list_size ,
     // check that in[0] isn't something silly
     if( in[0] == 0 ) {
       fprintf( stderr , "[CUTS] Empty Momentum list .. Leaving\n" ) ;
-      fclose( config ) ;
       *list_size = 0 ;
       free( kept ) ;
       free( str ) ;
@@ -607,9 +605,7 @@ compute_veclist( size_t *__restrict list_size ,
   }
   free( str ) ;
   fclose( config ) ;
-
 #else
-
   struct veclist *kept = malloc( LOOP * sizeof( struct veclist ) ) ;
   if( CONFIGSPACE == GLU_TRUE ) {
     in[0] = get_veclist( kept , CUTINFO , LOOP , DIMS ) ;
@@ -629,7 +625,6 @@ compute_veclist( size_t *__restrict list_size ,
     memcpy( &list[i] , &kept[i] , sizeof( struct veclist ) )  ;
   }
   free( kept ) ;
-
 #endif
 
   *list_size = in[0] ;

@@ -58,14 +58,13 @@ allocate_s_site( const size_t LENGTH1 ,
 		 const size_t LENGTH3 ) ;
 
 /**
-   @fn void free_spt_site( struct s_site *lat , const size_t LENGTH1 , const size_t LENGTH2 , const size_t LENGTH3 )
+   @fn void free_spt_site( struct s_site *lat , const size_t LENGTH1 , const size_t LENGTH2 )
    @brief free the spt_size
 */
 void
 free_s_site( struct s_site *lat ,
 	     const size_t LENGTH1 ,
-	     const size_t LENGTH2 ,
-	     const size_t LENGTH3 ) ;
+	     const size_t LENGTH2 ) ;
 
 /**
    @fn void free_lat( struct site *lat )

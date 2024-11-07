@@ -258,8 +258,8 @@ HYPSLsmear3D( struct site *__restrict lat ,
   if( red != NULL ) {
     free( red ) ;
   }
-  free_s_site( lat2 , LCU , ND-1 , NCNC ) ;
-  free_s_site( lev1 , LCU , ND*(ND-1)*(ND-2) , NCNC ) ;
+  free_s_site( lat2 , LCU , ND-1 ) ;
+  free_s_site( lev1 , LCU , ND*(ND-1)*(ND-2) ) ;
 
   return FLAG ;
 #endif

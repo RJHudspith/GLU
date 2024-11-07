@@ -113,8 +113,7 @@ smear3D( struct site *__restrict lat ,
         #pragma omp for private(i)
 	for( i = 0 ; i < LCU ; i++ ) {
 	  const size_t it = slice + i ; 
-	  size_t mu ;
-	  for( mu = 0 ; mu < ND - 1 ; mu++ ) {
+	  for( size_t mu = 0 ; mu < ND - 1 ; mu++ ) {
 	    GLU_complex stap[ NCNC ] GLUalign ;
 	    zero_mat( stap ) ;
             #ifdef IMPROVED_SMEARING
@@ -122,15 +121,14 @@ smear3D( struct site *__restrict lat ,
             #else
 	    all_staples( stap , lat , it , mu , ND - 1 , type ) ; 
             #endif
-	    project( lat2[ i ].O[ mu ] , stap , lat[ it ].O[ mu ] , alpha1 , 
-		     one_min_a1 ) ;
+	    project( lat2[ i ].O[ mu ] , stap , lat[ it ].O[ mu ] ,
+		     alpha1 , one_min_a1 ) ;
 	  }
 	}
-        #pragma omp for private(i) 
+        #pragma omp for private(i)
 	for( i = 0 ; i < LCU ; i++ )  {
 	  const size_t it = slice + i ;
-	  size_t mu ;
-	  for( mu = 0 ; mu < (ND-1) ; mu++ ) {
+	  for( size_t mu = 0 ; mu < (ND-1) ; mu++ ) {
 	    equiv( lat[it].O[mu] , lat2[i].O[mu] ) ;
 	  }
 	}
@@ -167,7 +165,7 @@ smear3D( struct site *__restrict lat ,
   }
   
   // free our temporary lattice
-  free_s_site( lat2 , LCU , (ND-1) , NCNC ) ;
+  free_s_site( lat2 , LCU , (ND-1) ) ;
 
   return FLAG ;
 #endif
@@ -269,8 +267,7 @@ smear4D( struct site *__restrict lat ,
       for( i = 0 ; i < LCU ; i++ ) {
       #endif
 	const size_t bck = back + i ;
-	register size_t mu ;
-	for( mu = 0 ; mu < ND ; mu++ ) { 
+	for( size_t mu = 0 ; mu < ND ; mu++ ) { 
 	  GLU_complex stap[ NCNC ] GLUalign ;
 	  zero_mat( stap ) ;
           #ifdef IMPROVED_SMEARING
@@ -278,8 +275,8 @@ smear4D( struct site *__restrict lat ,
           #else
 	  all_staples( stap , lat , bck , mu , ND , type ) ;
           #endif
-	  project( lat4[ i ].O[ mu ] , stap , lat[ bck ].O[ mu ] , alpha1 ,
-		   one_min_a1 ) ; 
+	  project( lat4[ i ].O[ mu ] , stap , lat[ bck ].O[ mu ] ,
+		   alpha1 , one_min_a1 ) ; 
 	}
       }
       #ifdef IMPROVED_SMEARING
@@ -291,8 +288,7 @@ smear4D( struct site *__restrict lat ,
         #pragma omp for private(i) SCHED
 	for( i = 0 ; i < LCU ; i++ ) {
 	  const size_t it = slice + i ;
-	  size_t mu ;
-	  for( mu = 0 ; mu < ND ; mu++ ) {
+	  for( size_t mu = 0 ; mu < ND ; mu++ ) {
 	    GLU_complex stap[ NCNC ] ;
 	    zero_mat( stap ) ;
             #ifdef IMPROVED_SMEARING
@@ -313,8 +309,7 @@ smear4D( struct site *__restrict lat ,
 
         #pragma omp for private(i)
 	for( i = 0 ; i < LCU ; i++ ) {
-	  register size_t mu ;
-	  for( mu = 0 ; mu < ND ; mu++ ) {
+	  for( size_t mu = 0 ; mu < ND ; mu++ ) {
 	    #ifdef IMPROVED_SMEARING
 	    if( t > 1 ) {
 	      register const size_t back = bck + i ;
@@ -390,13 +385,13 @@ memfree :
   }
   
   // free stuff !
-  free_s_site( lat2 , LCU , ND , NCNC ) ;
+  free_s_site( lat2 , LCU , ND ) ;
 #ifdef IMPROVED_SMEARING
-  free_s_site( lat3 , 2*LCU , ND , NCNC ) ;
-  free_s_site( lat4 , 2*LCU , ND , NCNC ) ;
+  free_s_site( lat3 , 2*LCU , ND ) ;
+  free_s_site( lat4 , 2*LCU , ND ) ;
 #else
-  free_s_site( lat3 , LCU , ND , NCNC ) ;
-  free_s_site( lat4 , LCU , ND , NCNC ) ;
+  free_s_site( lat3 , LCU , ND ) ;
+  free_s_site( lat4 , LCU , ND ) ;
 #endif
 
   return FLAG ;

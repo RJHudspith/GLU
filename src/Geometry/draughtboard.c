@@ -129,9 +129,15 @@ init_cb( struct draughtboard *db ,
 int
 init_improved_cb( struct draughtboard *db )
 {
-  assert( ND == 4 ) ;
+  if( ND != 4 ) {
+    fprintf( stderr , "Improved rectangle actions not implemented for Nd!=4\n" ) ;
+    return GLU_FAILURE ;
+  }
   for( int mu = 0 ; mu < ND ; mu++ ) {
-    assert( Latt.dims[mu]%4 == 0 && Latt.dims[mu] >=4 ) ;
+    if( (Latt.dims[mu]%4 == 0 && Latt.dims[mu] >=4) ) {
+      fprintf( stderr , "Unsuitable lattice dimension hit %zu\n" , Latt.dims[mu] ) ;
+      return GLU_FAILURE ;
+    }
   }
 #ifdef SYMANZIK_ONE_LOOP
   assert( true ) ;

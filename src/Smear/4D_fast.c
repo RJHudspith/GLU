@@ -380,11 +380,11 @@ HYPSLsmear4D_expensive( struct site *__restrict lat ,
   }
   
   // free that memory //
-  free_s_site( lat2 , LCU , ND , NCNC ) ;
-  free_s_site( lat3 , LCU , ND , NCNC ) ;
-  free_s_site( lat4 , LCU , ND , NCNC ) ;
-  free_s_site( lev1 , LVOLUME , ND*(ND-1) , NCNC ) ;
-  free_s_site( lev2 , LVOLUME , ND*(ND-1) , NCNC ) ;
+  free_s_site( lat2 , LCU , ND ) ;
+  free_s_site( lat3 , LCU , ND ) ;
+  free_s_site( lat4 , LCU , ND ) ;
+  free_s_site( lev1 , LVOLUME , ND*(ND-1) ) ;
+  free_s_site( lev2 , LVOLUME , ND*(ND-1) ) ;
 
   return FLAG ;
 #endif

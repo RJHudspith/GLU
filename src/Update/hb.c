@@ -50,7 +50,6 @@ a    GLU is distributed in the hope that it will be useful,
 // Kennedy-Pendleton heatbath algorithm
 static int
 KP( double *__restrict d ,
-    const double xl ,
     const double NORM ,
     const uint32_t thread ) 
 {  
@@ -82,29 +81,27 @@ generate_SU2( GLU_complex *s0 ,
 	      const double NORM ,
 	      const int thread )
 {
-  double xl = 1.0 , d = 0.0 ;
+  double d = 0.0 ;
   size_t iters = 1 ;
 
-  // function pointer for the algorithm we want
-  static int (*K)( double *__restrict d ,
-		   const double xl ,
-		   const double NORM ,
-		   const uint32_t thread ) ;
-#ifdef USE_KP
-  K = KP ;
-#else
-  K = Creutz ;
-  xl = exp( -2./NORM ) ; 
-#endif
-
   // compute d which is (1-a0) = the leftmost su2 matrix element
-  if( K( &d , xl , NORM , thread ) ) {
+#ifdef USE_KP
+  if( KP( &d ,  NORM , thread ) ) {
     // redo the algorithm
-    while( K( &d , xl , NORM , thread ) && iters < NHBMAX ) {
+    while( KP( &d , NORM , thread ) && iters < NHBMAX ) {
       iters++ ;
     }
   }
-
+#else
+  const double xl = exp( -2./NORM ) ; 
+  if( Creutz( &d , xl , NORM , thread ) ) {
+    // redo the algorithm
+    while( Creutz( &d , xl , NORM , thread ) && iters < NHBMAX ) {
+      iters++ ;
+    }
+  }
+#endif
+  
   // generate SU(2) matrix
   const double a0  = 1.0 - d ;
   const double ar2 = fabs( 1.0 - a0*a0 ) ; 

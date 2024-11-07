@@ -30,7 +30,6 @@
    @param infile :: configuration file, be it HIREP or NERSC
    @param lat :: gauge field
    @param GFINFO :: general gauge fixing information from the input file
-   @param HEAD_DATA :: information from the QCD header
 
    It includes the smeared-preconditioned and MAG-preconditioned
    types of gauge fixing.
@@ -40,7 +39,6 @@
 int
 GF_wrap( const char *__restrict infile , 
 	 struct site *__restrict lat , 
-	 const struct gf_info GFINFO , 
-	 const struct head_data HEAD_DATA ) ;
+	 const struct gf_info GFINFO ) ;
 
 #endif

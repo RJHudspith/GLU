@@ -178,8 +178,7 @@ output_information( struct site *lat )
 int
 GF_wrap( const char *infile , 
 	 struct site *lat , 
-	 const struct gf_info GFINFO , 
-	 const struct head_data HEAD_DATA )
+	 const struct gf_info GFINFO )
 {
   int flag = GLU_SUCCESS ;
   

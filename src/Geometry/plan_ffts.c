@@ -35,6 +35,7 @@
 // for ease of reading
 enum{ NOPLAN = 0 } ;
 
+#ifndef CONDOR_MODE
 // see if we have wisdom already
 static char*
 obtain_wisdom( int *planflag ,
@@ -42,10 +43,9 @@ obtain_wisdom( int *planflag ,
 	       const size_t DIR , 
 	       const char *type )
 {
-  *planflag = NOPLAN ;
   char *str = malloc( (1+strlen(HAVE_PREFIX))* sizeof( char ) ) ;
   sprintf( str , "%s" , HAVE_PREFIX ) ;
-#ifndef CONDOR_MODE
+  
   FILE *wizzard ;
   size_t mu ;
   char prec_str[16] , tmp[64] ;
@@ -67,18 +67,13 @@ obtain_wisdom( int *planflag ,
     fprintf( stdout , "\n[FFTW] No wisdom (%s) to be obtained "
 	     "here ... planning\n" , str ) ; 
   } else {
-    #ifdef verbose
     fprintf( stdout , "\n[FFTW] Successful wisdom (%s) attained\n" , str ) ;
-    #endif
     *planflag = fftw_import_wisdom_from_file( wizzard ) ; 
     fclose( wizzard ) ; 
   }
-  // condor mode ifdef
-#else
-  fprintf( stdout , "[FFTW] Creating plan on CONDOR host\n" ) ; 
-#endif
   return str ;
 }
+#endif
 
 // clean up the allocations by create_plans_DFT
 void
@@ -112,7 +107,7 @@ create_plans_DFT( struct fftw_stuff *FFTW ,
 {
   // set up our fft
   size_t VOL = 1 , mu , i ;
-  int dimes[ DIR ] , planflag ;
+  int dimes[ DIR ] ;
   
   // swap these defs around as FFTW and I disagree on orderings
   for( mu = 0 ; mu < DIR ; mu++ ) {
@@ -139,8 +134,14 @@ create_plans_DFT( struct fftw_stuff *FFTW ,
     }
   }
   
+#ifndef CONDOR_MODE
+  int planflag = NOPLAN ;
   char *str = obtain_wisdom( &planflag , dims , DIR , "" ) ;
-
+#else
+  char *str = malloc( (1+strlen(HAVE_PREFIX))* sizeof( char ) ) ;
+  sprintf( str , "%s" , HAVE_PREFIX ) ;
+#endif
+  
   for( mu = 0 ; mu < ARR_SIZE ; mu++ ) {
     FFTW -> forward[mu] = fftw_plan_dft( DIR , dimes ,
 					 FFTW -> in[mu] , FFTW -> out[mu] , 
@@ -190,7 +191,7 @@ small_create_plans_DFT( struct fftw_small_stuff *FFTW ,
 {
   // set up our fft
   size_t VOL = 1 , mu ;
-  int dimes[ DIR ] , planflag ;
+  int dimes[ DIR ] ;
   // swap these defs around
   for( mu = 0 ; mu < DIR ; mu++ ) {
     dimes[ mu ] = dims[ DIR - 1 - mu ] ;
@@ -206,8 +207,14 @@ small_create_plans_DFT( struct fftw_small_stuff *FFTW ,
   #ifdef verbose
   start_timer( ) ;
   #endif
-
+  
+#ifndef CONDOR_MODE
+  int planflag = NOPLAN ;
   char *str = obtain_wisdom( &planflag , dims , DIR , "single_" ) ;
+#else
+  char *str = malloc( (1+strlen(HAVE_PREFIX))* sizeof( char ) ) ;
+  sprintf( str , "%s" , HAVE_PREFIX ) ;
+#endif
 
   FFTW -> forward = fftw_plan_dft( DIR , dimes ,
 				   FFTW -> in , FFTW -> out , 

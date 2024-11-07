@@ -39,7 +39,9 @@
 // measure plaquette and polyakov loop
 static void
 perform_measurements( double *PLAQred ,
+		      #ifdef POLY_MEAS
 		      double *POLYred ,
+		      #endif
 		      const struct site *lat ,
 		      const size_t conf_idx )
 {
@@ -65,7 +67,7 @@ perform_measurements( double *PLAQred ,
   }
 
   // icc really hates this for some reason
-#if POLY_MEAS
+#ifdef POLY_MEAS
   double re = 0 , im = 0 ;
   size_t mu ;
   
@@ -170,8 +172,9 @@ hb_update( struct site *lat ,
   fprintf( stdout , "[UPDATE] Using beta = %1.12f \n" , HBINFO.beta ) ;
 
   double *PLAQred = calloc( CLINE*Latt.Nthreads , sizeof( double ) ) ;
+#ifdef POLY_MEAS
   double *POLYred = calloc( CLINE*Latt.Nthreads , sizeof( double ) ) ;
-  
+#endif
   // thermalise
   start_timer( ) ;
   
@@ -203,7 +206,11 @@ hb_update( struct site *lat ,
 
       // if we are saving the data print out the plaquette and write a file
       if( i%HBINFO.Nmeasure == 0 ) {
+	#ifdef POLY_MEAS
 	perform_measurements( PLAQred , POLYred , lat , i ) ;
+	#else
+	perform_measurements( PLAQred , lat , i ) ;
+	#endif
       }
 
       // if we hit a save point we write out the configuration
@@ -233,7 +240,9 @@ hb_update( struct site *lat ,
 
   // free the reduction array
   free( PLAQred ) ;
+  #ifdef POLY_MEAS
   free( POLYred ) ;
+  #endif
 
   // free the draughtboard
   free_cb( &db ) ;

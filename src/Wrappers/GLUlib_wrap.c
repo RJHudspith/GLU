@@ -271,7 +271,7 @@ read_and_fix( const char *infile ,
   // if we want a random transform then here is where we do it
   if( rtrans == GLU_TRUE ) { random_gtrans( lat ) ; }
 
-  GF_wrap( infile , lat , GFINFO , HEAD_DATA ) ;
+  GF_wrap( infile , lat , GFINFO ) ;
 
   if( (Latt.argc-1) == WRITE ) {
     FLAG = write_configuration( lat , outfile , storage , output_details ) ;

@@ -92,7 +92,8 @@ project_LOG( GLU_complex smeared_link[ NCNC ] ,
 	     const double smear_alpha ,
 	     const double al )
 {
-  GLU_complex a[ NCNC ] GLUalign ; 
+  GLU_complex a[ NCNC ] GLUalign = {} ;
+  a[0] = al ; // stupid but it removes a gcc warning
 #if NC == 3
   *( staple + 0 ) *= smear_alpha ; 
   *( staple + 1 ) *= smear_alpha ; 
@@ -126,7 +127,7 @@ project_LOG_wflow_short( GLU_complex log[ NCNC ] ,
 			 const GLU_complex link[ NCNC ] , 
 			 const double smear_alpha )
 {
-  GLU_complex a[ HERMSIZE ] , b[ NCNC ] GLUalign ;
+  GLU_complex a[ HERMSIZE ] GLUalign , b[ NCNC ] GLUalign ;
   #if NC == 3
   *( a + 0 ) = creal( staple[0] ) * smear_alpha ; 
   *( a + 1 ) = staple[1] * smear_alpha ; 
@@ -156,7 +157,8 @@ project_STOUT( GLU_complex smeared_link[ NCNC ] ,
 	       const double smear_alpha ,
 	       const double al )
 {
-  GLU_complex a[ NCNC ] GLUalign , b[ NCNC ] GLUalign ;  
+  GLU_complex a[ NCNC ] GLUalign = {} , b[ NCNC ] GLUalign = {} ;
+  a[0] = al ; // stupid but it removes a gcc warning
   multab_dag( b , staple , link ) ;   
   Hermitian_proj( a , b ) ;
 #if NC == 3
@@ -192,7 +194,7 @@ project_STOUT_wflow_short( GLU_complex stout[ NCNC ] ,
 			   const GLU_complex link[ NCNC ] , 
 			   const double smear_alpha )
 {
-  GLU_complex a[ HERMSIZE ] , b[ NCNC ] GLUalign ;
+  GLU_complex a[ HERMSIZE ] GLUalign , b[ NCNC ] GLUalign ;
 #if NC == 3
   *( a + 0 ) = creal( staple[ 0 ] ) * smear_alpha ; 
   *( a + 1 ) = staple[ 1 ] * smear_alpha ; 

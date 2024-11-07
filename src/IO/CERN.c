@@ -28,8 +28,6 @@
  */
 #include "Mainfile.h"
 
-#include <assert.h>
-
 #include "geometry.h"      // gen_site()
 #include "GLU_bswap.h"     // byte swapping arrays
 #include "plaqs_links.h"   // compute the plaquette
@@ -40,7 +38,7 @@ read_CLS_field( struct site *__restrict lat ,
 		FILE *__restrict in , 
 		uint32_t *chksum )
 {
-  assert( ND == 4 ) ;
+  if( ND != 4 ) return GLU_FAILURE ;
   
   const size_t Nelements = NCNC ;
   const size_t PM = 2 ; // +/-
@@ -106,7 +104,10 @@ void
 write_CLS_field( const struct site *__restrict lat ,
 		 FILE *__restrict outfile )
 {
-  assert( ND == 4 ) ;
+  if( ND != 4 ) {
+    fprintf( stderr , "No known CERN format for Nd != 4\n" ) ;
+    return ;
+  }
   
   // the size of the link matrices
   const size_t PM = 2 ;

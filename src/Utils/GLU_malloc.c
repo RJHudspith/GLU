@@ -125,8 +125,7 @@ allocate_s_site( const size_t LENGTH1 ,
 void
 free_s_site( struct s_site *lat ,
 	     const size_t LENGTH1 ,
-	     const size_t LENGTH2 ,
-	     const size_t LENGTH3 )
+	     const size_t LENGTH2 )
 {
 
   size_t i ;

@@ -140,7 +140,6 @@ line_exp( GLU_complex **gauge ,
 static void
 line_search_CoulombOdd( double *red ,
 			GLU_complex **gauge ,
-			const struct draughtboard db ,
 			const struct site *lat ,
 			const GLU_complex **in ,
 			const size_t t )
@@ -203,7 +202,7 @@ line_search_Coulomb( double *red ,
 
   // odd dimensional code
   if( db.Ncolors != 2 ) {
-    line_search_CoulombOdd( red , gauge , db , lat , in , t ) ;
+    line_search_CoulombOdd( red , gauge , lat , in , t ) ;
     return ;
   }
   

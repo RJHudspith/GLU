@@ -337,9 +337,9 @@ HYsmearND( struct site *__restrict lat ,
   if( red != NULL ) {
     free( red ) ;
   }
-  free_s_site( lat2 , LCU , ND , NCNC ) ;
-  free_s_site( lat3 , LCU , ND , NCNC ) ;
-  free_s_site( lat4 , LCU , ND , NCNC ) ;
+  free_s_site( lat2 , LCU , ND ) ;
+  free_s_site( lat3 , LCU , ND ) ;
+  free_s_site( lat4 , LCU , ND ) ;
 
   return FLAG ;
 }

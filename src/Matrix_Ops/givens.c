@@ -396,6 +396,7 @@ rotation( GLU_complex U[ NCNC ] ,
 }
 #endif
 
+#ifdef OBC_HACK
 static inline GLU_bool
 link_is_zero( const GLU_complex U[ NCNC ] )
 {
@@ -422,6 +423,7 @@ link_is_zero( const GLU_complex U[ NCNC ] )
   }
   return GLU_FALSE ;
 }
+#endif
 
 // Cabibbo-Marinari projections for trace maximisation
 void

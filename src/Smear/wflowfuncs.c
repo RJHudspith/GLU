@@ -295,8 +295,7 @@ evaluate_scale( double *der ,
 		const double *x ,
 		const double *meas ,
 		const size_t Nmeas ,
-		const double scale ,
-		const char *message )
+		const double scale )
 {
   // compute spline for observable meas, x must be sorted smallest to largest
   size_t i , change_up = 0 ;
@@ -307,7 +306,7 @@ evaluate_scale( double *der ,
       change_up = i ;
     }
     #ifdef verbose
-    fprintf( stdout , "[%s] %g %g \n" , message , x[ i ] , meas[ i ] ) ;
+    fprintf( stdout , "%g %g \n" , x[ i ] , meas[ i ] ) ;
     #endif
   }
   #ifdef verbose
@@ -315,7 +314,7 @@ evaluate_scale( double *der ,
   if( Nmeas > 0 ) {
     double t = 0.0 ;
     for( t = 0.0 ; t < x[ Nmeas - 1 ] ; t+= 0.005 ) {
-      fprintf( stdout , "[%s-spline] %g %g \n" , message , t , 
+      fprintf( stdout , "[spline] %g %g \n" , t , 
 	       cubic_eval( x , meas , der , t , Nmeas ) ) ;
     }
   }
@@ -378,20 +377,20 @@ free_WF( struct wflow_temps *WF ,
   }
   if( memcheap == GLU_TRUE ) {
     // free our fields
-    free_s_site( WF->Z , LVOLUME , ND , TRUE_HERM ) ;
+    free_s_site( WF->Z , LVOLUME , ND ) ;
 #ifdef IMPROVED_SMEARING
-    free_s_site( WF->lat2 , 2*LCU , ND , NCNC ) ;
-    free_s_site( WF->lat3 , 2*LCU , ND , NCNC ) ;
-    free_s_site( WF->lat4 , 2*LCU , ND , NCNC ) ;
+    free_s_site( WF->lat2 , 2*LCU , ND ) ;
+    free_s_site( WF->lat3 , 2*LCU , ND ) ;
+    free_s_site( WF->lat4 , 2*LCU , ND ) ;
 #else
-    free_s_site( WF->lat2 , LCU , ND , NCNC ) ;
-    free_s_site( WF->lat3 , LCU , ND , NCNC ) ;
-    free_s_site( WF->lat4 , LCU , ND , NCNC ) ;
+    free_s_site( WF->lat2 , LCU , ND ) ;
+    free_s_site( WF->lat3 , LCU , ND ) ;
+    free_s_site( WF->lat4 , LCU , ND ) ;
 #endif
   } else {
     // free our fields
-    free_s_site( WF->lat2 , LVOLUME , ND , NCNC ) ;
-    free_s_site( WF->Z , LVOLUME , ND , TRUE_HERM ) ;
+    free_s_site( WF->lat2 , LVOLUME , ND ) ;
+    free_s_site( WF->Z , LVOLUME , ND ) ;
   }
   return ;
 }
@@ -464,7 +463,7 @@ scaleset( struct wfmeas *curr ,
     curr = curr -> next ;
   }
   if( count > 0 ) {
-    t0 = evaluate_scale( der , time , GT , count , T_0 , "GT" ) ;
+    t0 = evaluate_scale( der , time , GT , count , T_0 ) ;
   }
   if( t0 == -1 ) {
     #pragma omp master
@@ -476,7 +475,7 @@ scaleset( struct wfmeas *curr ,
   }
   #pragma omp master
   {
-    fprintf( stdout , "[GT-scale %s] W(%g) %1.12e \n" , clovstr , T_0 , sqrt( t0 ) ) ;
+    fprintf( stdout , "[GT-scale %s] G(%g) %1.12e \n" , clovstr , T_0 , sqrt( t0 ) ) ;
   }
   // W(t) = t ( dG(t) / dt )
   if( count > 0 ) {
@@ -484,7 +483,7 @@ scaleset( struct wfmeas *curr ,
       GT[ i ] = time[ i ] * der[ i ] ;
     }
   }
-  w0 = evaluate_scale( der , time , GT , count , W_0 , "WT" ) ;
+  w0 = evaluate_scale( der , time , GT , count , W_0 ) ;
   if( w0 == -1 ) {
     #pragma omp master
     {

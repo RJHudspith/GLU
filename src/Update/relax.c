@@ -27,9 +27,6 @@
 #include "par_rng.h"
 #include "gramschmidt.h"
 
-// chroma's seems the cheapest at the moment
-#define CHROMA_RELAX
-
 // number of SOR steps
 //#define SOR
 
@@ -49,9 +46,11 @@ microcanonical( GLU_complex *s0 ,
 // overrelaxation algorithm
 static void
 overrelax( GLU_complex U[ NCNC ] , 
-	   const GLU_complex staple[ NCNC ] ,
-	   const uint32_t thread )
+	   const GLU_complex staple[ NCNC ] )
 {
+  #ifdef SOR
+  const uint32_t thread = get_GLU_thread() ;
+  #endif
   GLU_complex s0 GLUalign , s1 GLUalign ;
   double scale GLUalign ;
   size_t i ;
@@ -89,7 +88,7 @@ OR_lattice( struct site *lat ,
       GLU_complex stap[ NCNC ] GLUalign ;
       zero_mat( stap ) ;
       all_staples_improve( stap , lat , it , mu , ND , SM_APE ) ;
-      overrelax( lat[ it ].O[mu] , stap , get_GLU_thread() ) ;
+      overrelax( lat[ it ].O[mu] , stap ) ;
     }
   }
 #else
@@ -104,7 +103,7 @@ OR_lattice( struct site *lat ,
       GLU_complex stap[ NCNC ] GLUalign ;
       zero_mat( stap ) ;
       all_staples( stap , lat , it , mu , ND , SM_APE ) ;
-      overrelax( lat[ it ].O[mu] , stap , get_GLU_thread() ) ;
+      overrelax( lat[ it ].O[mu] , stap ) ;
     }
     // and that is it
   }
@@ -112,7 +111,6 @@ OR_lattice( struct site *lat ,
   return GLU_SUCCESS ;
 }
 
-// clean up the over-relaxation
-#ifdef CHROMA_RELAX
-  #undef CHROMA_RELAX
+#ifdef SOR
+  #undef SOR
 #endif
