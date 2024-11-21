@@ -39,16 +39,18 @@ checks( struct site *__restrict lat ,
 	struct head_data HEAD_DATA ) ;
 
 /**
-   @fn int get_config_SUNC( FILE *__restrict CONFIG , struct site *__restrict lat , const struct head_data HEAD_DATA )
+   @fn int get_config_SUNC( FILE *__restrict CONFIG , struct site *__restrict lat , const struct head_data HEAD_DATA , const char *config_in )
    @brief wrapper for reading a configuration
    @param CONFIG :: our configuration file
    @param lat :: the lattice gauge field being read
    @param HEAD_DATA :: uses the header data
+   @param config_in :: file
    @returns #GLU_SUCCESS or #GLU_FAILURE
  **/
 int
 get_config_SUNC( FILE *__restrict CONFIG , 
 		 struct site *__restrict lat ,
-		 const struct head_data HEAD_DATA ) ;
+		 const struct head_data HEAD_DATA ,
+		 const char *config_in ) ;
 
 #endif

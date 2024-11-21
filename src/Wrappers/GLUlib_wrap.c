@@ -38,6 +38,7 @@
 #include "SUNCxU1_config.h" // compute SU(NC)xU(1) link matrices
 #include "taylor_logs.h"    // Taylor series brute force logarithm
 #include "writers.h"        // write out a configuration
+#include "GLU_timer.h"      // reporting IO timing
 
 // allow for some very necessary precomputations ...
 #if NC > 3 
@@ -115,7 +116,10 @@ read_file( struct head_data *HEAD_DATA ,
   fprintf( stdout , "[PREC] Single-precision storage for the gauge fields\n" ) ;
 #endif
 
-  const int check = get_config_SUNC( infile , lat , tmp ) ;
+  start_timer() ;
+  fprintf( stdout , "[IO] Read gauge field\n" ) ; 
+  const int check = get_config_SUNC( infile , lat , tmp , config_in ) ;
+  print_time() ;
   // read in the configuration ...  
   if( check == GLU_FAILURE ) {
     fprintf( stderr , "[IO] File read error ... Leaving \n" ) ;

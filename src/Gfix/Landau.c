@@ -246,7 +246,7 @@ grab_file( struct site *lat ,
   FILE *config = fopen( infile , "rb" ) ;
   // assume the chksum is correct
   if( read_header( config , &HEAD_DATA , GLU_FALSE ) == GLU_FAILURE ||
-      get_config_SUNC( config , lat , HEAD_DATA ) == GLU_FAILURE ) {
+      get_config_SUNC( config , lat , HEAD_DATA , infile ) == GLU_FAILURE ) {
     printf( "[IO] binary file read error \n" ) ;
     return GLU_FAILURE ;
   } 

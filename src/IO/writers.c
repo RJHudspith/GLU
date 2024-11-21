@@ -338,13 +338,17 @@ write_lat( struct site *lat ,
   // CERN stuff is all handled in CERN.c
   if( type == OUTPUT_CERN ) {
     printf( "[IO] Writing out in CERN format\n" ) ;
+    start_timer() ;
     write_CLS_field( lat , out ) ;
+    print_time() ;
     return GLU_SUCCESS ;
   }
   // HIREP stuff is all handled in HIREP.c
   if( type == OUTPUT_HIREP ) {
     printf( "[IO] Writing out in HIREP format\n" ) ;
+    start_timer() ;
     write_gauge_field( lat , out ) ;
+    print_time() ;
     return GLU_SUCCESS ;
   }
 

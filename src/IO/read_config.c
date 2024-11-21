@@ -136,7 +136,8 @@ checks( struct site *__restrict lat ,
 int
 get_config_SUNC( FILE *__restrict CONFIG , 
 		 struct site *__restrict lat ,
-		 const struct head_data HEAD_DATA )
+		 const struct head_data HEAD_DATA ,
+		 const char *config_in )
 {
   uint32_t chksum ;
   switch( Latt.head ) {
@@ -161,7 +162,7 @@ get_config_SUNC( FILE *__restrict CONFIG ,
     read_gauge_field( lat , CONFIG , &chksum ) ;
     return chksum ;
   case CERN_HEADER :
-    read_CLS_field( lat , CONFIG , &chksum ) ;
+    read_CLS_field( lat , config_in , &chksum ) ;
     return chksum ;
   case RANDOM_CONFIG :
     random_suNC( lat ) ;

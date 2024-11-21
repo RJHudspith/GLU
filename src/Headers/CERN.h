@@ -24,15 +24,16 @@
 #define GLU_CERN_H
 
 /**
-   @fn int read_CLS_field( struct site *lat , FILE *in , uint32_t *chksum )
+   @fn int read_CLS_field( struct site *lat , FILE *in , uint32_t *chksum , const char *config_in )
    @param lat :: lattice gauge links
    @param in :: infile to be read
    @param chksum :: dummy parameter not used
+   @param config_in :: filename
    @brief read in a CERN gauge field
  */
 int
-read_CLS_field( struct site *lat , 
-		FILE *in , 
+read_CLS_field( struct site *lat ,
+		const char *config_in ,
 		uint32_t *chksum ) ;
 
 /**
