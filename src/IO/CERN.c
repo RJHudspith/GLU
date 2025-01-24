@@ -52,15 +52,16 @@ read_CLS_field( struct site *__restrict lat ,
 
     // test idea
     FILE *file = fopen( config_in , "rb" ) ;
+    double complex *uin = malloc( LCU*NCNC*ND*sizeof(double complex)) ;
+    
+    const size_t offset = 4*sizeof(int)+sizeof(double) +( LCU*t )*ND*NCNC*sizeof(double complex) ;
+    fseek( file , offset , SEEK_SET ) ;
 
-    double uin[ LCU*8*NCNC ] GLUalign ;
-    const size_t offset = 4*sizeof(int)+sizeof(double) +( LCU*t )*8*NCNC*sizeof(double) ;
-    fseek( file , offset , SEEK_CUR) ;
-    if( fread( uin , sizeof( double ) , 2*LCU*NCNC*ND , file ) != 2*LCU*NCNC*ND ) {
+    if( fread( uin , sizeof( double complex) , LCU*NCNC*ND , file ) != LCU*NCNC*ND ) {
       fprintf( stderr , "File read error .. Leaving \n " ) ;
       exit(1) ;
     }
-    
+
     double *uind = (double*)(uin) ;
     size_t x , y , z ;
     for( x = 0 ; x < Latt.dims[0] ; x++ ) {
@@ -114,6 +115,9 @@ read_CLS_field( struct site *__restrict lat ,
 	  }
 	}
       }
+    }
+    if( uin != NULL ) {
+      free(uin) ;
     }
     fclose( file ) ;
   }
@@ -235,6 +239,128 @@ write_CLS_field( const struct site *__restrict lat ,
     bswap_64( 8*LVOLUME*NCNC , uout ) ;
   }
   fwrite( uout , sizeof( double ) , 8*LVOLUME*NCNC , outfile ) ;
+  
+  free( uout ) ;
+  
+  return ;
+}
+
+#include <sys/mman.h>
+#include <fcntl.h>
+
+// writes my gauge field out in the CERN format 
+void
+write_CLS_field_mmap( const struct site *__restrict lat ,
+		      const char *outfile )
+{
+  if( ND != 4 ) {
+    fprintf( stderr , "No known CERN format for Nd != 4\n" ) ;
+    return ;
+  }
+  
+  const size_t stride = 16*NCNC ; 
+  
+  uint32_t NAV[ ND ] = { Latt.dims[3] , Latt.dims[0] , Latt.dims[1] , Latt.dims[2] } ;
+  if( WORDS_BIGENDIAN ) {
+    bswap_32( ND , NAV ) ;
+  }
+
+  int fd = open( outfile , O_WRONLY | O_CREAT , S_IRUSR | S_IWUSR ) ;
+  char *data = mmap( NULL , LVOLUME*ND*NCNC*2*sizeof(double) , PROT_WRITE , MAP_SHARED , fd , 0 ) ;
+
+  // first of all set calculate the plaquette checksum in header
+  double *plaq = (double*)data ;
+  plaq[0] = NC * av_plaquette( lat ) ;
+  if( WORDS_BIGENDIAN ) {
+    bswap_64( 1 , plaq ) ;
+  }
+  
+  
+  
+  // write the checksums
+  //fwrite( NAV , ( ND ) * sizeof( uint32_t ) , 1 , outfile ) ;
+  //fwrite( plaq , sizeof( double ) , 1 , outfile ) ;
+
+  // create a copy
+  double *uout = NULL ;
+  if( GLU_malloc( (void**)&uout , ALIGNMENT, LVOLUME*ND*NCNC*2*sizeof(double) ) != 0 ) {
+    return ;
+  }
+
+  // the idea is to do all of the translation stuff in parallel and then dump it to a file
+  size_t t ;
+#pragma omp parallel for private(t)
+  for( t = 0 ; t < Latt.dims[ ND-1 ] ; t++ ) {
+    double *uoutd = (double*)(uout + LCU*t*2*NCNC*ND) ;
+    for( size_t x = 0 ; x < Latt.dims[ 0 ] ; x++ ) {
+      for( size_t y = 0 ; y < Latt.dims[ 1 ] ; y++ ) {
+	for( size_t z = 0 ; z < Latt.dims[ 2 ] ; z++ ) {
+	  // convert it into local GLU coordinates
+	  if( ( x + y + z + t )%2 ) {
+
+	    // get the local, actual sites
+	    int xloc[4] = { (int)(x%Latt.dims[0]) ,
+			    (int)(y%Latt.dims[1]) ,
+			    (int)(z%Latt.dims[2]) ,
+			    (int)(t%Latt.dims[3]) } ;
+	    
+	    // config idx
+	    const size_t idx = gen_site( xloc ) ;
+
+	    #ifndef SINGLE_PREC
+            // create a lookup table 
+            const struct site *lp[5] = { &lat[idx] ,
+                                         &lat[lat[idx].back[3]] ,
+                                         &lat[lat[idx].back[0]] ,
+                                         &lat[lat[idx].back[1]] ,
+		                         &lat[lat[idx].back[2]] } ;
+	    memcpy( uoutd         , lp[0]->O[3] , NCNC*sizeof(GLU_complex) ) ;
+            memcpy( uoutd+2*NCNC  , lp[1]->O[3] , NCNC*sizeof(GLU_complex) ) ;
+            memcpy( uoutd+4*NCNC  , lp[0]->O[0] , NCNC*sizeof(GLU_complex) ) ;
+            memcpy( uoutd+6*NCNC  , lp[2]->O[0] , NCNC*sizeof(GLU_complex) ) ;
+            memcpy( uoutd+8*NCNC  , lp[0]->O[1] , NCNC*sizeof(GLU_complex) ) ;
+            memcpy( uoutd+10*NCNC , lp[3]->O[1] , NCNC*sizeof(GLU_complex) ) ;
+            memcpy( uoutd+12*NCNC , lp[0]->O[2] , NCNC*sizeof(GLU_complex) ) ;
+            memcpy( uoutd+14*NCNC , lp[4]->O[2] , NCNC*sizeof(GLU_complex) ) ;
+	    #else
+	    size_t shift = lat[idx].back[ ND-1 ] ;
+	    size_t j , a = 0 ;
+	    // t first
+	    for( j = 0 ; j < NCNC ; j++ ) {
+	      uoutd[ a + 0 ] = ( double )creal( lat[idx].O[ ND - 1 ][ j ] ) ; 
+	      uoutd[ a + 1 ] = ( double )cimag( lat[idx].O[ ND - 1 ][ j ] ) ;
+	      a += 2 ;
+	    }
+	    for( j = 0 ; j < NCNC ; j++ ) {
+	      uoutd[ a + 0 ] = ( double )creal( lat[shift].O[ ND - 1 ][ j ] ) ; 
+	      uoutd[ a + 1 ] = ( double )cimag( lat[shift].O[ ND - 1 ][ j ] ) ;
+	      a += 2 ;
+	    }
+	    // then xyz
+	    for( mu = 0 ;  mu < ND-1 ; mu++ ) {
+	      for( j = 0 ; j < NCNC ; j++ ) {
+		uoutd[ a + 0 ] = ( double )creal( lat[idx].O[mu][j] ) ; 
+		uoutd[ a + 1 ] = ( double )cimag( lat[idx].O[mu][j] ) ; 
+		a += 2 ;
+	      }
+	      shift = lat[idx].back[mu] ;
+	      for( j = 0 ; j < NCNC ; j++ ) {
+		uoutd[ a + 0 ] = ( double )creal( lat[shift].O[mu][j] ) ; 
+		uoutd[ a + 1 ] = ( double )cimag( lat[shift].O[mu][j] ) ; 
+		a += 2 ;
+	      }
+	    }
+	    #endif
+	    uoutd += stride ;
+	  }
+	  // tzyx
+	}}}}
+
+  // write it out
+  if( WORDS_BIGENDIAN ) {
+    bswap_64( 8*LVOLUME*NCNC , uout ) ;
+  }
+  //fwrite( uout , sizeof( double ) , 8*LVOLUME*NCNC , outfile ) ;
   
   free( uout ) ;
   
