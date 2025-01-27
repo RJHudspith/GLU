@@ -180,7 +180,7 @@ write_configuration( struct site *lat ,
     return GLU_FAILURE ;
   } else {
     FILE *out_config = fopen( outfile , "w" ) ;
-    write_lat( lat , out_config , storage , output_details ) ;
+    write_lat( lat , out_config , storage , output_details , outfile ) ;
     fprintf( stdout , "[IO] Configuration written to %s \n", outfile ) ; 
     fclose( out_config ) ;
   }

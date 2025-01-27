@@ -629,16 +629,18 @@ get_input_data( struct infile_data *INFILE ,
   config_information( INFILE -> output_details ) ;
 
   // poke in some heatbath related things
-  INFILE -> HBINFO.continuation = GLU_FALSE ;
-  if( !( Latt.head == UNIT_GAUGE || Latt.head == RANDOM_CONFIG ) ) {
-    INFILE -> HBINFO.continuation = GLU_TRUE ;
-    fprintf( stdout , "[UPDATE] Heatbath continuation run not"
-	     " performing thermalisation\n" ) ;
-    INFILE -> HBINFO.therm = 0 ;
-  } else {
-    fprintf( stdout , "[UPDATE] initialising trajectory number to 0 for "
-	     "this new run\n" ) ;
-    Latt.flow = 0 ;
+  if( INFILE -> mode == MODE_HEATBATH ) {
+    INFILE -> HBINFO.continuation = GLU_FALSE ;
+    if( !( Latt.head == UNIT_GAUGE || Latt.head == RANDOM_CONFIG ) ) {
+      INFILE -> HBINFO.continuation = GLU_TRUE ;
+      fprintf( stdout , "[UPDATE] Heatbath continuation run not"
+	       " performing thermalisation\n" ) ;
+      INFILE -> HBINFO.therm = 0 ;
+    } else {
+      fprintf( stdout , "[UPDATE] initialising trajectory number to 0 for "
+	       "this new run\n" ) ;
+      Latt.flow = 0 ;
+    }
   }
 
   // close the file and deallocate the buffer

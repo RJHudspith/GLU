@@ -33,8 +33,9 @@
  */
 int
 write_lat ( struct site *__restrict lat , 
-	    FILE *__restrict out , 
+	    FILE *out , 
 	    const GLU_output type , 
-	    const char *__restrict details ) ;
+	    const char *details ,
+	    const char *outfile ) ;
 
 #endif

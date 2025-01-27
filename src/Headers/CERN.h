@@ -37,13 +37,13 @@ read_CLS_field( struct site *lat ,
 		uint32_t *chksum ) ;
 
 /**
-   @fn void write_CLS_field( const struct site *lat ,  FILE *outfile )
+   @fn void write_CLS_field( const struct site *lat ,  const char *outfile )
    @param lat :: lattice gauge field
    @param outfile :: string we are writing out to
    @brief write a CERN gauge field
  */
 void
 write_CLS_field( const struct site *lat ,
-		 FILE *outfile ) ;
+		 const char *outfile ) ;
 
 #endif

@@ -22,13 +22,19 @@
 
    bizarrely their geometry is
    t,x,y,z which makes little sense to me. I imagine there is a very good reason
-   for this.... Probably.
+   for this.... Probably. Anyway, fully memory-mapped and chunked IO here which I will probably do
+   for the NERSC files too
 
-   It might be nice to iomap the outfile and then we could parallel write to it
-   
-   @warning these aren't #ND generic
+   @warning these aren't #ND generic although in principle this wouldn't be a big problem to extend
  */
 #include "Mainfile.h"
+
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "geometry.h"      // gen_site()
 #include "GLU_bswap.h"     // byte swapping arrays
@@ -42,327 +48,210 @@ read_CLS_field( struct site *__restrict lat ,
 		uint32_t *chksum )
 {
   if( ND != 4 ) return GLU_FAILURE ;
+#ifdef WORDS_BIFENDIAN
+  fprintf( stderr , "[IO] CERN we don't support having a different file endianess yet\n" ) ;
+  return GLU_FAILURE ;
+#endif
 
-  // these guys also seem to save only in double, making things easy
-  const size_t stride = 16*NCNC ;
-  uint32_t k = 0 ;
-  size_t t ;
-  #pragma omp parallel for private(t)
-  for( t = 0 ; t < Latt.dims[ND-1] ; t++ ) {
-
-    // test idea
-    FILE *file = fopen( config_in , "rb" ) ;
-    double complex *uin = malloc( LCU*NCNC*ND*sizeof(double complex)) ;
-    
-    const size_t offset = 4*sizeof(int)+sizeof(double) +( LCU*t )*ND*NCNC*sizeof(double complex) ;
-    fseek( file , offset , SEEK_SET ) ;
-
-    if( fread( uin , sizeof( double complex) , LCU*NCNC*ND , file ) != LCU*NCNC*ND ) {
-      fprintf( stderr , "File read error .. Leaving \n " ) ;
-      exit(1) ;
-    }
-
-    double *uind = (double*)(uin) ;
-    size_t x , y , z ;
-    for( x = 0 ; x < Latt.dims[0] ; x++ ) {
-      for( y = 0 ; y < Latt.dims[1] ; y++ ) {
-	for( z = 0 ; z < Latt.dims[2] ; z++ ) {
-	  if( (x+y+z+t)%2 ) {	    
-	    int X[4] = { (int)x , (int)y , (int)z , (int)t } ;
-	    const size_t idx = gen_site( X ) ;
-	    
-	    // create a lut
-            #ifndef SINGLE_PREC
-	    struct site *lp[5] = { &lat[idx] ,
-				   &lat[ lat[idx].back[3] ] ,
-				   &lat[ lat[idx].back[0] ] ,
-				   &lat[ lat[idx].back[1] ] ,
-				   &lat[ lat[idx].back[2] ] } ;    
-	    memcpy( lp[0]->O[3] , uind         , NCNC*sizeof(GLU_complex) ) ;
-	    memcpy( lp[1]->O[3] , uind+2*NCNC  , NCNC*sizeof(GLU_complex) ) ;
-	    memcpy( lp[0]->O[0] , uind+4*NCNC  , NCNC*sizeof(GLU_complex) ) ;
-	    memcpy( lp[2]->O[0] , uind+6*NCNC  , NCNC*sizeof(GLU_complex) ) ;
-	    memcpy( lp[0]->O[1] , uind+8*NCNC  , NCNC*sizeof(GLU_complex) ) ;
-	    memcpy( lp[3]->O[1] , uind+10*NCNC , NCNC*sizeof(GLU_complex) ) ;
-	    memcpy( lp[0]->O[2] , uind+12*NCNC , NCNC*sizeof(GLU_complex) ) ;
-	    memcpy( lp[4]->O[2] , uind+14*NCNC , NCNC*sizeof(GLU_complex) ) ;
-            #else
-	    size_t mu , j , a = 0 ;
-	    size_t shift = lat[idx].back[ND-1] ;
-	    // t first
-	    for( j = 0 ; j < NCNC ; j++ ) {
-	      lat[idx].O[ND-1][j] = (GLU_real)uind[a] + I * (GLU_real)uind[a + 1] ;
-	      a += 2 ;
-	    }
-	    for( j = 0 ; j < NCNC ; j++ ) {
-	      lat[shift].O[ND-1][j] = (GLU_real)uind[a] + I * (GLU_real)uind[a + 1] ;
-	      a += 2 ;
-	    }
-	    // then the others (xyz)
-	    for( mu = 0 ;  mu < ND - 1 ; mu++ ) {
-	      for( j = 0 ; j < NCNC ; j++ ) {
-		lat[idx].O[mu][j] = (GLU_real)uind[a] + I * (GLU_real)uind[a + 1] ;
-		a += 2 ;
-	      }
-	      size_t shift = lat[idx].back[mu] ;
-	      for( j = 0 ; j < NCNC ; j++ ) {
-		lat[shift].O[mu][j] = (GLU_real)uind[a] + I * (GLU_real)uind[a + 1] ;
-		a += 2 ;
-	      }
-	    }
-	    #endif
-	    uind += stride;
-	  }
-	}
-      }
-    }
-    if( uin != NULL ) {
-      free(uin) ;
-    }
-    fclose( file ) ;
-  }
-
-  if( WORDS_BIGENDIAN ) {
-    bswap_32( LVOLUME*NCNC*2 , lat ) ;
+  // open the file
+  int fd = open( config_in , O_RDONLY , S_IRUSR ) ;
+  
+  struct stat sb;
+  if( fstat(fd, &sb) == -1 ){
+    perror( "fstat" ) ;
+    return GLU_FAILURE ;
   }
   
-  *chksum = k ;
+  // memory map the file so the OS can just deal with it
+  char *mm = mmap( NULL , sb.st_size , PROT_READ , MAP_PRIVATE , fd , 0 ) ;
+
+  // usual CERN junk at the top of the file : dimensions and plaquette
+  uint32_t *dims = (uint32_t*)mm ;
+  fprintf( stdout , "[IO] CLS dims xyzt (%dx%dx%dx%d)\n" ,
+	   dims[1] , dims[2] , dims[3] , dims[0] ) ;
+  mm += 4*sizeof(uint32_t) ;
+  
+  double *plq = (double*)mm ;
+  fprintf( stdout , "[IO] CLS header plaquette %1.15f\n" , *plq/(double)NC ) ;
+  mm += sizeof(double);
+
+  // pun out into a nicer type for us
+  const double complex *uin = (const double complex*)mm ;
+  
+  // loop the CLS checkerboard volume in parallel
+  size_t i ;
+  #pragma omp parallel for private(i)
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    // CLS order
+    const size_t z = i%Latt.dims[2] ;
+    const size_t y = (i/Latt.dims[2])%Latt.dims[1] ;
+    const size_t x = (i/(Latt.dims[2]*Latt.dims[1]))%Latt.dims[0] ;
+    const size_t t = (i/(Latt.dims[2]*Latt.dims[1]*Latt.dims[0]))%Latt.dims[3] ;
+    if( (x+y+z+t)&1 ) {
+      // local pointer
+      const double complex *u = (const double complex*)(uin + 8*NCNC*(i/2)) ;
+      const int X[ ND ] = { (int)x , (int)y , (int)z , (int)t } ;      
+      const size_t idx = gen_site( X ) ;
+      #ifndef SINGLE_PREC
+      // create a lookup table with the hope that this gets cached
+      struct site *lp[5] = { &lat[ idx ] ,
+			     &lat[ lat[idx].back[3] ] ,
+			     &lat[ lat[idx].back[0] ] ,
+			     &lat[ lat[idx].back[1] ] ,
+			     &lat[ lat[idx].back[2] ] } ;      
+      memcpy( lp[0]->O[3] , u        , NCNC*sizeof(GLU_complex) ) ;
+      memcpy( lp[1]->O[3] , u+NCNC   , NCNC*sizeof(GLU_complex) ) ;
+      memcpy( lp[0]->O[0] , u+2*NCNC , NCNC*sizeof(GLU_complex) ) ;
+      memcpy( lp[2]->O[0] , u+3*NCNC , NCNC*sizeof(GLU_complex) ) ;
+      memcpy( lp[0]->O[1] , u+4*NCNC , NCNC*sizeof(GLU_complex) ) ;
+      memcpy( lp[3]->O[1] , u+5*NCNC , NCNC*sizeof(GLU_complex) ) ;
+      memcpy( lp[0]->O[2] , u+6*NCNC , NCNC*sizeof(GLU_complex) ) ;
+      memcpy( lp[4]->O[2] , u+7*NCNC , NCNC*sizeof(GLU_complex) ) ;
+      #else
+      size_t mu , j ;
+      size_t shift = lat[idx].back[ND-1] ;
+      // t first
+      for( j = 0 ; j < NCNC ; j++ ) {
+	lat[idx].O[ND-1][j] = (GLU_real)creal(u[j])+I*(GLU_real)cimag(u[j]) ;
+      }
+      u += NCNC ;
+      for( j = 0 ; j < NCNC ; j++ ) {
+	lat[shift].O[ND-1][j] = (GLU_real)creal(u[j])+I*(GLU_real)cimag(u[j]) ;
+      }
+      u += NCNC ;
+      // then the others (xyz)
+      for( mu = 0 ;  mu < ND - 1 ; mu++ ) {
+	for( j = 0 ; j < NCNC ; j++ ) {
+	  lat[idx].O[mu][j] = (GLU_real)creal(u[j])+I*(GLU_real)cimag(u[j]) ;
+	}
+	u += NCNC ;
+	size_t shift = lat[idx].back[mu] ;
+	for( j = 0 ; j < NCNC ; j++ ) {
+	  lat[shift].O[mu][j] = (GLU_real)creal(u[j])+I*(GLU_real)cimag(u[j]) ;
+	}
+	u += NCNC ;
+      }
+      #endif
+    }
+  }
+  // close the file descriptor
+  close( fd ) ;
+  munmap( mm , sb.st_size ) ;
+
+  *chksum = 0 ;
+
   return GLU_SUCCESS ; 
 }
 
 // writes my gauge field out in the CERN format 
 void
 write_CLS_field( const struct site *__restrict lat ,
-		 FILE *__restrict outfile )
+		 const char *outfile )
 {
   if( ND != 4 ) {
     fprintf( stderr , "No known CERN format for Nd != 4\n" ) ;
     return ;
   }
-  
-  const size_t stride = 16*NCNC ; 
-  
-  uint32_t NAV[ ND ] = { Latt.dims[3] , Latt.dims[0] , Latt.dims[1] , Latt.dims[2] } ;
-  if( WORDS_BIGENDIAN ) {
-    bswap_32( ND , NAV ) ;
-  }
-  
-  // first of all set calculate the plaquette checksum in header
-  double plaq[1] = { 0 } ;
-
-  plaq[0] = NC * av_plaquette( lat ) ;
-  if( WORDS_BIGENDIAN ) {
-    bswap_64( 1 , plaq ) ;
-  }
-  
-  // write the checksums
-  fwrite( NAV , ( ND ) * sizeof( uint32_t ) , 1 , outfile ) ;
-  fwrite( plaq , sizeof( double ) , 1 , outfile ) ;
-
-  // create a copy
-  double *uout = NULL ;
-  if( GLU_malloc( (void**)&uout , ALIGNMENT, LVOLUME*ND*NCNC*2*sizeof(double) ) != 0 ) {
-    return ;
-  }
-
-  // the idea is to do all of the translation stuff in parallel and then dump it to a file
-  size_t t ;
-#pragma omp parallel for private(t)
-  for( t = 0 ; t < Latt.dims[ ND-1 ] ; t++ ) {
-    double *uoutd = (double*)(uout + LCU*t*2*NCNC*ND) ;
-    for( size_t x = 0 ; x < Latt.dims[ 0 ] ; x++ ) {
-      for( size_t y = 0 ; y < Latt.dims[ 1 ] ; y++ ) {
-	for( size_t z = 0 ; z < Latt.dims[ 2 ] ; z++ ) {
-	  // convert it into local GLU coordinates
-	  if( ( x + y + z + t )%2 ) {
-
-	    // get the local, actual sites
-	    int xloc[4] = { (int)(x%Latt.dims[0]) ,
-			    (int)(y%Latt.dims[1]) ,
-			    (int)(z%Latt.dims[2]) ,
-			    (int)(t%Latt.dims[3]) } ;
-	    
-	    // config idx
-	    const size_t idx = gen_site( xloc ) ;
-
-	    #ifndef SINGLE_PREC
-            // create a lookup table 
-            const struct site *lp[5] = { &lat[idx] ,
-                                         &lat[lat[idx].back[3]] ,
-                                         &lat[lat[idx].back[0]] ,
-                                         &lat[lat[idx].back[1]] ,
-		                         &lat[lat[idx].back[2]] } ;
-	    memcpy( uoutd         , lp[0]->O[3] , NCNC*sizeof(GLU_complex) ) ;
-            memcpy( uoutd+2*NCNC  , lp[1]->O[3] , NCNC*sizeof(GLU_complex) ) ;
-            memcpy( uoutd+4*NCNC  , lp[0]->O[0] , NCNC*sizeof(GLU_complex) ) ;
-            memcpy( uoutd+6*NCNC  , lp[2]->O[0] , NCNC*sizeof(GLU_complex) ) ;
-            memcpy( uoutd+8*NCNC  , lp[0]->O[1] , NCNC*sizeof(GLU_complex) ) ;
-            memcpy( uoutd+10*NCNC , lp[3]->O[1] , NCNC*sizeof(GLU_complex) ) ;
-            memcpy( uoutd+12*NCNC , lp[0]->O[2] , NCNC*sizeof(GLU_complex) ) ;
-            memcpy( uoutd+14*NCNC , lp[4]->O[2] , NCNC*sizeof(GLU_complex) ) ;
-	    #else
-	    size_t shift = lat[idx].back[ ND-1 ] ;
-	    size_t j , a = 0 ;
-	    // t first
-	    for( j = 0 ; j < NCNC ; j++ ) {
-	      uoutd[ a + 0 ] = ( double )creal( lat[idx].O[ ND - 1 ][ j ] ) ; 
-	      uoutd[ a + 1 ] = ( double )cimag( lat[idx].O[ ND - 1 ][ j ] ) ;
-	      a += 2 ;
-	    }
-	    for( j = 0 ; j < NCNC ; j++ ) {
-	      uoutd[ a + 0 ] = ( double )creal( lat[shift].O[ ND - 1 ][ j ] ) ; 
-	      uoutd[ a + 1 ] = ( double )cimag( lat[shift].O[ ND - 1 ][ j ] ) ;
-	      a += 2 ;
-	    }
-	    // then xyz
-	    for( mu = 0 ;  mu < ND-1 ; mu++ ) {
-	      for( j = 0 ; j < NCNC ; j++ ) {
-		uoutd[ a + 0 ] = ( double )creal( lat[idx].O[mu][j] ) ; 
-		uoutd[ a + 1 ] = ( double )cimag( lat[idx].O[mu][j] ) ; 
-		a += 2 ;
-	      }
-	      shift = lat[idx].back[mu] ;
-	      for( j = 0 ; j < NCNC ; j++ ) {
-		uoutd[ a + 0 ] = ( double )creal( lat[shift].O[mu][j] ) ; 
-		uoutd[ a + 1 ] = ( double )cimag( lat[shift].O[mu][j] ) ; 
-		a += 2 ;
-	      }
-	    }
-	    #endif
-	    uoutd += stride ;
-	  }
-	  // tzyx
-	}}}}
-
-  // write it out
-  if( WORDS_BIGENDIAN ) {
-    bswap_64( 8*LVOLUME*NCNC , uout ) ;
-  }
-  fwrite( uout , sizeof( double ) , 8*LVOLUME*NCNC , outfile ) ;
-  
-  free( uout ) ;
-  
+#ifdef WORDS_BIFENDIAN
+  fprintf( stderr , "[IO] CERN we don't support having a different file endianess yet\n" ) ;
   return ;
-}
+#endif
 
-#include <sys/mman.h>
-#include <fcntl.h>
-
-// writes my gauge field out in the CERN format 
-void
-write_CLS_field_mmap( const struct site *__restrict lat ,
-		      const char *outfile )
-{
-  if( ND != 4 ) {
-    fprintf( stderr , "No known CERN format for Nd != 4\n" ) ;
-    return ;
-  }
+  // full size of the gauge fields + dimensions + plaquette
+  const size_t size = LVOLUME*sizeof(double complex)*ND*NCNC + 4*sizeof(int) + sizeof(double) ;
   
-  const size_t stride = 16*NCNC ; 
-  
-  uint32_t NAV[ ND ] = { Latt.dims[3] , Latt.dims[0] , Latt.dims[1] , Latt.dims[2] } ;
-  if( WORDS_BIGENDIAN ) {
-    bswap_32( ND , NAV ) ;
+  // open a file
+  int fd = open( outfile , O_RDWR | O_CREAT , (mode_t)0600 ) ;
+  if( fd == -1 ) {
+    perror("open") ;
+    exit(1) ;
+  }
+  lseek( fd , size-1 , SEEK_SET ) ;
+  if( write( fd , "" , 1 ) == -1 ) exit(1) ;
+
+  // now we map the file
+  char *data = mmap( NULL , size, PROT_WRITE , MAP_SHARED , fd , 0 ) ;
+  if( data == MAP_FAILED ) {
+    perror( "mmap" ) ;
+    exit(1) ;
   }
 
-  int fd = open( outfile , O_WRONLY | O_CREAT , S_IRUSR | S_IWUSR ) ;
-  char *data = mmap( NULL , LVOLUME*ND*NCNC*2*sizeof(double) , PROT_WRITE , MAP_SHARED , fd , 0 ) ;
+  // write the dimensions
+  uint32_t *pt = (uint32_t*)data ;
+  pt[0] = (uint32_t)Latt.dims[3] ; pt[1] = (uint32_t)Latt.dims[0] ;
+  pt[2] = (uint32_t)Latt.dims[1] ; pt[3] = (uint32_t)Latt.dims[2] ;
+  data += 4*sizeof(uint32_t) ;
 
-  // first of all set calculate the plaquette checksum in header
+  // write the plaquette
   double *plaq = (double*)data ;
-  plaq[0] = NC * av_plaquette( lat ) ;
-  if( WORDS_BIGENDIAN ) {
-    bswap_64( 1 , plaq ) ;
+  plaq[0] = NC*av_plaquette( lat ) ;
+  data += sizeof(double) ;
+
+  // finally point to the fields we will write
+  double complex *uout = (double complex*)data ;
+
+  // loop entire volume again in CLS order
+  size_t i ;
+#pragma omp parallel for private(i)
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    // CLS order
+    const size_t z = i%Latt.dims[2] ;
+    const size_t y = (i/Latt.dims[2])%Latt.dims[1] ;
+    const size_t x = (i/(Latt.dims[2]*Latt.dims[1]))%Latt.dims[0] ;
+    const size_t t = (i/(Latt.dims[2]*Latt.dims[1]*Latt.dims[0]))%Latt.dims[3] ;
+    // convert it into local GLU coordinates
+    if( ( x + y + z + t )&1 ) {
+      // get the local, actual sites
+      const int xloc[4] = { (int)x, (int)y, (int)z, (int)t} ;
+      // config idx
+      const size_t idx = gen_site( xloc ) ;
+      double complex *u = (double complex*)(uout + 8*NCNC*(i/2)) ;
+      // create a lookup table with the hope that this gets cached
+      #ifndef SINGLE_PREC
+      const struct site *lp[5] = { &lat[idx] ,
+				   &lat[lat[idx].back[3]] ,
+				   &lat[lat[idx].back[0]] ,
+				   &lat[lat[idx].back[1]] ,
+				   &lat[lat[idx].back[2]] } ;
+      memcpy( u        , lp[0]->O[3] , NCNC*sizeof(GLU_complex) ) ;
+      memcpy( u+NCNC   , lp[1]->O[3] , NCNC*sizeof(GLU_complex) ) ;
+      memcpy( u+2*NCNC , lp[0]->O[0] , NCNC*sizeof(GLU_complex) ) ;
+      memcpy( u+3*NCNC , lp[2]->O[0] , NCNC*sizeof(GLU_complex) ) ;
+      memcpy( u+4*NCNC , lp[0]->O[1] , NCNC*sizeof(GLU_complex) ) ;
+      memcpy( u+5*NCNC , lp[3]->O[1] , NCNC*sizeof(GLU_complex) ) ;
+      memcpy( u+6*NCNC , lp[0]->O[2] , NCNC*sizeof(GLU_complex) ) ;
+      memcpy( u+7*NCNC , lp[4]->O[2] , NCNC*sizeof(GLU_complex) ) ;
+      #else
+      // t first
+      size_t shift = lat[idx].back[ND-1] , j ;
+      for( j = 0 ; j < NCNC ; j++ ) {
+	u[j] = (double complex)lat[idx].O[ND-1][j] ;
+      }
+      u += NCNC ;
+      for( j = 0 ; j < NCNC ; j++ ) {
+        u[j] = (double complex)lat[shift].O[ND-1][j] ;
+      }
+      u += NCNC ;
+      // and then the others
+      for( int mu = 0 ; mu < ND-1 ; mu++ ) {
+	size_t shift = lat[idx].back[mu] ;
+	for( j = 0 ; j < NCNC ; j++ ) {
+	  u[j] = (double complex)lat[idx].O[mu][j] ;
+	}
+	u+= NCNC ;
+	for( j = 0 ; j < NCNC ; j++ ) {
+	  u[j] = (double complex)lat[shift].O[mu][j] ;
+	}
+	u+= NCNC ;
+      }
+      #endif
+    }
   }
   
-  
-  
-  // write the checksums
-  //fwrite( NAV , ( ND ) * sizeof( uint32_t ) , 1 , outfile ) ;
-  //fwrite( plaq , sizeof( double ) , 1 , outfile ) ;
-
-  // create a copy
-  double *uout = NULL ;
-  if( GLU_malloc( (void**)&uout , ALIGNMENT, LVOLUME*ND*NCNC*2*sizeof(double) ) != 0 ) {
-    return ;
-  }
-
-  // the idea is to do all of the translation stuff in parallel and then dump it to a file
-  size_t t ;
-#pragma omp parallel for private(t)
-  for( t = 0 ; t < Latt.dims[ ND-1 ] ; t++ ) {
-    double *uoutd = (double*)(uout + LCU*t*2*NCNC*ND) ;
-    for( size_t x = 0 ; x < Latt.dims[ 0 ] ; x++ ) {
-      for( size_t y = 0 ; y < Latt.dims[ 1 ] ; y++ ) {
-	for( size_t z = 0 ; z < Latt.dims[ 2 ] ; z++ ) {
-	  // convert it into local GLU coordinates
-	  if( ( x + y + z + t )%2 ) {
-
-	    // get the local, actual sites
-	    int xloc[4] = { (int)(x%Latt.dims[0]) ,
-			    (int)(y%Latt.dims[1]) ,
-			    (int)(z%Latt.dims[2]) ,
-			    (int)(t%Latt.dims[3]) } ;
-	    
-	    // config idx
-	    const size_t idx = gen_site( xloc ) ;
-
-	    #ifndef SINGLE_PREC
-            // create a lookup table 
-            const struct site *lp[5] = { &lat[idx] ,
-                                         &lat[lat[idx].back[3]] ,
-                                         &lat[lat[idx].back[0]] ,
-                                         &lat[lat[idx].back[1]] ,
-		                         &lat[lat[idx].back[2]] } ;
-	    memcpy( uoutd         , lp[0]->O[3] , NCNC*sizeof(GLU_complex) ) ;
-            memcpy( uoutd+2*NCNC  , lp[1]->O[3] , NCNC*sizeof(GLU_complex) ) ;
-            memcpy( uoutd+4*NCNC  , lp[0]->O[0] , NCNC*sizeof(GLU_complex) ) ;
-            memcpy( uoutd+6*NCNC  , lp[2]->O[0] , NCNC*sizeof(GLU_complex) ) ;
-            memcpy( uoutd+8*NCNC  , lp[0]->O[1] , NCNC*sizeof(GLU_complex) ) ;
-            memcpy( uoutd+10*NCNC , lp[3]->O[1] , NCNC*sizeof(GLU_complex) ) ;
-            memcpy( uoutd+12*NCNC , lp[0]->O[2] , NCNC*sizeof(GLU_complex) ) ;
-            memcpy( uoutd+14*NCNC , lp[4]->O[2] , NCNC*sizeof(GLU_complex) ) ;
-	    #else
-	    size_t shift = lat[idx].back[ ND-1 ] ;
-	    size_t j , a = 0 ;
-	    // t first
-	    for( j = 0 ; j < NCNC ; j++ ) {
-	      uoutd[ a + 0 ] = ( double )creal( lat[idx].O[ ND - 1 ][ j ] ) ; 
-	      uoutd[ a + 1 ] = ( double )cimag( lat[idx].O[ ND - 1 ][ j ] ) ;
-	      a += 2 ;
-	    }
-	    for( j = 0 ; j < NCNC ; j++ ) {
-	      uoutd[ a + 0 ] = ( double )creal( lat[shift].O[ ND - 1 ][ j ] ) ; 
-	      uoutd[ a + 1 ] = ( double )cimag( lat[shift].O[ ND - 1 ][ j ] ) ;
-	      a += 2 ;
-	    }
-	    // then xyz
-	    for( mu = 0 ;  mu < ND-1 ; mu++ ) {
-	      for( j = 0 ; j < NCNC ; j++ ) {
-		uoutd[ a + 0 ] = ( double )creal( lat[idx].O[mu][j] ) ; 
-		uoutd[ a + 1 ] = ( double )cimag( lat[idx].O[mu][j] ) ; 
-		a += 2 ;
-	      }
-	      shift = lat[idx].back[mu] ;
-	      for( j = 0 ; j < NCNC ; j++ ) {
-		uoutd[ a + 0 ] = ( double )creal( lat[shift].O[mu][j] ) ; 
-		uoutd[ a + 1 ] = ( double )cimag( lat[shift].O[mu][j] ) ; 
-		a += 2 ;
-	      }
-	    }
-	    #endif
-	    uoutd += stride ;
-	  }
-	  // tzyx
-	}}}}
-
-  // write it out
-  if( WORDS_BIGENDIAN ) {
-    bswap_64( 8*LVOLUME*NCNC , uout ) ;
-  }
-  //fwrite( uout , sizeof( double ) , 8*LVOLUME*NCNC , outfile ) ;
-  
-  free( uout ) ;
+  // sync it all at the end
+  msync( data , size , MS_SYNC ) ;
+  munmap( data , size ) ;
+  close(fd) ;
   
   return ;
 }

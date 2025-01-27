@@ -328,9 +328,10 @@ write_binary_data_cheap( const struct site *__restrict lat ,
 // This is just the wrapping function for the writers
 int
 write_lat( struct site *lat , 
-	   FILE *__restrict out , 
+	   FILE *out ,
 	   const GLU_output type , 
-	   char *__restrict details )
+	   char *details ,
+	   char *outfile )
 {
   // reunitarise the field before writing out
   latt_reunitU( lat ) ;
@@ -339,7 +340,7 @@ write_lat( struct site *lat ,
   if( type == OUTPUT_CERN ) {
     printf( "[IO] Writing out in CERN format\n" ) ;
     start_timer() ;
-    write_CLS_field( lat , out ) ;
+    write_CLS_field( lat , outfile ) ;
     print_time() ;
     return GLU_SUCCESS ;
   }

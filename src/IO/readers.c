@@ -167,8 +167,7 @@ lattice_reader_suNC( struct site *lat ,
 {
   // this is checked previously, nice to be certain though
   if( in == NULL ) {
-    fprintf( stderr , "[IO] Error opening config file!!..."
-	     "Returning with error\n" ) ; 
+    fprintf( stderr , "[IO] Error opening config file!!\n" ) ; 
     return GLU_FAILURE ; 
   }
 
