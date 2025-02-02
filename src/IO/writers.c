@@ -340,7 +340,8 @@ write_lat( struct site *lat ,
   if( type == OUTPUT_CERN ) {
     printf( "[IO] Writing out in CERN format\n" ) ;
     start_timer() ;
-    write_CLS_field( lat , outfile ) ;
+    write_CLS_field( lat , out ) ;
+    fprintf( stdout , "[IO] CERN file (%s) writing took " , outfile ) ;
     print_time() ;
     return GLU_SUCCESS ;
   }

@@ -117,8 +117,9 @@ read_file( struct head_data *HEAD_DATA ,
 #endif
 
   start_timer() ;
-  fprintf( stdout , "[IO] Read gauge field\n" ) ; 
+  fprintf( stdout , "[IO] Read gauge field" ) ; 
   const int check = get_config_SUNC( infile , lat , tmp , config_in ) ;
+  fprintf( stdout , "[IO] Reading gauge field (%s) took" , config_in ) ; 
   print_time() ;
   // read in the configuration ...  
   if( check == GLU_FAILURE ) {
