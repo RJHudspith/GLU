@@ -1,20 +1,20 @@
-/**
-    Copyright 2013-2018 Renwick James Hudspith
+/*
+   Copyright 2013-2025 Renwick James Hudspith
 
-    This file (CFACG.c) is part of GLU.
+   This file (CFACG.c) is part of GLU.
+   
+   GLU is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
-    GLU is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+   GLU is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-    GLU is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with GLU.  If not, see <http://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU General Public License
+   along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
    @file CFACG.c
@@ -65,7 +65,6 @@ get_info( const size_t t ,
   return ;
 }
 
-
 // is the same for Landau and Coulomb just with different LENGTHS
 void
 FOURIER_ACCELERATE2( struct fftw_stuff *FFTW ) 
@@ -73,7 +72,7 @@ FOURIER_ACCELERATE2( struct fftw_stuff *FFTW )
 #ifdef HAVE_FFTW3_H
   const fftw_plan *forw = ( const fftw_plan* )FFTW -> forward ;
   const fftw_plan *back = ( const fftw_plan* )FFTW -> backward ;
-  // single core FFT's
+  // single core FFTs
   size_t mu ;
 #pragma omp for private(mu) schedule(dynamic)
   for( mu = 0 ; mu < TRUE_HERM ; mu++ ) {
@@ -442,12 +441,12 @@ adequate_solution( GLU_complex **slice_gauge ,
     // reunitarise the solution
     gram_reunit( slice_gauge[i] ) ;
     
-    const double *p = (const double*)slice_gauge[i] ;
+    const GLU_real *p = (const double*)slice_gauge[i] ;
     register double sum = 0.0 ;
     size_t j ;
     for( j = 0 ; j < NCNC ; j++ ) {
-      sum += *p * ( *p ) ; p++ ; // re^2
-      sum += *p * ( *p ) ; p++ ; // im^2
+      sum += (double)(*p * ( *p ) ) ; p++ ; // re^2
+      sum += (double)(*p * ( *p ) ) ; p++ ; // im^2
     }
     if( fabs( sum - NC ) > iters*PREC_TOL ) {
       failure = GLU_FALSE ;
@@ -488,6 +487,7 @@ steep_fix( GLU_complex **gauge ,
     if( tr < accuracy ) {
       if( adequate_solution( gauge , loc_iters > 0 ? loc_iters : 1 ) 
 	  == GLU_FALSE ) {
+	printf( "Adequate solution flag!!\n" ) ;
 	trans_flag = GLU_TRUE ;
       }
     }

@@ -9,8 +9,8 @@
 #include "minunit.h"
 
 // temporary mats
-static GLU_complex Ua[ NCNC ] GLUalign , Ub[ NCNC ] GLUalign ;
-static GLU_complex res1[ NCNC ] GLUalign , res2[ NCNC ] GLUalign ;
+static GLU_complex Ua[ NCNC ] GLUalign , Ub[ NCNC ] GLUalign , Uc[NCNC] ;
+static GLU_complex res1[ NCNC ] GLUalign , res2[ NCNC ] GLUalign , res3[NCNC] ;
 
 // equivalence test for matrices
 static GLU_bool
@@ -32,9 +32,11 @@ static char *reunit_test( void )
   // random gaussians have had RNG checked
   Sunitary_gen( Ua , 0 ) ;
   Sunitary_gen( Ub , 0 ) ;
+  Sunitary_gen( Uc , 0 ) ;
 
   mu_assert( "[GLUnit] error : Sunitary_gen is broken" , is_unitary( Ua ) ) ;
   mu_assert( "[GLUnit] error : Sunitary_gen is broken" , is_unitary( Ub ) ) ;
+  mu_assert( "[GLUnit] error : Sunitary_gen is broken" , is_unitary( Uc ) ) ;
   return NULL ;
 }
 
@@ -124,6 +126,42 @@ static char *multab_dag_test( void )
   return NULL ;
 }
 
+// test bcd^dag
+static char *multabcdag_test( void )
+{
+  for( int i = 0 ; i < 100000 ; i++ ) {
+    multabcdag_suNC( res1 , Ua , Ub , Uc ) ;
+    // slower guy    
+    multab_suNC( res3 , Ua , Ub ) ;
+    multab_dag_suNC( res2 , res3 , Uc ) ;
+  }
+  
+  if( are_equal( res1 , res2 ) == GLU_FALSE ) {
+    write_matrix( res1 ) ;
+    write_matrix( res2 ) ;
+    mu_assert( "[GLUnit] error : multabcdag" , 0 ) ;
+  }
+  return NULL ;
+}
+
+// test bcd^dag
+static char *multadagbc_test( void )
+{
+  for( int i = 0 ; i < 100000 ; i++ ) {
+    multadagbc_suNC( res1 , Ua , Ub , Uc ) ;
+    // slower guy
+    multab_suNC( res3 , Ub , Uc ) ;
+    multabdag_suNC( res2 , Ua , res3 ) ;
+  }
+  
+  if( are_equal( res1 , res2 ) == GLU_FALSE ) {
+    write_matrix( res1 ) ;
+    write_matrix( res2 ) ;
+    mu_assert( "[GLUnit] error : multadagbc" , 0 ) ;
+  }
+  return NULL ;
+}
+
 // little runner for the tests
 static char *
 mmul_test( void )
@@ -135,6 +173,8 @@ mmul_test( void )
   mu_run_test( multabdag_test ) ;
   mu_run_test( multab_dagdag_test ) ;
   mu_run_test( multab_dag_test ) ;
+  mu_run_test( multabcdag_test ) ;
+  mu_run_test( multadagbc_test ) ;
   return NULL ;
 }
 

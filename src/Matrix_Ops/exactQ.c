@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2018 Renwick James Hudspith
+Copyright 2013-2025 Renwick James Hudspith
 
     This file (exactQ.c) is part of GLU.
 
@@ -404,7 +404,7 @@ Hermitian_proj_short( GLU_complex Q[ HERMSIZE ] ,
   register const GLU_real cimU0 = cimag( *( U + 0 ) ) ;
   register const GLU_real cimU4 = cimag( *( U + 4 ) ) ;
   register const GLU_real cimU8 = cimag( *( U + 8 ) ) ;
-  #ifdef HAVE_IMMINTRIN_H
+  #if (defined HAVE_IMMINTRIN_H) && !(defined SINGLE_PREC)
   const __m128d *pU = (const __m128d*)U ;
   __m128d *pQ = (__m128d*)Q ;
   const __m128d half = _mm_set_pd( 0.5 , 0.5 ) ;

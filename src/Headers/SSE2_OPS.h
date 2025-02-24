@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2018 Renwick James Hudspith
+Copyright 2013-2025 Renwick James Hudspith
 
     This file (SSE2_OPS.h) is part of GLU.
 

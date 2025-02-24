@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2018 Renwick James Hudspith
+Copyright 2013-2025 Renwick James Hudspith
 
     This file (invert_SSE.c) is part of GLU.
 

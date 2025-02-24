@@ -17,32 +17,31 @@ Copyright 2013-2025 Renwick James Hudspith
     along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
-   @file MMUL_SUNC.h
+   @file MMUL_triple.h
    @brief prototype functions for matrix multiplication routines
  */
-#ifndef GLU_MMUL_SUNC_H
-#define GLU_MMUL_SUNC_H
+#ifndef GLU_MMUL_TRIPLE_H
+#define GLU_MMUL_TRIPLE_H
 
-#ifndef GLU_BGQ // turns on the inline matrix multiplies
-
-#if NC < 4
 /**
-   @fn void multab_suNC( GLU_complex a[ NCNC ] , const GLU_complex b[ NCNC ] , const GLU_complex c[ NCNC ] )
-   @brief SU(Nc)- tuned matrix multiply 
-
-   computes \f$ a = b \times c \f$  tuned for suNC by computing the signed minors for the bottom row
-
-   @warning only use-able for \f$ a,b,c \in SU(NC) \f$
- **/
+   @fn void multabcdag_suNC( GLU_complex a[ NCNC ] , const GLU_complex b[ NCNC ] , const GLU_complex c[ NCNC ] , const GLU_complex d[ NCNC ] )
+   @brief SU(Nc) multiply a = b.c.d^\dagger
+ */
 void 
-multab_suNC( GLU_complex a[ NCNC ] , 
-	     const GLU_complex b[ NCNC ] , 
-	     const GLU_complex c[ NCNC ] ) ;
-  #else
-    #define multab_suNC multab
-  #endif
+multabcdag_suNC( GLU_complex a[ NCNC ] , 
+		 const GLU_complex b[ NCNC ] , 
+		 const GLU_complex c[ NCNC ] ,
+		 const GLU_complex d[ NCNC ] ) ;
 
-#else // else we inline the matrix multiplies ...
-  #include "BGQ_mmuls.h"
-#endif // end of the inline matrix mul loop
-#endif 
+
+/**
+   @fn void multadagbc_suNC( GLU_complex a[ NCNC ] , const GLU_complex b[ NCNC ] , const GLU_complex c[ NCNC ] , const GLU_complex d[ NCNC ] )
+   @brief SU(Nc) multiply a = b^\dagger.c.d
+ */
+void 
+multadagbc_suNC( GLU_complex a[ NCNC ] , 
+		 const GLU_complex b[ NCNC ] , 
+		 const GLU_complex c[ NCNC ] ,
+		 const GLU_complex d[ NCNC ] ) ;
+
+#endif

@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2018 Renwick James Hudspith
+Copyright 2013-2025 Renwick James Hudspith
 
     This file (Mainfile.h) is part of GLU.
 
@@ -85,6 +85,7 @@ extern struct latt_info Latt ;
 #include "MMULdag_SUNC.h"          // a = b^{\dagger} x c SU(NC) variant
 #include "MMULdagdag.h"            // a = b^{\dagger} x c^{\dagger}
 #include "MMULdagdag_SUNC.h"       // a = b^{\dagger} x c^{\dagger}
+#include "MMUL_triple.h"           // a = b.c.d^\dagger && b^\dagger.c.d
 // logs and hermitian projections
 #include "exactQ.h"                // Q = log( U ) (approximations+exact)
 #include "expMat.h"                // U = exp( Q ) (exact)

@@ -197,7 +197,8 @@ am__objects_7 = ./Matrix_Ops/MMUL/MMUL.$(OBJEXT) \
 	./Matrix_Ops/MMUL/MMULdagdag.$(OBJEXT) \
 	./Matrix_Ops/MMUL/MMULdagdag_SSE.$(OBJEXT) \
 	./Matrix_Ops/MMUL/MMULdagdag_SUNC.$(OBJEXT) \
-	./Matrix_Ops/MMUL/MMULdagdag_SUNC_SSE.$(OBJEXT)
+	./Matrix_Ops/MMUL/MMULdagdag_SUNC_SSE.$(OBJEXT) \
+	./Matrix_Ops/MMUL/MMUL_triple.$(OBJEXT)
 am__objects_8 = ./Smear/4D_fast.$(OBJEXT) \
 	./Smear/adaptive_flow.$(OBJEXT) ./Smear/HYP.$(OBJEXT) \
 	./Smear/ND_generic_HYP.$(OBJEXT) ./Smear/projectors.$(OBJEXT) \
@@ -299,6 +300,7 @@ am__depfiles_remade = ./Cuts/$(DEPDIR)/3Dcuts.Po \
 	./Matrix_Ops/MMUL/$(DEPDIR)/MMUL_dag_SSE.Po \
 	./Matrix_Ops/MMUL/$(DEPDIR)/MMUL_dag_SUNC.Po \
 	./Matrix_Ops/MMUL/$(DEPDIR)/MMUL_dag_SUNC_SSE.Po \
+	./Matrix_Ops/MMUL/$(DEPDIR)/MMUL_triple.Po \
 	./Matrix_Ops/MMUL/$(DEPDIR)/MMULdag.Po \
 	./Matrix_Ops/MMUL/$(DEPDIR)/MMULdag_SSE.Po \
 	./Matrix_Ops/MMUL/$(DEPDIR)/MMULdag_SUNC.Po \
@@ -521,7 +523,8 @@ MMULFILES = ./Matrix_Ops/MMUL/MMUL.c ./Matrix_Ops/MMUL/MMUL_SSE.c \
 	./Matrix_Ops/MMUL/MMULdag_SUNC.c ./Matrix_Ops/MMUL/MMULdag_SUNC_SSE.c \
 	./Matrix_Ops/MMUL/MMULdagdag.c ./Matrix_Ops/MMUL/MMULdagdag_SSE.c \
 	./Matrix_Ops/MMUL/MMULdagdag_SUNC.c \
-	./Matrix_Ops/MMUL/MMULdagdag_SUNC_SSE.c
+	./Matrix_Ops/MMUL/MMULdagdag_SUNC_SSE.c \
+	./Matrix_Ops/MMUL/MMUL_triple.c
 
 SMEARFILES = ./Smear/4D_fast.c ./Smear/adaptive_flow.c ./Smear/HYP.c \
 	./Smear/ND_generic_HYP.c ./Smear/projectors.c \
@@ -882,6 +885,9 @@ Matrix_Ops/MMUL/$(DEPDIR)/$(am__dirstamp):
 ./Matrix_Ops/MMUL/MMULdagdag_SUNC_SSE.$(OBJEXT):  \
 	Matrix_Ops/MMUL/$(am__dirstamp) \
 	Matrix_Ops/MMUL/$(DEPDIR)/$(am__dirstamp)
+./Matrix_Ops/MMUL/MMUL_triple.$(OBJEXT):  \
+	Matrix_Ops/MMUL/$(am__dirstamp) \
+	Matrix_Ops/MMUL/$(DEPDIR)/$(am__dirstamp)
 Smear/$(am__dirstamp):
 	@$(MKDIR_P) ./Smear
 	@: > Smear/$(am__dirstamp)
@@ -1092,6 +1098,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./Matrix_Ops/MMUL/$(DEPDIR)/MMUL_dag_SSE.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./Matrix_Ops/MMUL/$(DEPDIR)/MMUL_dag_SUNC.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./Matrix_Ops/MMUL/$(DEPDIR)/MMUL_dag_SUNC_SSE.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./Matrix_Ops/MMUL/$(DEPDIR)/MMUL_triple.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./Matrix_Ops/MMUL/$(DEPDIR)/MMULdag.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./Matrix_Ops/MMUL/$(DEPDIR)/MMULdag_SSE.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./Matrix_Ops/MMUL/$(DEPDIR)/MMULdag_SUNC.Po@am__quote@ # am--include-marker
@@ -1422,6 +1429,7 @@ distclean: distclean-am
 	-rm -f ./Matrix_Ops/MMUL/$(DEPDIR)/MMUL_dag_SSE.Po
 	-rm -f ./Matrix_Ops/MMUL/$(DEPDIR)/MMUL_dag_SUNC.Po
 	-rm -f ./Matrix_Ops/MMUL/$(DEPDIR)/MMUL_dag_SUNC_SSE.Po
+	-rm -f ./Matrix_Ops/MMUL/$(DEPDIR)/MMUL_triple.Po
 	-rm -f ./Matrix_Ops/MMUL/$(DEPDIR)/MMULdag.Po
 	-rm -f ./Matrix_Ops/MMUL/$(DEPDIR)/MMULdag_SSE.Po
 	-rm -f ./Matrix_Ops/MMUL/$(DEPDIR)/MMULdag_SUNC.Po
@@ -1586,6 +1594,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./Matrix_Ops/MMUL/$(DEPDIR)/MMUL_dag_SSE.Po
 	-rm -f ./Matrix_Ops/MMUL/$(DEPDIR)/MMUL_dag_SUNC.Po
 	-rm -f ./Matrix_Ops/MMUL/$(DEPDIR)/MMUL_dag_SUNC_SSE.Po
+	-rm -f ./Matrix_Ops/MMUL/$(DEPDIR)/MMUL_triple.Po
 	-rm -f ./Matrix_Ops/MMUL/$(DEPDIR)/MMULdag.Po
 	-rm -f ./Matrix_Ops/MMUL/$(DEPDIR)/MMULdag_SSE.Po
 	-rm -f ./Matrix_Ops/MMUL/$(DEPDIR)/MMULdag_SUNC.Po

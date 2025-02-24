@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2018 Renwick James Hudspith
+Copyright 2013-2025 Renwick James Hudspith
 
     This file (staples.c) is part of GLU.
 
@@ -37,14 +37,14 @@ all_staples( GLU_complex stap[ NCNC ] ,
 	     const smearing_types type )
 {
   GLU_complex a[ NCNC ] GLUalign , b[ NCNC ] GLUalign ; 
-  register size_t nu , t1 , t2 , b1 , b2 , j ; 
+  register size_t nu , t1 , t2 , b1 , b2 , j ;
+  t2 = lat[ i ].neighbor[mu] ; 
   switch( type ) {
   case SM_LOG :
     for( j = 0 ; j < dir-1 ; j++ ) {
       nu = j < mu ? j : j + 1 ;
       // directions
       t1 = lat[ i ].neighbor[nu] ; 
-      t2 = lat[ i ].neighbor[mu] ; 
       b1 = lat[ i ].back[nu] ; 
       b2 = lat[ b1 ].neighbor[mu] ; 
       // top staple
@@ -65,16 +65,13 @@ all_staples( GLU_complex stap[ NCNC ] ,
       nu = j < mu ? j : j + 1 ;
       // directions
       t1 = lat[ i ].neighbor[nu] ; 
-      t2 = lat[ i ].neighbor[mu] ; 
       b1 = lat[ i ].back[nu] ; 
       b2 = lat[ b1 ].neighbor[mu] ; 
       // top staple
-      multab_suNC( a , lat[ i ].O[nu] , lat[ t1 ].O[mu] ) ; 
-      multab_dag_suNC( b , a , lat[ t2 ].O[nu] ) ; 
-      a_plus_b( stap , b ) ; 
+      multabcdag_suNC( a , lat[ i ].O[nu] , lat[ t1 ].O[mu] , lat[ t2 ].O[nu] ) ; 
+      a_plus_b( stap , a ) ; 
       //bottom staple
-      multabdag_suNC( a , lat[ b1 ].O[nu] , lat[ b1 ].O[mu] ) ; 
-      multab_suNC( b , a , lat[ b2 ].O[nu] ) ; 
+      multadagbc_suNC( b , lat[b1].O[nu] , lat[b1].O[mu] , lat[b2].O[nu] ) ;
       a_plus_b( stap , b ) ; 
     } break ;
   }

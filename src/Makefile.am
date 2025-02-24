@@ -56,7 +56,8 @@ MMULFILES=./Matrix_Ops/MMUL/MMUL.c ./Matrix_Ops/MMUL/MMUL_SSE.c \
 	./Matrix_Ops/MMUL/MMULdag_SUNC.c ./Matrix_Ops/MMUL/MMULdag_SUNC_SSE.c \
 	./Matrix_Ops/MMUL/MMULdagdag.c ./Matrix_Ops/MMUL/MMULdagdag_SSE.c \
 	./Matrix_Ops/MMUL/MMULdagdag_SUNC.c \
-	./Matrix_Ops/MMUL/MMULdagdag_SUNC_SSE.c
+	./Matrix_Ops/MMUL/MMULdagdag_SUNC_SSE.c \
+	./Matrix_Ops/MMUL/MMUL_triple.c
 
 ## smearing codes, generic and targeted blockings, flows etc
 SMEARFILES=./Smear/4D_fast.c ./Smear/adaptive_flow.c ./Smear/HYP.c \

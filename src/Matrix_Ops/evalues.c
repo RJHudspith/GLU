@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2018 Renwick James Hudspith
+Copyright 2013-2025 Renwick James Hudspith
 
     This file (solver.c) is part of GLU.
 
@@ -234,6 +234,7 @@ Eigenvalues( double complex z[ NC ] ,
   z[0] = 0.5 * ( a + csqrt( a*a - 4.*b ) ) ;
   z[1] = b / z[0] ;
 #else
+  z[0] = U[0] ;
   // need to think about this one .... hmmm. Might need a library as complex QR
   // appears to be pretty hard to do well
   fprintf( stderr , "[Evalues] sorry not implemented yet .. exiting \n" ) ;

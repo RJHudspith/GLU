@@ -40,7 +40,7 @@
 ## --enable-OVERRELAXED_GF :: switch to the overrelaxed codes for gauge fixing
 ## --with-NSTOCH= :: number of randomly-drawn su2 subgroups per heatbath update
 
-AC_INIT([GLU], [1.1], [renwick.james.hudspith@gmail.com])
+AC_INIT([GLU],[1.1],[renwick.james.hudspith@gmail.com])
 AM_INIT_AUTOMAKE([-Wall subdir-objects])
 AC_PROG_CC
 AM_PROG_CC_C_O
@@ -88,8 +88,7 @@ AC_SUBST(PREF)
 
 ## Compile for a set NC, default is NC=3
 AC_ARG_WITH([NC],
-	AC_HELP_STRING([--with-NC=],
-		       [Compile in the gauge group number NC]),
+	AS_HELP_STRING([--with-NC=],[Compile in the gauge group number NC]),
             [
 	    AC_MSG_NOTICE([User specified NC, compiling for SU(${with_NC})])
 	    AC_DEFINE_UNQUOTED([NC], [${with_NC}] , [Compiled for SU(NC)] )	
@@ -99,8 +98,7 @@ AC_ARG_WITH([NC],
 
 ## Compile for a set ND, default is ND=4
 AC_ARG_WITH([ND],
-	AC_HELP_STRING([--with-ND=],
-		       [Compile in the number of dimensions ND]),
+	AS_HELP_STRING([--with-ND=],[Compile in the number of dimensions ND]),
             [
 	    AC_MSG_NOTICE([User specified ND, compiling for ND=${with_ND}])
 	    AC_DEFINE_UNQUOTED([ND], [${with_ND}] , [Compiled for ND] )	
@@ -164,8 +162,7 @@ AC_CHECK_HEADERS([omp.h],[],[OMP_FFTW=false])
 ## Look for fftw in the useer specified place
 fftw=false 
 AC_ARG_WITH([fftw],
-	AC_HELP_STRING([--with-fftw=<name>],
-		       [Specify FFTW location for the GF]),
+	AS_HELP_STRING([--with-fftw=<name>],[Specify FFTW location for the GF]),
             [
 	    ## see if we already have it	
 	    AC_CHECK_HEADERS([fftw3.h],[local_fftw=true],[local_fftw=false])
@@ -240,8 +237,7 @@ AC_SUBST(FFTW)
 ##############################################################################################
 gsl=false 
 AC_ARG_WITH([gsl],
-	AC_HELP_STRING([--with-gsl=<name>],
-		       [Specify GSL location for the GF]),
+	AS_HELP_STRING([--with-gsl=<name>],[Specify GSL location for the GF]),
             [GSL=${with_gsl}
 	    ## test to see if something is there ...
 	    if [ test -a ${GSL}include/gsl/gsl_rng.h ]; then
@@ -277,8 +273,7 @@ AC_SUBST(GSL)
 ##############################################################################################
 lapacke=false 
 AC_ARG_WITH([lapacke],
-	AC_HELP_STRING([--with-lapacke=<name>],
-		       [Specify Lapacke location for the stouting and stuff]),
+	AS_HELP_STRING([--with-lapacke=<name>],[Specify Lapacke location for the stouting and stuff]),
             [LAPACKE=${with_lapacke}
 
 	    if [ test -a ${LAPACKE}lapacke.h ]; then
@@ -335,8 +330,7 @@ AC_ARG_ENABLE([notcondor],
 ## Include the other stuff we could possibly use
 ## with proj gracey
 AC_ARG_WITH([GRACEY_PROJ],
-	AC_HELP_STRING([--with-GRACEY_PROJ=],
-		       [Compile in the specific nonexceptional projector of interest]),
+	AS_HELP_STRING([--with-GRACEY_PROJ=],[Compile in the specific nonexceptional projector of interest]),
             [
 	    if [ test "x$with_GRACEY_PROJ" != "xyes" ] ; then	 
 	       AC_MSG_NOTICE([User specified nonexceptional projector ${with_GRACEY_PROJ}.])
@@ -350,8 +344,7 @@ AC_ARG_WITH([GRACEY_PROJ],
 
 ## c0 is the term in front of the elementary staple
 AC_ARG_WITH([IMPROVED_C0],
-	AC_HELP_STRING([--with-IMPROVED_C0=],
-		       [The 1x1 improved term]),
+	AS_HELP_STRING([--with-IMPROVED_C0=],[The 1x1 improved term]),
 	[
 	if [ test "x$with_IMPROVED_C0" != "xyes" ] ; then
 	   AC_DEFINE_UNQUOTED([IWA_WEIGHT1],[${with_IMPROVED_C0}],[Leading term])
@@ -361,8 +354,7 @@ AC_ARG_WITH([IMPROVED_C0],
 
 ## and the rectangle terms
 AC_ARG_WITH([IMPROVED_C1],
-	AC_HELP_STRING([--with-IMPROVED_C1=],
-		       [The 2x1 rectangle terms]),
+	AS_HELP_STRING([--with-IMPROVED_C1=],[The 2x1 rectangle terms]),
 	[
 	if [ test "x$with_IMPROVED_C1" != "xyes" ] ; then
 	   AC_DEFINE_UNQUOTED([IWA_WEIGHT2],[${with_IMPROVED_C1}],[Sub-leading rectangle term])
@@ -372,8 +364,7 @@ AC_ARG_WITH([IMPROVED_C1],
 ## if we have not specified c0 and c1
 if [ test "x$with_IMPROVED_C0" != "xyes" -a "x$with_IMPROVED_C1" != "xyes" ] ; then
 AC_ARG_WITH([IMPROVED_STAPLE],
-	AC_HELP_STRING([--with-IMPROVED_STAPLE=],
-		       [Compile in the type of improved staple we wish to use.]),
+	AS_HELP_STRING([--with-IMPROVED_STAPLE=],[Compile in the type of improved staple we wish to use.]),
             [
 	    AC_MSG_NOTICE([user defined "${with_IMPROVED_STAPLE}" improved staple.])
 	    case "${with_IMPROVED_STAPLE}" in
@@ -387,8 +378,7 @@ fi
 
 ## are we doing overimproved smearing 
 AC_ARG_WITH([OVERIMPROVED_EPSILON],
-	AC_HELP_STRING([--with-OVERIMPROVED_EPSILON=],
-		       [Give a value for the overimproved epsilon. Should be used in conjunction with improved staple]),
+	AS_HELP_STRING([--with-OVERIMPROVED_EPSILON=],[Give a value for the overimproved epsilon. Should be used in conjunction with improved staple]),
             [
 	    ## if the user has left blank we do not define it, that'll teach them
 	    if [ test "x$with_OVERIMPROVED_EPSILON" != "xyes" ] ; then	 
@@ -465,8 +455,7 @@ AC_ARG_ENABLE([CLOVER_IMPROVE],
 
 ## and k5 to boot otherwise we default to k5 == 0.0 !!
 AC_ARG_WITH([CLOVER_K5],
-	AC_HELP_STRING([--with-CLOVER_K5=],
-		       [Give a value for the k5 term, turns on the 3x3 staple inclusion.]),
+	AS_HELP_STRING([--with-CLOVER_K5=],[Give a value for the k5 term, turns on the 3x3 staple inclusion.]),
             [ 
 	    ## if the user has left blank we do not define it, that'll teach them
 	    if test "x$with_CLOVER_K5" != "xyes" ; then
@@ -477,8 +466,7 @@ AC_ARG_WITH([CLOVER_K5],
 
 ## enable where we start our iterative topological charge measuring from
 AC_ARG_WITH([TOP_VALUE],
-	AC_HELP_STRING([--with-TOP_VALUE=],
-		       [Tells us which measurement number from which to start checking the topological charge.]),
+	AS_HELP_STRING([--with-TOP_VALUE=],[Tells us which measurement number from which to start checking the topological charge.]),
             [
 	    ## if the user has left blank we give it a default value of 1
 	    if test "x$with_TOP_VALUE" != "xyes" ; then
@@ -492,8 +480,7 @@ AC_ARG_WITH([TOP_VALUE],
 ## can now choose which RNG you want to use, boy, aren't you lucky
 ## options are GSL, KISS or MWC otherwise default to WELL
 AC_ARG_WITH([RNG],
-	AC_HELP_STRING([--with-RNG=],
-		       [Specify which (p)RNG you wish to use, default is the Well.]),
+	AS_HELP_STRING([--with-RNG=],[Specify which (p)RNG you wish to use, default is the Well.]),
             [
 	    case ${with_RNG} in
 	    KISS_RNG) AC_DEFINE([KISS_RNG],[],[Keep It Simple Stupid RNG (JKISS32)]) ;;
@@ -508,8 +495,7 @@ AC_ARG_WITH([RNG],
 
 ## enable the searching for the best gribov copies
 AC_ARG_WITH([LUXURY_GAUGE],
-	AC_HELP_STRING([--with-LUXURY_GAUGE=],
-		       [How many random gribov copies do we look for through. Keeps the best (i.e. the one that minimises the functional).]),
+	AS_HELP_STRING([--with-LUXURY_GAUGE=],[How many random gribov copies do we look for through. Keeps the best (i.e. the one that minimises the functional).]),
             [
 	    ## if the user has left blank we give it a default value of 1
 	    if test "x$with_LUXURY_GAUGE" != "xyes" ; then
@@ -522,8 +508,7 @@ AC_ARG_WITH([LUXURY_GAUGE],
 
 ## enable the searching for the best gribov copies
 AC_ARG_WITH([NBLOCK],
-	AC_HELP_STRING([--with-NBLOCK=],
-		       [Innermost loop unrolling factor for matrix multiplies.]),
+	AS_HELP_STRING([--with-NBLOCK=],[Innermost loop unrolling factor for matrix multiplies.]),
             [
 	    ## if the user has left blank we give it a default value of 1
 	    if test "$with_NC" -gt 3 ; then
@@ -568,8 +553,7 @@ AC_ARG_ENABLE([WFLOW_TIME_ONLY],
 
 ## what time to stop the wflow
 AC_ARG_WITH([WFLOW_TIME_STOP],
-	AC_HELP_STRING([--with-WFLOW_TIME_STOP=],
-		       [Specify at what time you want the flow to stop]),
+	AS_HELP_STRING([--with-WFLOW_TIME_STOP=],[Specify at what time you want the flow to stop]),
             [
 	    if test "x$with_WFLOW_TIME_STOP" != "xyes" ; then
 	        AC_MSG_NOTICE([Stopping flow at t=${with_WFLOW_TIME_STOP}.])
@@ -581,8 +565,7 @@ AC_ARG_WITH([WFLOW_TIME_STOP],
 
 ## what time to stop the wflow
 AC_ARG_WITH([WFLOW_MEAS_START],
-	AC_HELP_STRING([--with-WFLOW_MEAS_START=],
-		       [Specify at what time you want to start measuring flow observables]),
+	AS_HELP_STRING([--with-WFLOW_MEAS_START=],[Specify at what time you want to start measuring flow observables]),
             [
 	    if test "x$with_WFLOW_MEAS_START" != "xyes" ; then
 	        AC_MSG_NOTICE([Measuring from t=${with_WFLOW_MEAS_START}.])
@@ -627,8 +610,7 @@ AC_ARG_ENABLE([OBC_HACK],
 
 ## Compile for a set NC, default is NC=3
 AC_ARG_WITH([NSTOCH],
-	AC_HELP_STRING([--with-NSTOCH=],
-		       [number of randomly-drawn subgroups per HB-OR, NSTOCH]),
+	AS_HELP_STRING([--with-NSTOCH=],[number of randomly-drawn subgroups per HB-OR, NSTOCH]),
             [
 	    AC_MSG_NOTICE([User specified NSTOCH = (${with_NSTOCH})])
 	    AC_DEFINE_UNQUOTED([NSTOCH], [${with_NSTOCH}] , [NSTOCH updates] )	
@@ -652,8 +634,7 @@ AC_CONFIG_HEADERS([config.h])
 
 ## include MKL library, will fail if we don't have it
 AC_ARG_WITH([MKL],
-        AC_HELP_STRING([--with-MKL],
-                       [Link to intel MKL library]),
+        AS_HELP_STRING([--with-MKL],[Link to intel MKL library]),
             [LDFLAGS="$LDFLAGS -mkl"],[LDFLAGS="$LDFLAGS -lm"])
 
 ## where are my files?

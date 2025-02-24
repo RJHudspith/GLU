@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2018 Renwick James Hudspith
+Copyright 2013-2025 Renwick James Hudspith
     
     This file (triplet_gen.c) is part of GLU.
     GLU is free software: you can redistribute it and/or modify

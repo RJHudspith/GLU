@@ -1,5 +1,5 @@
 /*
-    Copyright 2013-2018 Renwick James Hudspith
+Copyright 2013-2025 Renwick James Hudspith
 
     This file (wflowfuncs.c) is part of GLU.
 
@@ -162,7 +162,6 @@ RK3step( struct wflow_temps WF ,
         #else
 	all_staples( staple , lat , i , mu , ND , SM_TYPE ) ;
         #endif
-	// log smearing just requires an set the log
 	// hermitian projection
 	multab_dag( temp , staple , lat[i].O[mu] ) ; 
 	Hermitian_proj_short( short_staple , temp ) ;
@@ -516,7 +515,7 @@ step_distance( struct site *__restrict lat ,
 				const double smear_alpha ) )
 {
   // RK3 parameters
-  const double rk1 = -0.52941176470588235294 * delta_t ;
+  const double rk1 = -0.52941176470588235294*delta_t ;
   const double rk2 =  delta_t ;
   const double rk3 = -delta_t ;
   const double mthreeOfour = -3.0/4.0 ;
@@ -532,8 +531,8 @@ step_distance( struct site *__restrict lat ,
   }
   // flow forwards one fictitious timestep
   RK3step( WF , lat , mseventeenOthsix , rk1 , SM_TYPE , project ) ;
-  RK3step( WF , lat , eightOnine , rk2 , SM_TYPE , project ) ;
-  RK3step( WF , lat , mthreeOfour , rk3 , SM_TYPE , project ) ;
+  RK3step( WF , lat , eightOnine       , rk2 , SM_TYPE , project ) ;
+  RK3step( WF , lat , mthreeOfour      , rk3 , SM_TYPE , project ) ;
   return ;
 }
 

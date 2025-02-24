@@ -88,8 +88,6 @@ multab_suNC( GLU_complex a[ NCNC ] ,
 #endif
   return ;
 }
-
 #endif // ifndef multab_suNC
 
 #endif // end of HAVE_IMMINTRIN_H
-
