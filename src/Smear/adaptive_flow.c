@@ -18,7 +18,7 @@ Copyright 2013-2025 Renwick James Hudspith
 */
 /**
    @file adaptive_flow.c
-   @brief the (two step) adaptive rk4 wilson flow routine
+   @brief the (two step) adaptive rk3 wilson flow routine
 
    Slows down, performing fine measurements at ~t_0 and ~w_0
    W0_STOP and T0_STOP are defined in wflowfuncs.h
@@ -29,6 +29,8 @@ Copyright 2013-2025 Renwick James Hudspith
 #include "plaqs_links.h"  // av_plaquette()
 #include "projectors.h"   // smearing projections
 #include "wflowfuncs.h"   // wilson flow general routines
+
+#include "GLU_timer.h"
 
 /**
    @fn static inline double adaptfmax( const double a , const double b )
@@ -60,13 +62,22 @@ adaptfmin( const double a , const double b )
 enum adaptive_control{ ADAPTIVE_BIG_NUMBER = 20 } ;
 
 // the error between the two plaquettes
-static const double ADAPTIVE_EPS = 1E-6 ;
-// Standard shrink and factor from NRC RK4
-#define ADAPTIVE_SHRINK (-0.32) // 0.33?
-// Standard growth and factor from NRC RK4
-#define ADAPTIVE_GROWTH (-0.24)
-// define adaptive safe
+static const double ADAPTIVE_EPS = 2E-7 ;
+
+// adaptive parameters have been tuned to be reasonably well behaved
+#define ADAPTIVE_SHRINK (-0.33)
+#define ADAPTIVE_GROWTH (-0.25)
 #define ADAPTIVE_SAFE (0.9)
+
+static inline void
+setred( struct wflow_temps *WF )
+{
+  size_t i ;
+#pragma omp for private(i)
+  for( i = 0 ; i < CLINE*Latt.Nthreads ; i++ ) {
+    WF -> red[i] = 0.0 ;
+  }
+}
 
 // little plaquett utility
 static inline double
@@ -98,6 +109,21 @@ twostep_adaptive( struct site *lat ,
 {
   *errmax = 10. ;
   size_t counter = 0 , i , mu ;
+
+  // if we hit the 1/8 we just set it to that and do a normal step
+  if( *dt >= 0.125 && t > 1.0 ) {
+    *dt = 0.125 ;
+    #pragma omp for private(i) collapse(2)
+    for( i = 0 ; i < LVOLUME ; i++ ) {
+      for( mu = 0 ; mu < ND ; mu++ ) {
+	equiv( WF.lat_two[i].O[mu] , lat[i].O[mu] ) ;
+      }
+    }
+    setred( &WF ) ;
+    step_distance( WF.lat_two , WF , *dt , SM_TYPE , project ) ;
+    *new_plaq = get_plaq_th( WF.lat_two , WF ) ;
+    return GLU_SUCCESS ;
+  }
   
   // adaptive loop, shrinking or growing the stepsize accordingly
  top :
@@ -112,11 +138,7 @@ twostep_adaptive( struct site *lat ,
       equiv( WF.lat_two[i].O[mu] , lat[i].O[mu] ) ;
     }
   }
-
-#pragma omp for private(i)
-  for( i = 0 ; i < CLINE*Latt.Nthreads ; i++ ) {
-    WF.red[i] = 0.0 ;
-  }
+  setred( &WF ) ;
   
   // step forward once and write into lat_two
   step_distance( WF.lat_two , WF , *dt , SM_TYPE , project ) ;
@@ -129,12 +151,8 @@ twostep_adaptive( struct site *lat ,
     for( mu = 0 ; mu < ND ; mu++ ) {
       equiv( WF.lat_two[i].O[mu] , lat[i].O[mu] ) ;
     }
-  } 
-    
-#pragma omp for private(i)
-  for( i = 0 ; i < CLINE*Latt.Nthreads ; i++ ) {
-    WF.red[i] = 0.0 ;
   }
+  setred( &WF ) ;
     
   // and step forward twice and write into lat_two
   step_distance( WF.lat_two , WF , 0.5*(*dt) , SM_TYPE , project ) ;
@@ -171,6 +189,19 @@ twostep_adaptive( struct site *lat ,
   return GLU_SUCCESS ;
 }
 
+// dirty macro
+#define stept()							\
+  setred( &WF );						\
+  step_distance( lat , WF , delta_t , SM_TYPE , project ) ;	\
+  new_plaq = get_plaq_th( lat , WF ) ;				\
+  curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;	\
+  update_meas_list( head , curr , WF.red ,			\
+		    new_plaq , t = t+delta_t , delta_t ,	\
+		    errmax*ADAPTIVE_EPS , lat ) ;		\
+  flow_next = curr -> Gt ;					\
+  wapprox = ( flow_next - flow ) * curr -> time / delta_t ;	\
+  flow = flow_next ; head = curr ; count++ ; meas_count++ ;
+
 // Adaptive stepsize version 
 int 
 flow_adaptive_RK3( struct site *__restrict lat , 
@@ -184,7 +215,7 @@ flow_adaptive_RK3( struct site *__restrict lat ,
   // adaptive error conserving
   const double ADAPTIVE_ERRCON = powl( 5./ADAPTIVE_SAFE , 1./ADAPTIVE_GROWTH ) ;
   // percentage to value we want for performing fine measurements
-  const double FINETWIDDLE = 0.06 ;
+  const double FINETWIDDLE = 0.05 ;
 
   // adaptive factors for RK4, we are RK3 could be more lenient?
   fprintf( stdout , "[WFLOW] Adaptive Error :: %e \n" , ADAPTIVE_EPS ) ;
@@ -245,10 +276,9 @@ flow_adaptive_RK3( struct site *__restrict lat ,
     {
        #pragma omp barrier
     }
-    
     errmax = 10. ;
-    
-    // perform two-step adaptive
+ 
+    // perform two-step adaptive if delta_t is small and at some point we just switch to stout smearing at maximal rho?
     if( twostep_adaptive( lat , WF , &delta_t , &errmax , &new_plaq ,
 			  t , yscal , SM_TYPE , project ) == GLU_FAILURE ) {
       FLAG = GLU_FAILURE ;
@@ -260,10 +290,9 @@ flow_adaptive_RK3( struct site *__restrict lat ,
     yscal = 2.0 * yscal_new - yscal ;
     
     // overwrite lat .. 
-    #pragma omp for private(i)
+    #pragma omp for private(i) collapse(2)
     for( i = 0 ; i < LVOLUME ; i++ ) {
-      size_t mu ;
-      for( mu = 0 ; mu < ND ; mu++ ) {
+      for( size_t mu = 0 ; mu < ND ; mu++ ) {
 	equiv( lat[i].O[mu] , WF.lat_two[i].O[mu] ) ;
       }
     }
@@ -295,29 +324,21 @@ flow_adaptive_RK3( struct site *__restrict lat ,
     }
 
     // perform fine measurements around T0_STOP for t_0 and W0_STOP for w_0
-#ifndef WFLOW_TIME_ONLY
+    #ifndef WFLOW_TIME_ONLY
     if( fabs( T0_STOP - flow ) <= ( T0_STOP * FINETWIDDLE ) ) {
       int past_the_post = 0 ;
+      // step backwards 1/2 step I don't love this tbH
+      if( flow > T0_STOP ) {
+	delta_t = -delta_t/2 ;
+	stept() ;
+      }
+      // step forwards
       delta_t = t/100. ;
     t0_top :
       {
          #pragma omp barrier
       }
-
-      step_distance( lat , WF , delta_t , SM_TYPE , project ) ;
-      
-      new_plaq = get_plaq_th( lat , WF ) ;
-      curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
-      update_meas_list( head , curr , WF.red ,
-			new_plaq , t = t+delta_t , delta_t ,
-			errmax*ADAPTIVE_EPS , lat ) ;
-      flow_next = curr -> Gt ;
-      wapprox = ( flow_next - flow ) * curr -> time / delta_t ;
-      flow = flow_next ;
-      
-      head = curr ;
-      count++ ;
-      meas_count++ ;
+      stept() ;      
       if( flow > T0_STOP ) { past_the_post++ ; }
       if( fabs( T0_STOP - flow ) <= ( T0_STOP * FINETWIDDLE ) && past_the_post < 3 ) goto t0_top ;
     }
@@ -330,33 +351,21 @@ flow_adaptive_RK3( struct site *__restrict lat ,
       {
          #pragma omp barrier
       }
-      
-      step_distance( lat , WF , delta_t , SM_TYPE , project ) ;
-
-      curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
-      new_plaq = get_plaq_th( lat , WF ) ;
-      update_meas_list( head , curr , WF.red ,
-			new_plaq , t += delta_t , delta_t ,
-			errmax*ADAPTIVE_EPS , lat ) ;
-      flow_next = curr -> Gt ;
-      wapprox = ( flow_next - flow ) * curr -> time / delta_t ;
-      flow = flow_next ;
-      
-      head = curr ;
-      count++ ;
-      meas_count++ ;
+      stept() ;
       if( wapprox > W0_STOP ) { past_the_post++ ; }
       if( fabs( W0_STOP - wapprox ) <= ( W0_STOP * FINETWIDDLE ) && past_the_post < 3 ) goto w0_top ;
     }
-#endif
+    #endif
     
     // Increase the step size ...
-    if( errmax > ADAPTIVE_ERRCON ) {
-      delta_t = ADAPTIVE_SAFE * delta_t * pow( errmax , ADAPTIVE_GROWTH ) ;
-    } else {
-      delta_t = ADAPTIVE_SAFE * 5.0 * delta_t ;
+    if( delta_t < 0.125 ) {
+      if( errmax > ADAPTIVE_ERRCON ) {
+	delta_t = ADAPTIVE_SAFE * delta_t * pow( errmax , ADAPTIVE_GROWTH ) ;
+      } else {
+	//delta_t = ADAPTIVE_SAFE * 5.0 * delta_t ;
+	delta_t = ADAPTIVE_SAFE * 4.0 * delta_t ;
+      }
     }
-
     count++ ;
 
     // while loop
@@ -369,16 +378,7 @@ flow_adaptive_RK3( struct site *__restrict lat ,
     // step back a little way
     if( t > WFLOW_TIME_STOP ) {
       delta_t = WFLOW_TIME_STOP - t ;
-      step_distance( lat , WF , delta_t , SM_TYPE , project ) ;
-      new_plaq = get_plaq_th( lat , WF ) ;
-      curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
-      update_meas_list( head , curr , WF.red ,
-			new_plaq , t += delta_t , delta_t ,
-			errmax*ADAPTIVE_EPS , lat ) ;
-      count++ ;
-      meas_count++ ;
-      curr -> next = head ;
-      head = curr ;
+      stept() ;
     }
 
     // finally point to the right place in the list again

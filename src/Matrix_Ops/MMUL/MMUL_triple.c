@@ -17,7 +17,7 @@
     along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
-   @file MMUL_triple_SSE.c
+   @file MMUL_triple.c
    @brief Common triple product A.B.C^\dagger and A^\dagger.B.C
  */
 #include "Mainfile.h"

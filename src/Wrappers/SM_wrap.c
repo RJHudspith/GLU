@@ -166,8 +166,6 @@ print_smearinfo( const struct sm_info SMINFO )
     #ifndef NK5
     fprintf( stdout , "k5 value :: %f \n" , k5 ) ; 
     #endif
-  #elif defined PLAQUETTE_FMUNU
-    fprintf( stdout , "Plaquette O(a) Clover Term being used ... \n" ) ;
   #else
     fprintf( stdout , "O(a^2) Clover Term being used ... \n" ) ;
   #endif
@@ -232,8 +230,6 @@ SM_wrap_struct( struct site *__restrict lat ,
     #ifndef NK5
     fprintf( stdout , "[SMEAR] k5 value :: %f \n" , k5 ) ; 
     #endif
-  #elif defined PLAQUETTE_FMUNU
-  fprintf( stdout , "[SMEAR] Plaquette O(a) Clover Term being used ... \n" ) ;
   #else
   fprintf( stdout , "[SMEAR] O(a^2) Clover Term being used ... \n" ) ;
   #endif

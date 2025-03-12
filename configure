@@ -783,7 +783,6 @@ enable_verbiage
 enable_ascii_check
 enable_GLU_bgq
 enable_GIVENS_APE
-enable_PLAQUETTE_FMUNU
 enable_CLOVER_IMPROVE
 with_CLOVER_K5
 with_TOP_VALUE
@@ -1443,7 +1442,6 @@ Optional Features:
  --enable-ascii_check
  --enable-GLU_bgq
  --enable-GIVENS_APE
- --enable-PLAQUETTE_FMUNU
  --enable-CLOVER_IMPROVE
  --enable-WFLOW_TIME_ONLY
  --enable-GLU_GFIX_SD
@@ -5757,23 +5755,6 @@ printf "%s\n" "#define GIVENS_APE /**/" >>confdefs.h
 
 	     ;;
 	*) as_fn_error $? "bad value ${enableval} for --enable-GIVENS_APE" "$LINENO" 5 ;;
-	esac
-
-fi
-
-
-## plaquette field strength tensor
-# Check whether --enable-PLAQUETTE_FMUNU was given.
-if test ${enable_PLAQUETTE_FMUNU+y}
-then :
-  enableval=$enable_PLAQUETTE_FMUNU; case "${enableval}" in
-	yes) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Simple plaquette definition of the field strength tensor." >&5
-printf "%s\n" "$as_me: Simple plaquette definition of the field strength tensor." >&6;}
-
-printf "%s\n" "#define PLAQUETTE_FMUNU /**/" >>confdefs.h
-
-	     ;;
-	*) as_fn_error $? "bad value ${enableval} for --enable-PLAQUETTE_FMUNU" "$LINENO" 5 ;;
 	esac
 
 fi

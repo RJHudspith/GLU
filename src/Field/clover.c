@@ -53,123 +53,113 @@ Copyright 2013-2025 Renwick James Hudspith
 //#define ANTIHERMITIAN
 //#define CLOVER_LOG_DEF
 
-// improvement factors from the bilson-thompson paper ...
-#ifndef NK5
-   GLU_real fClover_k1 ;
-   GLU_real fClover_k2 ;
-   GLU_real fClover_k3 ;
-   GLU_real fClover_k4 ;
-   GLU_real fClover_k5 ;
-#else
-   const GLU_real fClover_k1 = 19./9. ;
-   const GLU_real fClover_k2 = 1./36. ;
-   const GLU_real fClover_k3 = 32./90. ;
-   const GLU_real fClover_k4 = 1./30. ;
-   const GLU_real fClover_k5 = 0.0 ;
-#endif
-
-#if ND == 4 /// this definition is only correct for ND = 4
+#if (ND==4)
 // top right
-static void
+static inline void
 compute_s1( GLU_complex *__restrict sum ,
 	    GLU_complex u[ NCNC ] ,
 	    GLU_complex v[ NCNC ] ,
 	    const struct site *__restrict lat ,
 	    const size_t i ,
 	    const size_t mu ,
-	    const size_t nu ,
-	    const GLU_real mul )
+	    const size_t nu )
 {
   const size_t s1 = lat[i].neighbor[mu] ;
   const size_t s2 = lat[i].neighbor[nu] ;
-  multab_suNC( u , lat[i].O[mu] , lat[s1].O[nu] ) ;
-  multab_dag_suNC( v , u , lat[s2].O[mu] ) ;
+  multabcdag_suNC( v , lat[i].O[mu] , lat[s1].O[nu] , lat[s2].O[mu] ) ;
   multab_dag_suNC( u , v , lat[i].O[nu] ) ;
-#ifdef CLOVER_LOG_DEF
+  #ifdef CLOVER_LOG_DEF
   exact_log_slow( v , u ) ;
-  a_plus_Sxb( sum , v , mul ) ;
-#else
-  a_plus_Sxb( sum , u , mul ) ;
-#endif
+  a_plus_b( sum , v ) ;
+  #else
+  a_plus_b( sum , u ) ;
+  #endif
   return ;
 }
-#ifndef PLAQUETTE_FMUNU
 // bottom right
-static void
+static inline void
 compute_s2( GLU_complex *__restrict sum ,
 	    GLU_complex u[ NCNC ] ,
 	    GLU_complex v[ NCNC ] ,
 	    const struct site *__restrict lat ,
 	    const size_t i ,
 	    const size_t mu ,
-	    const size_t nu ,
-	    const GLU_real mul )
+	    const size_t nu )
 {
   const size_t s1 = lat[i].back[nu] ;
   const size_t s2 = lat[s1].neighbor[mu] ;
-  multabdag_suNC( u , lat[s1].O[nu] , lat[s1].O[mu] ) ;
-  multab_suNC( v , u , lat[s2].O[nu] ) ;
+  multadagbc_suNC( v , lat[s1].O[nu] , lat[s1].O[mu] , lat[s2].O[nu] ) ;
   multab_dag_suNC( u , v , lat[i].O[mu] ) ; 
-#ifdef CLOVER_LOG_DEF
+  #ifdef CLOVER_LOG_DEF
   exact_log_slow( v , u ) ;
-  a_plus_Sxb( sum , v , mul ) ;
-#else
-  a_plus_Sxb( sum , u , mul ) ;
-#endif
+  a_plus_b( sum , v ) ;
+  #else
+  a_plus_b( sum , u ) ;
+  #endif
   return ;
 }
 // bottom left
-static void
+static inline void
 compute_s3( GLU_complex *__restrict sum ,
 	    GLU_complex u[ NCNC ] ,
 	    GLU_complex v[ NCNC ] ,
 	    const struct site *__restrict lat ,
 	    const size_t i ,
 	    const size_t mu ,
-	    const size_t nu ,
-	    const GLU_real mul )
+	    const size_t nu )
 {
   const size_t s1 = lat[i].back[mu] ;
   const size_t s2 = lat[s1].back[nu] ;
-  const size_t s3 = lat[i].back[nu] ;
-  multab_dagdag_suNC( u , lat[s1].O[mu] , lat[s2].O[nu] ) ;
-  multab_suNC( v , u , lat[s2].O[mu] ) ;
-  multab_suNC( u , v , lat[s3].O[nu] ) ;
-#ifdef CLOVER_LOG_DEF
+  const size_t s3 = lat[i].back[nu] ;  
+  multadagbc_suNC( v , lat[s2].O[mu] , lat[s2].O[nu] , lat[s1].O[mu] ) ;
+  multabdag_suNC( u , v , lat[s3].O[nu] ) ;
+  #ifdef CLOVER_LOG_DEF
   exact_log_slow( v , u ) ;
-  a_plus_Sxb( sum , v , mul ) ;
-#else
-  a_plus_Sxb( sum , u , mul ) ;
-#endif
+  a_plus_b( sum , v ) ;
+  #else
+  a_plus_b( sum , u ) ;
+  #endif
   return ;
 }
 // top left
-static void
+static inline void
 compute_s4( GLU_complex *__restrict sum ,
 	    GLU_complex u[ NCNC ] ,
 	    GLU_complex v[ NCNC ] ,
 	    const struct site *__restrict lat ,
 	    const size_t i ,
 	    const size_t mu ,
-	    const size_t nu ,
-	    const GLU_real mul )
+	    const size_t nu )
 {
   const size_t s2 = lat[i].back[mu] ;
   const size_t s1 = lat[s2].neighbor[nu] ;
-  multab_dag_suNC( u , lat[i].O[nu] , lat[s1].O[mu] ) ;
-  multab_dag_suNC( v , u , lat[s2].O[nu] ) ;
-  multab_suNC( u , v , lat[s2].O[mu] ) ;
-#ifdef CLOVER_LOG_DEF
+  multabcdag_suNC( v , lat[s2].O[nu] , lat[s1].O[mu] , lat[i].O[nu] ) ;
+  multabdag_suNC( u , v , lat[s2].O[mu] ) ;
+  #ifdef CLOVER_LOG_DEF
   exact_log_slow( v , u ) ;
-  a_plus_Sxb( sum , v , mul ) ;
-#else
-  a_plus_Sxb( sum , u , mul ) ;
-#endif
+  a_plus_b( sum , v ) ;
+  #else
+  a_plus_b( sum , u ) ;
+  #endif
   return ;
 }
+
+#if (defined CLOVER_IMPROVE)
+
+// improvement factors from the bilson-thompson paper ...
+#ifndef NK5
+ static GLU_real fClover_k1 ;
+ static GLU_real fClover_k2 ;
+ static GLU_real fClover_k3 ;
+ static GLU_real fClover_k4 ;
+ static GLU_real fClover_k5 ;
+#else
+ static const GLU_real fClover_k1 = 19./9.  ;
+ static const GLU_real fClover_k2 = 1./36.  ;
+ static const GLU_real fClover_k3 = 32./90. ;
+ static const GLU_real fClover_k4 = 1./30.  ;
 #endif
 
-#if (defined CLOVER_IMPROVE && !defined PLAQUETTE_FMUNU) 
 // compute sector 1 with improvements 
 // return the plaquette. Sector 1 is the
 // top right of the clover term.
@@ -184,7 +174,9 @@ compute_clover_s1( GLU_complex *__restrict sum ,
 {
   // 1x1 contribution
   if( fClover_k1 > CL_TOL ) {
-    compute_s1( sum , u , v , lat , i , mu , nu , Clover_k1 ) ;
+    GLU_complex tmp[ NCNC ] GLUalign = {} ;
+    compute_s1( tmp , u , v , lat , i , mu , nu ) ;
+    a_plus_Sxb( sum , tmp , Clover_k1 ) ;
   }
   // 2x2 contribution
   if( fClover_k2 > CL_TOL ) {
@@ -341,7 +333,9 @@ compute_clover_s2( GLU_complex *__restrict sum ,
 {
   // 1x1 contribution
   if( fClover_k1 > CL_TOL ) {
-    compute_s2( sum , u , v , lat , i , mu , nu , Clover_k1 ) ;
+    GLU_complex tmp[ NCNC ] GLUalign = {} ;
+    compute_s2( tmp , u , v , lat , i , mu , nu ) ;
+    a_plus_Sxb( sum , tmp , Clover_k1 ) ;
   }
   // 2x2 contrib
   if( fClover_k2 > CL_TOL ) {
@@ -498,7 +492,9 @@ compute_clover_s3( GLU_complex *__restrict sum ,
 {
   // 1x1 contribution
   if( fClover_k1 > CL_TOL ) {
-    compute_s3( sum , u , v , lat , i , mu , nu , Clover_k1 ) ;
+    GLU_complex tmp[ NCNC ] GLUalign = {} ;
+    compute_s3( tmp , u , v , lat , i , mu , nu ) ;
+    a_plus_Sxb( sum , tmp , Clover_k1 ) ;
   }
   // 2x2 contrib
   if( fClover_k2 > CL_TOL ) {
@@ -655,7 +651,9 @@ compute_clover_s4( GLU_complex *__restrict sum ,
 {
   // 1x1 contribution
   if( fClover_k1 > CL_TOL ) {
-    compute_s4( sum , u , v , lat , i , mu , nu , Clover_k1 ) ;
+    GLU_complex tmp[ NCNC ] GLUalign = {} ;
+    compute_s4( tmp , u , v , lat , i , mu , nu ) ;
+    a_plus_Sxb( sum , tmp , Clover_k1 ) ;
   }
   // 2x2 contrib
   if( fClover_k2 > CL_TOL ) {
@@ -883,7 +881,7 @@ compute_q( GLU_complex q[ NCNC ] ,
   zero_mat( sum_1 ) ; zero_mat( sum_2 ) ;
   // temp matrices in u and v
   GLU_complex u[ NCNC ] GLUalign , v[ NCNC ] GLUalign ;
-#if (defined CLOVER_IMPROVE && !defined PLAQUETTE_FMUNU)
+  #if (defined CLOVER_IMPROVE)
   // highly improved clover definition
   compute_clover_s1( sum_1 , u , v , lat , i , mu , nu ) ;
   compute_clover_s2( sum_1 , u , v , lat , i , mu , nu ) ;
@@ -893,21 +891,17 @@ compute_q( GLU_complex q[ NCNC ] ,
   compute_clover_s2( sum_2 , u , v , lat , i , rho , delta ) ;
   compute_clover_s3( sum_2 , u , v , lat , i , rho , delta ) ;
   compute_clover_s4( sum_2 , u , v , lat , i , rho , delta ) ;
-#elif defined PLAQUETTE_FMUNU
-  // plaquette definition
-  compute_s1( sum_1 , u , v , lat , i , mu , nu , 1.0 ) ;
-  compute_s1( sum_2 , u , v , lat , i , rho , delta , 1.0 ) ;
-#else
+  #else
   // standard clover plaquette definition
-  compute_s1( sum_1 , u , v , lat , i , mu , nu , 1.0 ) ;
-  compute_s2( sum_1 , u , v , lat , i , mu , nu , 1.0 ) ;
-  compute_s3( sum_1 , u , v , lat , i , mu , nu , 1.0 ) ;
-  compute_s4( sum_1 , u , v , lat , i , mu , nu , 1.0 ) ;
-  compute_s1( sum_2 , u , v , lat , i , rho , delta , 1.0 ) ;
-  compute_s2( sum_2 , u , v , lat , i , rho , delta , 1.0 ) ;
-  compute_s3( sum_2 , u , v , lat , i , rho , delta , 1.0 ) ;
-  compute_s4( sum_2 , u , v , lat , i , rho , delta , 1.0 ) ;
-#endif
+  compute_s1( sum_1 , u , v , lat , i , mu  , nu    ) ;
+  compute_s2( sum_1 , u , v , lat , i , mu  , nu    ) ;
+  compute_s3( sum_1 , u , v , lat , i , mu  , nu    ) ;
+  compute_s4( sum_1 , u , v , lat , i , mu  , nu    ) ;
+  compute_s1( sum_2 , u , v , lat , i , rho , delta ) ;
+  compute_s2( sum_2 , u , v , lat , i , rho , delta ) ;
+  compute_s3( sum_2 , u , v , lat , i , rho , delta ) ;
+  compute_s4( sum_2 , u , v , lat , i , rho , delta ) ;
+  #endif
   // take the antihermitian projection, could perform the exact log here?
   GLU_complex GMUNU_1[ NCNC ] GLUalign ;
   GLU_complex GMUNU_2[ NCNC ] GLUalign ;
@@ -944,11 +938,10 @@ compute_Gmunu_kernel( double *__restrict plaq_t ,
 {
 #if ND == 4
   // accumulated mu-nu in sum_1 and rho-delta in sum_2
-  GLU_complex sum_1[ NCNC ] GLUalign , sum_2[ NCNC ] GLUalign ;
-  zero_mat( sum_1 ) ; zero_mat( sum_2 ) ;
+  GLU_complex sum_1[ NCNC ] GLUalign = {} , sum_2[ NCNC ] GLUalign = {} ;
   // temp matrices in u and v
   GLU_complex u[ NCNC ] GLUalign , v[ NCNC ] GLUalign ;
-#if (defined CLOVER_IMPROVE && !defined PLAQUETTE_FMUNU)
+  #if (defined CLOVER_IMPROVE)
   // highly improved clover definition
   compute_clover_s1( sum_1 , u , v , lat , i , mu , nu ) ;
   compute_clover_s2( sum_1 , u , v , lat , i , mu , nu ) ;
@@ -958,27 +951,19 @@ compute_Gmunu_kernel( double *__restrict plaq_t ,
   compute_clover_s2( sum_2 , u , v , lat , i , rho , delta ) ;
   compute_clover_s3( sum_2 , u , v , lat , i , rho , delta ) ;
   compute_clover_s4( sum_2 , u , v , lat , i , rho , delta ) ;
-#elif defined PLAQUETTE_FMUNU
-  // plaquette definition
-  compute_s1( sum_1 , u , v , lat , i , mu , nu , 1.0 ) ;
-  compute_s1( sum_2 , u , v , lat , i , rho , delta , 1.0 ) ;
-#else
+  #else
   // standard clover plaquette definition
-  compute_s1( sum_1 , u , v , lat , i , mu , nu , 1.0 ) ;
-  compute_s2( sum_1 , u , v , lat , i , mu , nu , 1.0 ) ;
-  compute_s3( sum_1 , u , v , lat , i , mu , nu , 1.0 ) ;
-  compute_s4( sum_1 , u , v , lat , i , mu , nu , 1.0 ) ;
-  compute_s1( sum_2 , u , v , lat , i , rho , delta , 1.0 ) ;
-  compute_s2( sum_2 , u , v , lat , i , rho , delta , 1.0 ) ;
-  compute_s3( sum_2 , u , v , lat , i , rho , delta , 1.0 ) ;
-  compute_s4( sum_2 , u , v , lat , i , rho , delta , 1.0 ) ;
-#endif
+  compute_s1( sum_1 , u , v , lat , i , mu , nu ) ;
+  compute_s2( sum_1 , u , v , lat , i , mu , nu ) ;
+  compute_s3( sum_1 , u , v , lat , i , mu , nu ) ;
+  compute_s4( sum_1 , u , v , lat , i , mu , nu ) ;
+  compute_s1( sum_2 , u , v , lat , i , rho , delta ) ;
+  compute_s2( sum_2 , u , v , lat , i , rho , delta ) ;
+  compute_s3( sum_2 , u , v , lat , i , rho , delta ) ;
+  compute_s4( sum_2 , u , v , lat , i , rho , delta ) ;
+  #endif
   // and we are done, perform the measurement
   compute_GG_q( sum_1 , sum_2 , plaq_t , plaq_sp , qtop ) ;
-#ifdef PLAQUETTE_FMUNU
-  *plaq_sp = 2.0 * ( (double)NC - (double)trace( sum_1 ) ) ;
-  *plaq_t  = 2.0 * ( (double)NC - (double)trace( sum_2 ) ) ;
-#endif
 #endif
   return ;
 }
@@ -1024,12 +1009,6 @@ compute_Gmunu( double *__restrict GG ,
   }
   *GG = ( plaq_sp + plaq_t ) ;
   *qtop = Q ;
-  // just to accommodate for the sum over 4 of the others
-#ifdef PLAQUETTE_FMUNU
-  *GG   *= 16.0 ;
-  *qtop *= 16.0 ;
-#endif
-
   return ;
 }
 
@@ -1074,17 +1053,7 @@ compute_Gmunu_th( double *red ,
 			  i , 3 , 2 , 0 , 1  ) ;
     red[ 0 + CLINE*th ] += plt + plsp ;
     red[ 1 + CLINE*th ] += q ;
-  }
-
-  // plaquette and clover differ by 4*4
-#ifdef PLAQUETTE_FMUNU
-  #pragma omp for private(i)
-  for( i = 0 ; i < Latt.Nthreads ; i++ ) {
-    red[ 0 + i*CLINE ] *= 16.0 ;
-    red[ 1 + i*CLINE ] *= 16.0 ;
-  }
-#endif
-  
+  } 
   return ;
 }
 
@@ -1107,17 +1076,13 @@ compute_Gmunu_array( GLU_complex *__restrict qtop , // an LVOLUME array for the 
   for( i = 0 ; i < LVOLUME ; i++ ) {
     GLU_complex Qmat[ NCNC ] GLUalign ;
     compute_q( Qmat , lat , i , 3 , 0 , 1 , 2  ) ;
-    qtop[i] = trace( Qmat ) ;
+    qtop[i]  = trace( Qmat ) ;
     //
     compute_q( Qmat , lat , i , 3 , 1 , 2 , 0  ) ;
     qtop[i] += trace( Qmat ) ;
     //
     compute_q( Qmat , lat , i , 3 , 2 , 0 , 1  ) ;
     qtop[i] += trace( Qmat ) ;
-
-    #ifdef PLAQUETTE_FMUNU
-    qtop[i] *= 16 ;
-    #endif
   }
   return ;
 }

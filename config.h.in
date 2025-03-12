@@ -154,9 +154,6 @@
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
-/* Plaquette field strength tensor. */
-#undef PLAQUETTE_FMUNU
-
 /* Nonexceptional projection index. */
 #undef PROJ_GRACEY
 

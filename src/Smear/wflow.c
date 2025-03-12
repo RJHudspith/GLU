@@ -25,7 +25,7 @@ Copyright 2013-2025 Renwick James Hudspith
    I offer two codes, like the HYP it
    includes memory wasteful and a memory
    cheaper version. The adaptive version, which I recommend you use
-   can be found in adaptive.c
+   can be found in adaptive_flow.c
  */
 #include "Mainfile.h"
 

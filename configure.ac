@@ -27,7 +27,6 @@
 ## --enable-verbiage :: more verbose output than usual
 ## --enable-ascii_check :: prints to stdout the data we would write to our
 ##                         binary files
-## --enable-PLAQUETTE_FMUNU :: plaquette defintition of field strength tensor
 ## --enable-CLOVER_IMPROVE :: Are we using the O(a^4) clover def?
 ## --with-CLOVER_K5= :: specify the multiplicative term for the 3x3 wilson
 ##                      loop for the heavily improved field strength tensor
@@ -428,17 +427,6 @@ AC_ARG_ENABLE([GIVENS_APE],
 	     AC_DEFINE([GIVENS_APE],[],[Trace maximisation routine for APE projection.])
 	     ;;
 	*) AC_MSG_ERROR([bad value ${enableval} for --enable-GIVENS_APE]) ;;
-	esac
-	],[])
-
-## plaquette field strength tensor
-AC_ARG_ENABLE([PLAQUETTE_FMUNU],
-	[ --enable-PLAQUETTE_FMUNU ],
-	[case "${enableval}" in
-	yes) AC_MSG_NOTICE([Simple plaquette definition of the field strength tensor.])	
-	     AC_DEFINE([PLAQUETTE_FMUNU],[],[Plaquette field strength tensor.])
-	     ;;
-	*) AC_MSG_ERROR([bad value ${enableval} for --enable-PLAQUETTE_FMUNU]) ;;
 	esac
 	],[])
 

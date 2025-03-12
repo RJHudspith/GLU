@@ -100,9 +100,8 @@ flow_directions( struct s_site *__restrict lat2 ,
 				  const GLU_complex link[ NCNC ] , 
 				  const double smear_alpha ) )
 {
-  GLU_complex staple[ NCNC ] GLUalign , temp[ NCNC ] GLUalign ;
+  GLU_complex staple[ NCNC ] GLUalign = {} , temp[ NCNC ] GLUalign ;
   GLU_complex short_staple[ HERMSIZE ] GLUalign ; // does not need to be inited
-  zero_mat( staple ) ;
   // first element
   #ifdef IMPROVED_SMEARING
   all_staples_improve( staple , lat , it , mu , ND , SM_TYPE ) ;
