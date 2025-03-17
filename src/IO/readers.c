@@ -224,11 +224,11 @@ lattice_reader_suNC_posix( struct site *lat ,
   size_t i ;
 #pragma omp parallel for private(i) reduction(+:k) reduction(^:sum29) reduction(^:CRCsum29)
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    double dbl_temp[ ND*LOOP_VAR ] = {} ;
-    float flt_temp[ ND*LOOP_VAR ] = {} ;
+    double dbl_temp[ ND*LOOP_VAR ] ;
+    float flt_temp[ ND*LOOP_VAR ] ;
 
     // the one in our own precision
-    GLU_real utemp[ LOOP_VAR] = {} ;
+    GLU_real utemp[ LOOP_VAR] ;
 
     // checksum shit
     size_t rank29 = (ND*LOOP_VAR*i)%29 , CRCrank29 = i%29 ;
