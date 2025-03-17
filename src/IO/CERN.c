@@ -131,7 +131,7 @@ read_CLS_field( struct site *__restrict lat ,
   }
   
   // memory map the file so the OS can just deal with it
-  char *mm = mmap( NULL , sb.st_size , PROT_READ , MAP_PRIVATE , fd , 0 ) ;
+  char *mm = mmap( NULL , sb.st_size , PROT_READ , MAP_SHARED | MAP_POPULATE , fd , 0 ) ;
 
   // usual CERN junk at the top of the file : dimensions and plaquette
   uint32_t *dims = (uint32_t*)mm ;

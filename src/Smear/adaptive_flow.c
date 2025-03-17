@@ -1,5 +1,5 @@
 /*
-Copyright 2013-2025 Renwick James Hudspith
+  Copyright 2013-2025 Renwick James Hudspith
 
     This file (adaptive_flow.c) is part of GLU.
 
@@ -64,6 +64,10 @@ enum adaptive_control{ ADAPTIVE_BIG_NUMBER = 20 } ;
 // the error between the two plaquettes
 static const double ADAPTIVE_EPS = 2E-7 ;
 
+// cutoff in adaptive stepsize where we just do normal gradient flow with this value
+// I have reason to suspect that around 0.14 is the turning point so 0.125 should be safe enough
+#define MAX_DT (0.125)
+
 // adaptive parameters have been tuned to be reasonably well behaved
 #define ADAPTIVE_SHRINK (-0.33)
 #define ADAPTIVE_GROWTH (-0.25)
@@ -76,6 +80,20 @@ setred( struct wflow_temps *WF )
 #pragma omp for private(i)
   for( i = 0 ; i < CLINE*Latt.Nthreads ; i++ ) {
     WF -> red[i] = 0.0 ;
+  }
+}
+
+// copy lattices could be a pointer swap
+static inline void
+copy_lats( struct site *lat2 ,
+	   const struct site *lat )
+{
+  size_t i ;
+#pragma omp for private(i) collapse(2)
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    for( size_t mu = 0 ; mu < ND ; mu++ ) {
+      equiv( lat2[i].O[mu] , lat[i].O[mu] ) ;
+    }
   }
 }
 
@@ -94,7 +112,7 @@ get_plaq_th( struct site *lat ,
 
 // two step adaptive routine
 static int
-twostep_adaptive( struct site *lat ,
+twostep_adaptive( const struct site *lat ,
 		  struct wflow_temps WF ,
 		  double *dt ,
 		  double *errmax ,
@@ -110,15 +128,10 @@ twostep_adaptive( struct site *lat ,
   *errmax = 10. ;
   size_t counter = 0 , i , mu ;
 
-  // if we hit the 1/8 we just set it to that and do a normal step
-  if( *dt >= 0.125 && t > 1.0 ) {
-    *dt = 0.125 ;
-    #pragma omp for private(i) collapse(2)
-    for( i = 0 ; i < LVOLUME ; i++ ) {
-      for( mu = 0 ; mu < ND ; mu++ ) {
-	equiv( WF.lat_two[i].O[mu] , lat[i].O[mu] ) ;
-      }
-    }
+  // if we hit 0.2 set that as the normal step
+  if( *dt >= MAX_DT && t > 1.0 ) {
+    *dt = MAX_DT ;
+    copy_lats( WF.lat_two , lat ) ;
     setred( &WF ) ;
     step_distance( WF.lat_two , WF , *dt , SM_TYPE , project ) ;
     *new_plaq = get_plaq_th( WF.lat_two , WF ) ;
@@ -131,13 +144,8 @@ twostep_adaptive( struct site *lat ,
   {
     #pragma omp barrier
   }
-  
-#pragma omp for private(i) collapse(2)
-  for( i = 0 ; i < LVOLUME ; i++ ) {
-    for( mu = 0 ; mu < ND ; mu++ ) {
-      equiv( WF.lat_two[i].O[mu] , lat[i].O[mu] ) ;
-    }
-  }
+
+  copy_lats( WF.lat_two , lat ) ;
   setred( &WF ) ;
   
   // step forward once and write into lat_two
@@ -145,13 +153,8 @@ twostep_adaptive( struct site *lat ,
   
   // compute the one-step first comparison
   const double old_plaq = get_plaq_th( WF.lat_two , WF ) ;
-  
-#pragma omp for private(i) collapse(2)
-  for( i = 0 ; i < LVOLUME ; i++ ) {
-    for( mu = 0 ; mu < ND ; mu++ ) {
-      equiv( WF.lat_two[i].O[mu] , lat[i].O[mu] ) ;
-    }
-  }
+
+  copy_lats( WF.lat_two , lat ) ;
   setred( &WF ) ;
     
   // and step forward twice and write into lat_two
@@ -263,8 +266,7 @@ flow_adaptive_RK3( struct site *__restrict lat ,
     double delta_t = SIGN * Latt.sm_alpha[0] ;
 
     curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
-    update_meas_list( head , curr , WF.red ,
-		      new_plaq , t , delta_t , 0.0 , lat ) ;
+    update_meas_list( head , curr , WF.red , new_plaq , t , delta_t , 0.0 , lat ) ;
     head = curr ;
     double flow = 0.0 , flow_next = curr -> Gt ;
     double yscal = curr -> avplaq , wapprox = 0.0 ;
@@ -289,15 +291,11 @@ flow_adaptive_RK3( struct site *__restrict lat ,
     const double yscal_new = new_plaq ;
     yscal = 2.0 * yscal_new - yscal ;
     
-    // overwrite lat .. 
-    #pragma omp for private(i) collapse(2)
-    for( i = 0 ; i < LVOLUME ; i++ ) {
-      for( size_t mu = 0 ; mu < ND ; mu++ ) {
-	equiv( lat[i].O[mu] , WF.lat_two[i].O[mu] ) ;
-      }
-    }
+    // overwrite lat ..
+    copy_lats( lat , WF.lat_two ) ;
 
-    t += delta_t ; // add one time step to the overall time
+    // add one time step to the overall time
+    t += delta_t ;
     
     // If we get stuck in a rut of updating by zero we leave
     if( fabs( delta_t ) < DBL_MIN ) {
@@ -327,11 +325,6 @@ flow_adaptive_RK3( struct site *__restrict lat ,
     #ifndef WFLOW_TIME_ONLY
     if( fabs( T0_STOP - flow ) <= ( T0_STOP * FINETWIDDLE ) ) {
       int past_the_post = 0 ;
-      // step backwards 1/2 step I don't love this tbH
-      if( flow > T0_STOP ) {
-	delta_t = -delta_t/2 ;
-	stept() ;
-      }
       // step forwards
       delta_t = t/100. ;
     t0_top :
@@ -358,18 +351,17 @@ flow_adaptive_RK3( struct site *__restrict lat ,
     #endif
     
     // Increase the step size ...
-    if( delta_t < 0.125 ) {
+    if( delta_t < MAX_DT ) {
       if( errmax > ADAPTIVE_ERRCON ) {
 	delta_t = ADAPTIVE_SAFE * delta_t * pow( errmax , ADAPTIVE_GROWTH ) ;
       } else {
-	//delta_t = ADAPTIVE_SAFE * 5.0 * delta_t ;
 	delta_t = ADAPTIVE_SAFE * 4.0 * delta_t ;
       }
     }
     count++ ;
 
     // while loop
-    if( ( wapprox < W0_STOP*1.5 ) &&
+    if( ( wapprox < W0_STOP*1.3 ) &&
 	( count < smiters ) &&
 	( t < WFLOW_TIME_STOP ) &&
 	FLAG == GLU_SUCCESS ) goto top ; 
@@ -406,3 +398,9 @@ flow_adaptive_RK3( struct site *__restrict lat ,
 
   return FLAG ;
 }
+
+#undef MAX_DT
+#undef ADAPTIVE_SHRINK
+#undef ADAPTIVE_GROWTH
+#undef ADAPTIVE_SAFE
+

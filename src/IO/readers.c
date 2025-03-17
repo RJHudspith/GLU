@@ -193,8 +193,9 @@ lattice_reader_suNC_posix( struct site *lat ,
     exit(1) ;
   }
 
-  char *mm = mmap( NULL , sb.st_size , PROT_READ , MAP_PRIVATE , fd , 0 ) ;
-  // fast forward to the beginning of the binary data
+  // create mmap instance and try and reduce pagefaults
+  char *mm = mmap( NULL , sb.st_size , PROT_READ , MAP_SHARED | MAP_POPULATE , fd , 0 ) ;
+  madvise( mm , sb.st_size , MADV_HUGEPAGE ) ;
   mm += bstart ;
 
   // pointers to the start of the binary data
@@ -224,11 +225,11 @@ lattice_reader_suNC_posix( struct site *lat ,
   size_t i ;
 #pragma omp parallel for private(i) reduction(+:k) reduction(^:sum29) reduction(^:CRCsum29)
   for( i = 0 ; i < LVOLUME ; i++ ) {
-    double dbl_temp[ ND*LOOP_VAR ] ;
-    float flt_temp[ ND*LOOP_VAR ] ;
+    double dbl_temp[ ND*LOOP_VAR ] GLUalign ;
+    float flt_temp[ ND*LOOP_VAR ] GLUalign ;
 
     // the one in our own precision
-    GLU_real utemp[ LOOP_VAR] ;
+    GLU_real utemp[ LOOP_VAR] GLUalign ;
 
     // checksum shit
     size_t rank29 = (ND*LOOP_VAR*i)%29 , CRCrank29 = i%29 ;
