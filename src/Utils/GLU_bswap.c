@@ -72,22 +72,32 @@ SwapByteOrder_64( uint64_t value ) {
 #endif
 }
 
-// this is for 16 bits, i.e. shorts
+// this is for 16 bits, i.e. shorts only unthreaded
 void
 bswap_16( const size_t n , void *u ) 
 {
   uint16_t *T = u ;
   size_t i ;
-#pragma omp parallel for private(i)
   for( i = 0 ; i < n ; i++ ) {
     *( T + i ) = SwapByteOrder_16( *( T + i ) ) ;
   }
   return ;
 } 
 
-// this is for 32 bits, i.e. float and int
+// this is for 32 bits, i.e. float and int unthreaded and threaded
 void
 bswap_32( const size_t n , void *u ) 
+{
+  uint32_t *T = u ;
+  size_t i ;
+  for( i = 0 ; i < n ; i++ ) {
+    *( T + i ) = SwapByteOrder_32( *( T + i ) ) ;
+  }
+  return ;
+}
+
+void
+bswap_32_par( const size_t n , void *u ) 
 {
   uint32_t *T = u ;
   size_t i ;
@@ -98,9 +108,20 @@ bswap_32( const size_t n , void *u )
   return ;
 } 
 
-// this one is for 64 bits, double and double complex
+// this one is for 64 bits, double and double complex unthreaded and threaded
 void
 bswap_64( const size_t n , void *u ) 
+{
+  uint64_t *T = u ;
+  size_t i ;
+  for( i = 0 ; i < n ; i++ ) {
+    *( T + i ) = SwapByteOrder_64( *( T + i ) ) ;
+  }
+  return ;
+}
+
+void
+bswap_64_par( const size_t n , void *u ) 
 {
   uint64_t *T = u ;
   size_t i ;

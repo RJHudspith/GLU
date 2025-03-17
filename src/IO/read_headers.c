@@ -230,7 +230,7 @@ get_header_data_NERSC( FILE *CONFIG ,
 		       struct head_data *HEAD_DATA ,
 		       const GLU_bool VERB )
 {
-  struct QCDheader *get_header( FILE *__restrict in ) , * hdr ; 
+  struct QCDheader *get_header( FILE *__restrict in ) , *hdr ; 
   char *str ; 
 
   hdr = get_header( CONFIG ) ; 

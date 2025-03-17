@@ -20,7 +20,6 @@ Copyright 2013-2025 Renwick James Hudspith
    @file projectors.c
    @brief definitions for the projections I use in the smearing and wilson flow rountines ...
  */
-
 #include "Mainfile.h"
 
 #include "plaqs_links.h"  // needed in print_smearing_obs()

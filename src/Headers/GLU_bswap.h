@@ -1,20 +1,20 @@
 /*
-Copyright 2013-2025 Renwick James Hudspith
-
-    This file (GLU_bswap.h) is part of GLU.
-
-    GLU is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    GLU is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with GLU.  If not, see <http://www.gnu.org/licenses/>.
+  Copyright 2013-2025 Renwick James Hudspith
+  
+  This file (GLU_bswap.h) is part of GLU.
+  
+  GLU is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  GLU is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU General Public License
+  along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
    @file GLU_bswap.h
@@ -45,6 +45,16 @@ bswap_32( const size_t n ,
 	  void *u ) ;
 
 /**
+   @fn void bswap_32_par( const size_t n , void *u ) 
+   @brief swaps the bytes of a 32 bit array parallel loop over n
+   @param n :: length of the array
+   @param u :: pointer to memory
+ */
+void
+bswap_32_par( const size_t n , 
+	      void *u ) ;
+
+/**
    @fn void bswap_64( const size_t n , void *u ) 
    @brief swaps the bytes of a 64 bit array
    @param n :: length of the array
@@ -53,5 +63,15 @@ bswap_32( const size_t n ,
 void
 bswap_64( const size_t n , 
 	  void *u ) ;
+
+/**
+   @fn void bswap_64_par( const size_t n , void *u ) 
+   @brief swaps the bytes of a 64 bit array parallel loop over n
+   @param n :: length of the array
+   @param u :: pointer to memory
+ */
+void
+bswap_64_par( const size_t n , 
+	      void *u ) ;
 
 #endif

@@ -148,17 +148,17 @@ swap_for_output( GLU_real *uout ,
 #ifdef OUT_BIG
   if( !WORDS_BIGENDIAN ) { 
     #ifdef SINGLE_PREC
-    bswap_32( SIZE , uout ) ; 
+    bswap_32_par( SIZE , uout ) ; 
     #else
-    bswap_64( SIZE , uout ) ; 
+    bswap_64_par( SIZE , uout ) ; 
     #endif
   }
 #else // write a in little endian format
   if( WORDS_BIGENDIAN ) {
     #ifdef SINGLE_PREC
-    bswap_32( SIZE , uout ) ; 
+    bswap_32_par( SIZE , uout ) ; 
     #else
-    bswap_64( SIZE , uout ) ; 
+    bswap_64_par( SIZE , uout ) ; 
     #endif
   }
 #endif

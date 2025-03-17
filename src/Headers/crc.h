@@ -42,7 +42,7 @@ crc32( uint32_t crc ,
    @param nbytes :: total number of bytes allocated in memptr
  */
 void 
-CKSUM_ADD( void *memptr , 
+CKSUM_ADD( const void *memptr , 
 	   const uint32_t nbytes ) ;
 
 /**

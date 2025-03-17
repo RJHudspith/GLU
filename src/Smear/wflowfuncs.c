@@ -351,9 +351,9 @@ allocate_WF( struct wflow_temps *WF ,
       FLAG = GLU_FAILURE ;
     }
   } else {
-    if( ( WF -> lat2 = allocate_s_site( LVOLUME , ND , NCNC ) ) == NULL ||
-	( WF -> Z    = allocate_s_site( LVOLUME , ND , TRUE_HERM ) ) == NULL ||
-	( WF->red = malloc( CLINE*Latt.Nthreads*sizeof(double)) ) == NULL ) {
+    if( ( WF->lat2 = allocate_s_site( LVOLUME , ND , NCNC ) ) == NULL ||
+	( WF->Z    = allocate_s_site( LVOLUME , ND , TRUE_HERM ) ) == NULL ||
+	( WF->red  = malloc( CLINE*Latt.Nthreads*sizeof(double)) ) == NULL ) {
       fprintf( stderr , "[WFLOW] temporary field allocation failure\n" ) ;
       FLAG = GLU_FAILURE ;
     }
@@ -563,8 +563,8 @@ step_distance_memcheap( struct site *__restrict lat ,
   }
   // flow forwards one timestep
   RK3step_memcheap( WF , lat , mseventeenOthsix , rk1 , SM_TYPE , project ) ;
-  RK3step_memcheap( WF , lat , eightOnine , rk2 , SM_TYPE , project ) ;
-  RK3step_memcheap( WF , lat , mthreeOfour , rk3 , SM_TYPE , project ) ;
+  RK3step_memcheap( WF , lat , eightOnine       , rk2 , SM_TYPE , project ) ;
+  RK3step_memcheap( WF , lat , mthreeOfour      , rk3 , SM_TYPE , project ) ;
   return ;
 }
 

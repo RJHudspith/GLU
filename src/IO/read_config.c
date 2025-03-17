@@ -148,16 +148,7 @@ get_config_SUNC( FILE *__restrict CONFIG ,
   case MILC_HEADER :   // MILC's binary data is the same
   case NERSC_HEADER :
   case JLQCD_HEADER :
-    if( HEAD_DATA.config_type == OUTPUT_SMALL ||
-	HEAD_DATA.config_type == OUTPUT_GAUGE ||
-	HEAD_DATA.config_type == OUTPUT_NCxNC ) {
-      const int SAFETY = have_memory_readers_writers( HEAD_DATA.config_type ) ;
-      if( SAFETY != FAST ) {
-	return lattice_reader_suNC_cheaper( lat , CONFIG , HEAD_DATA ) ;
-      } else {
-	return lattice_reader_suNC( lat , CONFIG , HEAD_DATA ) ;
-      }
-    } break ;
+    return lattice_reader_suNC_posix( lat , config_in , CONFIG , HEAD_DATA ) ;
   case HIREP_HEADER : // HIREP uses a weird geometry compared to everyone else
     read_gauge_field( lat , CONFIG , &chksum ) ;
     return chksum ;

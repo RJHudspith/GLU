@@ -1,26 +1,34 @@
 /*
-Copyright 2013-2025 Renwick James Hudspith
-
-    This file (readers.c) is part of GLU.
-
-    GLU is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    GLU is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with GLU.  If not, see <http://www.gnu.org/licenses/>.
+  Copyright 2013-2025 Renwick James Hudspith
+  
+  This file (readers.c) is part of GLU.
+  
+  GLU is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  GLU is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU General Public License
+  along with GLU.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
    @file readers.c
-   @brief binary data file reader supports #config_size outputs
+   @brief binary data file reader fully POSIX'd
  */
 #include "Mainfile.h"
+
+// POSIX IO crap
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "crc.h"           // for the scidac circular checksum
 #include "LU.h"            // LU_det_overwrite()
@@ -39,7 +47,7 @@ complete_NCxNC( GLU_complex *__restrict O ,
 }
 
 // recombines O from the top NC-1 rows of matrix
-static void 
+static inline void 
 complete_top( GLU_complex *__restrict O , 
 	      const GLU_real *__restrict uout ) 
 {
@@ -98,15 +106,14 @@ construct_loop_variables( size_t *LATT_LOOP ,
     return GLU_SUCCESS ;
   default :
     // actually should try and read an NCxNC config perhaps?
-    fprintf( stderr , "[IO] Unrecognised input type .. "
-	     "Leaving in disgust\n" ) ;
+    fprintf( stderr , "[IO] Unrecognised input type .. Leaving in disgust\n" ) ;
     return GLU_FAILURE ;
   }
 }
 
 // CRC checksum calculator
 // name and idea come from ETMC
-static void 
+static inline void 
 DML_checksum_accum( uint32_t *checksuma , 
 		    uint32_t *checksumb , 
 		    const uint32_t rank, 
@@ -123,7 +130,7 @@ DML_checksum_accum( uint32_t *checksuma ,
 
 #if NC<4
 // recreate O from the "short" definition
-static void 
+static inline void 
 exhume_O( GLU_complex *__restrict S , 
 	  const GLU_real *__restrict uout ) 
 {
@@ -152,24 +159,23 @@ rebuild_lat( GLU_complex *__restrict link ,
     complete_top( link , utemp ) ;
     return ;
   case OUTPUT_NCxNC :
-    complete_NCxNC( link , utemp ) ;
+    memcpy( link , utemp , NCNC*sizeof( GLU_complex ) ) ;
     return ;
   default : return ;
   }  
   return ;
 }
 
-//////////// MEMSPENSIVE VERSION ///////////////
 uint32_t
-lattice_reader_suNC( struct site *lat , 
-		     FILE *__restrict in , 
-		     const struct head_data HEAD_DATA )
+lattice_reader_suNC_posix( struct site *lat ,
+			   const char *config_in ,
+			   FILE *__restrict in ,
+			   const struct head_data HEAD_DATA )
 {
-  // this is checked previously, nice to be certain though
-  if( in == NULL ) {
-    fprintf( stderr , "[IO] Error opening config file!!\n" ) ; 
-    return GLU_FAILURE ; 
-  }
+  // get the current position in the file as we should have read the file header information
+  const size_t bstart = ftell( in ) ;
+
+  fprintf( stdout , "[IO] file offset %zu\n" , bstart ) ;
 
   // loop variables
   size_t LOOP_VAR , LATT_LOOP ;
@@ -177,319 +183,127 @@ lattice_reader_suNC( struct site *lat ,
 				HEAD_DATA.config_type ) == GLU_FAILURE ) {
     return GLU_FAILURE ;
   }
+  fprintf( stdout , "[IO] LOOP_VAR = %zu\n" , LOOP_VAR ) ;
 
-  static double *uind , *p ; 
-  static float *uin , *q ; 
-  uint32_t CRCsum29 = 0 , CRCsum31 = 0 , CRC_BQCD = 0 ;
-
-  if( HEAD_DATA.precision == DOUBLE_PREC ) {
-    uind = ( double* )malloc( LATT_LOOP * sizeof( double ) ) ; 
-    if( fread( uind , sizeof( double ) , LATT_LOOP , in ) != LATT_LOOP ) {
-      fprintf( stderr , "[IO] Configuration File reading failure "
-	       ".. Leaving \n" ) ;
-      free( uind ) ;
-      return GLU_FAILURE ;
-    }
-    // scidac checksum is on the RAW binary data, not the byteswapped
-    if( Latt.head == SCIDAC_HEADER ||
-	Latt.head == ILDG_SCIDAC_HEADER ) {
-      size_t i ;
-      #pragma omp parallel for private(i) reduction(^:CRCsum29) reduction(^:CRCsum31)
-      for( i = 0 ; i < LVOLUME ; i++ ) {
-	const uint32_t rank29 = i % 29 ;
-	const uint32_t rank31 = i % 31 ;
-	const uint32_t work =
-	  (uint32_t)crc32(0, (unsigned char*)( uind + i*ND*LOOP_VAR ) ,
-			  sizeof(double) * ND * LOOP_VAR );
-	CRCsum29 = CRCsum29 ^ ( work<<rank29 | work>>(32-rank29));
-	CRCsum31 = CRCsum31 ^ ( work<<rank31 | work>>(32-rank31) );
-	// TDOD -> an unthreaded bswap here ?
-      }
-    }
-    // BQCD checksum is just the crc of the whole thing and is not thread safe
-    // for the moment possibly for ever
-    if( Latt.head == ILDG_BQCD_HEADER ) {
-      size_t i ;
-      for( i = 0 ; i < LVOLUME ; i++ ) {
-	// BQCD's
-	CKSUM_ADD( ( uin + ( i * ND * LOOP_VAR ) ) , 
-		   sizeof(float) * ND * LOOP_VAR ) ;
-      }
-      uint32_t nbytes ;
-      CKSUM_GET( &CRC_BQCD , &nbytes ) ;
-    }
-    // and then we do the byte swap
-    if( HEAD_DATA.endianess != WORDS_BIGENDIAN ) {
-      bswap_64( LATT_LOOP , uind ) ;  
-    }
-    p = uind ; 
-  } else {
-    uin = ( float* )malloc( LATT_LOOP * sizeof( float ) ) ; 
-    if( fread( uin , sizeof( float ) , LATT_LOOP  , in ) != LATT_LOOP ) {
-      fprintf( stderr , "[IO] Configuration File reading failure "
-	       ".. Leaving \n" ) ;
-      free( uin ) ;
-      return GLU_FAILURE ;
-    }
-    // ILDG checksum is on the raw data
-    if( Latt.head == SCIDAC_HEADER ||
-	Latt.head == ILDG_SCIDAC_HEADER ) {
-      size_t i ;
-      #pragma omp parallel for private(i) reduction(^:CRCsum29) reduction(^:CRCsum31)
-      for( i = 0 ; i < LVOLUME ; i++ ) {
-	const uint32_t rank29 = i % 29 ;
-	const uint32_t rank31 = i % 31 ;
-	const uint32_t work =
-	  (uint32_t)crc32(0, (unsigned char*)( uin + i*ND*LOOP_VAR ) ,
-			  sizeof(float) * ND * LOOP_VAR );
-	CRCsum29 = CRCsum29 ^ ( work<<rank29 | work>>(32-rank29));
-	CRCsum31 = CRCsum31 ^ ( work<<rank31 | work>>(32-rank31) );
-	// TDOD -> an unthreaded bswap here ?
-      }
-    }
-    // BQCD checksum is just the crc of the whole thing and is kinda expensive
-    if( Latt.head == ILDG_BQCD_HEADER ) {
-      size_t i ;
-      for( i = 0 ; i < LVOLUME ; i++ ) {
-	// BQCD's
-	CKSUM_ADD( ( uin + ( i * ND * LOOP_VAR ) ) , 
-		   sizeof(float) * ND * LOOP_VAR ) ;
-      }
-      uint32_t nbytes ;
-      CKSUM_GET( &CRC_BQCD , &nbytes ) ;
-    }
-    // and byteswap if necessary
-    if( HEAD_DATA.endianess != WORDS_BIGENDIAN ) {
-      bswap_32( LATT_LOOP , uin ) ;
-    }
-    q = uin ;
+  // memory map the file
+  int fd = open( config_in , O_RDONLY , S_IRUSR ) ;
+  struct stat sb ;
+  if( fstat( fd , &sb ) == -1 ) {
+    perror( "fstat" ) ;
+    exit(1) ;
   }
 
-  // compute the crcs and poke into gauge links
-  uint32_t k = 0 , sum29 = 0 , sum31 = 0 ;
-  size_t i ;
-  #pragma omp parallel for private(i) reduction(+:k) reduction(^:sum29) reduction(^:sum31)
-  for( i = 0 ; i < LVOLUME ; i++ ) {
-    // t is the AntiHermitian_projised idx
-    size_t t = ND * LOOP_VAR * i ;
-    size_t rank29 = t % 29 ;
-    size_t rank31 = t % 31 ;
-    register uint32_t k_loc = 0 ;
-    register uint32_t sum29_loc = 0 , sum31_loc = 0 ;
+  char *mm = mmap( NULL , sb.st_size , PROT_READ , MAP_PRIVATE , fd , 0 ) ;
+  // fast forward to the beginning of the binary data
+  mm += bstart ;
 
-    // general variables ...
-    GLU_real utemp[ LOOP_VAR ] ;
-    uint32_t res = 0 ;
-    size_t mu , j , count = 0 ;
-    for( mu = 0 ; mu < ND ; mu++ ) {
-      for( j = 0 ; j < LOOP_VAR ; j++ ) {
-	// should I shuffle this around ?
-	if( HEAD_DATA.precision == DOUBLE_PREC ) {
-	  // compute the checksum ...
-	  uint32_t *buf = ( uint32_t* )( p + t ) ; 
-	  res = *buf + *( buf + 1 ) ; 
-	  // put value into temporary
-	  *( utemp + j ) = ( GLU_real )*( p + t ) ;
-	} else {
-	  // nersc checksum ...
-	  res = *( uint32_t *)( q + t ) ;
-	  // and put the value in the temporary
-	  *( utemp + j ) = ( GLU_real )*( q + t ) ; 
-	}
-	count++ ;
+  // pointers to the start of the binary data
+  const double *uind = (const double*)mm ;
+  const float  *uinf = (const float*)mm ;
 
-	// milc checksums ...
-	sum29_loc ^= (uint32_t)( res << rank29 | res >> ( 32 - rank29 ) ) ;
-	sum31_loc ^= (uint32_t)( res << rank31 | res >> ( 32 - rank31 ) ) ;
-
-	/// and perform the mods
-	rank29 = ( rank29 < 28 ) ? rank29 + 1 : 0 ;
-	rank31 = ( rank31 < 30 ) ? rank31 + 1 : 0 ;
-
-	// local sum
-	k_loc += res ; 
-
-	t++ ;
-      }
-      // smash all the read values into lat
-      rebuild_lat( lat[i].O[mu] , utemp , HEAD_DATA.config_type ) ;
-    }
-    // reductions go here ...
-    // nersc
-    k = k + (uint32_t)k_loc ;
-
-    // milc
-    sum29 = sum29 ^ (uint32_t)sum29_loc ;
-    sum31 = sum31 ^ (uint32_t)sum31_loc ;
-  }
-
-  if( HEAD_DATA.precision == DOUBLE_PREC ) {
-    free( uind ) ; 
-  } else {
-    // reunitarise up to working precision
-    #ifndef SINGLE_PREC
-    latt_reunitU( lat ) ;
-    #endif
-    free( uin ) ;
-  }
-
-  // if we are reading a MILC file we output the sum29 checksum
-  switch( Latt.head ) {
-  case NERSC_HEADER : return k ;
-  case MILC_HEADER : return sum29 ;
-  case ILDG_SCIDAC_HEADER :
-  case SCIDAC_HEADER : return CRCsum29 ;
-  case ILDG_BQCD_HEADER : return CRC_BQCD ;
-  case LIME_HEADER : return GLU_SUCCESS ;
-  case JLQCD_HEADER : return GLU_SUCCESS ;
-  default : return GLU_FAILURE ; // should print an error here
-  }
-}
-
-// MEMCHEAP READER
-uint32_t
-lattice_reader_suNC_cheaper( struct site *lat , 
-			     FILE *__restrict in , 
-			     const struct head_data HEAD_DATA )
-{
-  // this is checked previously, nice to be certain though
-  if( in == NULL ) {
-    fprintf( stderr , "[IO] Error opening config file!!..."
-	     "Returning with error \n" ) ; 
-    return GLU_FAILURE ; 
-  }
-
-  // loop variables
-  size_t LOOP_VAR , LATT_LOOP ;
-  if( construct_loop_variables( &LATT_LOOP , &LOOP_VAR , 
-				HEAD_DATA.config_type ) == GLU_FAILURE ) {
-    return GLU_FAILURE ;
-  }
-
-  static double *uind , *p ; 
-  static float *uin , *q ; 
-
-  if( HEAD_DATA.precision == DOUBLE_PREC ) {
-    uind = ( double* )malloc( ND*LOOP_VAR * sizeof( double ) ) ; 
-  } else {
-    uin = ( float* )malloc( ND*LOOP_VAR * sizeof( float ) ) ; 
-  }
-
-  uint32_t k = 0 , sum29 = 0 , sum31 = 0 ; // NERSC & MILC checksums ...
-  uint32_t CRCsum29 = 0 , CRCsum31 = 0 ;
-  size_t i ;
-  // do this in serial reads in site by site
-  for( i = 0 ; i < LVOLUME ; i++ ) {
-
-    // read in a site, could we not use fseek to allow this to be done in parallel?
+  // don't know why I want to support this
+  uint32_t CRC_BQCD = 0 ;
+  if( Latt.head == ILDG_BQCD_HEADER ) {
     if( HEAD_DATA.precision == DOUBLE_PREC ) {
-      if( fread( uind , sizeof( double ) , ND*LOOP_VAR , in ) != ND*LOOP_VAR ) {
-	printf("[IO] Configuration File reading failure .. Leaving \n" ) ;
-	free( uind ) ;
-	return GLU_FAILURE ;
+      for( size_t i = 0 ; i < LVOLUME ; i++ ) {
+	CKSUM_ADD( ( uind + ( i*ND*LOOP_VAR ) ) , sizeof(double)*ND*LOOP_VAR ) ;
       }
-      DML_checksum_accum( &CRCsum29 , &CRCsum31 , 
-			  i , (char*)( uind ) ,
-			  sizeof(double) * ND * LOOP_VAR ) ;
-      // BQCD's
-      CKSUM_ADD( uind , sizeof(double) * ND * LOOP_VAR ) ;
-      if( HEAD_DATA.endianess != WORDS_BIGENDIAN ) {
-	bswap_64( ND*LOOP_VAR , uind ) ;  
+    } else {
+      for( size_t i = 0 ; i < LVOLUME ; i++ ) {
+	CKSUM_ADD( ( uinf + ( i*ND*LOOP_VAR ) ) , sizeof(float)*ND*LOOP_VAR ) ;
       }
-      p = uind ;
-    } else { 
-      if( fread( uin , sizeof( float ) , ND*LOOP_VAR , in ) != ND*LOOP_VAR ) {
-	printf("[IO] Configuration File reading failure .. Leaving \n" ) ;
-	free( uin ) ;
-	return GLU_FAILURE ;
-      }
-      DML_checksum_accum( &CRCsum29 , &CRCsum31 , 
-			  i , (char*)( uin ) ,
-			  sizeof(float) * ND * LOOP_VAR ) ;
-      // BQCD's
-      CKSUM_ADD( uin , sizeof(float) * ND * LOOP_VAR ) ;
-      if( HEAD_DATA.endianess != WORDS_BIGENDIAN ) {
-	bswap_32( ND*LOOP_VAR , uin ) ;
-      }
-      q = uin ;
     }
-    size_t t = 0 ;
+    uint32_t nbytes ;
+    CKSUM_GET( &CRC_BQCD , &nbytes ) ;
+  }
+  
+  // reduction checksums only do the 29 guy
+  uint32_t k = 0 , sum29 = 0 , CRCsum29 = 0 ;
 
-    register uint32_t k_loc = 0 , sum29_loc = 0 , sum31_loc = 0 ;
-    size_t rank29 = ( ND * LOOP_VAR * i ) % 29 ;
-    size_t rank31 = ( ND * LOOP_VAR * i ) % 31 ;
+  // idea is to fill a buffer and then copy to lat and do checksum reductions
+  size_t i ;
+#pragma omp parallel for private(i) reduction(+:k) reduction(^:sum29) reduction(^:CRCsum29)
+  for( i = 0 ; i < LVOLUME ; i++ ) {
+    double dbl_temp[ ND*LOOP_VAR ] = {} ;
+    float flt_temp[ ND*LOOP_VAR ] = {} ;
 
-    // general variables ...
-    GLU_real utemp[ LOOP_VAR ] ;
-    uint32_t res = 0 ;
-    size_t mu , j ;
-    for( mu = 0 ; mu < ND ; mu++ ) {
-      for( j = 0 ; j < LOOP_VAR ; j++ ) {
-	// should I shuffle this around ?
-	if( HEAD_DATA.precision == DOUBLE_PREC ) {
-	  // compute the checksum ...
-	  uint32_t *buf = ( uint32_t* )( p + t ) ; 
-	  res = *buf + *( buf + 1 ) ; 
-	  // put value into temporary
-	  *( utemp + j ) = ( GLU_real )*( p + t ) ;
-	} else {
-	  // nersc checksum ...
-	  res = *( uint32_t *)( q + t ) ;
-	  // and put the value in the temporary
-	  *( utemp + j ) = ( GLU_real )*( q + t ) ; 
-	} 
-	// local computations
-	sum29_loc ^= (uint32_t)( res << rank29 | res >> ( 32 - rank29 ) ) ;
-	sum31_loc ^= (uint32_t)( res << rank31 | res >> ( 32 - rank31 ) ) ;
+    // the one in our own precision
+    GLU_real utemp[ LOOP_VAR] = {} ;
 
-	/// and perform the mods
-	rank29 = ( rank29 < 28 ) ? rank29 + 1 : 0 ;
-	rank31 = ( rank31 < 30 ) ? rank31 + 1 : 0 ;
+    // checksum shit
+    size_t rank29 = (ND*LOOP_VAR*i)%29 , CRCrank29 = i%29 ;
+    register uint32_t k_loc = 0 , sum29_loc = 0 , res = 0 ;
+    rank29 = ( rank29 < 28 ) ? rank29 + 1 : 0 ;
 
-	// local sum
-	k_loc += res ; 
-
-	t++ ;
+    // fill the buffers and maybe do the crc32 if needed otherwise fuck it lol
+    // these are on the un-byte-swapped data
+    if( HEAD_DATA.precision == DOUBLE_PREC ) {
+      memcpy( dbl_temp , uind+(LOOP_VAR*(ND*i)) , sizeof( double )*ND*LOOP_VAR ) ;
+      if( Latt.head == SCIDAC_HEADER || Latt.head == ILDG_SCIDAC_HEADER ) {
+	res = (uint32_t)crc32(0, (unsigned char*)dbl_temp , sizeof(double)*ND*LOOP_VAR );
+      }
+      if( HEAD_DATA.endianess != WORDS_BIGENDIAN ) {
+	bswap_64( ND*LOOP_VAR , dbl_temp ) ;
+      }
+    } else {
+      memcpy( flt_temp , uinf+(LOOP_VAR*(ND*i)) , sizeof( float )*LOOP_VAR*ND ) ;
+      if( Latt.head == SCIDAC_HEADER || Latt.head == ILDG_SCIDAC_HEADER ) {
+	res = (uint32_t)crc32(0, (unsigned char*)flt_temp , sizeof(float)*ND*LOOP_VAR );
+      }
+      if( HEAD_DATA.endianess != WORDS_BIGENDIAN ) {
+	bswap_32( LOOP_VAR*ND , flt_temp ) ;
+      }
+    }
+    CRCsum29 = CRCsum29^( res<<CRCrank29 | res>>(32-CRCrank29) );
+    
+    for( int mu = 0 ; mu < ND ; mu++ ) {
+      if( HEAD_DATA.precision == DOUBLE_PREC ) {
+	for( size_t j = 0 ; j < LOOP_VAR ; j++ ) {
+	  utemp[j] = dbl_temp[j+LOOP_VAR*mu] ;
+	  const uint32_t *buf = (uint32_t*)&dbl_temp[j+LOOP_VAR*mu] ;
+	  res = buf[0]+buf[1] ;
+	  sum29_loc ^= (uint32_t)( res << rank29 | res >> ( 32 - rank29 ) ) ;	  
+	  k_loc += res ;
+	}
+      } else {
+	for( size_t j = 0 ; j < LOOP_VAR ; j++ ) {
+	  utemp[j] = flt_temp[j+LOOP_VAR*mu] ;
+	  const uint32_t *buf = (uint32_t*)&flt_temp[j+LOOP_VAR*mu] ;
+	  res = buf[0] ;
+	  sum29_loc ^= (uint32_t)( res << rank29 | res >> ( 32 - rank29 ) ) ;
+	  k_loc += res ;
+	}
       }
       // smash all the read values into lat
       rebuild_lat( lat[i].O[mu] , utemp , HEAD_DATA.config_type ) ;
     }
-    // nersc
     k = k + (uint32_t)k_loc ;
 
     // milc
     sum29 = sum29 ^ (uint32_t)sum29_loc ;
-    sum31 = sum31 ^ (uint32_t)sum31_loc ;
   }
 
-  // BQCD checksum is just the crc of the whol thing
-  uint32_t CRC_BQCD , nbytes ;
-  CKSUM_GET( &CRC_BQCD , &nbytes ) ;
+  // close the file descriptor
+  close( fd ) ;
+  munmap( mm , sb.st_size ) ;
 
+  // seek to the FILE to the end of the data for looking up stupid checksums
   if( HEAD_DATA.precision == DOUBLE_PREC ) {
-    free( uind ) ; 
+    fseek( in , LATT_LOOP*sizeof(double) , SEEK_CUR ) ;
   } else {
-    // reunitarise up to working precision
-    #ifndef SINGLE_PREC
-    latt_reunitU( lat ) ;
-    #endif
-    free( uin ) ;
+    fseek( in , LATT_LOOP*sizeof(float) , SEEK_CUR ) ;
   }
 
   // if we are reading a MILC file we output the sum29 checksum
   switch( Latt.head ) {
-  case NERSC_HEADER : return k ;
-  case MILC_HEADER : return sum29 ;
-  case ILDG_SCIDAC_HEADER :
-  case SCIDAC_HEADER : return CRCsum29 ;
-  case ILDG_BQCD_HEADER : return CRC_BQCD ;
-  case LIME_HEADER : return GLU_SUCCESS ;
-  case JLQCD_HEADER : return GLU_SUCCESS ;
-  default : return GLU_FAILURE ; // should print an error here
+  case NERSC_HEADER       : return k ;
+  case MILC_HEADER        : return sum29 ;
+  case ILDG_SCIDAC_HEADER : case SCIDAC_HEADER : return CRCsum29 ;
+  case ILDG_BQCD_HEADER   : return CRC_BQCD ;
+  case LIME_HEADER        : return GLU_SUCCESS ;
+  case JLQCD_HEADER       : return GLU_SUCCESS ;
+  default                 :
+    fprintf( stderr , "[IO] unrecognised header\n" ) ;
+    return GLU_FAILURE ;
   }
 }
-
-// clean this up for scope
-#ifdef DEBUG
-  #undef DEBUG
-#endif

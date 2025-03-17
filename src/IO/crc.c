@@ -220,14 +220,11 @@ static const INT8 crctab[256] =
 };
 
 void 
-CKSUM_ADD( void *memptr , const INT8 nbytes )
+CKSUM_ADD( const void *memptr , const INT8 nbytes )
 {
-  register INT8 crc ;
+  register INT8 crc = the_crc ;
   register INT8 i ;
-  register unsigned char *cp ;
-
-  crc = the_crc ;
-  cp = (unsigned char *) memptr ;
+  const unsigned char *cp = (const unsigned char *)memptr ;
   for (i=0; i < nbytes; i++)
     crc = (crc << 8) ^ crctab[((crc >> 24) ^ *(cp++)) & 0xFF] ;
 

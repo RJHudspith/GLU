@@ -51,4 +51,10 @@ lattice_reader_suNC_cheaper( struct site *__restrict lat ,
 			     FILE *__restrict in , 
 			     const struct head_data HEAD_DATA ) ;
 
+uint32_t
+lattice_reader_suNC_posix( struct site *lat ,
+			   const char *config_in ,
+			   FILE *__restrict in ,
+			   const struct head_data HEAD_DATA ) ;
+
 #endif
