@@ -126,9 +126,9 @@ twostep_adaptive( const struct site *lat ,
 				   const double smear_alpha )  )
 {
   *errmax = 10. ;
-  size_t counter = 0 , i , mu ;
+  size_t counter = 0 ;
 
-  // if we hit 0.2 set that as the normal step
+  // if we hit dt = 0.125 set that as the normal step
   if( *dt >= MAX_DT && t > 1.0 ) {
     *dt = MAX_DT ;
     copy_lats( WF.lat_two , lat ) ;
@@ -211,7 +211,20 @@ flow_adaptive_RK3( struct site *__restrict lat ,
 		   const size_t smiters ,
 		   const int SIGN ,
 		   const smearing_types SM_TYPE )
-{  
+{
+  // various t0 and w0 measurements here
+  const double t0s[] = { 0.15 , T0_STOP } , w0s[] = { W0_STOP } ;
+  const size_t NT0 = sizeof(t0s)/sizeof(double) , NW0 = sizeof(w0s)/sizeof(double) ;
+  fprintf( stdout , "[WFLOW] performing %zu t0-scale measurement(s) at : " , NT0 ) ;
+  for( size_t tm = 0 ; tm < NT0 ; tm++ ) {
+    fprintf( stdout , "%g " , t0s[tm] ) ;
+  }
+  fprintf( stdout , "\n[WFLOW] performing %zu w0-scale measurement(s) at : " , NW0 ) ;
+  for( size_t wm = 0 ; wm < NW0 ; wm++ ) {
+    fprintf( stdout , "%g " , w0s[wm] ) ;
+  }
+  fprintf( stdout , "\n\n" ) ;
+  
   ////// USUAL STARTUP INFORMATION /////////
   print_GG_info( ) ;
 
@@ -257,12 +270,11 @@ flow_adaptive_RK3( struct site *__restrict lat ,
   int FLAG = GLU_SUCCESS ;
   
 #pragma omp parallel
-  {
+  {    
     struct wfmeas *head = NULL , *curr ;
 
     double new_plaq = inplaq ;
     double t = 0.0 ;
-    size_t i ;
     double delta_t = SIGN * Latt.sm_alpha[0] ;
 
     curr = (struct wfmeas*)malloc( sizeof( struct wfmeas ) ) ;
@@ -323,30 +335,32 @@ flow_adaptive_RK3( struct site *__restrict lat ,
 
     // perform fine measurements around T0_STOP for t_0 and W0_STOP for w_0
     #ifndef WFLOW_TIME_ONLY
-    if( fabs( T0_STOP - flow ) <= ( T0_STOP * FINETWIDDLE ) ) {
-      int past_the_post = 0 ;
-      // step forwards
-      delta_t = t/100. ;
-    t0_top :
-      {
-         #pragma omp barrier
+    for( size_t tm = 0 ; tm < NT0 ; tm++ ) {
+      if( fabs( t0s[tm] - flow ) <= ( t0s[tm]* FINETWIDDLE ) ) {   
+	int past_the_post = 0 ;
+	delta_t = t/100. ;
+        t0_top :
+	{
+           #pragma omp barrier
+	}
+	stept() ;      
+	if( flow > t0s[tm] ) { past_the_post++ ; }
+	if( fabs( t0s[tm] - flow ) <= ( t0s[tm] * FINETWIDDLE ) && past_the_post < 3 ) goto t0_top ;
       }
-      stept() ;      
-      if( flow > T0_STOP ) { past_the_post++ ; }
-      if( fabs( T0_STOP - flow ) <= ( T0_STOP * FINETWIDDLE ) && past_the_post < 3 ) goto t0_top ;
     }
-
-    // perform some fine measurements around W0_STOP
-    if( fabs( W0_STOP - wapprox ) <= ( W0_STOP * FINETWIDDLE ) ) {
-      int past_the_post = 0 ;
-      delta_t = t/100. ;
-    w0_top :
-      {
-         #pragma omp barrier
+    // perform some fine measurements around W0_STOP or whatever is in the w0s list
+    for( size_t wm = 0 ; wm < NW0 ; wm++ ) {
+      if( fabs( w0s[wm] - wapprox ) <= ( w0s[wm]* FINETWIDDLE ) ) {   
+	int past_the_post = 0 ;
+	delta_t = t/100. ;
+        w0_top :
+	{
+           #pragma omp barrier
+	}
+	stept() ;      
+	if( wapprox > w0s[wm] ) { past_the_post++ ; }
+	if( fabs( w0s[wm] - wapprox ) <= ( w0s[wm] * FINETWIDDLE ) && past_the_post < 3 ) goto w0_top ;
       }
-      stept() ;
-      if( wapprox > W0_STOP ) { past_the_post++ ; }
-      if( fabs( W0_STOP - wapprox ) <= ( W0_STOP * FINETWIDDLE ) && past_the_post < 3 ) goto w0_top ;
     }
     #endif
     
@@ -378,10 +392,9 @@ flow_adaptive_RK3( struct site *__restrict lat ,
     
     // compute the t_0 and w_0 scales from the measurements
 #ifndef WFLOW_TIME_ONLY
-    if( ( fabs( curr -> time - WFLOW_TIME_STOP ) > PREC_TOL ) && 
-	meas_count > 0 ) {
-      scaleset( curr , T0_STOP , W0_STOP , meas_count , GLU_TRUE ) ;
-      scaleset( curr , T0_STOP , W0_STOP , meas_count , GLU_FALSE ) ;
+    if( ( fabs( curr -> time - WFLOW_TIME_STOP ) > PREC_TOL ) && meas_count > 0 ) {
+      scaleset( curr , NT0 , t0s , NW0 , w0s , meas_count , GLU_TRUE ) ;
+      scaleset( curr , NT0 , t0s , NW0 , w0s , meas_count , GLU_FALSE ) ;
     }
 #endif
     

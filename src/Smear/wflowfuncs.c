@@ -29,8 +29,8 @@ Copyright 2013-2025 Renwick James Hudspith
 #include "staples.h"     // computes staples
 
 // controls for the wilson flow these get externed!
-const double W0_STOP    = 0.1125*(NCNC-1)/(double)NC ; // BMW's choice for the W_0 parameter
-const double T0_STOP    = 0.1125*(NCNC-1)/(double)NC ; // Martin Luescher's choice for the t_0 scale
+const double W0_STOP = 0.1125*(NCNC-1)/(double)NC ; // BMW's choice for the W_0 parameter
+const double T0_STOP = 0.1125*(NCNC-1)/(double)NC ; // Martin Luescher's choice for the t_0 scale
 
 // shortening function needs to be out of alphabetical order because
 // it is called by flow directions
@@ -432,16 +432,21 @@ print_GG_info( void )
 
 // use the flow of G and W for scale setting
 int
-scaleset( struct wfmeas *curr , 
-	  const double T_0 ,
-	  const double W_0 ,
+scaleset( struct wfmeas *curr ,
+	  const size_t NT0 ,
+	  const double T_0[NT0] ,
+	  const size_t NW0 ,
+	  const double W_0[NW0] ,
 	  const size_t count ,
 	  const GLU_bool is_clover ) 
 {
+  struct wfmeas *Head = curr ;
+  
   // now we have the number of measurements in count
   double *GT   = malloc( ( count + 1 ) * sizeof( double ) ) ;
   double *time = malloc( ( count + 1 ) * sizeof( double ) ) ;
   double *der  = malloc( ( count + 1 ) * sizeof( double ) ) ;
+  
   // error handling
   double t0 = -1 , w0 = -1 ;
   int flag = GLU_SUCCESS ;
@@ -454,50 +459,57 @@ scaleset( struct wfmeas *curr ,
   // traverse back down the linked list
   for( i = 0 ; i < ( count + 1 ) ; i++ ) {
     time[ count - i ] = curr -> time ;
-    GT[ count - i ]   = curr->time*curr->time*32*(1-curr -> avplaq) ;
+    GT[ count - i ] = curr->time*curr->time*32*(1-curr -> avplaq) ;
     if( is_clover == GLU_TRUE ) {
-      GT[ count - i ]   = curr -> Gt ;
+      GT[ count - i ] = curr -> Gt ;
     }
     curr = curr -> next ;
   }
   if( count > 0 ) {
-    t0 = evaluate_scale( der , time , GT , count , T_0 ) ;
-  }
-  if( t0 == -1 ) {
-    #pragma omp master
-    {
-      fprintf( stderr , "[WFLOW] cannot compute %s t0 as we do not bracket GT\n" , clovstr ) ;
+    for( size_t tm = 0 ; tm < NT0 ; tm++ ) {
+      t0 = evaluate_scale( der , time , GT , count , T_0[tm] ) ;
+      if( t0 == -1 ) {
+        #pragma omp master
+	{
+	  fprintf( stderr , "[WFLOW] cannot compute %s t0 as we do not bracket GT\n" , clovstr ) ;
+	}
+	flag = GLU_FAILURE ;
+	goto free ;
+      }
+      #pragma omp master
+      {
+	fprintf( stdout , "[GT-scale %s] G(%g) %1.12e \n" , clovstr , T_0[tm] , sqrt( t0 ) ) ;
+      }
     }
-    flag = GLU_FAILURE ;
-    goto free ;
-  }
-  #pragma omp master
-  {
-    fprintf( stdout , "[GT-scale %s] G(%g) %1.12e \n" , clovstr , T_0 , sqrt( t0 ) ) ;
   }
   // W(t) = t ( dG(t) / dt )
   if( count > 0 ) {
     for( i = 0 ; i < ( count + 1 ) ; i++ ) {
       GT[ i ] = time[ i ] * der[ i ] ;
     }
-  }
-  w0 = evaluate_scale( der , time , GT , count , W_0 ) ;
-  if( w0 == -1 ) {
-    #pragma omp master
-    {
-      fprintf( stderr , "[WFLOW] cannot compute %s w0 as we do not bracket WT\n" , clovstr ) ;
+    for( size_t wm = 0 ; wm < NW0 ; wm++ ) {
+      w0 = evaluate_scale( der , time , GT , count , W_0[wm] ) ;
+      if( w0 == -1 ) {
+        #pragma omp master
+	{
+	  fprintf( stderr , "[WFLOW] cannot compute %s w0 as we do not bracket WT\n" , clovstr ) ;
+	}
+	flag = GLU_FAILURE ;
+	goto free ;
+      }
+      #pragma omp master
+      {
+	fprintf( stdout , "[WT-scale %s] W(%g) %1.12e \n" , clovstr , W_0[wm] , sqrt( w0 ) ) ;
+      }
     }
-    flag = GLU_FAILURE ;
-    goto free ;
-  }
-  #pragma omp master
-  {
-    fprintf( stdout , "[WT-scale %s] W(%g) %1.12e \n" , clovstr , W_0 , sqrt( w0 ) ) ;
   }
  free :
   free( der ) ;
   free( time ) ;
   free( GT ) ;
+
+  // just reset the linked list here
+  curr = Head ;
 
   return flag ;
 }

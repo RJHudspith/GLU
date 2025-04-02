@@ -99,15 +99,19 @@ print_GG_info( void ) ;
    @fn void scaleset( struct wfmeas *curr , const double W0 , const double T0 , const size_t count , const GLU_bool is_clover ) 
    @brief computes the flow in curr for T0 and W0
    @param curr :: measurement list
-   @param T_0 :: wilson flow scale G(t) = W_0
-   @param W_0 :: wilson flow scale t( dG(t)/dt ) = W_0
+   @param NT0 :: number of t0 measurements
+   @param T_0 :: array of wilson flow scale G(t) = T_0
+   @param NW0 :: number of w0 measurements
+   @param W_0 :: array of wilson flow scale t( dG(t)/dt ) = W_0
    @param count :: number of measurements made
    @param is_clover :: boolean plaquette is false
  */
 void
-scaleset( struct wfmeas *curr , 
-	  const double T_0 ,
-	  const double W_0 ,
+scaleset( struct wfmeas *curr ,
+	  const size_t NT0 ,
+	  const double T_0[ NT0 ] ,
+	  const size_t NW0 ,
+	  const double W_0[ NW0 ] ,
 	  const size_t count ,
 	  const GLU_bool is_clover ) ;
 

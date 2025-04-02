@@ -163,9 +163,14 @@ flow_RK3( struct site *__restrict lat ,
     if( ( fabs( curr -> time - WFLOW_TIME_STOP ) > PREC_TOL ) &&
 	count <= smiters &&
 	meas_count > 0 ) {
-      // set the scale at t_0 and w_0
-      scaleset( curr , T0_STOP , W0_STOP , meas_count , GLU_TRUE ) ;
-      scaleset( curr , T0_STOP , W0_STOP , meas_count , GLU_FALSE ) ;
+      // set the scale at various t_0 and w_0
+      const double t0s[] = {0.15,0.22,T0_STOP} , w0s[] = {W0_STOP} ;
+      scaleset( curr ,
+		sizeof(t0s)/sizeof(double) , t0s , sizeof(w0s)/sizeof(double) ,
+		w0s , meas_count , GLU_TRUE ) ;
+      scaleset( curr ,
+		sizeof(t0s)/sizeof(double) , t0s , sizeof(w0s)/sizeof(double) ,
+		w0s , meas_count , GLU_FALSE ) ;
     }
 #endif
 
