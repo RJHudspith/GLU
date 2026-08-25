@@ -234,7 +234,6 @@ lattice_reader_suNC_posix( struct site *lat ,
     // checksum shit
     size_t rank29 = (ND*LOOP_VAR*i)%29 , CRCrank29 = i%29 ;
     register uint32_t k_loc = 0 , sum29_loc = 0 , res = 0 ;
-    rank29 = ( rank29 < 28 ) ? rank29 + 1 : 0 ;
 
     // fill the buffers and maybe do the crc32 if needed otherwise fuck it lol
     // these are on the un-byte-swapped data
@@ -263,7 +262,8 @@ lattice_reader_suNC_posix( struct site *lat ,
 	  utemp[j] = dbl_temp[j+LOOP_VAR*mu] ;
 	  const uint32_t *buf = (uint32_t*)&dbl_temp[j+LOOP_VAR*mu] ;
 	  res = buf[0]+buf[1] ;
-	  sum29_loc ^= (uint32_t)( res << rank29 | res >> ( 32 - rank29 ) ) ;	  
+	  sum29_loc ^= (uint32_t)( res << rank29 | res >> ( 32 - rank29 ) ) ;
+	  rank29 = ( rank29 < 28 ) ? rank29 + 1 : 0 ;
 	  k_loc += res ;
 	}
       } else {
@@ -272,6 +272,7 @@ lattice_reader_suNC_posix( struct site *lat ,
 	  const uint32_t *buf = (uint32_t*)&flt_temp[j+LOOP_VAR*mu] ;
 	  res = buf[0] ;
 	  sum29_loc ^= (uint32_t)( res << rank29 | res >> ( 32 - rank29 ) ) ;
+	  rank29 = ( rank29 < 28 ) ? rank29 + 1 : 0 ;
 	  k_loc += res ;
 	}
       }
